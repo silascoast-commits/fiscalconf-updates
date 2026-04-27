@@ -480,6 +480,37 @@ export default function Apuracao() {
                       Fator R ≥ 28% — tributação migra para o Anexo III (mais favorável)
                     </p>
                   )}
+                  {fatorR >= 22 && fatorR < 28 && (
+                    <div className="rounded border border-amber-400 bg-amber-50 dark:bg-amber-950/20 p-2 text-xs text-amber-800 dark:text-amber-200 space-y-0.5">
+                      <p className="font-semibold flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3 inline" />
+                        Fator R na fronteira ({fatorR.toFixed(1)}%) — a {(28 - fatorR).toFixed(1)} p.p. do Anexo III
+                      </p>
+                      {(() => {
+                        const rbt = rbt12;
+                        if (rbt <= 0) return null;
+                        // Aliq efetiva Anexo V atual
+                        const calcAe = (rb: number, faixas: { min: number; max: number; aliquota: number; parcela: number }[]) => {
+                          const f = faixas.find(fx => rb <= fx.max) ?? faixas[faixas.length - 1];
+                          return rb > 0 ? ((rb * (f.aliquota / 100)) - f.parcela) / rb : 0;
+                        };
+                        const ANEXO_III_F = [{min:0,max:180000,aliquota:6.0,parcela:0},{min:180000.01,max:360000,aliquota:11.2,parcela:9360},{min:360000.01,max:720000,aliquota:13.5,parcela:17640},{min:720000.01,max:1800000,aliquota:16.0,parcela:35640},{min:1800000.01,max:3600000,aliquota:21.0,parcela:125640},{min:3600000.01,max:4800000,aliquota:33.0,parcela:648000}];
+                        const ANEXO_V_F  = [{min:0,max:180000,aliquota:15.5,parcela:0},{min:180000.01,max:360000,aliquota:18.0,parcela:4500},{min:360000.01,max:720000,aliquota:19.5,parcela:9900},{min:720000.01,max:1800000,aliquota:20.5,parcela:17100},{min:1800000.01,max:3600000,aliquota:23.0,parcela:62100},{min:3600000.01,max:4800000,aliquota:30.5,parcela:540000}];
+                        const aeV   = calcAe(rbt, ANEXO_V_F);
+                        const aeIII = calcAe(rbt, ANEXO_III_F);
+                        const economia = rbt * (aeV - aeIII);
+                        if (economia <= 0) return null;
+                        return (
+                          <p>
+                            Economia potencial ao atingir 28%:{" "}
+                            <strong>{economia.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}/ano</strong>{" "}
+                            ({(economia/12).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}/mês).
+                            Avalie aumentar o pró-labore — compare o custo previdenciário adicional com a economia tributária.
+                          </p>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
               )}
 

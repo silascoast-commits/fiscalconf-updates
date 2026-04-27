@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
-type TipoObrigacao = "DAS" | "SPED" | "DEFIS" | "Reforma" | "DCTF" | "ECF" | "PGDAS" | "DIRPF" | "EFD";
+type TipoObrigacao = "DAS" | "SPED" | "DEFIS" | "Reforma" | "DCTF" | "ECF" | "PGDAS" | "DIRPF" | "EFD" | "eSocial" | "EFDReinf";
 type Urgencia = "alta" | "media" | "baixa";
 type Regime = "todos" | "simples" | "presumido";
 
@@ -25,8 +25,8 @@ interface Obrigacao {
   regime: Regime;
 }
 
-// Hoje fixo: 18/04/2026
-const HOJE = new Date("2026-04-18T12:00:00");
+// Data dinâmica — sempre reflete o dia atual
+const HOJE = (() => { const d = new Date(); d.setHours(12, 0, 0, 0); return d; })();
 
 function getDaysUntil(dateStr: string) {
   const target = new Date(dateStr + "T12:00:00");
@@ -117,6 +117,41 @@ function gerarObrigacoes(): Obrigacao[] {
     });
   }
 
+  // eSocial — S-1200/S-2200 (dia 7) e S-1299/fechamento (dia 15) — todos os meses
+  for (let m = 1; m <= 12; m++) {
+    lista.push({
+      id: `esocial-abertura-2026-${m}`,
+      data: `2026-${pad(m)}-07`,
+      titulo: `eSocial S-1200/S-2200 — ${new Date(2026, m - 1).toLocaleString("pt-BR", { month: "long" })}/2026`,
+      descricao: "Eventos periódicos de remuneração (S-1200) e admissões (S-2200) — prazo até dia 7",
+      tipo: "eSocial",
+      urgencia: "media",
+      regime: "todos",
+    });
+    lista.push({
+      id: `esocial-fechamento-2026-${m}`,
+      data: `2026-${pad(m)}-15`,
+      titulo: `eSocial S-1299 Fechamento — ${new Date(2026, m - 1).toLocaleString("pt-BR", { month: "long" })}/2026`,
+      descricao: "Fechamento de folha eSocial (S-1299) — encerramento da competência",
+      tipo: "eSocial",
+      urgencia: "alta",
+      regime: "todos",
+    });
+  }
+
+  // EFD-Reinf — R-2010 (serviços tomados) e R-4010 (rendimentos PF) dia 15
+  for (let m = 2; m <= 12; m++) {
+    lista.push({
+      id: `efd-reinf-2026-${m}`,
+      data: `2026-${pad(m)}-15`,
+      titulo: `EFD-Reinf R-2010/R-4010 — ${new Date(2026, m - 1).toLocaleString("pt-BR", { month: "long" })}/2026`,
+      descricao: "Escrituração Fiscal Digital de Retenções — serviços tomados (R-2010) e rendimentos PF (R-4010)",
+      tipo: "EFDReinf",
+      urgencia: "media",
+      regime: "todos",
+    });
+  }
+
   // Obrigações únicas
   lista.push(
     // DEFIS 2026
@@ -202,6 +237,8 @@ const FILTROS: Array<{ label: string; value: TipoObrigacao | "Todos" }> = [
   { label: "Todos", value: "Todos" },
   { label: "DAS", value: "DAS" },
   { label: "SPED", value: "SPED" },
+  { label: "eSocial", value: "eSocial" },
+  { label: "EFD-Reinf", value: "EFDReinf" },
   { label: "DEFIS", value: "DEFIS" },
   { label: "Reforma", value: "Reforma" },
   { label: "DCTF", value: "DCTF" },
@@ -227,6 +264,9 @@ function getTipoIcon(tipo: TipoObrigacao) {
       return <AlertTriangle className="h-4 w-4" />;
     case "DCTF":
       return <Building2 className="h-4 w-4" />;
+    case "eSocial":
+    case "EFDReinf":
+      return <FileText className="h-4 w-4" />;
     default:
       return <CalendarDays className="h-4 w-4" />;
   }
@@ -247,6 +287,10 @@ function getTipoColor(tipo: TipoObrigacao): string {
       return "text-purple-600 dark:text-purple-400";
     case "DCTF":
       return "text-orange-600 dark:text-orange-400";
+    case "eSocial":
+      return "text-teal-600 dark:text-teal-400";
+    case "EFDReinf":
+      return "text-cyan-600 dark:text-cyan-400";
     default:
       return "text-muted-foreground";
   }
@@ -285,6 +329,8 @@ function getTipoBadge(tipo: TipoObrigacao) {
     ECF: "ECF",
     DIRPF: "DIRPF",
     EFD: "EFD",
+    eSocial: "eSocial",
+    EFDReinf: "EFD-Reinf",
   };
   return (
     <Badge variant="outline" className="text-xs font-mono">
@@ -327,7 +373,7 @@ export default function Calendario() {
         <div>
           <h1 className="text-2xl font-semibold leading-tight">Calendário de Obrigações 2026</h1>
           <p className="text-sm text-muted-foreground">
-            Obrigações tributárias 2026 e início de 2027 · Hoje: {formatDateBR("2026-04-18")}
+            Obrigações tributárias 2026 e início de 2027 · Hoje: {HOJE.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}
           </p>
         </div>
       </div>

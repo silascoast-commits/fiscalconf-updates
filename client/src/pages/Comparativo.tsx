@@ -31,7 +31,7 @@ import {
 // TIPOS
 // ─────────────────────────────────────────────────────────────────────────────
 type Faixa = { min: number; max: number; aliquota: number; parcela: number };
-type Atividade = "comercio" | "industria" | "servicos";
+type Atividade = "comercio" | "industria" | "servicos" | "combustivel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TABELAS SIMPLES NACIONAL — 5 Anexos (LC 123/2006)
@@ -99,8 +99,8 @@ function calcSimples(rbt12: number, atividade: Atividade, fatorR: number) {
   let anexoLabel: string;
   let anexoCod: string;
 
-  if (atividade === "comercio") {
-    faixas = ANEXO_I; anexoLabel = "Anexo I — Comércio"; anexoCod = "I";
+  if (atividade === "comercio" || atividade === "combustivel") {
+    faixas = ANEXO_I; anexoLabel = atividade === "combustivel" ? "Anexo I — Comércio (Combustíveis)" : "Anexo I — Comércio"; anexoCod = "I";
   } else if (atividade === "industria") {
     faixas = ANEXO_II; anexoLabel = "Anexo II — Indústria"; anexoCod = "II";
   } else {
@@ -147,7 +147,8 @@ type PresumidoResult = {
 };
 
 function calcPresumido(rbt12: number, atividade: Atividade, aliquotaIssIcms: number): PresumidoResult {
-  const presuncaoIRPJ = atividade === "servicos" ? 32 : 8;
+  // RIR/2018 art. 519 §1º, III: revenda de combustíveis — 1,6% IRPJ; CSLL 12%
+  const presuncaoIRPJ = atividade === "servicos" ? 32 : atividade === "combustivel" ? 1.6 : 8;
   const presuncaoCSLL = atividade === "servicos" ? 32 : 12;
   const baseIRPJ = rbt12 * (presuncaoIRPJ / 100);
   const baseCSLL = rbt12 * (presuncaoCSLL / 100);
@@ -318,7 +319,7 @@ export default function Comparativo() {
           .text-violet-600  { color: #7c3aed !important; }
           .text-red-600     { color: #dc2626 !important; }
           .print-container::after {
-            content: "Salubre Contabilidade e Associados — FiscalConf v2.8";
+            content: "Salubre Contabilidade e Associados — FiscalConf v2.9";
             display: block; margin-top: 40px; padding-top: 12px;
             border-top: 1px solid #ccc; font-size: 9pt; color: #555; text-align: center;
           }
@@ -373,6 +374,7 @@ export default function Comparativo() {
                     <SelectItem value="comercio">Comércio (Anexo I)</SelectItem>
                     <SelectItem value="industria">Indústria (Anexo II)</SelectItem>
                     <SelectItem value="servicos">Serviços (Anexo III / V)</SelectItem>
+                    <SelectItem value="combustivel">Revenda de Combustíveis</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -587,6 +589,11 @@ export default function Comparativo() {
                     <p className="text-xs text-muted-foreground mb-1">Alíquota Efetiva</p>
                     <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{formatPct(presumido.aliquotaEfetiva)}</p>
                     <p className="text-xs text-muted-foreground mt-1">Sobre receita bruta de {formatMoeda(rbt12)}</p>
+                    {atividade === "combustivel" && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 font-medium">
+                        Presunção IRPJ 1,6% (RIR/2018 art. 519 §1º III)
+                      </p>
+                    )}
                   </div>
                   <Separator />
                   <div className="space-y-1.5 text-sm">
@@ -604,6 +611,9 @@ export default function Comparativo() {
                   </div>
                   <div className="rounded bg-muted/40 p-2 text-xs text-muted-foreground space-y-0.5">
                     <p>• Base IRPJ: {formatMoeda(presumido.baseIRPJ)} ({presumido.presuncaoIRPJ}% da receita)</p>
+                    {atividade === "combustivel" && (
+                      <p className="text-amber-700 dark:text-amber-400 font-medium">• Combustíveis: presunção IRPJ reduzida a 1,6% (vs. 8% no comércio geral) — RIR/2018 art. 519 §1º, III</p>
+                    )}
                     <p>• PIS/COFINS cumulativo (sem crédito)</p>
                     <p>• Distribuição de lucros isenta de IR para sócios</p>
                   </div>
