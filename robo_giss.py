@@ -969,92 +969,187 @@ class GissBot:
         )
 
 
+    def _todos_frames(self, page):
+        """Retorna todos os frames da pagina em ordem BFS."""
+        visitados = []
+        fila = list(page.frames)
+        for f in fila:
+            if f not in visitados:
+                visitados.append(f)
+        return visitados
+
+    def _dump_portal(self, page):
+        """Loga estrutura de frames e links visiveis — usado para diagnostico."""
+        self._log("=== DUMP PORTAL ===")
+        for f in self._todos_frames(page):
+            try:
+                url = f.url[:80]
+                links = f.evaluate("""
+                    () => Array.from(document.querySelectorAll('a, td[onclick], input[type=button], input[type=submit]'))
+                         .map(el => el.innerText.trim() || el.value || '')
+                         .filter(t => t.length > 0 && t.length < 60)
+                         .slice(0, 20)
+                """)
+                inputs = f.evaluate("""
+                    () => Array.from(document.querySelectorAll('input[type!=hidden]'))
+                         .map(el => (el.name || el.id || el.placeholder || '?') + '[' + el.type + ']')
+                         .slice(0, 10)
+                """)
+                self._log("  Frame: {} | links={} | inputs={}".format(url, links, inputs))
+            except Exception as e:
+                self._log("  Frame erro: {}".format(e))
+        self._log("=== FIM DUMP ===")
+
+    def _js_clicar_texto(self, page, texto):
+        """
+        Usa JavaScript para encontrar e clicar em qualquer elemento
+        (a, td, span, input[type=button]) que contenha o texto dado.
+        Percorre TODOS os frames via CDPSession nao e possivel, mas
+        podemos iterar page.frames e injetar JS em cada um.
+        """
+        padrao_lower = texto.lower().strip()
+        script = """
+            (padrao) => {
+                var sels = ['a', 'td', 'span', 'div', 'input[type="button"]',
+                            'input[type="submit"]', 'button'];
+                for (var s of sels) {
+                    var els = document.querySelectorAll(s);
+                    for (var el of els) {
+                        var t = (el.innerText || el.value || '').toLowerCase().trim();
+                        if (t.indexOf(padrao) !== -1) {
+                            el.click();
+                            return 'clicado: ' + (el.tagName) + ' texto=' + t.slice(0,40);
+                        }
+                    }
+                }
+                return null;
+            }
+        """
+        for f in self._todos_frames(page):
+            try:
+                res = f.evaluate(script, padrao_lower)
+                if res:
+                    self._log("JS click (frame {}): {}".format(f.url[:40], res))
+                    return True
+            except Exception:
+                pass
+        return False
+
     def _preencher_competencia_portal(self, page):
         """
-        Preenche Mes e Ano no portal interno.
-        Busca na pagina principal e em todos os frames (portal usa frameset).
+        Preenche Mes e Ano no portal interno via JavaScript em todos os frames.
         """
-        # Lista de contextos onde buscar: pagina + todos os frames
-        contextos = [page] + [f for f in page.frames if f != page.main_frame]
-
+        script_mes = """
+            (val) => {
+                var sels = [
+                    'input[name*="mes"]', 'input[id*="mes"]',
+                    'input[name*="MES"]', 'input[id*="MES"]',
+                    'input[size="2"]'
+                ];
+                for (var s of sels) {
+                    var el = document.querySelector(s);
+                    if (el && el.type !== 'hidden') {
+                        el.value = val;
+                        el.dispatchEvent(new Event('change', {bubbles:true}));
+                        return 'mes preenchido: ' + (el.name || el.id);
+                    }
+                }
+                return null;
+            }
+        """
+        script_ano = """
+            (val) => {
+                var sels = [
+                    'input[name*="ano"]', 'input[id*="ano"]',
+                    'input[name*="ANO"]', 'input[id*="ANO"]',
+                    'input[size="4"]'
+                ];
+                for (var s of sels) {
+                    var el = document.querySelector(s);
+                    if (el && el.type !== 'hidden') {
+                        el.value = val;
+                        el.dispatchEvent(new Event('change', {bubbles:true}));
+                        return 'ano preenchido: ' + (el.name || el.id);
+                    }
+                }
+                return null;
+            }
+        """
         preencheu_mes = False
-        for ctx in contextos:
-            for sel in ["input[name*='mes' i]", "input[id*='mes' i]", "input[size='2']"]:
-                try:
-                    loc = ctx.locator(sel).first
-                    if loc.count() > 0:
-                        loc.triple_click()
-                        loc.fill(self.comp_mes)
-                        self._log("Mes preenchido: {} (frame: {})".format(
-                            self.comp_mes, getattr(ctx, "name", "main") or "main"))
-                        preencheu_mes = True
-                        break
-                except Exception:
-                    pass
-            if preencheu_mes:
-                break
-
         preencheu_ano = False
-        for ctx in contextos:
-            for sel in ["input[name*='ano' i]", "input[id*='ano' i]", "input[size='4']"]:
-                try:
-                    loc = ctx.locator(sel).first
-                    if loc.count() > 0:
-                        loc.triple_click()
-                        loc.fill(self.comp_ano)
-                        self._log("Ano preenchido: {} (frame: {})".format(
-                            self.comp_ano, getattr(ctx, "name", "main") or "main"))
+
+        for f in self._todos_frames(page):
+            try:
+                if not preencheu_mes:
+                    res = f.evaluate(script_mes, self.comp_mes)
+                    if res:
+                        self._log("{} (frame: {})".format(res, f.url[:40]))
+                        preencheu_mes = True
+                if not preencheu_ano:
+                    res = f.evaluate(script_ano, self.comp_ano)
+                    if res:
+                        self._log("{} (frame: {})".format(res, f.url[:40]))
                         preencheu_ano = True
-                        break
-                except Exception:
-                    pass
-            if preencheu_ano:
-                break
+                if preencheu_mes and preencheu_ano:
+                    break
+            except Exception:
+                pass
+
+        # Fallback Playwright locator
+        if not preencheu_mes or not preencheu_ano:
+            contextos = self._todos_frames(page)
+            for ctx in contextos:
+                for sel, val, flag in [
+                    ("input[name*='mes' i],input[id*='mes' i],input[size='2']", self.comp_mes, "mes"),
+                    ("input[name*='ano' i],input[id*='ano' i],input[size='4']", self.comp_ano, "ano"),
+                ]:
+                    if flag == "mes" and preencheu_mes:
+                        continue
+                    if flag == "ano" and preencheu_ano:
+                        continue
+                    try:
+                        loc = ctx.locator(sel).first
+                        if loc.count() > 0:
+                            loc.triple_click()
+                            loc.fill(val)
+                            self._log("{} preenchido via locator (frame: {})".format(flag, ctx.url[:40]))
+                            if flag == "mes":
+                                preencheu_mes = True
+                            else:
+                                preencheu_ano = True
+                    except Exception:
+                        pass
 
         if not preencheu_mes or not preencheu_ano:
             self._log("AVISO: campos mes/ano nao preenchidos — competencia: {}".format(self.competencia))
 
     def _clicar_link(self, page, padrao):
         """
-        Clica em link ou texto que corresponda ao padrao (regex).
-        Busca na pagina principal E em todos os frames/iframes do portal
-        (o GissOnline usa frameset classico — PRESTADOR/TOMADOR ficam num frame).
+        Clica em link/elemento que corresponda ao padrao.
+        Estrategia 1: JavaScript puro em cada frame (mais rapido e abrangente).
+        Estrategia 2: Playwright locator em cada frame (fallback).
         """
+        # Estrategia 1: JS em todos os frames
+        if self._js_clicar_texto(page, padrao.replace(r"\\", "").replace("(", "").replace(")", "")):
+            self._log("Link clicado via JS: '{}'".format(padrao))
+            return True
+
+        # Estrategia 2: Playwright locator em todos os frames
         regexp = re.compile(padrao, re.I)
-
-        # 1. Tenta na pagina principal
-        for metodo in [
-            lambda: page.get_by_role("link", name=regexp).first.click(timeout=3000),
-            lambda: page.get_by_text(regexp).first.click(timeout=3000),
-            lambda: page.locator("a").filter(has_text=regexp).first.click(timeout=3000),
-        ]:
-            try:
-                metodo()
-                self._log("Link clicado (pagina): '{}'".format(padrao))
-                return True
-            except Exception:
-                pass
-
-        # 2. Tenta em cada frame do portal
-        try:
-            for frame in page.frames:
-                if frame == page.main_frame:
-                    continue
-                for metodo in [
-                    lambda f=frame: f.get_by_role("link", name=regexp).first.click(timeout=3000),
-                    lambda f=frame: f.get_by_text(regexp).first.click(timeout=3000),
-                    lambda f=frame: f.locator("a").filter(has_text=regexp).first.click(timeout=3000),
-                    lambda f=frame: f.locator("td").filter(has_text=regexp).first.click(timeout=3000),
-                ]:
-                    try:
-                        metodo()
-                        self._log("Link clicado (frame '{}')': '{}'".format(
-                            frame.name or frame.url[:40], padrao))
-                        return True
-                    except Exception:
-                        pass
-        except Exception as e:
-            self._log("Erro ao buscar em frames: {}".format(e))
+        for frame in self._todos_frames(page):
+            for metodo in [
+                lambda f=frame: f.locator("a").filter(has_text=regexp).first.click(timeout=1500),
+                lambda f=frame: f.locator("td").filter(has_text=regexp).first.click(timeout=1500),
+                lambda f=frame: f.locator("span,div,button").filter(has_text=regexp).first.click(timeout=1500),
+                lambda f=frame: f.get_by_role("link", name=regexp).first.click(timeout=1500),
+            ]:
+                try:
+                    metodo()
+                    self._log("Link clicado via locator (frame {}): '{}'".format(
+                        frame.url[:40], padrao))
+                    return True
+                except Exception:
+                    pass
 
         self._log("Link NAO encontrado em nenhum frame: '{}'".format(padrao))
         return False
@@ -1147,6 +1242,16 @@ class GissBot:
         """
         self._log("=== PRESTADOR: iniciando encerramento ===")
         self._shot(page, "prestador_inicio")
+
+        # Aguarda frames carregarem completamente
+        time.sleep(3)
+        try:
+            page.wait_for_load_state("networkidle", timeout=15000)
+        except Exception:
+            pass
+
+        # Dump diagnostico para identificar estrutura do portal
+        self._dump_portal(page)
 
         # Tenta clicar na aba PRESTADOR (pode ja estar ativa)
         clicou_aba = self._clicar_link(page, r"PRESTADOR")
