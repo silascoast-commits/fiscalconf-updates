@@ -779,14 +779,15 @@ class GissBot:
 
         termos = list({_norm(texto), texto.lower().strip()})
 
-        # Script JS: retorna coordenadas do centro do elemento (para mouse real)
-        script_bbox = """(termos) => {
+        # Script JS passo 1: busca SOMENTE em elementos folha (a, button, img, input)
+        # Evita pegar o <td> container que tem o texto de TODOS os links filhos
+        script_folha = """(termos) => {
             const norm = s => {
                 s = (s || '').trim().toLowerCase();
-                return s.normalize('NFD').replace(/[̀-ͯ]/g,'')
-                        .replace(/\\s+/g,' ');
+                return s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\\s+/g,' ');
             };
-            const sels = 'a,button,input,img,td[onclick],td,span,li,div[onclick],tr[onclick]';
+            // Apenas elementos interativos folha — não containers
+            const sels = 'a,button,input[type="button"],input[type="submit"],input[type="image"],img[onclick],img[usemap]';
             for (const el of document.querySelectorAll(sels)) {
                 const txt = norm([
                     el.innerText, el.textContent, el.value,
@@ -794,20 +795,15 @@ class GissBot:
                     el.getAttribute('href'),
                     el.getAttribute('onclick')
                 ].filter(Boolean).join(' '));
-                if (txt.length > 0 && txt.length < 400 &&
+                if (txt.length > 0 && txt.length < 300 &&
                         termos.some(t => txt.includes(t))) {
                     el.scrollIntoView({block:'center', inline:'center'});
                     const r = el.getBoundingClientRect();
-                    if (r.width > 0 && r.height > 0) {
+                    if (r.width > 0 && r.height > 0)
                         return {found:true, tag:el.tagName,
-                                x: r.left + r.width/2,
-                                y: r.top  + r.height/2,
-                                txt: txt.slice(0,80),
-                                onclick:(el.getAttribute('onclick')||'').slice(0,80)};
-                    }
-                    // Elemento sem área visível — tenta click JS mesmo assim
-                    el.dispatchEvent(new MouseEvent('mouseover',  {bubbles:true}));
-                    el.dispatchEvent(new MouseEvent('mouseenter', {bubbles:true}));
+                                x:r.left+r.width/2, y:r.top+r.height/2,
+                                txt:txt.slice(0,80)};
+                    el.dispatchEvent(new MouseEvent('mouseover', {bubbles:true}));
                     el.click();
                     return {found:true, synthetic:true, tag:el.tagName, txt:txt.slice(0,80)};
                 }
@@ -815,39 +811,79 @@ class GissBot:
             return {found:false};
         }"""
 
-        # Estratégia 1: localiza via JS + mouse real (hover → click)
+        # Script JS passo 2: containers (td, span, div, li) — fallback se não achou link direto
+        script_container = """(termos) => {
+            const norm = s => {
+                s = (s || '').trim().toLowerCase();
+                return s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\\s+/g,' ');
+            };
+            const sels = 'td[onclick],span[onclick],li[onclick],div[onclick],tr[onclick],td,span,li';
+            for (const el of document.querySelectorAll(sels)) {
+                // Texto DIRETO do elemento (sem filhos) para evitar container genérico
+                const direto = norm((el.childNodes[0] && el.childNodes[0].nodeValue) || '');
+                // Texto completo (inclui filhos)
+                const txt = norm([
+                    el.innerText, el.textContent, el.value,
+                    el.alt, el.title,
+                    el.getAttribute('href'),
+                    el.getAttribute('onclick')
+                ].filter(Boolean).join(' '));
+                if (txt.length > 0 && txt.length < 200 &&
+                        termos.some(t => txt.includes(t))) {
+                    el.scrollIntoView({block:'center', inline:'center'});
+                    const r = el.getBoundingClientRect();
+                    if (r.width > 0 && r.height > 0)
+                        return {found:true, tag:el.tagName,
+                                x:r.left+r.width/2, y:r.top+r.height/2,
+                                txt:txt.slice(0,80)};
+                    el.dispatchEvent(new MouseEvent('mouseover', {bubbles:true}));
+                    el.click();
+                    return {found:true, synthetic:true, tag:el.tagName, txt:txt.slice(0,80)};
+                }
+            }
+            return {found:false};
+        }"""
+
+        def _executar_click(res, f):
+            """Executa o clique com mouse real nas coordenadas retornadas pelo JS."""
+            if res.get("synthetic"):
+                self._log("Clicado '{}' JS sintético (frame {}): tag={} txt={}".format(
+                    texto, f.url[:50], res.get("tag"), res.get("txt","")[:60]))
+                return True
+            fx, fy = 0.0, 0.0
+            try:
+                box_frame = f.frame_element().bounding_box()
+                if box_frame:
+                    fx, fy = box_frame["x"], box_frame["y"]
+            except Exception:
+                pass
+            px = fx + res["x"]
+            py = fy + res["y"]
+            page.mouse.move(px, py)
+            time.sleep(0.25)
+            page.mouse.click(px, py)
+            self._log("Clicado '{}' mouse real ({:.0f},{:.0f}) frame {}: tag={} txt={}".format(
+                texto, px, py, f.url[:40], res.get("tag"), res.get("txt","")[:60]))
+            return True
+
+        # Estratégia 1a: elementos folha (a, button, img) — preferência máxima
+        # Evita pegar o <td> container que agrega o texto de todos os links filhos
         for f in self._todos_frames(page):
             try:
-                res = f.evaluate(script_bbox, termos)
-                if not (res and res.get("found")):
-                    continue
-
-                if res.get("synthetic"):
-                    self._log("Clicado '{}' JS sintético (frame {}): tag={} txt={}".format(
-                        texto, f.url[:50], res.get("tag"), res.get("txt","")[:60]))
-                    return True
-
-                # Tem coordenadas reais — usa mouse da página principal
-                # Para frames filhos, precisa somar o offset do frame no viewport
-                fx, fy = 0.0, 0.0
-                try:
-                    box_frame = f.frame_element().bounding_box()
-                    if box_frame:
-                        fx, fy = box_frame["x"], box_frame["y"]
-                except Exception:
-                    pass
-
-                px = fx + res["x"]
-                py = fy + res["y"]
-
-                page.mouse.move(px, py)
-                time.sleep(0.25)
-                page.mouse.click(px, py)
-                self._log("Clicado '{}' mouse real ({:.0f},{:.0f}) frame {}: tag={} txt={}".format(
-                    texto, px, py, f.url[:40], res.get("tag"), res.get("txt","")[:60]))
-                return True
+                res = f.evaluate(script_folha, termos)
+                if res and res.get("found"):
+                    return _executar_click(res, f)
             except Exception as e:
-                self._log("  JS bbox frame {}: {}".format(f.url[:40], e))
+                self._log("  JS folha frame {}: {}".format(f.url[:40], e))
+
+        # Estratégia 1b: containers (td, span, div) — fallback
+        for f in self._todos_frames(page):
+            try:
+                res = f.evaluate(script_container, termos)
+                if res and res.get("found"):
+                    return _executar_click(res, f)
+            except Exception as e:
+                self._log("  JS container frame {}: {}".format(f.url[:40], e))
 
         # Estratégia 2: Playwright locator → hover() + click()
         regexp = re.compile(re.escape(texto), re.I)
@@ -965,16 +1001,17 @@ class GissBot:
 
     def _tem_confirmacao(self, page):
         """
-        Detecta se apareceu a tela de confirmação do encerramento
+        Detecta se apareceu a tela de CONFIRMAÇÃO DO ENCERRAMENTO
         (indica que a competência tem notas/movimento).
+        Aguarda até 8s para a página carregar antes de verificar.
         """
-        time.sleep(3)
+        time.sleep(5)
         padroes = [
-            r"CLIQUE AQUI",
+            r"CONFIRMAÇÃO.*ENCERRAMENTO",
             r"SE DESEJA ENCERRAR",
             r"TOTAL FATURADO",
             r"TOTAL IMPOSTO",
-            r"CONFIRMA",
+            r"CLIQUE AQUI",
         ]
         for padrao in padroes:
             for f in self._todos_frames(page):
