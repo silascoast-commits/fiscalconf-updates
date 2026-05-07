@@ -761,42 +761,77 @@ class GissBot:
     # Ações no portal                                                      #
     # ------------------------------------------------------------------ #
 
-    def _clicar_link(self, page, texto, timeout_ms=3000):
+    def _clicar_link(self, page, texto, timeout_ms=2000):
         """
-        Clica em link/botão com o texto dado em qualquer frame.
-        Tenta JS recursivo primeiro, depois Playwright locator.
-        """
-        padrao = re.sub(r"[^a-z0-9 ]", "", texto.lower().strip())
+        Clica em elemento com o texto/atributo dado em qualquer frame.
 
-        script = """(p) => {
-            for (var s of ['a','td','span','button',
-                           'input[type="button"]','input[type="submit"]']) {
-                for (var el of document.querySelectorAll(s)) {
-                    var t = (el.innerText||el.value||'')
-                            .toLowerCase().replace(/[^a-z0-9 ]/g,'').trim();
-                    if (t.indexOf(p) !== -1 && t.length < 120) {
-                        el.click();
-                        return el.tagName + ':' + t.slice(0,50);
-                    }
+        Verifica (em ordem): innerText, textContent, value, alt, title, href, onclick.
+        Inclui imagens (img[alt]) e elementos com onclick — necessário para portais
+        legados como GissOnline onde menus podem ser imagens ou funções JS.
+        """
+        # Normaliza: minúsculo + sem acentos para comparação tolerante
+        import unicodedata
+        def _norm(s):
+            s = (s or "").strip().lower()
+            s = "".join(c for c in unicodedata.normalize("NFD", s)
+                        if unicodedata.category(c) != "Mn")
+            return re.sub(r"\s+", " ", s)
+
+        termos = list({_norm(texto), texto.lower().strip()})
+
+        # JS robusto: checa text + todos os atributos relevantes
+        script = """(termos) => {
+            const norm = s => {
+                s = (s || '').trim().toLowerCase();
+                return s.normalize('NFD').replace(/[̀-ͯ]/g,'')
+                        .replace(/\s+/g,' ');
+            };
+            const sels = 'a,button,input,img,td,span,li,div[onclick],tr[onclick]';
+            for (const el of document.querySelectorAll(sels)) {
+                const txt = norm([
+                    el.innerText, el.textContent, el.value,
+                    el.alt, el.title,
+                    el.getAttribute('href'),
+                    el.getAttribute('onclick')
+                ].filter(Boolean).join(' '));
+                if (txt.length > 0 && txt.length < 400 &&
+                        termos.some(t => txt.includes(t))) {
+                    el.scrollIntoView({block:'center',inline:'center'});
+                    el.click();
+                    return {ok:true, tag:el.tagName,
+                            txt:txt.slice(0,80),
+                            onclick:(el.getAttribute('onclick')||'').slice(0,80)};
                 }
             }
-            return null;
+            return {ok:false};
         }"""
+
         for f in self._todos_frames(page):
             try:
-                res = f.evaluate(script, padrao)
-                if res:
-                    self._log("Clicado '{}' via JS.".format(texto))
+                res = f.evaluate(script, termos)
+                if res and res.get("ok"):
+                    self._log("Clicado '{}' via JS (frame {}): tag={} txt={}".format(
+                        texto, f.url[:50], res.get("tag"), res.get("txt","")[:60]))
                     return True
             except Exception:
                 pass
 
+        # Playwright locator — texto e atributos
         regexp = re.compile(re.escape(texto), re.I)
         for frame in self._todos_frames(page):
-            for sel in ["a", "td,li", "span,div,button"]:
+            for sel in ["a", "button", "td,li", "span,div", "input[type='button'],input[type='submit']"]:
                 try:
                     frame.locator(sel).filter(has_text=regexp).first.click(timeout=timeout_ms)
-                    self._log("Clicado '{}' via locator.".format(texto))
+                    self._log("Clicado '{}' via locator '{}' (frame {}).".format(
+                        texto, sel, frame.url[:40]))
+                    return True
+                except Exception:
+                    pass
+            for attr in ["title", "alt", "value"]:
+                try:
+                    frame.locator("[{}*='{}' i]".format(attr, texto)).first.click(timeout=timeout_ms)
+                    self._log("Clicado '{}' via [{}] (frame {}).".format(
+                        texto, attr, frame.url[:40]))
                     return True
                 except Exception:
                     pass

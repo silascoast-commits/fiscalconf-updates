@@ -29,6 +29,30 @@ class _LogRedirect(io.TextIOBase):
         pass
 
 
+def _normalizar_comp(val) -> str:
+    """Converte qualquer formato de competência para MM/AAAA."""
+    import re as _re
+    from datetime import datetime as _dt
+    if val is None:
+        return ""
+    s = str(val).strip()
+    # Já está correto: MM/AAAA ou M/AAAA
+    if _re.match(r"^\d{1,2}/\d{4}$", s):
+        return s
+    # Data Excel serializada como datetime (ex: 2026-04-01 00:00:00)
+    m = _re.match(r"^(\d{4})-(\d{2})-(\d{2})", s)
+    if m:
+        return "{}/{}".format(m.group(2), m.group(1))
+    # Tenta parsear como data nos formatos comuns
+    for fmt in ["%Y-%m-%d", "%d/%m/%Y", "%m/%Y", "%Y/%m"]:
+        try:
+            d = _dt.strptime(s[:10], fmt)
+            return d.strftime("%m/%Y")
+        except Exception:
+            pass
+    return s
+
+
 def _ler_excel(caminho: str) -> list[dict]:
     """
     Lê o Excel e retorna lista de dicts com as chaves:
@@ -82,7 +106,7 @@ def _ler_excel(caminho: str) -> list[dict]:
         if not usuario or not senha:
             continue
 
-        comp  = str(row[idx_comp] or "").strip() if idx_comp is not None else ""
+        comp  = _normalizar_comp(row[idx_comp]) if idx_comp is not None else ""
         nome  = str(row[idx_nome] or usuario).strip() if idx_nome is not None else usuario
 
         def _bool(val):
@@ -304,7 +328,7 @@ class App(tk.Tk):
                     "competencia":  comp,
                     "cliente_nome": emp["cliente_nome"],
                     "download_dir": str(Path.home() / "GissBot_evidencias" / emp["cliente_nome"]),
-                    "headless":     True,
+                    "headless":     False,
                     "estado":       estado,
                     "municipio":    municipio,
                 }
