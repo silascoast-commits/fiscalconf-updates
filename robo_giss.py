@@ -363,100 +363,139 @@ class GissBot:
         """
         Digita a senha no teclado QWERTY virtual do GissOnline.
 
-        ESTRATEGIA PRINCIPAL: injeta a senha diretamente no campo de preview
-        do QWERTY via JavaScript, depois clica Aceitar.
-        Isso contorna o problema de clicks em botões virtuais.
+        BUG ANTERIOR: o JS injetava a senha em TxtIdent (campo de USUARIO),
+        sobrescrevendo o CMC e fazendo login com credenciais erradas.
+
+        CORRECAO:
+          1. Abre o QWERTY clicando na imagem 'ic_use_teclado' ou botão de senha
+          2. Aguarda as teclas ficarem visiveis (pos != 0,0)
+          3. Clica cada caractere (letra OU digito) nas imagens tec_X.gif
+          4. Clica Aceitar para fechar o QWERTY
+          Fallback: injeta no campo de preview excluindo explicitamente TxtIdent
         """
         self._log("Digitando senha ({} chars) via QWERTY...".format(len(self.senha)))
 
-        # --- Estrategia 1: Injeta a senha no campo de preview via JS ---
-        injetado = False
-        try:
-            resultado = page.evaluate("""
-                (senha) => {
-                    // Busca TODOS os inputs visiveis (exceto usuario/identificacao)
-                    var inputs = document.querySelectorAll(
-                        'input[type="text"], input[type="password"], input:not([type])'
-                    );
-                    for (var i = 0; i < inputs.length; i++) {
-                        var r = inputs[i].getBoundingClientRect();
-                        // Preview do QWERTY: visivel (y > 400), nao e o campo usuario (y < 500)
-                        if (r.top > 400 && r.width > 50) {
-                            inputs[i].value = senha;
-                            // Dispara eventos para o JS do portal reconhecer
-                            inputs[i].dispatchEvent(new Event('input',  {bubbles:true}));
-                            inputs[i].dispatchEvent(new Event('change', {bubbles:true}));
-                            inputs[i].dispatchEvent(new KeyboardEvent('keyup', {bubbles:true}));
-                            return 'injetado em: ' + (inputs[i].id || inputs[i].name || 'input#' + i)
-                                   + ' pos=(' + Math.round(r.left) + ',' + Math.round(r.top) + ')';
-                        }
-                    }
-                    return null;
-                }
-            """, self.senha)
-            if resultado:
-                self._log("Senha injetada via JS: {}".format(resultado))
-                injetado = True
-            else:
-                self._log("JS: campo de preview nao encontrado.")
-        except Exception as e:
-            self._log("JS injecao falhou: {}".format(e))
+        # --- ETAPA 1: Abre o QWERTY clicando na area de senha ---
+        qwerty_aberto = False
+        for sel in [
+            "img[src*='ic_use_teclado']",
+            "img[src*='teclado']",
+            "input[name*='senha' i]",
+            "input[type='password']",
+            "a:has-text('senha')",
+            "td:has-text('SENHA')",
+        ]:
+            try:
+                loc = page.locator(sel).first
+                if loc.count() > 0 and loc.is_visible(timeout=1000):
+                    loc.click()
+                    time.sleep(0.8)
+                    qwerty_aberto = True
+                    self._log("QWERTY aberto via '{}'.".format(sel))
+                    break
+            except Exception:
+                pass
 
-        # --- Estrategia 2: Clica teclas por img src (tec_X.gif) ---
-        if not injetado:
-            mapa_qwerty = {}
+        # --- ETAPA 2: Constroi mapa de todas as teclas visiveis (letras + digitos) ---
+        def _ler_mapa_qwerty():
+            mapa = {}
             try:
                 for img in page.locator("img").all():
                     try:
                         src = img.get_attribute("src") or ""
-                        m = __import__('re').search(r"/tec_([A-Za-z])\.gif", src, __import__('re').I)
+                        # Captura letras (tec_A.gif) E digitos (tec_3.gif)
+                        m = re.search(r"/tec_([A-Za-z0-9])\.gif", src, re.I)
                         if not m:
                             continue
-                        letra = m.group(1).upper()
+                        char = m.group(1).upper()
                         box = img.bounding_box()
-                        # Aceita qualquer posicao diferente de (0,0)
                         if box and not (box["x"] == 0 and box["y"] == 0):
-                            mapa_qwerty[letra] = box
+                            mapa[char] = box
                     except Exception:
                         pass
             except Exception:
                 pass
-            self._log("QWERTY mapa img: {} letras".format(len(mapa_qwerty)))
+            return mapa
 
+        mapa = _ler_mapa_qwerty()
+
+        # Se QWERTY nao abriu (sem teclas), tenta aguardar
+        if not mapa and qwerty_aberto:
+            time.sleep(1.5)
+            mapa = _ler_mapa_qwerty()
+
+        self._log("QWERTY mapa: {} teclas — {}".format(
+            len(mapa), sorted(mapa.keys())))
+
+        # --- ETAPA 3: Clica cada caractere ---
+        if mapa:
             for char in self.senha:
                 c_up = char.upper()
                 clicado = False
-                if c_up in mapa_qwerty:
-                    box = mapa_qwerty[c_up]
+
+                if c_up in mapa:
+                    box = mapa[c_up]
                     try:
-                        page.mouse.click(box["x"]+box["width"]/2, box["y"]+box["height"]/2)
+                        page.mouse.click(
+                            box["x"] + box["width"] / 2,
+                            box["y"] + box["height"] / 2)
                         clicado = True
-                        time.sleep(0.1)
-                    except Exception:
-                        pass
+                        time.sleep(0.15)
+                    except Exception as e:
+                        self._log("  Char '{}' mouse.click falhou: {}".format(char, e))
+
                 if not clicado:
-                    # Fallback: clica botao com o texto do char
-                    for sel in ["button", "td", "span"]:
-                        try:
-                            for el in page.locator(sel).all():
-                                txt = el.inner_text().strip()
-                                if txt.upper() == c_up and len(txt) == 1:
-                                    box = el.bounding_box()
-                                    if box and box["width"] > 0 and box["height"] > 0:
-                                        if not (box["x"] == 0 and box["y"] == 0):
-                                            page.mouse.click(
-                                                box["x"]+box["width"]/2,
-                                                box["y"]+box["height"]/2
-                                            )
-                                            clicado = True
-                                            time.sleep(0.1)
-                                            break
-                        except Exception:
-                            pass
-                        if clicado:
-                            break
-                if not clicado:
-                    self._log("  Char '{}' nao clicado no QWERTY.".format(char))
+                    self._log("  Char '{}' nao encontrado no mapa QWERTY.".format(char))
+
+            # Clica Aceitar para fechar o QWERTY
+            for sel_aceitar in [
+                "img[src*='bt_aceitar']",
+                "input[value*='Aceitar' i]",
+                "button:has-text('Aceitar')",
+                "a:has-text('Aceitar')",
+                "td:has-text('Aceitar')",
+            ]:
+                try:
+                    loc = page.locator(sel_aceitar).first
+                    if loc.count() > 0:
+                        loc.click(timeout=2000)
+                        self._log("Aceitar clicado via '{}'.".format(sel_aceitar))
+                        time.sleep(0.5)
+                        break
+                except Exception:
+                    pass
+
+        else:
+            # --- FALLBACK: injeta diretamente no campo de preview (excluindo TxtIdent) ---
+            self._log("Mapa QWERTY vazio — tentando injecao JS (excluindo TxtIdent)...")
+            try:
+                resultado = page.evaluate("""
+                    (senha) => {
+                        var inputs = document.querySelectorAll(
+                            'input[type="text"], input[type="password"], input:not([type])'
+                        );
+                        for (var i = 0; i < inputs.length; i++) {
+                            var el = inputs[i];
+                            var nome = (el.name || el.id || '').toLowerCase();
+                            var r = el.getBoundingClientRect();
+                            // Exclui TxtIdent (campo usuario) e campos acima de y=500
+                            if (nome === 'txtident' || r.top < 500 || r.width < 30) continue;
+                            el.value = senha;
+                            el.dispatchEvent(new Event('input',  {bubbles:true}));
+                            el.dispatchEvent(new Event('change', {bubbles:true}));
+                            el.dispatchEvent(new KeyboardEvent('keyup', {bubbles:true}));
+                            return 'injetado em: ' + (el.id || el.name || 'input#' + i)
+                                   + ' pos=(' + Math.round(r.left) + ',' + Math.round(r.top) + ')';
+                        }
+                        return null;
+                    }
+                """, self.senha)
+                if resultado:
+                    self._log("Senha injetada via JS fallback: {}".format(resultado))
+                else:
+                    self._log("JS fallback: campo de preview nao encontrado.")
+            except Exception as e:
+                self._log("JS fallback falhou: {}".format(e))
 
 
     def _tem_captcha_numerico(self, page):
