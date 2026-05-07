@@ -311,153 +311,191 @@ class GissBot:
             except Exception:
                 pass
 
-    def _capturar_img_captcha(self, page):
-        """Captura a imagem do CAPTCHA (ignora imagens estáticas do layout)."""
-        IGNORAR = [".jpg", "/tec_", "giss-branco", "bt_menu",
-                   "ic_use_teclado", ".svg", ".ico", ".webp"]
-
-        for img in page.locator("img").all():
-            try:
-                src = img.get_attribute("src") or ""
-                src_l = src.lower()
-                if any(x in src_l for x in IGNORAR):
-                    continue
-                self._log("Candidato CAPTCHA: {}".format(src[:80]))
-
-                if src.startswith("data:image"):
-                    dados = base64.b64decode(src.split(",", 1)[1])
-                    self._log("CAPTCHA via data URI ({} bytes).".format(len(dados)))
-                    return dados
-
-                if not src.startswith("http"):
-                    from urllib.parse import urljoin
-                    src = urljoin(page.url, src)
-
-                cookies = {c["name"]: c["value"] for c in page.context.cookies()}
-                resp = requests.get(src, cookies=cookies, timeout=15,
-                                    headers={"Referer": page.url}, verify=False)
-                if resp.status_code == 200 and len(resp.content) > 200:
-                    self._log("CAPTCHA baixado ({} bytes).".format(len(resp.content)))
-                    return resp.content
-            except Exception:
-                pass
-
-        # Fallback: recorte da área acima do campo CAPTCHA
-        try:
-            campo = page.locator("input[placeholder='CAPTCHA']").first
-            box   = campo.bounding_box()
-            if box:
-                clip = {
-                    "x": max(0, box["x"] - 5),
-                    "y": max(0, box["y"] - 58),
-                    "width":  min(box["width"] + 10, 200),
-                    "height": 52,
-                }
-                dados = page.screenshot(clip=clip)
-                self._log("CAPTCHA via clip ({} bytes).".format(len(dados)))
-                return dados
-        except Exception as e:
-            self._log("Clip CAPTCHA falhou: {}".format(e))
-
-        return None
-
-    def _preencher_captcha(self, page, digitos):
+    def _fechar_qwerty_jquery(self, page):
         """
-        Preenche o campo CAPTCHA com os dígitos resolvidos.
-        Tenta fill() direto primeiro; se recusar, usa o teclado numérico virtual.
+        Fecha o teclado QWERTY jQuery do campo SENHA se estiver aberto.
+
+        PROBLEMA: Após fill() no campo TxtSenha, o jQuery-keyboard abre
+        automaticamente e fica posicionado sobre o campo CAPTCHA (top≈505px),
+        bloqueando qualquer interação com o CAPTCHA.
+        SOLUÇÃO: clicar no botão 'Aceitar' do jQuery-keyboard para fechá-lo.
         """
-        # Garante campo limpo antes de preencher
-        for sel in ["input[placeholder='CAPTCHA']",
-                    "input[placeholder*='captcha' i]",
-                    "input[name*='captcha' i]"]:
+        seletores = [
+            "button.ui-keyboard-accept",
+            "button[data-value='Aceitar']",
+            "button[name='accept']",
+            ".ui-keyboard button:has-text('Aceitar')",
+        ]
+        for sel in seletores:
             try:
                 loc = page.locator(sel).first
-                if loc.count() > 0 and loc.is_visible(timeout=2000):
+                if loc.count() > 0 and loc.is_visible(timeout=1500):
                     loc.click()
-                    loc.fill("")           # limpa
-                    loc.fill(digitos)
-                    if loc.input_value().strip():
-                        self._log("CAPTCHA preenchido via fill: '{}'".format(loc.input_value()))
-                        return True
+                    self._log("jQuery QWERTY fechado via '{}'.".format(sel))
+                    time.sleep(0.5)
+                    return True
             except Exception:
                 pass
+        # Tenta pressionar Escape para fechar
+        try:
+            page.keyboard.press("Escape")
+            time.sleep(0.3)
+            self._log("jQuery QWERTY fechado via Escape.")
+            return True
+        except Exception:
+            pass
+        return False
 
-        # Fallback: teclado numérico virtual (tec_0-9.gif)
-        self._log("Fill direto recusado — usando teclado numérico virtual...")
-        mapa = {}
-        for img in page.locator("img").all():
+    def _ler_captcha_do_dom(self, page):
+        """
+        Lê o CAPTCHA diretamente do iframe frmDiv (nroChg.cfm) — SEM 2captcha.
+
+        O portal GissOnline renderiza cada dígito do CAPTCHA como:
+          <img name="numSeq1" src="/images/autentic_9.jpg" value="9">
+          <img name="numSeq2" src="/images/autentic_3.jpg" value="3">
+          ...
+        O atributo 'value' contém o dígito. Lemos e concatenamos em ordem.
+        """
+        for f in self._todos_frames(page):
             try:
-                src = img.get_attribute("src") or ""
-                m = re.search(r"/tec_([0-9])\.gif", src, re.I)
-                if not m:
-                    continue
-                box = img.bounding_box()
-                if box and box["x"] > 0 and box["y"] > 0:
-                    mapa[m.group(1)] = box
+                # Busca imgs com name="numSeqN" (iframe nroChg.cfm)
+                resultado = f.evaluate("""() => {
+                    var imgs = Array.from(document.querySelectorAll('img[name^="numSeq"]'));
+                    if (!imgs.length) return null;
+                    imgs.sort((a,b) => (a.name > b.name ? 1 : -1));
+                    return imgs.map(i => i.getAttribute('value') || '').join('');
+                }""")
+                if resultado and re.match(r"^\d{3,6}$", resultado):
+                    self._log("CAPTCHA lido do DOM (frame {}): '{}'".format(
+                        f.url[:50], resultado))
+                    return resultado
+
+                # Fallback: src com 'autentic_N'
+                resultado2 = f.evaluate("""() => {
+                    var imgs = Array.from(document.querySelectorAll('img[src*="autentic_"]'));
+                    if (!imgs.length) return null;
+                    return imgs.map(i => i.getAttribute('value') || '').join('');
+                }""")
+                if resultado2 and re.match(r"^\d{3,6}$", resultado2):
+                    self._log("CAPTCHA lido via autentic_ (frame {}): '{}'".format(
+                        f.url[:50], resultado2))
+                    return resultado2
             except Exception:
                 pass
+        return None
 
-        if not mapa:
-            self._log("Teclado numérico não encontrado.")
-            return False
+    def _preencher_captcha_js(self, page, digitos):
+        """
+        Preenche o campo CAPTCHA via JavaScript, bypassando o onkeypress
+        fctValidaTeclado que bloqueia digitação normal no campo TxtValida.
+        """
+        resultado = page.evaluate("""(v) => {
+            var el = document.getElementById('TxtValida')
+                  || document.querySelector("input[name='TxtValida']")
+                  || document.querySelector("input[placeholder='CAPTCHA']");
+            if (!el) return 'campo nao encontrado';
+            el.value = v;
+            el.dispatchEvent(new Event('input',  {bubbles:true}));
+            el.dispatchEvent(new Event('change', {bubbles:true}));
+            return 'ok:' + el.value;
+        }""", digitos)
+        self._log("CAPTCHA via JS: {}".format(resultado))
 
-        # Foca o campo CAPTCHA antes de clicar as teclas
-        try:
-            page.locator("input[placeholder='CAPTCHA']").first.click()
-            page.locator("input[placeholder='CAPTCHA']").first.fill("")
-        except Exception:
-            pass
-
-        for d in digitos:
-            if d in mapa:
-                b = mapa[d]
-                page.mouse.click(b["x"] + b["width"] / 2, b["y"] + b["height"] / 2)
-                time.sleep(0.25)
-                self._log("  Dígito '{}' clicado.".format(d))
-
-        try:
-            val = page.locator("input[placeholder='CAPTCHA']").first.input_value()
-            self._log("Campo CAPTCHA após cliques: '{}'".format(val))
-        except Exception:
-            pass
+        # Verifica também em frames filhos
+        if not (resultado or "").startswith("ok:"):
+            for f in self._todos_frames(page):
+                try:
+                    r2 = f.evaluate("""(v) => {
+                        var el = document.getElementById('TxtValida')
+                              || document.querySelector("input[name='TxtValida']");
+                        if (!el) return null;
+                        el.value = v;
+                        return 'ok:' + el.value;
+                    }""", digitos)
+                    if r2 and r2.startswith("ok:"):
+                        self._log("CAPTCHA via JS (frame {}): {}".format(f.url[:40], r2))
+                        break
+                except Exception:
+                    pass
 
         return True
 
     def _resolver_captcha(self, page):
-        """Captura imagem, resolve via 2captcha e preenche o campo."""
+        """
+        Resolve e preenche o CAPTCHA.
+
+        ESTRATÉGIA 1 (preferida): lê os dígitos diretamente do DOM do iframe
+          frmDiv (nroChg.cfm) — os atributos value das imgs autentic_N.jpg
+          contêm o dígito. Gratuito, instantâneo, 100% preciso.
+
+        ESTRATÉGIA 2 (fallback): captura imagem e envia ao 2captcha.
+        """
         self._log("=== Resolvendo CAPTCHA ===")
         self._shot(page, "captcha_antes")
 
-        img_bytes = self._capturar_img_captcha(page)
-        if not img_bytes:
-            raise RuntimeError("Não foi possível capturar a imagem do CAPTCHA.")
+        # Estratégia 1: lê do DOM
+        digitos = self._ler_captcha_do_dom(page)
 
-        nome_img = "{}_{}_{}_captcha.png".format(
-            self._stamp(), self._safe(self.cliente_nome), self._safe(self.competencia))
-        (self.download_dir / nome_img).write_bytes(img_bytes)
-        self.evidencias.append(nome_img)
-        self._log("Imagem CAPTCHA salva: {} ({} bytes)".format(nome_img, len(img_bytes)))
-
-        digitos = ""
-        for tentativa in range(1, 4):
-            try:
-                self._log("2captcha tentativa {}/3...".format(tentativa))
-                digitos = self.captcha.resolver_imagem(img_bytes)
-                if digitos:
-                    break
-            except Exception as e:
-                self._log("2captcha t{} erro: {}".format(tentativa, e))
-                if tentativa < 3:
-                    time.sleep(2)
-                    nova = self._capturar_img_captcha(page)
-                    if nova:
-                        img_bytes = nova
+        # Estratégia 2: 2captcha (fallback)
+        if not digitos:
+            self._log("DOM nao encontrou CAPTCHA — usando 2captcha...")
+            img_bytes = self._capturar_img_captcha_2captcha(page)
+            if not img_bytes:
+                raise RuntimeError("Não foi possível capturar a imagem do CAPTCHA.")
+            nome_img = "{}_{}_{}_captcha.png".format(
+                self._stamp(), self._safe(self.cliente_nome), self._safe(self.competencia))
+            (self.download_dir / nome_img).write_bytes(img_bytes)
+            self.evidencias.append(nome_img)
+            self._log("Imagem CAPTCHA salva: {} ({} bytes)".format(nome_img, len(img_bytes)))
+            for tentativa in range(1, 4):
+                try:
+                    self._log("2captcha tentativa {}/3...".format(tentativa))
+                    digitos = self.captcha.resolver_imagem(img_bytes)
+                    if digitos:
+                        break
+                except Exception as e:
+                    self._log("2captcha t{} erro: {}".format(tentativa, e))
+                    if tentativa < 3:
+                        time.sleep(2)
 
         if not digitos:
-            raise RuntimeError("2captcha não resolveu o CAPTCHA após 3 tentativas.")
+            raise RuntimeError("Não foi possível resolver o CAPTCHA.")
 
         self._log("CAPTCHA resolvido: '{}'".format(digitos))
-        self._preencher_captcha(page, digitos)
+        self._preencher_captcha_js(page, digitos)
+
+    def _capturar_img_captcha_2captcha(self, page):
+        """Captura imagem do CAPTCHA para envio ao 2captcha (fallback)."""
+        IGNORAR = [".jpg", "/tec_", "giss-branco", "bt_menu",
+                   "ic_use_teclado", ".svg", ".ico", ".webp"]
+        for img in page.locator("img").all():
+            try:
+                src = img.get_attribute("src") or ""
+                if any(x in src.lower() for x in IGNORAR):
+                    continue
+                if src.startswith("data:image"):
+                    return base64.b64decode(src.split(",", 1)[1])
+                if not src.startswith("http"):
+                    from urllib.parse import urljoin
+                    src = urljoin(page.url, src)
+                cookies = {c["name"]: c["value"] for c in page.context.cookies()}
+                resp = requests.get(src, cookies=cookies, timeout=15,
+                                    headers={"Referer": page.url}, verify=False)
+                if resp.status_code == 200 and len(resp.content) > 200:
+                    return resp.content
+            except Exception:
+                pass
+        # Clip acima do campo CAPTCHA
+        try:
+            campo = page.locator("input[placeholder='CAPTCHA']").first
+            box = campo.bounding_box()
+            if box:
+                clip = {"x": max(0, box["x"]-5), "y": max(0, box["y"]-58),
+                        "width": min(box["width"]+10, 200), "height": 52}
+                return page.screenshot(clip=clip)
+        except Exception:
+            pass
+        return None
 
     def _clicar_acessar(self, page):
         for sel in ["button:has-text('Acessar')", "input[value='Acessar']",
@@ -521,9 +559,14 @@ class GissBot:
             self._digitar_senha_qwerty(page)
 
         time.sleep(0.5)
+
+        # Fecha o jQuery QWERTY que abre automaticamente ao clicar no campo SENHA.
+        # Ele cobre fisicamente o campo CAPTCHA (top≈505px) e bloqueia interações.
+        self._fechar_qwerty_jquery(page)
+        time.sleep(0.5)
         self._shot(page, "02_campos_preenchidos")
 
-        # CAPTCHA
+        # CAPTCHA — lê do DOM do iframe (gratuito) ou 2captcha como fallback
         self._resolver_captcha(page)
         time.sleep(0.5)
         self._shot(page, "03_captcha_preenchido")
