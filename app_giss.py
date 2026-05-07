@@ -66,6 +66,8 @@ def _ler_excel(caminho: str) -> list[dict]:
     idx_nome       = _col(["nome", "cliente", "empresa", "razao"])
     idx_prestador  = _col(["prestador"])
     idx_tomador    = _col(["tomador"])
+    idx_estado     = _col(["estado", "uf"])
+    idx_municipio  = _col(["municipio", "município", "cidade"])
 
     if idx_usuario is None or idx_senha is None:
         raise ValueError(
@@ -92,6 +94,9 @@ def _ler_excel(caminho: str) -> list[dict]:
         prestador = _bool(row[idx_prestador]) if idx_prestador is not None else True
         tomador   = _bool(row[idx_tomador])   if idx_tomador   is not None else True
 
+        estado    = str(row[idx_estado]    or "").strip() if idx_estado    is not None else ""
+        municipio = str(row[idx_municipio] or "").strip() if idx_municipio is not None else ""
+
         empresas.append({
             "usuario":     usuario,
             "senha":       senha,
@@ -99,6 +104,8 @@ def _ler_excel(caminho: str) -> list[dict]:
             "cliente_nome": nome,
             "prestador":   prestador,
             "tomador":     tomador,
+            "estado":      estado,
+            "municipio":   municipio,
         })
 
     if not empresas:
@@ -118,13 +125,23 @@ class App(tk.Tk):
     def _build(self):
         pad = {"padx": 10, "pady": 6}
 
-        # ── Competência global ────────────────────────────────────────
-        frame_top = ttk.LabelFrame(self, text="Competência padrão (usada quando não definida no Excel)")
+        # ── Competência + Estado padrão ───────────────────────────────
+        frame_top = ttk.LabelFrame(self, text="Padrões (usados quando não definidos no Excel)")
         frame_top.grid(row=0, column=0, columnspan=3, sticky="ew", **pad)
 
         ttk.Label(frame_top, text="Competência (MM/AAAA):").grid(row=0, column=0, sticky="w", padx=8, pady=4)
         self.var_comp = tk.StringVar(value="04/2026")
         ttk.Entry(frame_top, textvariable=self.var_comp, width=12).grid(row=0, column=1, sticky="w", padx=8, pady=4)
+
+        ttk.Label(frame_top, text="Estado (UF):").grid(row=0, column=2, sticky="w", padx=8, pady=4)
+        self.var_estado = tk.StringVar(value="SP")
+        ttk.Entry(frame_top, textvariable=self.var_estado, width=5).grid(row=0, column=3, sticky="w", padx=4, pady=4)
+
+        ttk.Label(frame_top, text="Município (nome parcial):").grid(row=0, column=4, sticky="w", padx=8, pady=4)
+        self.var_municipio = tk.StringVar(value="")
+        ttk.Entry(frame_top, textvariable=self.var_municipio, width=20).grid(row=0, column=5, sticky="w", padx=4, pady=4)
+        ttk.Label(frame_top, text="(deixe vazio = primeiro da lista)", foreground="gray").grid(
+            row=1, column=4, columnspan=2, sticky="w", padx=8)
 
         # ── Excel ─────────────────────────────────────────────────────
         frame_xl = ttk.LabelFrame(self, text="Planilha Excel com empresas")
@@ -191,7 +208,8 @@ class App(tk.Tk):
             ws = wb.active
             ws.title = "Empresas"
 
-            cabecalho = ["cliente_nome", "usuario", "senha", "competencia", "prestador", "tomador"]
+            cabecalho = ["cliente_nome", "usuario", "senha", "competencia",
+                         "prestador", "tomador", "estado", "municipio"]
             ws.append(cabecalho)
 
             # Formata cabeçalho
@@ -203,9 +221,9 @@ class App(tk.Tk):
                 cell.alignment = Alignment(horizontal="center")
 
             # Exemplos
-            ws.append(["Empresa A",  "123456", "senha123", "04/2026", "SIM", "SIM"])
-            ws.append(["Empresa B",  "789012", "senha456", "04/2026", "SIM", "NAO"])
-            ws.append(["Empresa C",  "345678", "senha789", "",        "SIM", "SIM"])
+            ws.append(["Empresa A", "123456", "senha123", "04/2026", "SIM", "SIM", "SP", "SAO PAULO"])
+            ws.append(["Empresa B", "789012", "senha456", "04/2026", "SIM", "NAO", "MG", "BELO HORIZONTE"])
+            ws.append(["Empresa C", "345678", "senha789", "",        "SIM", "SIM", "SP", ""])
 
             for col in ws.columns:
                 ws.column_dimensions[col[0].column_letter].width = 16
@@ -266,23 +284,29 @@ class App(tk.Tk):
 
     def _rodar_lote(self):
         from robo_giss import GissBot
-        comp_padrao = self.var_comp.get().strip()
-        resultados  = []
+        comp_padrao      = self.var_comp.get().strip()
+        estado_padrao    = self.var_estado.get().strip().upper() or "SP"
+        municipio_padrao = self.var_municipio.get().strip()
+        resultados       = []
 
         for i, emp in enumerate(self._empresas, 1):
-            comp = emp["competencia"] or comp_padrao
-            print("\n{'='*60}")
-            print(f"[{i}/{len(self._empresas)}] {emp['cliente_nome']} | {emp['usuario']} | {comp}")
+            comp      = emp["competencia"] or comp_padrao
+            estado    = emp.get("estado")    or estado_padrao
+            municipio = emp.get("municipio") or municipio_padrao
+            print("\n" + "="*60)
+            print(f"[{i}/{len(self._empresas)}] {emp['cliente_nome']} | {emp['usuario']} | {comp} | {estado}")
             print("="*60)
 
             try:
                 config = {
-                    "usuario":     emp["usuario"],
-                    "senha":       emp["senha"],
-                    "competencia": comp,
+                    "usuario":      emp["usuario"],
+                    "senha":        emp["senha"],
+                    "competencia":  comp,
                     "cliente_nome": emp["cliente_nome"],
                     "download_dir": str(Path.home() / "GissBot_evidencias" / emp["cliente_nome"]),
-                    "headless":    True,
+                    "headless":     True,
+                    "estado":       estado,
+                    "municipio":    municipio,
                 }
                 bot = GissBot(config)
                 res = bot.run(

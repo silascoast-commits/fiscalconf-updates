@@ -169,6 +169,8 @@ class GissBot:
         self.download_dir = Path(config.get("download_dir", "."))
         self.headless     = bool(config.get("headless", False))
         self.captcha_timeout_manual = int(config.get("captcha_timeout_manual", 300))
+        self.estado       = config.get("estado", "SP")   # UF para tela de seleção de município
+        self.municipio    = config.get("municipio", "")  # nome parcial do município (opcional)
 
         self.download_dir.mkdir(parents=True, exist_ok=True)
         self.evidencias = []
@@ -222,17 +224,128 @@ class GissBot:
             return ""
 
     def _eh_url_portal(self, url):
-        """Verifica se a URL é o portal interno do GissOnline.
-        O popup abre em www.gissonline.com.br/interna/default.cfm
-        (às vezes wwwx.gissonline.com.br).
-        """
+        """Verifica se a URL é o portal interno do GissOnline."""
         url = url.lower()
         return (
             "gissonline" in url and
             ("interna" in url or "default.cfm" in url) and
-            "afterlogin" not in url and
-            "login/index" not in url
+            "afterlogin"    not in url and
+            "login/index"   not in url and
+            "troca_senha"   not in url and
+            "seleciona_est" not in url
         )
+
+    def _eh_tela_selecao_municipio(self, url):
+        url = url.lower()
+        return "troca_senha" in url or "seleciona_estado" in url
+
+    def _tratar_selecao_municipio(self, page):
+        """
+        Trata a tela obrigatória de seleção de estado/município que aparece
+        após o login em portal.gissonline.com.br/troca_senha/seleciona_estado.cfm.
+
+        Fluxo:
+          1. Seleciona o estado no <select name="Estado">
+          2. Aguarda o iframe 'cidades' carregar as cidades via AJAX
+          3. Clica no primeiro link de cidade (ou no que corresponde a self.municipio)
+             — cada link chama parent.enviaCidade(cidade, estado) que submete o form
+          4. Aguarda redirect para o portal real (interna/default.cfm)
+        """
+        self._log("=== Tela de seleção de município detectada ===")
+        self._shot(page, "selecao_municipio_inicio")
+
+        estado = (self.estado or "SP").upper()
+        self._log("Selecionando estado: {}".format(estado))
+
+        # 1. Seleciona estado
+        try:
+            page.select_option("select[name='Estado']", value=estado, timeout=5000)
+            self._log("Estado '{}' selecionado.".format(estado))
+        except Exception as e:
+            self._log("Erro ao selecionar estado: {} — tentando JS".format(e))
+            try:
+                page.evaluate("""
+                    (uf) => {
+                        var sel = document.querySelector("select[name='Estado']");
+                        if (sel) { sel.value = uf; sel.dispatchEvent(new Event('change', {bubbles:true})); }
+                    }
+                """, estado)
+            except Exception as e2:
+                self._log("JS estado falhou: {}".format(e2))
+
+        # 2. Aguarda iframe cidades carregar
+        time.sleep(3)
+
+        # 3. Clica na cidade correta dentro do iframe
+        cidade_clicada = False
+        for tentativa in range(3):
+            for f in self._todos_frames(page):
+                if "cidades" not in (f.name or f.url).lower():
+                    continue
+                try:
+                    links = f.locator("a").all()
+                    self._log("Iframe cidades: {} links encontrados.".format(len(links)))
+                    for link in links:
+                        try:
+                            txt = link.inner_text().strip()
+                            if not txt:
+                                continue
+                            # Usa municipio configurado ou o primeiro disponível
+                            if (not self.municipio or
+                                    self.municipio.lower() in txt.lower()):
+                                self._log("Clicando cidade: '{}'".format(txt))
+                                link.click(timeout=3000)
+                                cidade_clicada = True
+                                time.sleep(3)
+                                break
+                        except Exception:
+                            pass
+                    if cidade_clicada:
+                        break
+                except Exception as e:
+                    self._log("Erro iframe cidades tentativa {}: {}".format(tentativa+1, e))
+            if cidade_clicada:
+                break
+            self._log("Aguardando cidades carregarem... tentativa {}".format(tentativa+1))
+            time.sleep(2)
+
+        if not cidade_clicada:
+            # Fallback: submete o form sem cidade (alguns portais aceitam)
+            self._log("Nenhuma cidade clicada — tentando submit direto.")
+            try:
+                page.evaluate("""
+                    () => {
+                        var f = document.frmEstado || document.forms[0];
+                        if (f) f.submit();
+                    }
+                """)
+            except Exception as e:
+                self._log("Submit fallback falhou: {}".format(e))
+
+        # 4. Aguarda redirect para o portal real (até 20s)
+        self._log("Aguardando redirect para o portal após seleção de município...")
+        time.sleep(2)
+        for _ in range(20):
+            time.sleep(1)
+            try:
+                url_atual = page.url.lower()
+                if self._eh_url_portal(url_atual):
+                    self._log("Portal carregado após seleção de município: {}".format(url_atual))
+                    self._shot(page, "portal_apos_municipio")
+                    return page
+                # Verifica outras abas
+                for p in page.context.pages:
+                    if self._eh_url_portal(p.url.lower()):
+                        self._log("Portal em nova aba: {}".format(p.url))
+                        p.bring_to_front()
+                        self._shot(p, "portal_apos_municipio")
+                        return p
+            except Exception:
+                pass
+
+        self._log("AVISO: redirect não detectado após seleção de município.")
+        self._shot(page, "pos_selecao_municipio")
+        return page
 
     def _esta_no_portal(self, page):
         url = self._url_atual(page)
@@ -847,11 +960,17 @@ class GissBot:
                 p.wait_for_load_state("domcontentloaded", timeout=15000)
                 p.bring_to_front()
                 time.sleep(2)
-                self._shot(p, "05_portal_ok")
-                self._log("Portal carregado!")
-                return p
-            except Exception:
-                pass
+
+                # Tela intermediária de seleção de município?
+                if self._eh_tela_selecao_municipio(p.url):
+                    p = self._tratar_selecao_municipio(p)
+
+                if self._eh_url_portal(p.url):
+                    self._shot(p, "05_portal_ok")
+                    self._log("Portal carregado!")
+                    return p
+            except Exception as e:
+                self._log("Erro ao processar aba capturada: {}".format(e))
 
         # Aceita qualquer alert que apareça durante a espera
         try:
