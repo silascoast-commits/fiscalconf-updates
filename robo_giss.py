@@ -882,10 +882,15 @@ class GissBot:
         return False
 
     def _preencher_competencia(self, page):
-        """Preenche Mês e Ano em qualquer frame."""
+        """Preenche Mês e Ano em qualquer frame (input ou select)."""
         script = """([mes, ano]) => {
             var r = [];
-            for (var s of ['input[name*="mes" i]','input[id*="mes" i]','input[size="2"]']) {
+            // Mês: input ou select
+            var mesSelectors = [
+                'select[name*="mes" i]','select[id*="mes" i]',
+                'input[name*="mes" i]','input[id*="mes" i]','input[size="2"]'
+            ];
+            for (var s of mesSelectors) {
                 var el = document.querySelector(s);
                 if (el && el.type !== 'hidden') {
                     el.value = mes;
@@ -894,7 +899,12 @@ class GissBot:
                     r.push('mes'); break;
                 }
             }
-            for (var s of ['input[name*="ano" i]','input[id*="ano" i]','input[size="4"]']) {
+            // Ano: input ou select
+            var anoSelectors = [
+                'select[name*="ano" i]','select[id*="ano" i]',
+                'input[name*="ano" i]','input[id*="ano" i]','input[size="4"]'
+            ];
+            for (var s of anoSelectors) {
                 var el = document.querySelector(s);
                 if (el && el.type !== 'hidden') {
                     el.value = ano;
@@ -917,26 +927,38 @@ class GissBot:
             except Exception:
                 pass
 
-        # Fallback: locator direto em cada frame
+        # Fallback: locator direto — input e select
         if not ok_mes or not ok_ano:
             for f in self._todos_frames(page):
-                for sel, val, flag in [
-                    ("input[name*='mes' i],input[id*='mes' i],input[size='2']",
-                     self.comp_mes, "mes"),
-                    ("input[name*='ano' i],input[id*='ano' i],input[size='4']",
-                     self.comp_ano, "ano"),
+                for sel_base, val, flag in [
+                    ("mes", self.comp_mes, "mes"),
+                    ("ano", self.comp_ano, "ano"),
                 ]:
                     if (flag == "mes" and ok_mes) or (flag == "ano" and ok_ano):
                         continue
-                    try:
-                        loc = f.locator(sel).first
-                        if loc.count() > 0:
-                            loc.triple_click()
-                            loc.fill(val)
-                            if flag == "mes": ok_mes = True
-                            else:             ok_ano  = True
-                    except Exception:
-                        pass
+                    sels = [
+                        "select[name*='{}' i]".format(sel_base),
+                        "select[id*='{}' i]".format(sel_base),
+                        "input[name*='{}' i]".format(sel_base),
+                        "input[id*='{}' i]".format(sel_base),
+                    ]
+                    for sel in sels:
+                        try:
+                            loc = f.locator(sel).first
+                            if loc.count() > 0:
+                                tag = loc.evaluate("el => el.tagName")
+                                if tag == "SELECT":
+                                    loc.select_option(val)
+                                else:
+                                    loc.triple_click()
+                                    loc.fill(val)
+                                if flag == "mes": ok_mes = True
+                                else:             ok_ano  = True
+                                break
+                        except Exception:
+                            pass
+                    if (flag == "mes" and ok_mes) or (flag == "ano" and ok_ano):
+                        break
 
         self._log("Competência {}/{} preenchida: mes={} ano={}".format(
             self.comp_mes, self.comp_ano, ok_mes, ok_ano))
@@ -1004,6 +1026,93 @@ class GissBot:
         return False
 
     # ------------------------------------------------------------------ #
+    # Clique nas abas PRESTADOR / TOMADOR                                  #
+    # ------------------------------------------------------------------ #
+
+    def _clicar_aba_modulo(self, page, modulo):
+        """
+        Clica na aba PRESTADOR ou TOMADOR com estratégias específicas do GissOnline.
+
+        PROBLEMA OBSERVADO: o portal tem um <td> container cujo onclick contém
+          /*clickprestador();*/ /*clicktomador();*/   (comentários JS — não executam!)
+        O _clicar_link genérico encontra esse TD primeiro e clica nele sem efeito.
+
+        SOLUÇÃO: chamar clickprestador() / clicktomador() diretamente via JS,
+        ou buscar especificamente o elemento cujo onclick contém SOMENTE a função
+        do módulo desejado (sem a outra função junto).
+        """
+        eh_prestador = "PREST" in modulo.upper()
+        func_nome  = "clickprestador" if eh_prestador else "clicktomador"
+        outro_func = "clicktomador"   if eh_prestador else "clickprestador"
+
+        # Estratégia 1: chama a função JS diretamente em cada frame
+        for f in self._todos_frames(page):
+            try:
+                ok = f.evaluate(
+                    "(fn) => { if(typeof window[fn]==='function'){ window[fn](); return true; } return false; }",
+                    func_nome
+                )
+                if ok:
+                    self._log("Aba '{}' via {}() direto no frame {}.".format(
+                        modulo, func_nome, f.url[:50]))
+                    return True
+            except Exception:
+                pass
+
+        # Estratégia 2: encontra elemento com onclick que contém SÓ a função
+        # desejada (não a outra junto) — exclui containers com ambas
+        script_aba = """([fn, outro]) => {
+            const sels = 'a,button,img,input,td[onclick],span[onclick],div[onclick]';
+            for (const el of document.querySelectorAll(sels)) {
+                const oc = (el.getAttribute('onclick') || '').toLowerCase()
+                              .replace(/\\/\\*[^*]*\\*\\//g,'');   // remove comentários /* */
+                if (oc.includes(fn) && !oc.includes(outro)) {
+                    el.scrollIntoView({block:'center', inline:'center'});
+                    const r = el.getBoundingClientRect();
+                    if (r.width > 0 && r.height > 0)
+                        return {found:true, x: r.left+r.width/2, y: r.top+r.height/2,
+                                tag:el.tagName, oc:oc.slice(0,80)};
+                    // sem área visível — tenta click direto
+                    el.dispatchEvent(new MouseEvent('mouseover', {bubbles:true}));
+                    el.click();
+                    return {found:true, synthetic:true, tag:el.tagName, oc:oc.slice(0,80)};
+                }
+            }
+            return {found:false};
+        }"""
+
+        for f in self._todos_frames(page):
+            try:
+                res = f.evaluate(script_aba, [func_nome, outro_func])
+                if not (res and res.get("found")):
+                    continue
+                if res.get("synthetic"):
+                    self._log("Aba '{}' via onclick específico (frame {}): {}".format(
+                        modulo, f.url[:50], res.get("oc","")))
+                    return True
+                # Coordenadas reais → mouse
+                fx, fy = 0.0, 0.0
+                try:
+                    box_frame = f.frame_element().bounding_box()
+                    if box_frame:
+                        fx, fy = box_frame["x"], box_frame["y"]
+                except Exception:
+                    pass
+                px, py = fx + res["x"], fy + res["y"]
+                page.mouse.move(px, py)
+                time.sleep(0.3)
+                page.mouse.click(px, py)
+                self._log("Aba '{}' mouse real ({:.0f},{:.0f}) frame {}: tag={} oc={}".format(
+                    modulo, px, py, f.url[:40], res.get("tag"), res.get("oc","")[:60]))
+                return True
+            except Exception as e:
+                self._log("  _clicar_aba frame {}: {}".format(f.url[:40], e))
+
+        # Fallback: _clicar_link genérico
+        self._log("Fallback _clicar_link para aba '{}'.".format(modulo))
+        return self._clicar_link(page, modulo)
+
+    # ------------------------------------------------------------------ #
     # Encerramento por módulo                                              #
     # ------------------------------------------------------------------ #
 
@@ -1036,10 +1145,10 @@ class GissBot:
         # Salva estrutura dos frames para diagnóstico
         self._salvar_evidencias_frames(page, "{}_entrada".format(modulo.lower()))
 
-        # Passo 1: clica aba — tenta várias vezes pois frames podem estar carregando
+        # Passo 1: clica aba — usa _clicar_aba_modulo (chamada direta de clickprestador/clicktomador)
         clicou_aba = False
         for tentativa in range(5):
-            if self._clicar_link(page, modulo):
+            if self._clicar_aba_modulo(page, modulo):
                 clicou_aba = True
                 self._log("Aba '{}' clicada (tentativa {}).".format(modulo, tentativa + 1))
                 time.sleep(3)
@@ -1097,7 +1206,7 @@ class GissBot:
 
             # Re-navega para o módulo se necessário
             for _ in range(2):
-                if self._clicar_link(page, modulo):
+                if self._clicar_aba_modulo(page, modulo):
                     time.sleep(2)
                     break
                 time.sleep(2)
