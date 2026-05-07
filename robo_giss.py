@@ -1120,110 +1120,79 @@ class GissBot:
         """
         Encerra escrituração para PRESTADOR ou TOMADOR.
 
-        Fluxo:
-          1. Clica aba (PRESTADOR ou TOMADOR) no menu superior
-          2. Preenche Mês e Ano da competência
-          3. SE tem notas/movimento:
-               → Clica "Encerrar Escrituração" → confirma com "CLIQUE AQUI"
-          4. SE sem movimento:
-               → Clica "Encerrar Sem Movimento"
+        Fluxo real (confirmado pelo usuário):
+          1. Clica aba PRESTADOR ou TOMADOR no menu superior do portal
+          2. Uma NOVA JANELA (popup) abre com o formulário de competência
+          3. Preenche Mês e Ano na nova janela
+          4. Clica "Encerrar Escrituração" (se tem movimento → confirma "CLIQUE AQUI")
+             OU "Encerrar Sem Movimento" (se não tem movimento)
         """
         self._log("=" * 50)
         self._log("=== {} ===".format(modulo))
         self._log("=" * 50)
         self._shot(page, "{}_inicio".format(modulo.lower()))
 
-        # Aguarda carregamento completo de todos os frames
+        # Aguarda carregamento completo
         for _ in range(3):
             try:
                 page.wait_for_load_state("networkidle", timeout=10000)
                 break
             except Exception:
                 pass
-        time.sleep(3)
+        time.sleep(2)
 
-        # Salva estrutura dos frames para diagnóstico
         self._salvar_evidencias_frames(page, "{}_entrada".format(modulo.lower()))
 
-        # Passo 1: clica aba — usa _clicar_aba_modulo (chamada direta de clickprestador/clicktomador)
-        clicou_aba = False
-        for tentativa in range(5):
-            if self._clicar_aba_modulo(page, modulo):
-                clicou_aba = True
-                self._log("Aba '{}' clicada (tentativa {}).".format(modulo, tentativa + 1))
-                time.sleep(3)
-                break
-            self._log("Aba '{}' não encontrada (tentativa {}), aguardando...".format(
-                modulo, tentativa + 1))
-            # Aguarda frames recarregarem
-            for _ in range(2):
-                try:
-                    page.wait_for_load_state("networkidle", timeout=5000)
-                    break
-                except Exception:
-                    pass
-            time.sleep(3)
+        # Passo 1: clica aba e captura nova janela que abre via window.open
+        janela = self._abrir_janela_modulo(page, modulo)
 
-        if not clicou_aba:
-            # Portal pode já estar na aba correta — continua sem erro
-            self._log("AVISO: aba '{}' não clicada — assumindo que já está ativa.".format(modulo))
+        self._shot(janela, "{}_janela".format(modulo.lower()))
+        self._salvar_evidencias_frames(janela, "{}_janela".format(modulo.lower()))
 
-        self._shot(page, "{}_aba".format(modulo.lower()))
-
-        # Passo 2: preenche competência
-        self._preencher_competencia(page)
+        # Passo 2: preenche Mês e Ano na nova janela
+        self._preencher_competencia(janela)
         time.sleep(1)
-        self._shot(page, "{}_competencia".format(modulo.lower()))
-
-        # Salva estrutura após clicar a aba (para diagnóstico)
-        self._salvar_evidencias_frames(page, "{}_pos_aba".format(modulo.lower()))
-        self._shot(page, "{}_pos_aba".format(modulo.lower()))
+        self._shot(janela, "{}_competencia".format(modulo.lower()))
 
         # Passo 3: tenta Encerrar Escrituração
         clicou_encerrar = False
         for texto in ["Encerrar Escrituração", "Encerrar Escrituracao", "Encerrar Escrit"]:
-            if self._clicar_link(page, texto):
+            if self._clicar_link(janela, texto):
                 clicou_encerrar = True
                 self._log("{}: 'Encerrar Escrituração' clicado.".format(modulo))
                 break
 
         # Passo 4: detecta resultado
-        if clicou_encerrar and self._tem_confirmacao(page):
-            # Tem movimento → confirma encerramento
+        if clicou_encerrar and self._tem_confirmacao(janela):
             self._log("{}: tem movimento → confirmando...".format(modulo))
-            confirmado = self._confirmar_encerramento(page)
+            confirmado = self._confirmar_encerramento(janela)
             resultado = "ENCERRADO" if confirmado else "VERIFICAR_MANUAL"
 
         else:
-            # Sem confirmação (sem movimento) OU "Encerrar Escrituração" não encontrado
-            # → tenta "Encerrar Sem Movimento" diretamente
             if not clicou_encerrar:
-                self._log("{}: 'Encerrar Escrituração' não encontrado — tentando 'Encerrar Sem Movimento'.".format(modulo))
+                self._log("{}: 'Encerrar Escrituração' não encontrado → tentando 'Encerrar Sem Movimento'.".format(modulo))
             else:
                 self._log("{}: sem confirmação → tentando 'Encerrar Sem Movimento'.".format(modulo))
 
-            self._shot(page, "{}_sem_confirmacao".format(modulo.lower()))
+            self._shot(janela, "{}_sem_confirmacao".format(modulo.lower()))
 
-            # Re-navega para o módulo se necessário
-            for _ in range(2):
-                if self._clicar_aba_modulo(page, modulo):
-                    time.sleep(2)
-                    break
-                time.sleep(2)
-            self._preencher_competencia(page)
-            time.sleep(1)
-
-            if self._clicar_link(page, "Encerrar Sem Movimento"):
+            if self._clicar_link(janela, "Encerrar Sem Movimento"):
                 self._log("{}: 'Encerrar Sem Movimento' clicado.".format(modulo))
                 time.sleep(2)
-                self._confirmar_encerramento(page)
+                self._confirmar_encerramento(janela)
                 resultado = "SEM_MOVIMENTO"
             else:
-                self._shot(page, "{}_erro_botoes".format(modulo.lower()))
+                self._shot(janela, "{}_erro_botoes".format(modulo.lower()))
                 raise RuntimeError(
                     "Nem 'Encerrar Escrituração' nem 'Encerrar Sem Movimento' encontrado para {}. "
                     "Verifique screenshots e frames.json nas evidências.".format(modulo)
                 )
+
+        # Fecha janela do módulo e volta ao portal
+        try:
+            janela.close()
+        except Exception:
+            pass
 
         self._save_txt(
             "{}_resultado".format(modulo.lower()),
@@ -1236,6 +1205,43 @@ class GissBot:
         )
         self._log("=== {} concluído: {} ===".format(modulo, resultado))
         return resultado
+
+    def _abrir_janela_modulo(self, page, modulo):
+        """
+        Clica na aba PRESTADOR/TOMADOR e captura a nova janela que abre
+        via window.open(). Tenta até 3 vezes caso a janela não apareça.
+
+        Retorna a Page da nova janela, ou a própria page se não abrir nova.
+        """
+        for tentativa in range(3):
+            self._log("Abrindo janela '{}' (tentativa {}/3)...".format(modulo, tentativa + 1))
+
+            try:
+                with page.context.expect_page(timeout=8000) as nova_info:
+                    self._clicar_aba_modulo(page, modulo)
+                nova = nova_info.value
+                nova.wait_for_load_state("domcontentloaded", timeout=20000)
+                nova.bring_to_front()
+                self._log("Nova janela '{}' capturada: {}".format(modulo, nova.url))
+                return nova
+            except Exception as e:
+                self._log("  expect_page t{}: {} — verificando abas existentes...".format(
+                    tentativa + 1, e))
+
+            # Verifica se uma nova aba já foi aberta sem capturar
+            for p in page.context.pages:
+                url = p.url.lower()
+                if modulo.lower() in url or "escrit" in url or "encerr" in url:
+                    p.bring_to_front()
+                    self._log("Janela '{}' encontrada em aba existente: {}".format(modulo, p.url))
+                    return p
+
+            time.sleep(3)
+
+        # Fallback: usa a mesma página (pode ser que seja SPA ou frame inline)
+        self._log("AVISO: nova janela não capturada — usando página atual.")
+        return page
+
 
     # ------------------------------------------------------------------ #
     # Diagnóstico: salva HTML de cada frame                               #
