@@ -989,38 +989,87 @@ class GissBot:
 
     def _confirmar_encerramento(self, page):
         """
-        Clica no link de confirmação positiva do encerramento.
-        Busca por links com 'CLIQUE AQUI' que NÃO sejam de cancelamento.
+        Na tela de CONFIRMAÇÃO DO ENCERRAMENTO, clica em:
+          "SE DESEJA ENCERRAR A COMPETÊNCIA CLIQUE AQUI"  ← primeiro link
+        e NÃO em:
+          "SE NÃO DESEJA EFETUAR O ENCERRAMENTO CLIQUE AQUI"  ← segundo link
+
+        Estratégia: busca o texto âncora "SE DESEJA ENCERRAR" no HTML de cada
+        frame e clica no link mais próximo a ele (que não tenha "NÃO").
         """
         self._shot(page, "tela_confirmacao")
+        time.sleep(1)
+
+        # Estratégia 1: clica no link cujo texto pai contém "SE DESEJA ENCERRAR"
+        # mas NÃO contém "NÃO" — exclui o link de cancelamento
+        script_conf = """() => {
+            // Procura todos os links com texto "CLIQUE AQUI"
+            var links = Array.from(document.querySelectorAll('a'));
+            for (var lnk of links) {
+                var txt = (lnk.innerText || lnk.textContent || '').trim().toUpperCase();
+                if (!txt.includes('CLIQUE')) continue;
+                // Verifica o texto ao redor (linha/célula) para distinguir dos dois links
+                var parent = lnk.parentElement;
+                var ctx = '';
+                for (var i = 0; i < 3 && parent; i++) {
+                    ctx = (parent.innerText || parent.textContent || '').toUpperCase();
+                    if (ctx.includes('SE DESEJA') || ctx.includes('NÃO DESEJA') || ctx.includes('NAO DESEJA'))
+                        break;
+                    parent = parent.parentElement;
+                }
+                // Confirma se o contexto é "SE DESEJA ENCERRAR" (não o de cancelamento)
+                if (ctx.includes('SE DESEJA') && !ctx.includes('NÃO DESEJA') && !ctx.includes('NAO DESEJA')) {
+                    var r = lnk.getBoundingClientRect();
+                    if (r.width > 0 && r.height > 0)
+                        return {found:true, x:r.left+r.width/2, y:r.top+r.height/2, ctx:ctx.slice(0,100)};
+                    lnk.click();
+                    return {found:true, synthetic:true, ctx:ctx.slice(0,100)};
+                }
+            }
+            return {found:false};
+        }"""
 
         for f in self._todos_frames(page):
             try:
+                res = f.evaluate(script_conf)
+                if not (res and res.get("found")):
+                    continue
+                self._log("Confirmação encontrada: {}".format(res.get("ctx","")[:80]))
+                if res.get("synthetic"):
+                    time.sleep(3)
+                    self._shot(page, "encerramento_confirmado")
+                    return True
+                fx, fy = 0.0, 0.0
+                try:
+                    box_frame = f.frame_element().bounding_box()
+                    if box_frame:
+                        fx, fy = box_frame["x"], box_frame["y"]
+                except Exception:
+                    pass
+                px, py = fx + res["x"], fy + res["y"]
+                page.mouse.move(px, py)
+                time.sleep(0.2)
+                page.mouse.click(px, py)
+                self._log("'SE DESEJA ENCERRAR CLIQUE AQUI' clicado ({:.0f},{:.0f}).".format(px, py))
+                time.sleep(3)
+                self._shot(page, "encerramento_confirmado")
+                return True
+            except Exception as e:
+                self._log("  _confirmar frame {}: {}".format(f.url[:40], e))
+
+        # Fallback: primeiro link com "CLIQUE" sem "NÃO" no texto do próprio link
+        for f in self._todos_frames(page):
+            try:
                 for link in f.get_by_role("link").all():
-                    try:
-                        txt = link.inner_text().strip().upper()
-                        eh_positivo = (
-                            "CLIQUE" in txt
-                            and "NAO"    not in txt
-                            and "NÃO"    not in txt
-                            and "CANCEL" not in txt
-                        )
-                        if eh_positivo:
-                            link.click(timeout=5000)
-                            self._log("Encerramento confirmado: '{}'".format(txt[:80]))
-                            time.sleep(3)
-                            self._shot(page, "encerramento_confirmado")
-                            return True
-                    except Exception:
-                        pass
+                    txt = (link.inner_text() or "").strip().upper()
+                    if "CLIQUE" in txt and "NÃO" not in txt and "NAO" not in txt:
+                        link.click(timeout=5000)
+                        self._log("Confirmação (fallback link): '{}'".format(txt[:60]))
+                        time.sleep(3)
+                        self._shot(page, "encerramento_confirmado")
+                        return True
             except Exception:
                 pass
-
-        # Fallback genérico
-        if self._clicar_link(page, "SE DESEJA ENCERRAR"):
-            time.sleep(3)
-            self._shot(page, "encerramento_confirmado")
-            return True
 
         self._log("AVISO: link de confirmação não encontrado.")
         return False
@@ -1120,19 +1169,23 @@ class GissBot:
         """
         Encerra escrituração para PRESTADOR ou TOMADOR.
 
-        Fluxo real (confirmado pelo usuário):
-          1. Clica aba PRESTADOR ou TOMADOR no menu superior do portal
-          2. Uma NOVA JANELA (popup) abre com o formulário de competência
-          3. Preenche Mês e Ano na nova janela
-          4. Clica "Encerrar Escrituração" (se tem movimento → confirma "CLIQUE AQUI")
-             OU "Encerrar Sem Movimento" (se não tem movimento)
+        Fluxo real (confirmado com screenshots):
+          1. Clica aba PRESTADOR/TOMADOR → mesma janela carrega formulário
+             com campos Competência (Mês/Ano) e links de ação
+          2. Preenche Mês e Ano
+          3. Clica "Encerrar Escrituração"
+             a) COM movimento → tela "CONFIRMAÇÃO DO ENCERRAMENTO" aparece
+                → clica "SE DESEJA ENCERRAR A COMPETÊNCIA CLIQUE AQUI"
+             b) SEM movimento → volta ao módulo, preenche competência,
+                → clica "Encerrar Sem Movimento"
+          4. Repete o mesmo fluxo para TOMADOR
         """
         self._log("=" * 50)
         self._log("=== {} ===".format(modulo))
         self._log("=" * 50)
         self._shot(page, "{}_inicio".format(modulo.lower()))
 
-        # Aguarda carregamento completo
+        # Aguarda frames estabilizarem
         for _ in range(3):
             try:
                 page.wait_for_load_state("networkidle", timeout=10000)
@@ -1141,59 +1194,78 @@ class GissBot:
                 pass
         time.sleep(2)
 
-        self._salvar_evidencias_frames(page, "{}_entrada".format(modulo.lower()))
+        # Passo 1: navega para o módulo (muda conteúdo na mesma janela)
+        clicou = False
+        for tentativa in range(4):
+            if self._clicar_aba_modulo(page, modulo):
+                clicou = True
+                self._log("Aba '{}' clicada (tentativa {}).".format(modulo, tentativa + 1))
+                time.sleep(3)
+                break
+            self._log("Aba '{}' não respondeu (tentativa {}), aguardando...".format(
+                modulo, tentativa + 1))
+            time.sleep(3)
 
-        # Passo 1: clica aba e captura nova janela que abre via window.open
-        janela = self._abrir_janela_modulo(page, modulo)
+        if not clicou:
+            self._log("AVISO: aba '{}' não clicada — tentando continuar mesmo assim.".format(modulo))
 
-        self._shot(janela, "{}_janela".format(modulo.lower()))
-        self._salvar_evidencias_frames(janela, "{}_janela".format(modulo.lower()))
+        self._shot(page, "{}_menu".format(modulo.lower()))
 
-        # Passo 2: preenche Mês e Ano na nova janela
-        self._preencher_competencia(janela)
+        # Passo 2: preenche competência
+        self._preencher_competencia(page)
         time.sleep(1)
-        self._shot(janela, "{}_competencia".format(modulo.lower()))
+        self._shot(page, "{}_competencia".format(modulo.lower()))
 
-        # Passo 3: tenta Encerrar Escrituração
-        clicou_encerrar = False
+        # Passo 3: clica "Encerrar Escrituração"
+        encerrou = False
         for texto in ["Encerrar Escrituração", "Encerrar Escrituracao", "Encerrar Escrit"]:
-            if self._clicar_link(janela, texto):
-                clicou_encerrar = True
+            if self._clicar_link(page, texto):
                 self._log("{}: 'Encerrar Escrituração' clicado.".format(modulo))
+                encerrou = True
                 break
 
-        # Passo 4: detecta resultado
-        if clicou_encerrar and self._tem_confirmacao(janela):
-            self._log("{}: tem movimento → confirmando...".format(modulo))
-            confirmado = self._confirmar_encerramento(janela)
+        if not encerrou:
+            self._log("{}: 'Encerrar Escrituração' não encontrado — indo direto para 'Encerrar Sem Movimento'.".format(modulo))
+            self._shot(page, "{}_sem_escrit".format(modulo.lower()))
+
+        # Passo 4a: verifica se apareceu tela de CONFIRMAÇÃO com movimento
+        if encerrou and self._tem_confirmacao(page):
+            self._log("{}: confirmação com movimento → clicando 'SE DESEJA ENCERRAR'.".format(modulo))
+            confirmado = self._confirmar_encerramento(page)
             resultado = "ENCERRADO" if confirmado else "VERIFICAR_MANUAL"
 
         else:
-            if not clicou_encerrar:
-                self._log("{}: 'Encerrar Escrituração' não encontrado → tentando 'Encerrar Sem Movimento'.".format(modulo))
-            else:
-                self._log("{}: sem confirmação → tentando 'Encerrar Sem Movimento'.".format(modulo))
+            # Passo 4b: sem movimento → volta ao módulo e usa "Encerrar Sem Movimento"
+            self._log("{}: sem movimento → voltando ao módulo para 'Encerrar Sem Movimento'.".format(modulo))
+            self._shot(page, "{}_sem_movimento".format(modulo.lower()))
 
-            self._shot(janela, "{}_sem_confirmacao".format(modulo.lower()))
-
-            if self._clicar_link(janela, "Encerrar Sem Movimento"):
-                self._log("{}: 'Encerrar Sem Movimento' clicado.".format(modulo))
+            # Volta para o formulário do módulo
+            for _ in range(3):
+                if self._clicar_aba_modulo(page, modulo):
+                    time.sleep(3)
+                    break
                 time.sleep(2)
-                self._confirmar_encerramento(janela)
+
+            self._preencher_competencia(page)
+            time.sleep(1)
+            self._shot(page, "{}_competencia_sem_mov".format(modulo.lower()))
+
+            if self._clicar_link(page, "Encerrar Sem Movimento"):
+                self._log("{}: 'Encerrar Sem Movimento' clicado.".format(modulo))
+                time.sleep(3)
+                # Pode aparecer confirmação também para sem movimento
+                if self._tem_confirmacao(page):
+                    self._confirmar_encerramento(page)
                 resultado = "SEM_MOVIMENTO"
             else:
-                self._shot(janela, "{}_erro_botoes".format(modulo.lower()))
+                self._shot(page, "{}_erro".format(modulo.lower()))
+                self._salvar_evidencias_frames(page, "{}_erro".format(modulo.lower()))
                 raise RuntimeError(
-                    "Nem 'Encerrar Escrituração' nem 'Encerrar Sem Movimento' encontrado para {}. "
-                    "Verifique screenshots e frames.json nas evidências.".format(modulo)
+                    "'Encerrar Sem Movimento' não encontrado para {}. "
+                    "Verifique screenshots e frames nas evidências.".format(modulo)
                 )
 
-        # Fecha janela do módulo e volta ao portal
-        try:
-            janela.close()
-        except Exception:
-            pass
-
+        self._shot(page, "{}_concluido".format(modulo.lower()))
         self._save_txt(
             "{}_resultado".format(modulo.lower()),
             "\n".join(self.logs + [
@@ -1207,40 +1279,8 @@ class GissBot:
         return resultado
 
     def _abrir_janela_modulo(self, page, modulo):
-        """
-        Clica na aba PRESTADOR/TOMADOR e captura a nova janela que abre
-        via window.open(). Tenta até 3 vezes caso a janela não apareça.
-
-        Retorna a Page da nova janela, ou a própria page se não abrir nova.
-        """
-        for tentativa in range(3):
-            self._log("Abrindo janela '{}' (tentativa {}/3)...".format(modulo, tentativa + 1))
-
-            try:
-                with page.context.expect_page(timeout=8000) as nova_info:
-                    self._clicar_aba_modulo(page, modulo)
-                nova = nova_info.value
-                nova.wait_for_load_state("domcontentloaded", timeout=20000)
-                nova.bring_to_front()
-                self._log("Nova janela '{}' capturada: {}".format(modulo, nova.url))
-                return nova
-            except Exception as e:
-                self._log("  expect_page t{}: {} — verificando abas existentes...".format(
-                    tentativa + 1, e))
-
-            # Verifica se uma nova aba já foi aberta sem capturar
-            for p in page.context.pages:
-                url = p.url.lower()
-                if modulo.lower() in url or "escrit" in url or "encerr" in url:
-                    p.bring_to_front()
-                    self._log("Janela '{}' encontrada em aba existente: {}".format(modulo, p.url))
-                    return p
-
-            time.sleep(3)
-
-        # Fallback: usa a mesma página (pode ser que seja SPA ou frame inline)
-        self._log("AVISO: nova janela não capturada — usando página atual.")
-        return page
+        """Mantido por compatibilidade — redireciona para _clicar_aba_modulo."""
+        return self._clicar_aba_modulo(page, modulo)
 
 
     # ------------------------------------------------------------------ #
