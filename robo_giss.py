@@ -763,13 +763,13 @@ class GissBot:
 
     def _clicar_link(self, page, texto, timeout_ms=2000):
         """
-        Clica em elemento com o texto/atributo dado em qualquer frame.
+        Localiza elemento pelo texto/atributo em qualquer frame e clica com mouse real.
 
-        Verifica (em ordem): innerText, textContent, value, alt, title, href, onclick.
-        Inclui imagens (img[alt]) e elementos com onclick — necessário para portais
-        legados como GissOnline onde menus podem ser imagens ou funções JS.
+        Estratégias (em ordem):
+          1. JS: localiza elemento → pega BoundingClientRect → mouse real hover+click
+          2. Playwright locator: hover() + click() (dispara mouseover/mouseenter)
+          3. JS sintético: dispara mouseover+mouseenter+click (último recurso)
         """
-        # Normaliza: minúsculo + sem acentos para comparação tolerante
         import unicodedata
         def _norm(s):
             s = (s or "").strip().lower()
@@ -779,12 +779,12 @@ class GissBot:
 
         termos = list({_norm(texto), texto.lower().strip()})
 
-        # JS robusto: checa text + todos os atributos relevantes
-        script = """(termos) => {
+        # Script JS: retorna coordenadas do centro do elemento (para mouse real)
+        script_bbox = """(termos) => {
             const norm = s => {
                 s = (s || '').trim().toLowerCase();
                 return s.normalize('NFD').replace(/[̀-ͯ]/g,'')
-                        .replace(/\s+/g,' ');
+                        .replace(/\\s+/g,' ');
             };
             const sels = 'a,button,input,img,td[onclick],td,span,li,div[onclick],tr[onclick]';
             for (const el of document.querySelectorAll(sels)) {
@@ -796,43 +796,85 @@ class GissBot:
                 ].filter(Boolean).join(' '));
                 if (txt.length > 0 && txt.length < 400 &&
                         termos.some(t => txt.includes(t))) {
-                    el.scrollIntoView({block:'center',inline:'center'});
+                    el.scrollIntoView({block:'center', inline:'center'});
+                    const r = el.getBoundingClientRect();
+                    if (r.width > 0 && r.height > 0) {
+                        return {found:true, tag:el.tagName,
+                                x: r.left + r.width/2,
+                                y: r.top  + r.height/2,
+                                txt: txt.slice(0,80),
+                                onclick:(el.getAttribute('onclick')||'').slice(0,80)};
+                    }
+                    // Elemento sem área visível — tenta click JS mesmo assim
+                    el.dispatchEvent(new MouseEvent('mouseover',  {bubbles:true}));
+                    el.dispatchEvent(new MouseEvent('mouseenter', {bubbles:true}));
                     el.click();
-                    return {ok:true, tag:el.tagName,
-                            txt:txt.slice(0,80),
-                            onclick:(el.getAttribute('onclick')||'').slice(0,80)};
+                    return {found:true, synthetic:true, tag:el.tagName, txt:txt.slice(0,80)};
                 }
             }
-            return {ok:false};
+            return {found:false};
         }"""
 
+        # Estratégia 1: localiza via JS + mouse real (hover → click)
         for f in self._todos_frames(page):
             try:
-                res = f.evaluate(script, termos)
-                if res and res.get("ok"):
-                    self._log("Clicado '{}' via JS (frame {}): tag={} txt={}".format(
+                res = f.evaluate(script_bbox, termos)
+                if not (res and res.get("found")):
+                    continue
+
+                if res.get("synthetic"):
+                    self._log("Clicado '{}' JS sintético (frame {}): tag={} txt={}".format(
                         texto, f.url[:50], res.get("tag"), res.get("txt","")[:60]))
                     return True
-            except Exception:
-                pass
 
-        # Playwright locator — texto e atributos
+                # Tem coordenadas reais — usa mouse da página principal
+                # Para frames filhos, precisa somar o offset do frame no viewport
+                fx, fy = 0.0, 0.0
+                try:
+                    box_frame = f.frame_element().bounding_box()
+                    if box_frame:
+                        fx, fy = box_frame["x"], box_frame["y"]
+                except Exception:
+                    pass
+
+                px = fx + res["x"]
+                py = fy + res["y"]
+
+                page.mouse.move(px, py)
+                time.sleep(0.25)
+                page.mouse.click(px, py)
+                self._log("Clicado '{}' mouse real ({:.0f},{:.0f}) frame {}: tag={} txt={}".format(
+                    texto, px, py, f.url[:40], res.get("tag"), res.get("txt","")[:60]))
+                return True
+            except Exception as e:
+                self._log("  JS bbox frame {}: {}".format(f.url[:40], e))
+
+        # Estratégia 2: Playwright locator → hover() + click()
         regexp = re.compile(re.escape(texto), re.I)
         for frame in self._todos_frames(page):
-            for sel in ["a", "button", "td,li", "span,div", "input[type='button'],input[type='submit']"]:
+            for sel in ["a", "button", "td", "li", "span", "div",
+                        "input[type='button']", "input[type='submit']", "img"]:
                 try:
-                    frame.locator(sel).filter(has_text=regexp).first.click(timeout=timeout_ms)
-                    self._log("Clicado '{}' via locator '{}' (frame {}).".format(
-                        texto, sel, frame.url[:40]))
-                    return True
+                    loc = frame.locator(sel).filter(has_text=regexp).first
+                    if loc.count() > 0:
+                        loc.hover(timeout=timeout_ms)
+                        time.sleep(0.2)
+                        loc.click(timeout=timeout_ms)
+                        self._log("Clicado '{}' hover+click locator '{}' (frame {}).".format(
+                            texto, sel, frame.url[:40]))
+                        return True
                 except Exception:
                     pass
             for attr in ["title", "alt", "value"]:
                 try:
-                    frame.locator("[{}*='{}' i]".format(attr, texto)).first.click(timeout=timeout_ms)
-                    self._log("Clicado '{}' via [{}] (frame {}).".format(
-                        texto, attr, frame.url[:40]))
-                    return True
+                    loc = frame.locator("[{}*='{}' i]".format(attr, texto)).first
+                    if loc.count() > 0:
+                        loc.hover(timeout=timeout_ms)
+                        time.sleep(0.2)
+                        loc.click(timeout=timeout_ms)
+                        self._log("Clicado '{}' hover+click [{}] (frame {}).".format(
+                            texto, attr, frame.url[:40]))
+                        return True
                 except Exception:
                     pass
 
