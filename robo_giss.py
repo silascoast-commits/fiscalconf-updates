@@ -947,17 +947,34 @@ class GissBot:
         self._log("=" * 50)
         self._shot(page, "{}_inicio".format(modulo.lower()))
 
-        # Aguarda carregamento completo
-        try:
-            page.wait_for_load_state("networkidle", timeout=15000)
-        except Exception:
-            pass
-        time.sleep(2)
+        # Aguarda carregamento completo de todos os frames
+        for _ in range(3):
+            try:
+                page.wait_for_load_state("networkidle", timeout=10000)
+                break
+            except Exception:
+                pass
+        time.sleep(3)
 
-        # Passo 1: clica aba
-        if not self._clicar_link(page, modulo):
-            raise RuntimeError("Aba '{}' não encontrada no menu do portal.".format(modulo))
-        time.sleep(2)
+        # Salva estrutura dos frames para diagnóstico
+        self._salvar_evidencias_frames(page, "{}_entrada".format(modulo.lower()))
+
+        # Passo 1: clica aba — tenta várias vezes pois frames podem estar carregando
+        clicou_aba = False
+        for tentativa in range(3):
+            if self._clicar_link(page, modulo):
+                clicou_aba = True
+                self._log("Aba '{}' clicada (tentativa {}).".format(modulo, tentativa + 1))
+                time.sleep(2)
+                break
+            self._log("Aba '{}' não encontrada (tentativa {}), aguardando...".format(
+                modulo, tentativa + 1))
+            time.sleep(3)
+
+        if not clicou_aba:
+            # Portal pode já estar na aba correta — continua sem erro
+            self._log("AVISO: aba '{}' não clicada — assumindo que já está ativa.".format(modulo))
+
         self._shot(page, "{}_aba".format(modulo.lower()))
 
         # Passo 2: preenche competência
@@ -976,21 +993,18 @@ class GissBot:
         if not clicou_encerrar:
             raise RuntimeError(
                 "'Encerrar Escrituração' não encontrado para {}. "
-                "Verifique os screenshots nas evidências.".format(modulo)
+                "Verifique os screenshots e o arquivo frames.json nas evidências.".format(modulo)
             )
 
         # Passo 4: detecta resultado
         if self._tem_confirmacao(page):
-            # Há notas — confirma o encerramento
             self._log("{}: tem movimento → confirmando...".format(modulo))
             confirmado = self._confirmar_encerramento(page)
             resultado = "ENCERRADO" if confirmado else "VERIFICAR_MANUAL"
         else:
-            # Sem movimento — usa Encerrar Sem Movimento
             self._log("{}: sem movimento → usando 'Encerrar Sem Movimento'...".format(modulo))
             self._shot(page, "{}_sem_confirmacao".format(modulo.lower()))
 
-            # Volta à aba e preenche competência novamente
             self._clicar_link(page, modulo)
             time.sleep(2)
             self._preencher_competencia(page)
@@ -1006,7 +1020,6 @@ class GissBot:
             confirmado = self._confirmar_encerramento(page)
             resultado = "SEM_MOVIMENTO" if confirmado else "VERIFICAR_MANUAL"
 
-        # Salva resultado
         self._save_txt(
             "{}_resultado".format(modulo.lower()),
             "\n".join(self.logs + [
