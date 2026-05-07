@@ -1,0 +1,64 @@
+[07/05/2026 12:47:37] playwright-stealth nao instalado (opcional).
+[07/05/2026 12:47:37] >>> LOGIN: https://portal.gissonline.com.br/login/index.html
+[07/05/2026 12:47:37] Captura de window.open ativa.
+[07/05/2026 12:47:42] Screenshot: 20260507_124742_cliente_260468_04_2026_00_login_inicial.png
+[07/05/2026 12:47:42] Digitando senha (8 chars) via QWERTY...
+[07/05/2026 12:47:42] JS: campo de preview nao encontrado.
+[07/05/2026 12:47:42] QWERTY mapa img: 0 letras
+[07/05/2026 12:47:42]   Char '3' nao clicado no QWERTY.
+[07/05/2026 12:47:42]   Char '7' nao clicado no QWERTY.
+[07/05/2026 12:47:42]   Char '0' nao clicado no QWERTY.
+[07/05/2026 12:47:42]   Char '5' nao clicado no QWERTY.
+[07/05/2026 12:47:42]   Char '6' nao clicado no QWERTY.
+[07/05/2026 12:47:42]   Char '4' nao clicado no QWERTY.
+[07/05/2026 12:47:42]   Char '0' nao clicado no QWERTY.
+[07/05/2026 12:47:42]   Char '0' nao clicado no QWERTY.
+[07/05/2026 12:47:43] CAPTCHA nao detectado.
+[07/05/2026 12:47:43] Verificando campos login/senha antes de Acessar...
+[07/05/2026 12:47:43] AVISO: nao verificou usuario.
+[07/05/2026 12:47:43] Screenshot: 20260507_124743_cliente_260468_04_2026_campos_verificados_pre_acessar.png
+[07/05/2026 12:48:29] expect_page nao capturou nova aba (Timeout 15000ms exceeded while waiting for event "page"). Verificando abas existentes...
+[07/05/2026 12:48:32] Nenhuma nova aba do portal detectada. Portal pode estar na aba atual.
+[07/05/2026 12:48:32] Screenshot: 20260507_124832_cliente_260468_04_2026_04_apos_acessar.png
+[07/05/2026 12:48:35] Aguardando popup do portal (30s)...
+[07/05/2026 12:48:36] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:37] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:38] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:39] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:40] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:41] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:42] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:43] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:44] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:45] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:46] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:47] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:48] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:49] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:50] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:51] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:52] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:53] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:54] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:55] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:56] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:57] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:58] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:48:59] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:49:00] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:49:01] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:49:02] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:49:03] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:49:04] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:49:05] URL: https://portal.gissonline.com.br/login/index.html | Abas: 1
+[07/05/2026 12:49:05] Popup nao apareceu. Verificando window._giss_open_url...
+[07/05/2026 12:49:05] window._giss_open_url = None
+[07/05/2026 12:49:05] window._giss_open_url = None
+[07/05/2026 12:49:05] window._giss_open_url = None
+[07/05/2026 12:49:05] window._giss_open_url = None
+[07/05/2026 12:49:05] window._giss_open_url = None
+[07/05/2026 12:49:05] Extraindo URL do HTML do afterlogin.cfm...
+[07/05/2026 12:49:05] HTML afterlogin: 390 bytes
+[07/05/2026 12:49:05] Screenshot: 20260507_124905_cliente_260468_04_2026_erro_timeout_portal.png
+[07/05/2026 12:49:05] ERRO: Portal nao encontrado. HTML do afterlogin.cfm salvo em evidencias — envie o arquivo afterlogin_html.txt para diagnostico.
+[07/05/2026 12:49:05] Screenshot: 20260507_124905_cliente_260468_04_2026_erro_geral.png
