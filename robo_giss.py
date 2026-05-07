@@ -786,7 +786,7 @@ class GissBot:
                 return s.normalize('NFD').replace(/[̀-ͯ]/g,'')
                         .replace(/\s+/g,' ');
             };
-            const sels = 'a,button,input,img,td,span,li,div[onclick],tr[onclick]';
+            const sels = 'a,button,input,img,td[onclick],td,span,li,div[onclick],tr[onclick]';
             for (const el of document.querySelectorAll(sels)) {
                 const txt = norm([
                     el.innerText, el.textContent, el.value,
@@ -996,14 +996,21 @@ class GissBot:
 
         # Passo 1: clica aba — tenta várias vezes pois frames podem estar carregando
         clicou_aba = False
-        for tentativa in range(3):
+        for tentativa in range(5):
             if self._clicar_link(page, modulo):
                 clicou_aba = True
                 self._log("Aba '{}' clicada (tentativa {}).".format(modulo, tentativa + 1))
-                time.sleep(2)
+                time.sleep(3)
                 break
             self._log("Aba '{}' não encontrada (tentativa {}), aguardando...".format(
                 modulo, tentativa + 1))
+            # Aguarda frames recarregarem
+            for _ in range(2):
+                try:
+                    page.wait_for_load_state("networkidle", timeout=5000)
+                    break
+                except Exception:
+                    pass
             time.sleep(3)
 
         if not clicou_aba:
@@ -1017,6 +1024,10 @@ class GissBot:
         time.sleep(1)
         self._shot(page, "{}_competencia".format(modulo.lower()))
 
+        # Salva estrutura após clicar a aba (para diagnóstico)
+        self._salvar_evidencias_frames(page, "{}_pos_aba".format(modulo.lower()))
+        self._shot(page, "{}_pos_aba".format(modulo.lower()))
+
         # Passo 3: tenta Encerrar Escrituração
         clicou_encerrar = False
         for texto in ["Encerrar Escrituração", "Encerrar Escrituracao", "Encerrar Escrit"]:
@@ -1025,35 +1036,43 @@ class GissBot:
                 self._log("{}: 'Encerrar Escrituração' clicado.".format(modulo))
                 break
 
-        if not clicou_encerrar:
-            raise RuntimeError(
-                "'Encerrar Escrituração' não encontrado para {}. "
-                "Verifique os screenshots e o arquivo frames.json nas evidências.".format(modulo)
-            )
-
         # Passo 4: detecta resultado
-        if self._tem_confirmacao(page):
+        if clicou_encerrar and self._tem_confirmacao(page):
+            # Tem movimento → confirma encerramento
             self._log("{}: tem movimento → confirmando...".format(modulo))
             confirmado = self._confirmar_encerramento(page)
             resultado = "ENCERRADO" if confirmado else "VERIFICAR_MANUAL"
+
         else:
-            self._log("{}: sem movimento → usando 'Encerrar Sem Movimento'...".format(modulo))
+            # Sem confirmação (sem movimento) OU "Encerrar Escrituração" não encontrado
+            # → tenta "Encerrar Sem Movimento" diretamente
+            if not clicou_encerrar:
+                self._log("{}: 'Encerrar Escrituração' não encontrado — tentando 'Encerrar Sem Movimento'.".format(modulo))
+            else:
+                self._log("{}: sem confirmação → tentando 'Encerrar Sem Movimento'.".format(modulo))
+
             self._shot(page, "{}_sem_confirmacao".format(modulo.lower()))
 
-            self._clicar_link(page, modulo)
-            time.sleep(2)
+            # Re-navega para o módulo se necessário
+            for _ in range(2):
+                if self._clicar_link(page, modulo):
+                    time.sleep(2)
+                    break
+                time.sleep(2)
             self._preencher_competencia(page)
             time.sleep(1)
 
-            if not self._clicar_link(page, "Encerrar Sem Movimento"):
+            if self._clicar_link(page, "Encerrar Sem Movimento"):
+                self._log("{}: 'Encerrar Sem Movimento' clicado.".format(modulo))
+                time.sleep(2)
+                self._confirmar_encerramento(page)
+                resultado = "SEM_MOVIMENTO"
+            else:
+                self._shot(page, "{}_erro_botoes".format(modulo.lower()))
                 raise RuntimeError(
-                    "'Encerrar Sem Movimento' não encontrado para {}.".format(modulo)
+                    "Nem 'Encerrar Escrituração' nem 'Encerrar Sem Movimento' encontrado para {}. "
+                    "Verifique screenshots e frames.json nas evidências.".format(modulo)
                 )
-            self._log("{}: 'Encerrar Sem Movimento' clicado.".format(modulo))
-            time.sleep(2)
-
-            confirmado = self._confirmar_encerramento(page)
-            resultado = "SEM_MOVIMENTO" if confirmado else "VERIFICAR_MANUAL"
 
         self._save_txt(
             "{}_resultado".format(modulo.lower()),
