@@ -361,50 +361,88 @@ class GissBot:
 
     def _processar_teclado_senha(self, page):
         """
-        Digita a senha no teclado QWERTY virtual do GissOnline.
+        Digita a senha no campo SENHA do GissOnline.
 
-        BUG ANTERIOR: o JS injetava a senha em TxtIdent (campo de USUARIO),
-        sobrescrevendo o CMC e fazendo login com credenciais erradas.
+        ESTRATEGIA (em ordem de prioridade):
+          1. Fill direto no campo SENHA (placeholder/name/id) — mais confiavel.
+             O campo SENHA aceita digitacao direta mesmo com QWERTY virtual presente.
+          2. QWERTY virtual: abre teclado via ic_use_teclado, mapeia tec_X.gif e clica.
+             So ativado se o fill direto nao funcionar (campo read-only, etc).
 
-        CORRECAO:
-          1. Abre o QWERTY clicando na imagem 'ic_use_teclado' ou botão de senha
-          2. Aguarda as teclas ficarem visiveis (pos != 0,0)
-          3. Clica cada caractere (letra OU digito) nas imagens tec_X.gif
-          4. Clica Aceitar para fechar o QWERTY
-          Fallback: injeta no campo de preview excluindo explicitamente TxtIdent
+        BUG CORRIGIDO: o QWERTY de digitos (tec_0-9.gif, y~581) sempre visivel
+        na tela corresponde ao teclado do CAPTCHA. Clicar nesses digitos para a
+        senha enviava os cliques ao campo CAPTCHA (que estava focado), resultando
+        em SENHA vazia e CAPTCHA = senha+captcha concatenados.
         """
-        self._log("Digitando senha ({} chars) via QWERTY...".format(len(self.senha)))
+        self._log("Digitando senha ({} chars)...".format(len(self.senha)))
 
-        # --- ETAPA 1: Abre o QWERTY clicando na area de senha ---
+        # --- ESTRATEGIA 1: fill direto no campo SENHA ---
+        seletores_senha = [
+            "input[placeholder='SENHA' i]",
+            "input[placeholder='PASSWORD' i]",
+            "input[name='TxtSenha']",
+            "input[name='txtSenha']",
+            "input[name*='senha' i]",
+            "input[id*='senha' i]",
+            "input[type='password']",
+        ]
+        for sel in seletores_senha:
+            try:
+                loc = page.locator(sel).first
+                if loc.count() > 0 and loc.is_visible(timeout=1500):
+                    loc.click()
+                    time.sleep(0.2)
+                    loc.fill(self.senha)
+                    time.sleep(0.2)
+                    val = loc.input_value()
+                    if val and val.strip():
+                        self._log("Senha preenchida diretamente via '{}' ({} chars).".format(
+                            sel, len(val)))
+                        return
+                    # Campo pode ocultar o valor (type=password) — tenta pressionar teclas
+                    if not val:
+                        loc.triple_click()
+                        loc.type(self.senha, delay=50)
+                        val2 = loc.input_value()
+                        if val2 and val2.strip():
+                            self._log("Senha preenchida via type() em '{}' ({} chars).".format(
+                                sel, len(val2)))
+                            return
+                    self._log("Campo '{}' encontrado mas nao aceitou valor (val='{}').".format(
+                        sel, val))
+            except Exception as e:
+                self._log("Seletor '{}': {}".format(sel, e))
+
+        # --- ESTRATEGIA 2: QWERTY virtual via imagens tec_X.gif ---
+        self._log("Fill direto nao funcionou — abrindo QWERTY virtual...")
+
         qwerty_aberto = False
         for sel in [
             "img[src*='ic_use_teclado']",
             "img[src*='teclado']",
-            "input[name*='senha' i]",
-            "input[type='password']",
-            "a:has-text('senha')",
             "td:has-text('SENHA')",
         ]:
             try:
                 loc = page.locator(sel).first
                 if loc.count() > 0 and loc.is_visible(timeout=1000):
                     loc.click()
-                    time.sleep(0.8)
+                    time.sleep(1.0)
                     qwerty_aberto = True
                     self._log("QWERTY aberto via '{}'.".format(sel))
                     break
             except Exception:
                 pass
 
-        # --- ETAPA 2: Constroi mapa de todas as teclas visiveis (letras + digitos) ---
         def _ler_mapa_qwerty():
+            """Le apenas as teclas de LETRAS do QWERTY (A-Z). Exclui digitos
+            para nao confundir com o teclado numerico do CAPTCHA (sempre visivel)."""
             mapa = {}
             try:
                 for img in page.locator("img").all():
                     try:
                         src = img.get_attribute("src") or ""
-                        # Captura letras (tec_A.gif) E digitos (tec_3.gif)
-                        m = re.search(r"/tec_([A-Za-z0-9])\.gif", src, re.I)
+                        # Somente letras — digitos sao do teclado CAPTCHA
+                        m = re.search(r"/tec_([A-Za-z])\.gif", src, re.I)
                         if not m:
                             continue
                         char = m.group(1).upper()
@@ -418,34 +456,48 @@ class GissBot:
             return mapa
 
         mapa = _ler_mapa_qwerty()
-
-        # Se QWERTY nao abriu (sem teclas), tenta aguardar
         if not mapa and qwerty_aberto:
             time.sleep(1.5)
             mapa = _ler_mapa_qwerty()
 
-        self._log("QWERTY mapa: {} teclas — {}".format(
+        self._log("QWERTY mapa letras: {} teclas — {}".format(
             len(mapa), sorted(mapa.keys())))
 
-        # --- ETAPA 3: Clica cada caractere ---
         if mapa:
-            for char in self.senha:
-                c_up = char.upper()
-                clicado = False
+            # Clica cada caractere da senha pelo mapa de letras
+            # Para digitos na senha, usa fill direto no campo (nao usa teclado numerico)
+            digitos_senha = re.sub(r"[^0-9]", "", self.senha)
+            letras_senha  = re.sub(r"[0-9]", "", self.senha)
 
-                if c_up in mapa:
-                    box = mapa[c_up]
+            # Se senha so tem digitos, nao ha como usar QWERTY de letras
+            if not letras_senha and digitos_senha:
+                self._log("Senha so tem digitos — tentando fill direto no campo senha...")
+                for sel in seletores_senha:
                     try:
-                        page.mouse.click(
-                            box["x"] + box["width"] / 2,
-                            box["y"] + box["height"] / 2)
-                        clicado = True
-                        time.sleep(0.15)
-                    except Exception as e:
-                        self._log("  Char '{}' mouse.click falhou: {}".format(char, e))
-
-                if not clicado:
-                    self._log("  Char '{}' nao encontrado no mapa QWERTY.".format(char))
+                        loc = page.locator(sel).first
+                        if loc.count() > 0:
+                            loc.click()
+                            loc.type(self.senha, delay=80)
+                            self._log("Senha digitada via type() em '{}'.".format(sel))
+                            break
+                    except Exception:
+                        pass
+            else:
+                for char in self.senha:
+                    c_up = char.upper()
+                    clicado = False
+                    if c_up in mapa:
+                        box = mapa[c_up]
+                        try:
+                            page.mouse.click(
+                                box["x"] + box["width"] / 2,
+                                box["y"] + box["height"] / 2)
+                            clicado = True
+                            time.sleep(0.15)
+                        except Exception as e:
+                            self._log("  Char '{}' mouse.click falhou: {}".format(char, e))
+                    if not clicado:
+                        self._log("  Char '{}' nao no mapa QWERTY.".format(char))
 
             # Clica Aceitar para fechar o QWERTY
             for sel_aceitar in [
@@ -464,38 +516,8 @@ class GissBot:
                         break
                 except Exception:
                     pass
-
         else:
-            # --- FALLBACK: injeta diretamente no campo de preview (excluindo TxtIdent) ---
-            self._log("Mapa QWERTY vazio — tentando injecao JS (excluindo TxtIdent)...")
-            try:
-                resultado = page.evaluate("""
-                    (senha) => {
-                        var inputs = document.querySelectorAll(
-                            'input[type="text"], input[type="password"], input:not([type])'
-                        );
-                        for (var i = 0; i < inputs.length; i++) {
-                            var el = inputs[i];
-                            var nome = (el.name || el.id || '').toLowerCase();
-                            var r = el.getBoundingClientRect();
-                            // Exclui TxtIdent (campo usuario) e campos acima de y=500
-                            if (nome === 'txtident' || r.top < 500 || r.width < 30) continue;
-                            el.value = senha;
-                            el.dispatchEvent(new Event('input',  {bubbles:true}));
-                            el.dispatchEvent(new Event('change', {bubbles:true}));
-                            el.dispatchEvent(new KeyboardEvent('keyup', {bubbles:true}));
-                            return 'injetado em: ' + (el.id || el.name || 'input#' + i)
-                                   + ' pos=(' + Math.round(r.left) + ',' + Math.round(r.top) + ')';
-                        }
-                        return null;
-                    }
-                """, self.senha)
-                if resultado:
-                    self._log("Senha injetada via JS fallback: {}".format(resultado))
-                else:
-                    self._log("JS fallback: campo de preview nao encontrado.")
-            except Exception as e:
-                self._log("JS fallback falhou: {}".format(e))
+            self._log("QWERTY nao abriu. Senha nao preenchida — verifique os screenshots.")
 
 
     def _tem_captcha_numerico(self, page):
@@ -697,6 +719,22 @@ class GissBot:
         """
         self._log("Clicando teclado numerico: '{}'".format(digitos))
 
+        # Limpa o campo CAPTCHA antes de clicar os digitos (evita concatenacao com senha)
+        for sel_cap in [
+            "input[placeholder='CAPTCHA']",
+            "input[placeholder*='captcha' i]",
+            "input[name*='captcha' i]",
+        ]:
+            try:
+                loc_cap = page.locator(sel_cap).first
+                if loc_cap.count() > 0:
+                    loc_cap.click()
+                    loc_cap.fill("")
+                    self._log("Campo CAPTCHA limpo antes de digitar.")
+                    break
+            except Exception as e:
+                self._log("Aviso ao limpar CAPTCHA: {}".format(e))
+
         # Le o teclado ATUAL (pos-2captcha, pode ter embaralhado)
         mapa = self._ler_teclado_atual(page)
 
@@ -845,18 +883,33 @@ class GissBot:
             self._log("AVISO: nao verificou usuario.")
 
         # Verifica e repreenche senha
-        try:
-            campo_senha = page.locator("input[type='password']").first
-            if campo_senha.count() > 0:
-                val = campo_senha.input_value()
-                if val and val.strip():
-                    self._log("Senha OK.")
-                else:
-                    self._log("Senha VAZIA — redigitando via QWERTY...")
-                    self._processar_teclado_senha(page)
-                    self._log("Senha redigitada.")
-        except Exception as e:
-            self._log("AVISO: nao verificou senha: {}".format(e))
+        senha_ok = False
+        for sel in [
+            "input[placeholder='SENHA' i]",
+            "input[placeholder='PASSWORD' i]",
+            "input[name='TxtSenha']",
+            "input[name='txtSenha']",
+            "input[name*='senha' i]",
+            "input[id*='senha' i]",
+            "input[type='password']",
+        ]:
+            try:
+                loc = page.locator(sel).first
+                if loc.count() > 0:
+                    val = loc.input_value()
+                    if val and val.strip():
+                        self._log("Senha OK via '{}'.".format(sel))
+                        senha_ok = True
+                    else:
+                        self._log("Senha VAZIA via '{}' — redigitando...".format(sel))
+                        self._processar_teclado_senha(page)
+                        self._log("Senha redigitada.")
+                        senha_ok = True
+                    break
+            except Exception:
+                pass
+        if not senha_ok:
+            self._log("AVISO: nao foi possivel verificar campo senha.")
 
         self._shot(page, "campos_verificados_pre_acessar")
 
