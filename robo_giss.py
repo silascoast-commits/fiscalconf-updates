@@ -1,30 +1,24 @@
 # =============================================================================
-#  robo_giss.py  —  GissBot — GissOnline com CapSolver
-#  v5 — Fix principal: aguarda QWERTY fechar antes de capturar CAPTCHA
+#  robo_giss.py — GissBot v7
+#  GissOnline — Encerramento de Escrituração Automático
 #
-#  CAUSA RAIZ dos erros anteriores:
-#  - O bot capturava a imagem do CAPTCHA enquanto o teclado QWERTY ainda
-#    estava aberto na tela, obtendo a linha numerica do QWERTY (3 4 5 6...)
-#    em vez do CAPTCHA real (2020). O CapSolver rejeitava com "task expired".
-#  - Fix: page.wait_for_selector("Aceitar", state="hidden") garante que o
-#    QWERTY fechou completamente antes de qualquer outra acao.
+#  FLUXO REAL (baseado no portal observado):
+#    1. Login em portal.gissonline.com.br/login/index.html
+#       - Preenche IDENTIFICAÇÃO, SENHA, CAPTCHA (via 2captcha)
+#       - Clica Acessar → portal abre em nova aba via window.open
+#    2. Portal: wwwx.gissonline.com.br/interna/default.cfm
+#    3. PRESTADOR:
+#       - Clica aba PRESTADOR → preenche Mês/Ano
+#       - SE tem notas → "Encerrar Escrituração" → "CLIQUE AQUI"
+#       - SE sem movimento → "Encerrar Sem Movimento"
+#    4. TOMADOR: mesmo fluxo do PRESTADOR
 # =============================================================================
 
 from pathlib import Path
 from datetime import datetime
-import re
-import time
-import os
-import base64
-import requests
-
+import re, time, os, base64, requests
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
-# ---------------------------------------------------------------------------
-# 2captcha — resolve CAPTCHA de imagem numerica
-# Cadastro: https://2captcha.com  |  Custo: ~U$ 0,001 por CAPTCHA
-# Coloque sua chave abaixo ou defina a variavel de ambiente CAPTCHA2_KEY
-# ---------------------------------------------------------------------------
 CAPTCHA2_API_KEY = os.environ.get("CAPTCHA2_KEY", "2feea3e8e490d2761fb91f623e3db275")
 CAPTCHA2_IN_URL  = "https://2captcha.com/in.php"
 CAPTCHA2_RES_URL = "https://2captcha.com/res.php"
@@ -38,10 +32,7 @@ except ImportError:
 
 # ===========================================================================
 class CaptchaClient:
-    """
-    Cliente para o 2captcha.com - resolve CAPTCHA de imagem numerica.
-    API simples: envia imagem em base64, recebe os digitos resolvidos.
-    """
+    """Resolve CAPTCHA de imagem numérica via 2captcha.com"""
 # ===========================================================================
 
     def __init__(self, api_key):
@@ -52,7 +43,7 @@ class CaptchaClient:
             resp = requests.get(
                 CAPTCHA2_RES_URL,
                 params={"key": self.api_key, "action": "getbalance", "json": 1},
-                timeout=15
+                timeout=15,
             )
             data = resp.json()
             if data.get("status") == 1:
@@ -67,11 +58,9 @@ class CaptchaClient:
         if not self.api_key or self.api_key == "SUA_CHAVE_2CAPTCHA_AQUI":
             raise RuntimeError(
                 "Chave 2captcha nao configurada. "
-                "Cadastre-se em https://2captcha.com, adicione saldo "
-                "e cole sua chave em CAPTCHA2_API_KEY no topo do arquivo."
+                "Cadastre-se em https://2captcha.com e cole sua chave em CAPTCHA2_API_KEY."
             )
 
-        # Verifica saldo
         try:
             saldo = self.verificar_saldo()
             print("[2captcha] Saldo: U$ {:.4f}".format(saldo))
@@ -85,7 +74,7 @@ class CaptchaClient:
         except Exception as e:
             print("[2captcha] Nao foi possivel verificar saldo: {}".format(e))
 
-        # Upscale se necessario
+        # Upscale se imagem muito pequena
         img_final = img_bytes
         try:
             from PIL import Image
@@ -105,19 +94,13 @@ class CaptchaClient:
 
         b64 = base64.b64encode(img_final).decode("utf-8")
 
-        # Envia imagem
         resp = requests.post(
             CAPTCHA2_IN_URL,
             data={
-                "key":     self.api_key,
-                "method":  "base64",
-                "body":    b64,
-                "json":    1,
-                "numeric": 1,
-                "min_len": 4,
-                "max_len": 6,
+                "key": self.api_key, "method": "base64", "body": b64,
+                "json": 1, "numeric": 1, "min_len": 4, "max_len": 6,
             },
-            timeout=30
+            timeout=30,
         )
         data = resp.json()
         print("[2captcha] Submit: {}".format(data))
@@ -128,13 +111,12 @@ class CaptchaClient:
         captcha_id = data["request"]
         print("[2captcha] ID: {}".format(captcha_id))
 
-        # Poll resultado
         time.sleep(10)
         for poll in range(20):
             resp2 = requests.get(
                 CAPTCHA2_RES_URL,
                 params={"key": self.api_key, "action": "get", "id": captcha_id, "json": 1},
-                timeout=15
+                timeout=15,
             )
             d2 = resp2.json()
             print("[2captcha] Poll {}: {}".format(poll + 1, d2))
@@ -142,15 +124,14 @@ class CaptchaClient:
             if d2.get("status") == 1:
                 texto   = str(d2.get("request", "")).strip()
                 digitos = re.sub(r"[^0-9]", "", texto)
-                print("[2captcha] Resolvido: '{}' -> digitos='{}'".format(texto, digitos))
+                print("[2captcha] Resolvido: '{}' → digitos='{}'".format(texto, digitos))
                 return digitos
 
             req = d2.get("request", "")
             if req == "ERROR_CAPTCHA_UNSOLVABLE":
-                raise RuntimeError("2captcha: CAPTCHA insoluvel (imagem ilegivel).")
+                raise RuntimeError("2captcha: CAPTCHA insoluvel.")
             if req not in ("CAPCHA_NOT_READY", "CAPTCHA_NOT_READY"):
                 raise RuntimeError("2captcha erro: {}".format(req))
-
             time.sleep(5)
 
         raise RuntimeError("2captcha: timeout apos 20 polls.")
@@ -168,23 +149,22 @@ class GissBot:
         self.cliente_nome = config.get("cliente_nome", "cliente")
         self.download_dir = Path(config.get("download_dir", "."))
         self.headless     = bool(config.get("headless", False))
-        self.captcha_timeout_manual = int(config.get("captcha_timeout_manual", 300))
-        self.estado       = config.get("estado", "SP")   # UF para tela de seleção de município
-        self.municipio    = config.get("municipio", "")  # nome parcial do município (opcional)
+        self.estado       = config.get("estado", "SP")
+        self.municipio    = config.get("municipio", "")
 
         self.download_dir.mkdir(parents=True, exist_ok=True)
         self.evidencias = []
         self.logs       = []
-        self._paginas_novas = []  # abas abertas via window.open durante login
+        self._portal_page = None
 
         partes = self.competencia.split("/")
         self.comp_mes = partes[0].strip().zfill(2) if len(partes) >= 1 else ""
         self.comp_ano = partes[1].strip()           if len(partes) >= 2 else ""
 
-        self.captcha  = CaptchaClient(CAPTCHA2_API_KEY)
+        self.captcha = CaptchaClient(CAPTCHA2_API_KEY)
 
     # ------------------------------------------------------------------ #
-    # Utilitarios                                                          #
+    # Utilitários                                                          #
     # ------------------------------------------------------------------ #
 
     def _stamp(self):
@@ -217,710 +197,271 @@ class GissBot:
         except Exception as e:
             self._log("[screenshot erro] {}".format(e))
 
-    def _url_atual(self, page):
-        try:
-            return page.url.lower()
-        except Exception:
-            return ""
+    # ------------------------------------------------------------------ #
+    # Frame traversal recursivo (ColdFusion usa framesets)                #
+    # ------------------------------------------------------------------ #
+
+    def _iter_frames(self, frame):
+        yield frame
+        for filho in frame.child_frames:
+            yield from self._iter_frames(filho)
+
+    def _todos_frames(self, page):
+        return list(self._iter_frames(page.main_frame))
+
+    # ------------------------------------------------------------------ #
+    # URL helpers                                                          #
+    # ------------------------------------------------------------------ #
 
     def _eh_url_portal(self, url):
-        """Verifica se a URL é o portal interno do GissOnline."""
         url = url.lower()
         return (
-            "gissonline" in url and
-            ("interna" in url or "default.cfm" in url) and
-            "afterlogin"    not in url and
-            "login/index"   not in url and
-            "troca_senha"   not in url and
-            "seleciona_est" not in url
+            "gissonline" in url
+            and ("interna" in url or "default.cfm" in url)
+            and "login/index"   not in url
+            and "afterlogin"    not in url
+            and "troca_senha"   not in url
+            and "seleciona_est" not in url
         )
 
-    def _eh_tela_selecao_municipio(self, url):
+    def _eh_tela_municipio(self, url):
         url = url.lower()
         return "troca_senha" in url or "seleciona_estado" in url
 
-    def _tratar_selecao_municipio(self, page):
-        """
-        Trata a tela obrigatória de seleção de estado/município que aparece
-        após o login em portal.gissonline.com.br/troca_senha/seleciona_estado.cfm.
-
-        Fluxo:
-          1. Seleciona o estado no <select name="Estado">
-          2. Aguarda o iframe 'cidades' carregar as cidades via AJAX
-          3. Clica no primeiro link de cidade (ou no que corresponde a self.municipio)
-             — cada link chama parent.enviaCidade(cidade, estado) que submete o form
-          4. Aguarda redirect para o portal real (interna/default.cfm)
-        """
-        self._log("=== Tela de seleção de município detectada ===")
-        self._shot(page, "selecao_municipio_inicio")
-
-        estado = (self.estado or "SP").upper()
-        self._log("Selecionando estado: {}".format(estado))
-
-        # 1. Seleciona estado
-        try:
-            page.select_option("select[name='Estado']", value=estado, timeout=5000)
-            self._log("Estado '{}' selecionado.".format(estado))
-        except Exception as e:
-            self._log("Erro ao selecionar estado: {} — tentando JS".format(e))
-            try:
-                page.evaluate("""
-                    (uf) => {
-                        var sel = document.querySelector("select[name='Estado']");
-                        if (sel) { sel.value = uf; sel.dispatchEvent(new Event('change', {bubbles:true})); }
-                    }
-                """, estado)
-            except Exception as e2:
-                self._log("JS estado falhou: {}".format(e2))
-
-        # 2. Aguarda iframe cidades carregar
-        time.sleep(3)
-
-        # 3. Clica na cidade correta dentro do iframe
-        cidade_clicada = False
-        for tentativa in range(3):
-            for f in self._todos_frames(page):
-                if "cidades" not in (f.name or f.url).lower():
-                    continue
-                try:
-                    links = f.locator("a").all()
-                    self._log("Iframe cidades: {} links encontrados.".format(len(links)))
-                    for link in links:
-                        try:
-                            txt = link.inner_text().strip()
-                            if not txt:
-                                continue
-                            # Usa municipio configurado ou o primeiro disponível
-                            if (not self.municipio or
-                                    self.municipio.lower() in txt.lower()):
-                                self._log("Clicando cidade: '{}'".format(txt))
-                                link.click(timeout=3000)
-                                cidade_clicada = True
-                                time.sleep(3)
-                                break
-                        except Exception:
-                            pass
-                    if cidade_clicada:
-                        break
-                except Exception as e:
-                    self._log("Erro iframe cidades tentativa {}: {}".format(tentativa+1, e))
-            if cidade_clicada:
-                break
-            self._log("Aguardando cidades carregarem... tentativa {}".format(tentativa+1))
-            time.sleep(2)
-
-        if not cidade_clicada:
-            # Fallback: submete o form sem cidade (alguns portais aceitam)
-            self._log("Nenhuma cidade clicada — tentando submit direto.")
-            try:
-                page.evaluate("""
-                    () => {
-                        var f = document.frmEstado || document.forms[0];
-                        if (f) f.submit();
-                    }
-                """)
-            except Exception as e:
-                self._log("Submit fallback falhou: {}".format(e))
-
-        # 4. Aguarda redirect para o portal real (até 20s)
-        self._log("Aguardando redirect para o portal após seleção de município...")
-        time.sleep(2)
-        for _ in range(20):
-            time.sleep(1)
-            try:
-                url_atual = page.url.lower()
-                if self._eh_url_portal(url_atual):
-                    self._log("Portal carregado após seleção de município: {}".format(url_atual))
-                    self._shot(page, "portal_apos_municipio")
-                    return page
-                # Verifica outras abas
-                for p in page.context.pages:
-                    if self._eh_url_portal(p.url.lower()):
-                        self._log("Portal em nova aba: {}".format(p.url))
-                        p.bring_to_front()
-                        self._shot(p, "portal_apos_municipio")
-                        return p
-            except Exception:
-                pass
-
-        self._log("AVISO: redirect não detectado após seleção de município.")
-        self._shot(page, "pos_selecao_municipio")
-        return page
-
-    def _esta_no_portal(self, page):
-        url = self._url_atual(page)
-        return "interna" in url or "default.cfm" in url
-
-    def _esta_no_login(self, page):
-        url = self._url_atual(page)
-        return "portal.gissonline" in url or "login" in url
-
     # ------------------------------------------------------------------ #
-    # ETAPA 1A — Teclado QWERTY virtual                                   #
+    # LOGIN                                                                #
     # ------------------------------------------------------------------ #
 
-    def _processar_teclado_senha(self, page):
-        """
-        Digita a senha no campo SENHA do GissOnline.
-
-        ESTRATEGIA (em ordem de prioridade):
-          1. Fill direto no campo SENHA (placeholder/name/id) — mais confiavel.
-             O campo SENHA aceita digitacao direta mesmo com QWERTY virtual presente.
-          2. QWERTY virtual: abre teclado via ic_use_teclado, mapeia tec_X.gif e clica.
-             So ativado se o fill direto nao funcionar (campo read-only, etc).
-
-        BUG CORRIGIDO: o QWERTY de digitos (tec_0-9.gif, y~581) sempre visivel
-        na tela corresponde ao teclado do CAPTCHA. Clicar nesses digitos para a
-        senha enviava os cliques ao campo CAPTCHA (que estava focado), resultando
-        em SENHA vazia e CAPTCHA = senha+captcha concatenados.
-        """
-        self._log("Digitando senha ({} chars)...".format(len(self.senha)))
-
-        # --- ESTRATEGIA 1: fill direto no campo SENHA ---
-        seletores_senha = [
-            "input[placeholder='SENHA' i]",
-            "input[placeholder='PASSWORD' i]",
-            "input[name='TxtSenha']",
-            "input[name='txtSenha']",
-            "input[name*='senha' i]",
-            "input[id*='senha' i]",
-            "input[type='password']",
-        ]
-        for sel in seletores_senha:
+    def _preencher_campo_direto(self, page, seletores, valor, nome):
+        """Preenche campo via fill() ou type(). Retorna True se preencheu."""
+        for sel in seletores:
             try:
                 loc = page.locator(sel).first
-                if loc.count() > 0 and loc.is_visible(timeout=1500):
+                if loc.count() > 0 and loc.is_visible(timeout=2000):
                     loc.click()
                     time.sleep(0.2)
-                    loc.fill(self.senha)
-                    time.sleep(0.2)
-                    val = loc.input_value()
-                    if val and val.strip():
-                        self._log("Senha preenchida diretamente via '{}' ({} chars).".format(
-                            sel, len(val)))
-                        return
-                    # Campo pode ocultar o valor (type=password) — tenta pressionar teclas
-                    if not val:
-                        loc.triple_click()
-                        loc.type(self.senha, delay=50)
-                        val2 = loc.input_value()
-                        if val2 and val2.strip():
-                            self._log("Senha preenchida via type() em '{}' ({} chars).".format(
-                                sel, len(val2)))
-                            return
-                    self._log("Campo '{}' encontrado mas nao aceitou valor (val='{}').".format(
-                        sel, val))
+                    loc.fill(valor)
+                    if loc.input_value():
+                        self._log("{} preenchido via fill('{}').".format(nome, sel))
+                        return True
+                    # Alguns campos recusam fill() — tenta type()
+                    loc.triple_click()
+                    loc.type(valor, delay=50)
+                    if loc.input_value():
+                        self._log("{} preenchido via type('{}').".format(nome, sel))
+                        return True
             except Exception as e:
-                self._log("Seletor '{}': {}".format(sel, e))
+                self._log("  '{}' → {}".format(sel, e))
+        return False
 
-        # --- ESTRATEGIA 2: QWERTY virtual via imagens tec_X.gif ---
-        self._log("Fill direto nao funcionou — abrindo QWERTY virtual...")
-
-        qwerty_aberto = False
-        for sel in [
-            "img[src*='ic_use_teclado']",
-            "img[src*='teclado']",
-            "td:has-text('SENHA')",
-        ]:
+    def _digitar_senha_qwerty(self, page):
+        """
+        Fallback: usa o teclado QWERTY virtual para digitar a senha.
+        Mapeia SOMENTE letras (tec_[A-Z].gif) — os dígitos tec_[0-9].gif
+        pertencem ao teclado do CAPTCHA e devem ser ignorados aqui.
+        """
+        self._log("Abrindo teclado QWERTY virtual...")
+        for sel in ["img[src*='ic_use_teclado']", "td:has-text('SENHA')"]:
             try:
                 loc = page.locator(sel).first
                 if loc.count() > 0 and loc.is_visible(timeout=1000):
                     loc.click()
                     time.sleep(1.0)
-                    qwerty_aberto = True
-                    self._log("QWERTY aberto via '{}'.".format(sel))
                     break
             except Exception:
                 pass
 
-        def _ler_mapa_qwerty():
-            """Le apenas as teclas de LETRAS do QWERTY (A-Z). Exclui digitos
-            para nao confundir com o teclado numerico do CAPTCHA (sempre visivel)."""
-            mapa = {}
+        mapa = {}
+        for img in page.locator("img").all():
             try:
-                for img in page.locator("img").all():
-                    try:
-                        src = img.get_attribute("src") or ""
-                        # Somente letras — digitos sao do teclado CAPTCHA
-                        m = re.search(r"/tec_([A-Za-z])\.gif", src, re.I)
-                        if not m:
-                            continue
-                        char = m.group(1).upper()
-                        box = img.bounding_box()
-                        if box and not (box["x"] == 0 and box["y"] == 0):
-                            mapa[char] = box
-                    except Exception:
-                        pass
+                src = img.get_attribute("src") or ""
+                m = re.search(r"/tec_([A-Za-z])\.gif", src, re.I)
+                if not m:
+                    continue
+                box = img.bounding_box()
+                if box and box["x"] > 0 and box["y"] > 0:
+                    mapa[m.group(1).upper()] = box
             except Exception:
                 pass
-            return mapa
 
-        mapa = _ler_mapa_qwerty()
-        if not mapa and qwerty_aberto:
-            time.sleep(1.5)
-            mapa = _ler_mapa_qwerty()
+        self._log("QWERTY letras mapeadas: {} ({})".format(len(mapa), sorted(mapa.keys())))
+        if not mapa:
+            self._log("AVISO: QWERTY nao abriu — senha pode nao ter sido digitada.")
+            return
 
-        self._log("QWERTY mapa letras: {} teclas — {}".format(
-            len(mapa), sorted(mapa.keys())))
-
-        if mapa:
-            # Clica cada caractere da senha pelo mapa de letras
-            # Para digitos na senha, usa fill direto no campo (nao usa teclado numerico)
-            digitos_senha = re.sub(r"[^0-9]", "", self.senha)
-            letras_senha  = re.sub(r"[0-9]", "", self.senha)
-
-            # Se senha so tem digitos, nao ha como usar QWERTY de letras
-            if not letras_senha and digitos_senha:
-                self._log("Senha so tem digitos — tentando fill direto no campo senha...")
-                for sel in seletores_senha:
-                    try:
-                        loc = page.locator(sel).first
-                        if loc.count() > 0:
-                            loc.click()
-                            loc.type(self.senha, delay=80)
-                            self._log("Senha digitada via type() em '{}'.".format(sel))
-                            break
-                    except Exception:
-                        pass
+        for char in self.senha:
+            c = char.upper()
+            if c in mapa:
+                b = mapa[c]
+                page.mouse.click(b["x"] + b["width"] / 2, b["y"] + b["height"] / 2)
+                time.sleep(0.15)
             else:
-                for char in self.senha:
-                    c_up = char.upper()
-                    clicado = False
-                    if c_up in mapa:
-                        box = mapa[c_up]
-                        try:
-                            page.mouse.click(
-                                box["x"] + box["width"] / 2,
-                                box["y"] + box["height"] / 2)
-                            clicado = True
-                            time.sleep(0.15)
-                        except Exception as e:
-                            self._log("  Char '{}' mouse.click falhou: {}".format(char, e))
-                    if not clicado:
-                        self._log("  Char '{}' nao no mapa QWERTY.".format(char))
+                self._log("  Char '{}' nao no QWERTY.".format(char))
 
-            # Clica Aceitar para fechar o QWERTY
-            for sel_aceitar in [
-                "img[src*='bt_aceitar']",
-                "input[value*='Aceitar' i]",
-                "button:has-text('Aceitar')",
-                "a:has-text('Aceitar')",
-                "td:has-text('Aceitar')",
-            ]:
-                try:
-                    loc = page.locator(sel_aceitar).first
-                    if loc.count() > 0:
-                        loc.click(timeout=2000)
-                        self._log("Aceitar clicado via '{}'.".format(sel_aceitar))
-                        time.sleep(0.5)
-                        break
-                except Exception:
-                    pass
-        else:
-            self._log("QWERTY nao abriu. Senha nao preenchida — verifique os screenshots.")
-
-
-    def _tem_captcha_numerico(self, page):
-        for sel in [
-            "input[placeholder='CAPTCHA']",
-            "input[placeholder*='captcha' i]",
-            "input[name*='captcha' i]",
-            "input[id*='captcha' i]",
-        ]:
+        # Fecha QWERTY
+        for sel in ["img[src*='bt_aceitar']", "input[value*='Aceitar' i]",
+                    "button:has-text('Aceitar')", "a:has-text('Aceitar')"]:
             try:
-                if page.locator(sel).is_visible():
-                    return True
+                loc = page.locator(sel).first
+                if loc.count() > 0:
+                    loc.click(timeout=2000)
+                    self._log("QWERTY fechado via '{}'.".format(sel))
+                    time.sleep(0.5)
+                    break
             except Exception:
                 pass
-        return False
 
     def _capturar_img_captcha(self, page):
-        """
-        Captura a imagem REAL do CAPTCHA numerico (ex: '6726', '2020').
+        """Captura a imagem do CAPTCHA (ignora imagens estáticas do layout)."""
+        IGNORAR = [".jpg", "/tec_", "giss-branco", "bt_menu",
+                   "ic_use_teclado", ".svg", ".ico", ".webp"]
 
-        PROBLEMA IDENTIFICADO: o portal tem duas imagens proximas ao campo CAPTCHA:
-          1. images/ic_use_teclado.jpg  <- instrucao "USE O TECLADO VIRTUAL..."
-          2. [imagem dinamica gerada]   <- CAPTCHA real com os digitos
-        A estrategia anterior capturava a imagem de instrucao (errada).
+        for img in page.locator("img").all():
+            try:
+                src = img.get_attribute("src") or ""
+                src_l = src.lower()
+                if any(x in src_l for x in IGNORAR):
+                    continue
+                self._log("Candidato CAPTCHA: {}".format(src[:80]))
 
-        SOLUCAO: ignora imagens estaticas (.jpg fixo) e procura a imagem
-        com src DINAMICO (gerada pelo servidor com os digitos randomicos).
-        """
-        campo_captcha = page.locator("input[placeholder='CAPTCHA']").first
+                if src.startswith("data:image"):
+                    dados = base64.b64decode(src.split(",", 1)[1])
+                    self._log("CAPTCHA via data URI ({} bytes).".format(len(dados)))
+                    return dados
 
-        # === Estrategia 0: lista TODAS as imagens para diagnostico ===
+                if not src.startswith("http"):
+                    from urllib.parse import urljoin
+                    src = urljoin(page.url, src)
+
+                cookies = {c["name"]: c["value"] for c in page.context.cookies()}
+                resp = requests.get(src, cookies=cookies, timeout=15,
+                                    headers={"Referer": page.url}, verify=False)
+                if resp.status_code == 200 and len(resp.content) > 200:
+                    self._log("CAPTCHA baixado ({} bytes).".format(len(resp.content)))
+                    return resp.content
+            except Exception:
+                pass
+
+        # Fallback: recorte da área acima do campo CAPTCHA
         try:
-            todas = page.evaluate("""
-                (() => Array.from(document.querySelectorAll('img')).map(i => ({
-                    src: i.src,
-                    w: i.naturalWidth,
-                    h: i.naturalHeight,
-                    x: i.getBoundingClientRect().x,
-                    y: i.getBoundingClientRect().y
-                })))()
-            """)
-            self._log("Todas as imagens no DOM:")
-            for item in (todas or []):
-                self._log("  src={} dim={}x{} pos=({},{})".format(
-                    item.get("src","")[:70], item.get("w",0), item.get("h",0),
-                    int(item.get("x",0)), int(item.get("y",0))))
-        except Exception as e:
-            self._log("Listagem de imagens falhou: {}".format(e))
-
-        # === Estrategia 1: imagem dinamica (src NAO e .jpg/.png/.gif estatico) ===
-        try:
-            campo_box = campo_captcha.bounding_box()
-            imgs = page.locator("img").all()
-            for img in imgs:
-                try:
-                    src = img.get_attribute("src") or ""
-                    src_lower = src.lower()
-
-                    # Ignora imagens estaticas conhecidas
-                    # ATENCAO: nao ignora .gif generico pois a imagem CAPTCHA pode ser gif
-                    eh_estatica = any([
-                        src_lower.endswith(".svg"),
-                        src_lower.endswith(".ico"),
-                        src_lower.endswith(".webp"),
-                        ".jpg" in src_lower,          # instrucoes (ic_use_teclado.jpg)
-                        "/tec_" in src_lower,         # teclas do teclado
-                        "giss-branco" in src_lower,   # logo
-                        "bt_menu" in src_lower,       # botoes menu
-                    ])
-                    if eh_estatica:
-                        self._log("Ignorando imagem estatica: {}".format(src[:60]))
-                        continue
-
-                    # Imagem dinamica encontrada — baixa via URL
-                    self._log("Imagem dinamica (possivel CAPTCHA): {}".format(src[:80]))
-
-                    if src.startswith("data:image"):
-                        b64 = src.split(",", 1)[1]
-                        import base64 as _b64
-                        dados = _b64.b64decode(b64)
-                        self._log("Img CAPTCHA via data URI ({} bytes).".format(len(dados)))
-                        return dados
-
-                    # Constroi URL absoluta se necessario
-                    if src.startswith("http"):
-                        url_img = src
-                    elif src.startswith("/"):
-                        from urllib.parse import urlparse
-                        parsed = urlparse(page.url)
-                        url_img = "{}://{}{}".format(parsed.scheme, parsed.netloc, src)
-                    elif src:
-                        from urllib.parse import urlparse, urljoin
-                        url_img = urljoin(page.url, src)
-                    else:
-                        continue
-
-                    import requests as _req
-                    cookies = {ck["name"]: ck["value"] for ck in page.context.cookies()}
-                    resp = _req.get(url_img, cookies=cookies, timeout=15,
-                                   headers={"Referer": page.url})
-                    if resp.status_code == 200 and len(resp.content) > 200:
-                        self._log("Img CAPTCHA baixada (dinamica) via URL ({} bytes): {}".format(
-                            len(resp.content), url_img[:60]))
-                        return resp.content
-                    self._log("Download falhou: status={} size={}".format(
-                        resp.status_code, len(resp.content)))
-                except Exception as e:
-                    self._log("Erro ao processar img: {}".format(e))
-        except Exception as e:
-            self._log("Estrategia 1 falhou: {}".format(e))
-
-        # === Estrategia 2: clip preciso — so a area dos digitos ===
-        # O CAPTCHA fica ~40-55px acima do campo input
-        try:
-            campo_box = campo_captcha.bounding_box()
-            if campo_box:
+            campo = page.locator("input[placeholder='CAPTCHA']").first
+            box   = campo.bounding_box()
+            if box:
                 clip = {
-                    "x": max(0, campo_box["x"] - 5),
-                    "y": max(0, campo_box["y"] - 58),
-                    "width": min(campo_box["width"] + 10, 200),
+                    "x": max(0, box["x"] - 5),
+                    "y": max(0, box["y"] - 58),
+                    "width":  min(box["width"] + 10, 200),
                     "height": 52,
                 }
                 dados = page.screenshot(clip=clip)
-                self._log("Img CAPTCHA via clip ({} bytes).".format(len(dados)))
+                self._log("CAPTCHA via clip ({} bytes).".format(len(dados)))
                 return dados
         except Exception as e:
-            self._log("Estrategia 2 (clip) falhou: {}".format(e))
+            self._log("Clip CAPTCHA falhou: {}".format(e))
 
-        self._log("ERRO: nao foi possivel capturar imagem do CAPTCHA.")
         return None
 
-    def _ler_teclado_atual(self, page):
+    def _preencher_captcha(self, page, digitos):
         """
-        Le o teclado numerico do CAPTCHA usando imagens tec_N.gif.
-
-        O portal GissOnline renderiza o teclado como imagens GIF:
-          <img src=".../tec_5.gif" pos=(501,581)>  -> digito 5
-          <img src=".../tec_8.gif" pos=(541,581)>  -> digito 8
-
-        O digito esta no nome do arquivo. A posicao muda a cada carregamento
-        (teclado embaralhado). Basta ler as coordenadas atuais da img.
+        Preenche o campo CAPTCHA com os dígitos resolvidos.
+        Tenta fill() direto primeiro; se recusar, usa o teclado numérico virtual.
         """
-        mapa = {}  # {digito_str: {"x":..,"y":..,"width":..,"height":..}}
-
-        # Busca todas as imagens com src contendo '/tec_N' onde N eh 0-9
-        try:
-            imgs = page.locator("img").all()
-            for img in imgs:
-                try:
-                    src = img.get_attribute("src") or ""
-                    # Extrai digito do nome do arquivo: tec_5.gif -> "5"
-                    match = re.search(r"/tec_([0-9])\.gif", src, re.I)
-                    if not match:
-                        continue
-                    digito = match.group(1)
-                    box = img.bounding_box()
-                    if box and box["x"] > 0 and box["y"] > 0:
-                        mapa[digito] = box
-                        self._log("  Teclado: digito='{}' src={} pos=({:.0f},{:.0f})".format(
-                            digito, src.split("/")[-1], box["x"], box["y"]))
-                except Exception:
-                    pass
-        except Exception as e:
-            self._log("Erro ao ler teclado por img: {}".format(e))
-
-        if mapa:
-            self._log("Teclado lido via img src: {} digitos encontrados: {}".format(
-                len(mapa), " ".join(sorted(mapa.keys()))))
-        else:
-            self._log("Teclado img nao encontrado. Tentando por texto...")
-            # Fallback: busca por texto (outros portais)
-            for sel in ["span", "td", "div", "button"]:
-                try:
-                    candidatos = {}
-                    for el in page.locator(sel).all():
-                        try:
-                            txt = el.inner_text().strip()
-                            if re.match(r"^\d$", txt):
-                                box = el.bounding_box()
-                                if box and box["x"] > 0 and txt not in candidatos:
-                                    candidatos[txt] = box
-                        except Exception:
-                            pass
-                    if len(candidatos) >= 8:
-                        mapa = candidatos
-                        break
-                except Exception:
-                    pass
-
-        return mapa
-
-    def _clicar_teclado_numerico_captcha(self, page, digitos):
-        """
-        Clica os digitos no teclado numerico do CAPTCHA usando
-        page.mouse.click() com coordenadas reais.
-
-        O teclado e lido IMEDIATAMENTE antes de cada clique para
-        evitar problemas de embaralhamento durante o 2captcha.
-        """
-        self._log("Clicando teclado numerico: '{}'".format(digitos))
-
-        # Limpa o campo CAPTCHA antes de clicar os digitos (evita concatenacao com senha)
-        for sel_cap in [
-            "input[placeholder='CAPTCHA']",
-            "input[placeholder*='captcha' i]",
-            "input[name*='captcha' i]",
-        ]:
+        # Garante campo limpo antes de preencher
+        for sel in ["input[placeholder='CAPTCHA']",
+                    "input[placeholder*='captcha' i]",
+                    "input[name*='captcha' i]"]:
             try:
-                loc_cap = page.locator(sel_cap).first
-                if loc_cap.count() > 0:
-                    loc_cap.click()
-                    loc_cap.fill("")
-                    self._log("Campo CAPTCHA limpo antes de digitar.")
-                    break
-            except Exception as e:
-                self._log("Aviso ao limpar CAPTCHA: {}".format(e))
+                loc = page.locator(sel).first
+                if loc.count() > 0 and loc.is_visible(timeout=2000):
+                    loc.click()
+                    loc.fill("")           # limpa
+                    loc.fill(digitos)
+                    if loc.input_value().strip():
+                        self._log("CAPTCHA preenchido via fill: '{}'".format(loc.input_value()))
+                        return True
+            except Exception:
+                pass
 
-        # Le o teclado ATUAL (pos-2captcha, pode ter embaralhado)
-        mapa = self._ler_teclado_atual(page)
+        # Fallback: teclado numérico virtual (tec_0-9.gif)
+        self._log("Fill direto recusado — usando teclado numérico virtual...")
+        mapa = {}
+        for img in page.locator("img").all():
+            try:
+                src = img.get_attribute("src") or ""
+                m = re.search(r"/tec_([0-9])\.gif", src, re.I)
+                if not m:
+                    continue
+                box = img.bounding_box()
+                if box and box["x"] > 0 and box["y"] > 0:
+                    mapa[m.group(1)] = box
+            except Exception:
+                pass
 
         if not mapa:
-            self._log("Teclado nao localizado. Digitando direto no campo.")
-            try:
-                page.locator("input[placeholder='CAPTCHA']").first.fill(digitos)
-                return True
-            except Exception as e:
-                self._log("Falha ao digitar direto: {}".format(e))
-                return False
+            self._log("Teclado numérico não encontrado.")
+            return False
 
-        self._log("Mapa atual: {}".format(
-            {k: "({:.0f},{:.0f})".format(v["x"], v["y"]) for k, v in mapa.items()}))
-
-        for d in digitos:
-            if d not in mapa:
-                # Teclado pode ter mudado — rele
-                self._log("  Digito '{}' nao no mapa. Relendo teclado...".format(d))
-                mapa = self._ler_teclado_atual(page)
-
-            if d in mapa:
-                box = mapa[d]
-                cx = box["x"] + box["width"] / 2
-                cy = box["y"] + box["height"] / 2
-                try:
-                    # mouse.click gera eventos reais: mousedown+mousemove+mouseup+click
-                    page.mouse.click(cx, cy)
-                    self._log("  [{}] clicado em ({:.0f},{:.0f}).".format(d, cx, cy))
-                    time.sleep(0.3)
-                except Exception as e:
-                    self._log("  [{}] mouse.click falhou: {}. Tentando force...".format(d, e))
-                    try:
-                        page.locator("span, td, div, button").filter(
-                            has_text=re.compile(r"^{}$".format(d))
-                        ).first.click(force=True, timeout=1000)
-                        self._log("  [{}] clicado (force fallback).".format(d))
-                        time.sleep(0.3)
-                    except Exception as e2:
-                        self._log("  [{}] FALHOU: {}".format(d, e2))
-            else:
-                self._log("  [{}] nao encontrado no teclado.".format(d))
-
-        # Verifica se o campo CAPTCHA foi preenchido
+        # Foca o campo CAPTCHA antes de clicar as teclas
         try:
-            val = page.locator("input[placeholder='CAPTCHA']").first.input_value()
-            self._log("Campo CAPTCHA apos cliques: '{}'".format(val))
-            if not val:
-                self._log("Campo vazio — tentando digitar diretamente...")
-                page.locator("input[placeholder='CAPTCHA']").first.fill(digitos)
+            page.locator("input[placeholder='CAPTCHA']").first.click()
+            page.locator("input[placeholder='CAPTCHA']").first.fill("")
         except Exception:
             pass
 
-        self._shot(page, "captcha_preenchido")
+        for d in digitos:
+            if d in mapa:
+                b = mapa[d]
+                page.mouse.click(b["x"] + b["width"] / 2, b["y"] + b["height"] / 2)
+                time.sleep(0.25)
+                self._log("  Dígito '{}' clicado.".format(d))
+
+        try:
+            val = page.locator("input[placeholder='CAPTCHA']").first.input_value()
+            self._log("Campo CAPTCHA após cliques: '{}'".format(val))
+        except Exception:
+            pass
+
         return True
 
-        self._shot(page, "captcha_preenchido")
-        return True
+    def _resolver_captcha(self, page):
+        """Captura imagem, resolve via 2captcha e preenche o campo."""
+        self._log("=== Resolvendo CAPTCHA ===")
+        self._shot(page, "captcha_antes")
 
-    def _resolver_captcha_numerico(self, page):
-        """
-        Resolve o CAPTCHA numerico.
-        Chamado SOMENTE apos o QWERTY estar fechado.
-        """
-        self._log("=== Resolvendo CAPTCHA numerico ===")
-        self._shot(page, "captcha_tela_completa")
-
-        # Captura a imagem (agora com QWERTY fechado = imagem correta)
         img_bytes = self._capturar_img_captcha(page)
         if not img_bytes:
-            raise RuntimeError("Nao foi possivel capturar a imagem do CAPTCHA.")
+            raise RuntimeError("Não foi possível capturar a imagem do CAPTCHA.")
 
-        # Salva para diagnostico
-        nome_img = "{}_{}_{}_{}.png".format(
-            self._stamp(), self._safe(self.cliente_nome),
-            self._safe(self.competencia), "captcha_imagem")
+        nome_img = "{}_{}_{}_captcha.png".format(
+            self._stamp(), self._safe(self.cliente_nome), self._safe(self.competencia))
         (self.download_dir / nome_img).write_bytes(img_bytes)
         self.evidencias.append(nome_img)
         self._log("Imagem CAPTCHA salva: {} ({} bytes)".format(nome_img, len(img_bytes)))
 
-        # Envia ao CapSolver
         digitos = ""
         for tentativa in range(1, 4):
             try:
                 self._log("2captcha tentativa {}/3...".format(tentativa))
                 digitos = self.captcha.resolver_imagem(img_bytes)
                 if digitos:
-                    self._log("CapSolver resolveu: '{}'".format(digitos))
                     break
-                self._log("CapSolver retornou string vazia.")
             except Exception as e:
-                self._log("CapSolver t{} erro: {}".format(tentativa, e))
+                self._log("2captcha t{} erro: {}".format(tentativa, e))
                 if tentativa < 3:
-                    self._log("Recapturando imagem para nova tentativa...")
-                    time.sleep(1)
+                    time.sleep(2)
                     nova = self._capturar_img_captcha(page)
-                    if nova and len(nova) != len(img_bytes):
+                    if nova:
                         img_bytes = nova
 
         if not digitos:
-            raise RuntimeError(
-                "CapSolver nao resolveu o CAPTCHA apos 3 tentativas. "
-                "Verifique o arquivo captcha_imagem.png — deve mostrar apenas os 4 digitos."
-            )
+            raise RuntimeError("2captcha não resolveu o CAPTCHA após 3 tentativas.")
 
-        self._clicar_teclado_numerico_captcha(page, digitos)
-        return True
-
-    # ------------------------------------------------------------------ #
-    # ETAPA 1 — Login completo                                             #
-    # ------------------------------------------------------------------ #
-
-    def _garantir_campos_preenchidos(self, page):
-        """
-        Verifica se usuario e senha ainda estao preenchidos antes de clicar
-        Acessar. O portal pode limpar os campos durante a resolucao do CAPTCHA.
-        - Usuario vazio: repreenche imediatamente.
-        - Senha vazia: reabre o QWERTY e redigita.
-        """
-        self._log("Verificando campos login/senha antes de Acessar...")
-
-        # Verifica e repreenche usuario
-        usuario_ok = False
-        for sel in [
-            "input[placeholder='IDENTIFICACAO' i]",
-            "input[placeholder='IDENTIFICAÇÃO' i]",
-            "input[type='text']",
-        ]:
-            try:
-                loc = page.locator(sel).first
-                if loc.count() > 0:
-                    val = loc.input_value()
-                    if val and val.strip():
-                        self._log("Usuario OK: '{}'.".format(val.strip()))
-                        usuario_ok = True
-                    else:
-                        self._log("Usuario VAZIO — repreenchendo...")
-                        loc.click()
-                        loc.fill(self.usuario)
-                        self._log("Usuario repreenchido: '{}'.".format(self.usuario))
-                        usuario_ok = True
-                    break
-            except Exception:
-                pass
-        if not usuario_ok:
-            self._log("AVISO: nao verificou usuario.")
-
-        # Verifica e repreenche senha
-        senha_ok = False
-        for sel in [
-            "input[placeholder='SENHA' i]",
-            "input[placeholder='PASSWORD' i]",
-            "input[name='TxtSenha']",
-            "input[name='txtSenha']",
-            "input[name*='senha' i]",
-            "input[id*='senha' i]",
-            "input[type='password']",
-        ]:
-            try:
-                loc = page.locator(sel).first
-                if loc.count() > 0:
-                    val = loc.input_value()
-                    if val and val.strip():
-                        self._log("Senha OK via '{}'.".format(sel))
-                        senha_ok = True
-                    else:
-                        self._log("Senha VAZIA via '{}' — redigitando...".format(sel))
-                        self._processar_teclado_senha(page)
-                        self._log("Senha redigitada.")
-                        senha_ok = True
-                    break
-            except Exception:
-                pass
-        if not senha_ok:
-            self._log("AVISO: nao foi possivel verificar campo senha.")
-
-        self._shot(page, "campos_verificados_pre_acessar")
+        self._log("CAPTCHA resolvido: '{}'".format(digitos))
+        self._preencher_captcha(page, digitos)
 
     def _clicar_acessar(self, page):
-        """Clica Acessar sem capturar nova aba (usado em retentativas internas)."""
-        for sel in [
-            "button:has-text('Acessar')",
-            "input[value='Acessar']",
-            "a:has-text('Acessar')",
-            "input[type='submit']",
-        ]:
+        for sel in ["button:has-text('Acessar')", "input[value='Acessar']",
+                    "a:has-text('Acessar')", "input[type='submit']"]:
             try:
                 page.locator(sel).first.click(timeout=4000)
                 self._log("Acessar clicado via '{}'.".format(sel))
@@ -935,44 +476,10 @@ class GissBot:
             pass
         return False
 
-    def _clicar_acessar_e_capturar(self, page):
-        """
-        Clica em Acessar e captura a nova aba que o portal abre via window.open().
-        O GissOnline abre o portal em nova aba a partir de afterlogin.cfm.
-        Usa context.expect_page() para capturar a nova pagina no momento exato.
-        """
-        self._portal_page = None
-
-        # Estrategia 1: captura nova aba via expect_page (mais confiavel)
-        try:
-            with page.context.expect_page(timeout=15000) as nova_pagina_info:
-                self._clicar_acessar(page)
-            nova = nova_pagina_info.value
-            nova.wait_for_load_state("domcontentloaded", timeout=30000)
-            self._portal_page = nova
-            self._log("Nova aba capturada via expect_page: {}".format(nova.url))
-            return True
-        except Exception as e:
-            self._log("expect_page nao capturou nova aba ({}). Verificando abas existentes...".format(e))
-
-        # Estrategia 2: verifica abas que ja existem no contexto
-        time.sleep(3)
-        try:
-            for p in page.context.pages:
-                url = p.url.lower()
-                if self._eh_url_portal(url):
-                    self._portal_page = p
-                    self._log("Portal encontrado em aba existente: {}".format(p.url))
-                    return True
-        except Exception as e:
-            self._log("Erro ao verificar abas: {}".format(e))
-
-        self._log("Nenhuma nova aba do portal detectada. Portal pode estar na aba atual.")
-        return False
-
     def _fazer_login(self, page):
         self._log(">>> LOGIN: {}".format(self.base_url))
-        # Captura URL do window.open (inclui TXTVALIDA) sem bloquear o popup
+
+        # Intercepta window.open para capturar URL do portal
         try:
             page.context.add_init_script("""
                 window._giss_open_url = null;
@@ -982,54 +489,103 @@ class GissBot:
                     try { return _orig.call(window, url, t, f); } catch(e) { return null; }
                 };
             """)
-            self._log("Captura de window.open ativa.")
-        except Exception as e:
-            self._log("Captura window.open: {}".format(e))
+        except Exception:
+            pass
+
         page.goto(self.base_url, wait_until="domcontentloaded", timeout=60000)
         time.sleep(2)
-        self._shot(page, "00_login_inicial")
+        self._shot(page, "01_login")
 
-        # Preenche CMC/usuario
-        for sel in [
+        # IDENTIFICAÇÃO
+        ok = self._preencher_campo_direto(page, [
             "input[placeholder='IDENTIFICAÇÃO' i]",
             "input[placeholder='IDENTIFICACAO' i]",
+            "input[name*='ident' i]",
             "input[type='text']",
-            "input[name*='user' i]",
-            "input[id*='user' i]",
-        ]:
+        ], self.usuario, "Identificacao")
+        if not ok:
+            self._log("AVISO: Identificação não preenchida!")
+
+        time.sleep(0.5)
+
+        # SENHA — fill direto primeiro, QWERTY como fallback
+        ok = self._preencher_campo_direto(page, [
+            "input[placeholder='SENHA' i]",
+            "input[name='TxtSenha']",
+            "input[name*='senha' i]",
+            "input[id*='senha' i]",
+            "input[type='password']",
+        ], self.senha, "Senha")
+        if not ok:
+            self._log("Fill direto falhou para senha — tentando QWERTY virtual...")
+            self._digitar_senha_qwerty(page)
+
+        time.sleep(0.5)
+        self._shot(page, "02_campos_preenchidos")
+
+        # CAPTCHA
+        self._resolver_captcha(page)
+        time.sleep(0.5)
+        self._shot(page, "03_captcha_preenchido")
+
+        # Verifica campos antes de clicar Acessar
+        self._verificar_campos_login(page)
+
+        # Clica Acessar — captura nova aba se abrir via window.open
+        self._portal_page = None
+        try:
+            with page.context.expect_page(timeout=15000) as nova_info:
+                self._clicar_acessar(page)
+            nova = nova_info.value
+            nova.wait_for_load_state("domcontentloaded", timeout=30000)
+            self._portal_page = nova
+            self._log("Nova aba capturada: {}".format(nova.url))
+        except Exception as e:
+            self._log("expect_page: {} — continuando sem nova aba.".format(e))
+            self._clicar_acessar(page)
+
+        self._shot(page, "04_apos_acessar")
+        time.sleep(3)
+
+    def _verificar_campos_login(self, page):
+        """Verifica se identificação e senha estão preenchidas antes de Acessar."""
+        self._log("Verificando campos antes de Acessar...")
+
+        # Identificação
+        for sel in ["input[placeholder='IDENTIFICAÇÃO' i]",
+                    "input[placeholder='IDENTIFICACAO' i]", "input[type='text']"]:
             try:
                 loc = page.locator(sel).first
                 if loc.count() > 0:
-                    loc.click()
-                    loc.fill(self.usuario)
-                    self._log("Usuario preenchido via '{}'.".format(sel))
+                    val = loc.input_value()
+                    if val and val.strip():
+                        self._log("Identificação OK: '{}'.".format(val.strip()))
+                    else:
+                        self._log("Identificação VAZIA — repreenchendo...")
+                        loc.fill(self.usuario)
                     break
             except Exception:
                 pass
 
-        time.sleep(0.5)
+        # Senha
+        for sel in ["input[placeholder='SENHA' i]", "input[name='TxtSenha']",
+                    "input[name*='senha' i]", "input[type='password']"]:
+            try:
+                loc = page.locator(sel).first
+                if loc.count() > 0:
+                    val = loc.input_value()
+                    if val and val.strip():
+                        self._log("Senha OK.")
+                    else:
+                        self._log("Senha VAZIA — redigitando...")
+                        ok = self._preencher_campo_direto(page, [sel], self.senha, "Senha")
+                        if not ok:
+                            self._digitar_senha_qwerty(page)
+                    break
+            except Exception:
+                pass
 
-        # QWERTY — digita senha e aguarda teclado fechar
-        self._processar_teclado_senha(page)
-
-        # Neste ponto o QWERTY esta fechado (garantido pelo wait acima)
-        time.sleep(0.5)
-
-        # CAPTCHA numerico
-        if self._tem_captcha_numerico(page):
-            self._resolver_captcha_numerico(page)
-            time.sleep(0.3)
-        else:
-            self._log("CAPTCHA nao detectado.")
-
-        # Revalida campos antes de Acessar
-        self._garantir_campos_preenchidos(page)
-
-        # Clica Acessar capturando nova aba se abrir via window.open()
-        self._portal_page = None  # sera preenchido pelo _clicar_acessar_e_capturar
-        self._clicar_acessar_e_capturar(page)
-        self._shot(page, "04_apos_acessar")
-        time.sleep(3)
+        self._shot(page, "campos_verificados")
 
     # ------------------------------------------------------------------ #
     # Aguarda portal                                                       #
@@ -1037,491 +593,279 @@ class GissBot:
 
     def _aguardar_portal(self, page):
         """
-        Aguarda o portal wwwx.gissonline.com.br.
-        Estratégias em ordem:
-        1. Aba nova capturada via expect_page/listener
-        2. Verifica context.pages a cada 1s por 30s
-        3. Lê window._giss_open_url (capturado pelo init_script) e navega
-        4. Lê o HTML do afterlogin.cfm e extrai a URL do window.open()
+        Aguarda o portal carregar após o login.
+        O GissOnline abre o portal via window.open em nova aba.
         """
-        # Caso 1: aba já capturada
-        if getattr(self, "_portal_page", None) is not None:
+        # Caso 1: aba capturada via expect_page
+        if self._portal_page is not None:
             p = self._portal_page
             self._log("Usando aba capturada: {}".format(p.url))
             try:
                 p.wait_for_load_state("domcontentloaded", timeout=15000)
                 p.bring_to_front()
                 time.sleep(2)
-
-                # Tela intermediária de seleção de município?
-                if self._eh_tela_selecao_municipio(p.url):
+                if self._eh_tela_municipio(p.url):
                     p = self._tratar_selecao_municipio(p)
-
                 if self._eh_url_portal(p.url):
                     self._shot(p, "05_portal_ok")
-                    self._log("Portal carregado!")
+                    self._log("Portal OK: {}".format(p.url))
                     return p
             except Exception as e:
-                self._log("Erro ao processar aba capturada: {}".format(e))
+                self._log("Erro ao usar aba capturada: {}".format(e))
 
-        # Aceita qualquer alert que apareça durante a espera
+        # Aceita dialogs automáticos
         try:
             page.on("dialog", lambda d: d.accept())
         except Exception:
             pass
-        # Aceita qualquer alert que apareça durante a espera
-        try:
-            page.on('dialog', lambda d: d.accept())
-        except Exception:
-            pass
-        self._log("Aguardando popup do portal (30s)...")
-        inicio = time.time()
 
+        # Caso 2: varre todas as abas por 30s
+        self._log("Aguardando portal em qualquer aba (30s)...")
+        inicio = time.time()
         while time.time() - inicio < 30:
             time.sleep(1)
+            for p in page.context.pages:
+                url = p.url.lower()
+                if self._eh_tela_municipio(url):
+                    p.bring_to_front()
+                    p = self._tratar_selecao_municipio(p)
+                if self._eh_url_portal(p.url.lower()):
+                    p.bring_to_front()
+                    time.sleep(2)
+                    self._shot(p, "05_portal_ok")
+                    self._log("Portal carregado: {}".format(p.url))
+                    return p
+            self._log("Aguardando... abas={} url={}".format(
+                len(page.context.pages), page.url[:60]))
 
-            # Verifica todas as abas
-            try:
-                for p in page.context.pages:
-                    url_p = p.url.lower()
-                    if self._eh_url_portal(url_p):
-                        self._log("Portal em aba: {}".format(url_p[:70]))
-                        p.bring_to_front()
-                        time.sleep(2)
-                        self._shot(p, "05_portal_ok")
-                        self._log("Portal carregado!")
-                        return p
-            except Exception:
-                pass
-
-            # Verifica aba atual
-            url = self._url_atual(page)
-            if self._eh_url_portal(url):
-                time.sleep(2)
-                self._shot(page, "05_portal_ok")
-                return page
-
-            self._log("URL: {} | Abas: {}".format(url[:60], len(page.context.pages)))
-
-        # Estratégia 3: usa URL capturada pelo init_script
-        self._log("Popup nao apareceu. Verificando window._giss_open_url...")
-        for tentativa in range(5):
-            try:
-                url_cap = page.evaluate("() => window._giss_open_url || null")
-                self._log("window._giss_open_url = {}".format(url_cap))
-                if url_cap:
-                    self._log("Navegando para URL capturada (com TXTVALIDA)...")
-                    page.goto(url_cap, wait_until="domcontentloaded", timeout=20000)
-                    time.sleep(3)
-                    url_pos = self._url_atual(page)
-                    self._log("Pos-navegacao: {}".format(url_pos[:70]))
-                    if self._eh_url_portal(url_pos):
-                        self._shot(page, "05_portal_ok")
-                        self._log("Portal via URL capturada!")
-                        return page
-                    break
-            except Exception as e:
-                self._log("Erro tentativa {}: {}".format(tentativa+1, e))
-                time.sleep(2)
-
-        # Estratégia 4: extrai URL do HTML do afterlogin.cfm
-        self._log("Extraindo URL do HTML do afterlogin.cfm...")
+        # Caso 3: usa URL capturada pelo init_script
         try:
-            html = page.content()
-            self._log("HTML afterlogin: {} bytes".format(len(html)))
-            # Salva HTML para diagnóstico
-            self._save_txt("afterlogin_html", html[:50000])
-            # Busca window.open no HTML
-            import re as _re
-            url_encontrada = None
-            for pat in [
-                r'window[.]open\s*[(]["\']([^"\']+)["\']',
-                r"https?://[\w.]*gissonline[.][\w./=?&-]+",
-            ]:
-                m = _re.search(pat, html, _re.I)
-                if m:
-                    url_encontrada = m.group(1) if m.lastindex else m.group(0)
-                    break
-            if url_encontrada:
-                if True:
-                    url_encontrada = m.group(1)
-                    self._log("URL no HTML: {}".format(url_encontrada[:100]))
-                    if url_encontrada and ("gissonline.com.br" in url_encontrada or url_encontrada.startswith("/")):
-                        if url_encontrada.startswith("/"):
-                            url_encontrada = "https://www.gissonline.com.br" + url_encontrada
-                        page.goto(url_encontrada, wait_until="domcontentloaded", timeout=20000)
-                        time.sleep(3)
-                        url_pos = self._url_atual(page)
-                        if self._eh_url_portal(url_pos):
-                            self._shot(page, "05_portal_ok")
-                            self._log("Portal via HTML!")
-                            return page
+            url_cap = page.evaluate("() => window._giss_open_url || null")
+            if url_cap:
+                self._log("Navegando para URL capturada: {}".format(url_cap[:80]))
+                page.goto(url_cap, wait_until="domcontentloaded", timeout=20000)
+                time.sleep(3)
+                if self._eh_url_portal(page.url.lower()):
+                    self._shot(page, "05_portal_ok")
+                    return page
         except Exception as e:
-            self._log("Extracao HTML falhou: {}".format(e))
+            self._log("URL capturada falhou: {}".format(e))
 
-        # CAPTCHA errado
-        if self._esta_no_login(page) and self._tem_captcha_numerico(page):
-            self._log("CAPTCHA errado. Retentando...")
-            try:
-                self._garantir_campos_preenchidos(page)
-                self._resolver_captcha_numerico(page)
-                self._garantir_campos_preenchidos(page)
-                self._clicar_acessar_e_capturar(page)
-            except Exception as e:
-                self._log("Erro retentativa: {}".format(e))
-
-        try:
-            self._shot(page, "erro_timeout_portal")
-        except Exception:
-            pass
+        self._shot(page, "erro_portal_nao_encontrado")
         raise RuntimeError(
-            "Portal nao encontrado. HTML do afterlogin.cfm salvo em evidencias "
-            "— envie o arquivo afterlogin_html.txt para diagnostico."
+            "Portal não carregou após 30s. "
+            "Verifique credenciais e a imagem do CAPTCHA nas evidências."
         )
 
-
-    # ------------------------------------------------------------------ #
-    # Travessia recursiva de frames (child_frames)                        #
-    # ------------------------------------------------------------------ #
-
-    def _iter_frames(self, frame):
-        """Gerador recursivo: percorre frame + todos os child_frames."""
-        yield frame
-        for filho in frame.child_frames:
-            yield from self._iter_frames(filho)
-
-    def _todos_frames(self, page):
-        """Lista completa de frames via travessia recursiva de child_frames."""
-        return list(self._iter_frames(page.main_frame))
-
-    # ------------------------------------------------------------------ #
-    # Diagnostico: salva HTML + resumo JSON de cada frame                 #
-    # ------------------------------------------------------------------ #
-
-    def _salvar_evidencias_frames(self, page, sufixo="frames"):
+    def _tratar_selecao_municipio(self, page):
         """
-        Salva HTML e resumo textual de todos os frames como evidencia.
-        Essencial para diagnosticar portais com framesets aninhados.
+        Seleciona estado e município na tela intermediária que alguns
+        municípios exibem após o login.
         """
-        import json as _json
-        pasta = self.download_dir
-        evidencias = []
-        for idx, frame in enumerate(self._todos_frames(page)):
-            item = {"idx": idx, "name": frame.name, "url": frame.url}
-            try:
-                item["texto"] = frame.evaluate(
-                    "() => document.body ? document.body.innerText.slice(0, 2000) : ''"
-                )
-                item["campos"] = frame.evaluate("""
-                    () => Array.from(document.querySelectorAll(
-                        'input:not([type=hidden]), select, textarea, button, a'
-                    )).slice(0, 30).map(el => ({
-                        tag:  el.tagName,
-                        type: el.getAttribute('type') || '',
-                        id:   el.id,
-                        name: el.getAttribute('name') || '',
-                        text: (el.innerText || el.value || el.getAttribute('title') || '').trim().slice(0,60),
-                        href: el.getAttribute('href') || ''
-                    }))
-                """)
-                html = frame.content()
-                nome_html = "{}_{}_{}_frame{}.html".format(
-                    self._stamp(), self._safe(self.cliente_nome), sufixo, idx)
-                (pasta / nome_html).write_text(html, encoding="utf-8", errors="replace")
-                item["html_file"] = nome_html
-                self.evidencias.append(nome_html)
-            except Exception as e:
-                item["erro"] = str(e)
-            evidencias.append(item)
+        self._log("=== Seleção de município ===")
+        self._shot(page, "selecao_municipio")
+        estado = (self.estado or "SP").upper()
 
-        nome_json = "{}_{}_{}_frames.json".format(
-            self._stamp(), self._safe(self.cliente_nome), sufixo)
-        (pasta / nome_json).write_text(
-            _json.dumps(evidencias, ensure_ascii=False, indent=2), encoding="utf-8")
-        self.evidencias.append(nome_json)
-        self._log("Evidencias frames salvas: {} frames, JSON={}".format(
-            len(evidencias), nome_json))
-        return evidencias
-
-    def _dump_portal(self, page):
-        """Loga estrutura de frames para diagnostico rapido no console."""
-        self._log("=== DUMP PORTAL ({} frames) ===".format(len(self._todos_frames(page))))
-        for idx, f in enumerate(self._todos_frames(page)):
+        try:
+            page.select_option("select[name='Estado']", value=estado, timeout=5000)
+            self._log("Estado '{}' selecionado.".format(estado))
+        except Exception:
             try:
-                resumo = f.evaluate("""
-                    () => {
-                        var txt = document.body ? document.body.innerText : '';
-                        var links = Array.from(document.querySelectorAll(
-                            'a, td[onclick], input[type="button"], input[type="submit"], button'
-                        )).map(el => (el.innerText || el.value || '').trim())
-                          .filter(t => t.length > 0 && t.length < 60).slice(0, 15);
-                        var inputs = Array.from(document.querySelectorAll(
-                            'input:not([type=hidden]), select'
-                        )).map(el => (el.name || el.id || '?') + '[' + (el.type||'text') + ']')
-                          .slice(0, 8);
-                        return {txt: txt.slice(0,300), links: links, inputs: inputs};
-                    }
-                """)
-                self._log("  [{}] url={} | links={} | inputs={}".format(
-                    idx, f.url[:60], resumo["links"], resumo["inputs"]))
-                if resumo["txt"].strip():
-                    self._log("      texto: {}".format(resumo["txt"][:200].replace("\n", " ")))
-            except Exception as e:
-                self._log("  [{}] url={} erro={}".format(idx, f.url[:40], e))
-        self._log("=== FIM DUMP ===")
+                page.evaluate("""(uf) => {
+                    var s = document.querySelector("select[name='Estado']");
+                    if (s) { s.value=uf; s.dispatchEvent(new Event('change',{bubbles:true})); }
+                }""", estado)
+            except Exception:
+                pass
+
+        time.sleep(3)
+
+        cidade_clicada = False
+        for _ in range(3):
+            for f in self._todos_frames(page):
+                if "cidades" not in (f.name or f.url).lower():
+                    continue
+                try:
+                    for link in f.locator("a").all():
+                        txt = link.inner_text().strip()
+                        if not txt:
+                            continue
+                        if not self.municipio or self.municipio.lower() in txt.lower():
+                            link.click(timeout=3000)
+                            self._log("Cidade clicada: '{}'".format(txt))
+                            cidade_clicada = True
+                            time.sleep(3)
+                            break
+                except Exception:
+                    pass
+                if cidade_clicada:
+                    break
+            if cidade_clicada:
+                break
+            time.sleep(2)
+
+        for _ in range(20):
+            time.sleep(1)
+            for p in page.context.pages:
+                if self._eh_url_portal(p.url.lower()):
+                    self._log("Portal após município: {}".format(p.url))
+                    return p
+
+        self._log("AVISO: redirect após município não detectado.")
+        return page
 
     # ------------------------------------------------------------------ #
-    # Clique via JavaScript em qualquer frame                             #
+    # Ações no portal                                                      #
     # ------------------------------------------------------------------ #
 
-    def _js_clicar_texto(self, page, texto):
-        """Clica via JS no primeiro elemento que contenha o texto em qualquer frame."""
-        padrao_lower = re.sub(r"[^a-z0-9 ]", "", texto.lower().strip())
-        script = """
-            (padrao) => {
-                var sels = ['a', 'td', 'span', 'li', 'div',
-                            'input[type="button"]', 'input[type="submit"]', 'button'];
-                for (var s of sels) {
-                    var els = document.querySelectorAll(s);
-                    for (var el of els) {
-                        var t = (el.innerText || el.value || '').toLowerCase()
-                                .replace(/[^a-z0-9 ]/g, '').trim();
-                        if (t.indexOf(padrao) !== -1 && t.length < 120) {
-                            el.click();
-                            return el.tagName + ':' + t.slice(0, 50);
-                        }
+    def _clicar_link(self, page, texto, timeout_ms=3000):
+        """
+        Clica em link/botão com o texto dado em qualquer frame.
+        Tenta JS recursivo primeiro, depois Playwright locator.
+        """
+        padrao = re.sub(r"[^a-z0-9 ]", "", texto.lower().strip())
+
+        script = """(p) => {
+            for (var s of ['a','td','span','button',
+                           'input[type="button"]','input[type="submit"]']) {
+                for (var el of document.querySelectorAll(s)) {
+                    var t = (el.innerText||el.value||'')
+                            .toLowerCase().replace(/[^a-z0-9 ]/g,'').trim();
+                    if (t.indexOf(p) !== -1 && t.length < 120) {
+                        el.click();
+                        return el.tagName + ':' + t.slice(0,50);
                     }
                 }
-                return null;
             }
-        """
+            return null;
+        }"""
         for f in self._todos_frames(page):
             try:
-                res = f.evaluate(script, padrao_lower)
+                res = f.evaluate(script, padrao)
                 if res:
-                    self._log("JS click (frame[{}]): '{}'".format(f.url[:50], res))
+                    self._log("Clicado '{}' via JS.".format(texto))
                     return True
             except Exception:
                 pass
-        return False
 
-    # ------------------------------------------------------------------ #
-    # Fallback OCR: screenshot + pytesseract                              #
-    # ------------------------------------------------------------------ #
-
-    def _ocr_clicar_texto(self, page, texto):
-        """
-        Fallback: tira screenshot, roda OCR, clica nas coordenadas do texto.
-        Ativado quando o texto nao aparece no DOM de nenhum frame (Java/canvas).
-        """
-        try:
-            import pytesseract
-            from PIL import Image
-            import io as _io
-        except ImportError:
-            self._log("OCR indisponivel (pip install pytesseract pillow). Instale tesseract-ocr tbm.")
-            return False
-
-        try:
-            png = page.screenshot()
-            img = Image.open(_io.BytesIO(png))
-            dados = pytesseract.image_to_data(img, lang="por",
-                                              output_type=pytesseract.Output.DICT)
-            padrao = texto.lower()
-            for i, tok in enumerate(dados["text"]):
-                if padrao in (tok or "").lower():
-                    x = dados["left"][i] + dados["width"][i] // 2
-                    y = dados["top"][i] + dados["height"][i] // 2
-                    self._log("OCR encontrou '{}' em ({},{}) — clicando.".format(tok, x, y))
-                    page.mouse.click(x, y)
+        regexp = re.compile(re.escape(texto), re.I)
+        for frame in self._todos_frames(page):
+            for sel in ["a", "td,li", "span,div,button"]:
+                try:
+                    frame.locator(sel).filter(has_text=regexp).first.click(timeout=timeout_ms)
+                    self._log("Clicado '{}' via locator.".format(texto))
                     return True
-            self._log("OCR: texto '{}' nao encontrado na screenshot.".format(texto))
-        except Exception as e:
-            self._log("OCR erro: {}".format(e))
+                except Exception:
+                    pass
+
+        self._log("Link NAO encontrado: '{}'".format(texto))
         return False
 
-    # ------------------------------------------------------------------ #
-    # Preenche campos mes/ano em qualquer frame                           #
-    # ------------------------------------------------------------------ #
-
-    def _preencher_competencia_portal(self, page):
-        """Preenche Mes e Ano via JS recursivo em todos os frames."""
-        script = """
-            ([mes, ano]) => {
-                var resultado = [];
-                // Campos de mes
-                var selsMes = ['input[name*="mes" i]','input[id*="mes" i]','input[size="2"]'];
-                for (var s of selsMes) {
-                    var el = document.querySelector(s);
-                    if (el && el.type !== 'hidden') {
-                        el.value = mes;
-                        el.dispatchEvent(new Event('input',  {bubbles:true}));
-                        el.dispatchEvent(new Event('change', {bubbles:true}));
-                        resultado.push('mes:' + (el.name || el.id || s));
-                        break;
-                    }
+    def _preencher_competencia(self, page):
+        """Preenche Mês e Ano em qualquer frame."""
+        script = """([mes, ano]) => {
+            var r = [];
+            for (var s of ['input[name*="mes" i]','input[id*="mes" i]','input[size="2"]']) {
+                var el = document.querySelector(s);
+                if (el && el.type !== 'hidden') {
+                    el.value = mes;
+                    el.dispatchEvent(new Event('input',  {bubbles:true}));
+                    el.dispatchEvent(new Event('change', {bubbles:true}));
+                    r.push('mes'); break;
                 }
-                // Campos de ano
-                var selsAno = ['input[name*="ano" i]','input[id*="ano" i]','input[size="4"]'];
-                for (var s of selsAno) {
-                    var el = document.querySelector(s);
-                    if (el && el.type !== 'hidden') {
-                        el.value = ano;
-                        el.dispatchEvent(new Event('input',  {bubbles:true}));
-                        el.dispatchEvent(new Event('change', {bubbles:true}));
-                        resultado.push('ano:' + (el.name || el.id || s));
-                        break;
-                    }
-                }
-                return resultado;
             }
-        """
-        preencheu_mes = False
-        preencheu_ano = False
-
+            for (var s of ['input[name*="ano" i]','input[id*="ano" i]','input[size="4"]']) {
+                var el = document.querySelector(s);
+                if (el && el.type !== 'hidden') {
+                    el.value = ano;
+                    el.dispatchEvent(new Event('input',  {bubbles:true}));
+                    el.dispatchEvent(new Event('change', {bubbles:true}));
+                    r.push('ano'); break;
+                }
+            }
+            return r;
+        }"""
+        ok_mes = ok_ano = False
         for f in self._todos_frames(page):
             try:
                 res = f.evaluate(script, [self.comp_mes, self.comp_ano])
                 for r in (res or []):
-                    if r.startswith("mes:"):
-                        self._log("{} (frame: {})".format(r, f.url[:50]))
-                        preencheu_mes = True
-                    elif r.startswith("ano:"):
-                        self._log("{} (frame: {})".format(r, f.url[:50]))
-                        preencheu_ano = True
-                if preencheu_mes and preencheu_ano:
+                    if r == "mes": ok_mes = True
+                    if r == "ano": ok_ano = True
+                if ok_mes and ok_ano:
                     break
             except Exception:
                 pass
 
-        # Fallback: Playwright locator em cada frame
-        if not preencheu_mes or not preencheu_ano:
+        # Fallback: locator direto em cada frame
+        if not ok_mes or not ok_ano:
             for f in self._todos_frames(page):
                 for sel, val, flag in [
-                    ("input[name*='mes' i], input[id*='mes' i], input[size='2']",
+                    ("input[name*='mes' i],input[id*='mes' i],input[size='2']",
                      self.comp_mes, "mes"),
-                    ("input[name*='ano' i], input[id*='ano' i], input[size='4']",
+                    ("input[name*='ano' i],input[id*='ano' i],input[size='4']",
                      self.comp_ano, "ano"),
                 ]:
-                    if (flag == "mes" and preencheu_mes) or (flag == "ano" and preencheu_ano):
+                    if (flag == "mes" and ok_mes) or (flag == "ano" and ok_ano):
                         continue
                     try:
                         loc = f.locator(sel).first
                         if loc.count() > 0:
                             loc.triple_click()
                             loc.fill(val)
-                            self._log("{} preenchido via locator (frame: {})".format(
-                                flag, f.url[:50]))
-                            if flag == "mes":
-                                preencheu_mes = True
-                            else:
-                                preencheu_ano = True
+                            if flag == "mes": ok_mes = True
+                            else:             ok_ano  = True
                     except Exception:
                         pass
 
-        if not preencheu_mes or not preencheu_ano:
-            self._log("AVISO: campos mes/ano nao preenchidos — competencia: {}".format(
-                self.competencia))
+        self._log("Competência {}/{} preenchida: mes={} ano={}".format(
+            self.comp_mes, self.comp_ano, ok_mes, ok_ano))
 
-    # ------------------------------------------------------------------ #
-    # Clica link em qualquer frame (JS -> locator -> OCR)                 #
-    # ------------------------------------------------------------------ #
-
-    def _clicar_link(self, page, padrao):
+    def _tem_confirmacao(self, page):
         """
-        Clica em elemento que corresponda ao padrao em qualquer frame.
-        Ordem: 1) JS recursivo  2) Playwright locator  3) OCR fallback
+        Detecta se apareceu a tela de confirmação do encerramento
+        (indica que a competência tem notas/movimento).
         """
-        texto_limpo = re.sub(r"[\\()|^$.*+?{}[\]]", "", padrao).strip()
-
-        # 1. JavaScript em cada frame (child_frames recursivo)
-        if self._js_clicar_texto(page, texto_limpo):
-            return True
-
-        # 2. Playwright locator em cada frame
-        regexp = re.compile(padrao, re.I)
-        for frame in self._todos_frames(page):
-            for metodo in [
-                lambda f=frame: f.locator("a").filter(has_text=regexp).first.click(timeout=1500),
-                lambda f=frame: f.locator("td,li").filter(has_text=regexp).first.click(timeout=1500),
-                lambda f=frame: f.locator("span,div,button").filter(has_text=regexp).first.click(timeout=1500),
-            ]:
-                try:
-                    metodo()
-                    self._log("Link clicado via locator (frame {}): '{}'".format(
-                        frame.url[:50], padrao))
-                    return True
-                except Exception:
-                    pass
-
-        # 3. OCR fallback (para componentes Java/canvas fora do DOM)
-        self._log("DOM nao encontrou '{}' — tentando OCR...".format(padrao))
-        if self._ocr_clicar_texto(page, texto_limpo):
-            return True
-
-        self._log("Link NAO encontrado em nenhum frame: '{}'".format(padrao))
-        return False
-
-    def _tem_dados_para_encerrar(self, page):
-        """
-        Verifica se a tela pos-clique em 'Encerrar Escrituracao' exibe
-        dados (faturamento, impostos) para confirmar.
-        Retorna True se ha dados, False se a tela esta vazia/sem movimento.
-        """
-        time.sleep(2)
-        self._shot(page, "tela_pos_encerrar_escrituracao")
-
-        # Indicadores de que ha dados para encerrar
-        indicadores_com_dados = [
-            r"TOTAL FATURADO",
-            r"TOTAL IMPOSTO",
-            r"CONFIRMACAO DO ENCERRAMENTO",
-            r"CONFIRMA.AO DO ENCERRAMENTO",
+        time.sleep(3)
+        padroes = [
             r"CLIQUE AQUI",
             r"SE DESEJA ENCERRAR",
+            r"TOTAL FATURADO",
+            r"TOTAL IMPOSTO",
+            r"CONFIRMA",
         ]
-        contextos = [page] + [f for f in page.frames if f != page.main_frame]
-        for padrao in indicadores_com_dados:
-            for ctx in contextos:
+        for padrao in padroes:
+            for f in self._todos_frames(page):
                 try:
-                    if ctx.get_by_text(re.compile(padrao, re.I)).count() > 0:
-                        self._log("Dados detectados: '{}' (frame: {})".format(
-                            padrao, getattr(ctx, "name", "main") or "main"))
+                    if f.get_by_text(re.compile(padrao, re.I)).count() > 0:
+                        self._log("Confirmação detectada: '{}'".format(padrao))
                         return True
                 except Exception:
                     pass
-
-        self._log("Sem dados para encerrar (sem movimento).")
+        self._log("Sem confirmação — competência provavelmente sem movimento.")
         return False
 
     def _confirmar_encerramento(self, page):
         """
-        Tela de confirmacao: clica no primeiro 'CLIQUE AQUI' que NAO seja cancelar.
-        Estrutura esperada:
-          'SE DESEJA ENCERRAR A COMPETENCIA CLIQUE AQUI'   <- clicar este
-          'SE NAO DESEJA EFETUAR O ENCERRAMENTO CLIQUE AQUI'
+        Clica no link de confirmação positiva do encerramento.
+        Busca por links com 'CLIQUE AQUI' que NÃO sejam de cancelamento.
         """
-        self._shot(page, "confirmacao_encerramento")
-        time.sleep(1)
+        self._shot(page, "tela_confirmacao")
 
-        # Percorre pagina + frames buscando o link de confirmacao
-        contextos = [page] + [f for f in page.frames if f != page.main_frame]
-        for ctx in contextos:
+        for f in self._todos_frames(page):
             try:
-                links = ctx.get_by_role("link").all()
-                for link in links:
+                for link in f.get_by_role("link").all():
                     try:
                         txt = link.inner_text().strip().upper()
-                        nao_e_cancelar = (
-                            "NAO" not in txt and
-                            "NÃO" not in txt and
-                            "CANCEL" not in txt and
-                            "NAO DESEJA" not in txt
+                        eh_positivo = (
+                            "CLIQUE" in txt
+                            and "NAO"    not in txt
+                            and "NÃO"    not in txt
+                            and "CANCEL" not in txt
                         )
-                        if "CLIQUE" in txt and nao_e_cancelar:
+                        if eh_positivo:
                             link.click(timeout=5000)
-                            self._log("Encerramento confirmado: '{}' (frame: {})".format(
-                                txt[:80], getattr(ctx, "name", "main") or "main"))
+                            self._log("Encerramento confirmado: '{}'".format(txt[:80]))
                             time.sleep(3)
                             self._shot(page, "encerramento_confirmado")
                             return True
@@ -1530,171 +874,135 @@ class GissBot:
             except Exception:
                 pass
 
-        # Fallback: _clicar_link (ja busca em frames)
-        if self._clicar_link(page, r"SE DESEJA ENCERRAR"):
+        # Fallback genérico
+        if self._clicar_link(page, "SE DESEJA ENCERRAR"):
             time.sleep(3)
             self._shot(page, "encerramento_confirmado")
             return True
 
-        self._log("AVISO: link de confirmacao nao encontrado.")
+        self._log("AVISO: link de confirmação não encontrado.")
         return False
 
-    def _encerrar_prestador(self, page):
-        """
-        FLUXO PRESTADOR:
-        - Portal ja abre na aba PRESTADOR por padrao
-        - Tenta clicar na aba caso nao esteja ativa
-        - Preenche Mes e Ano
-        - Clica Encerrar Escrituracao
-        - Confirma clicando em CLIQUE AQUI
-        """
-        self._log("=== PRESTADOR: iniciando encerramento ===")
-        self._shot(page, "prestador_inicio")
+    # ------------------------------------------------------------------ #
+    # Encerramento por módulo                                              #
+    # ------------------------------------------------------------------ #
 
-        # Aguarda frames carregarem completamente
-        time.sleep(4)
+    def _encerrar_modulo(self, page, modulo):
+        """
+        Encerra escrituração para PRESTADOR ou TOMADOR.
+
+        Fluxo:
+          1. Clica aba (PRESTADOR ou TOMADOR) no menu superior
+          2. Preenche Mês e Ano da competência
+          3. SE tem notas/movimento:
+               → Clica "Encerrar Escrituração" → confirma com "CLIQUE AQUI"
+          4. SE sem movimento:
+               → Clica "Encerrar Sem Movimento"
+        """
+        self._log("=" * 50)
+        self._log("=== {} ===".format(modulo))
+        self._log("=" * 50)
+        self._shot(page, "{}_inicio".format(modulo.lower()))
+
+        # Aguarda carregamento completo
         try:
             page.wait_for_load_state("networkidle", timeout=15000)
         except Exception:
             pass
         time.sleep(2)
 
-        # Salva HTML de cada frame + dump no log
-        self._salvar_evidencias_frames(page, "prestador_entrada")
-        self._dump_portal(page)
+        # Passo 1: clica aba
+        if not self._clicar_link(page, modulo):
+            raise RuntimeError("Aba '{}' não encontrada no menu do portal.".format(modulo))
+        time.sleep(2)
+        self._shot(page, "{}_aba".format(modulo.lower()))
 
-        # Tenta clicar na aba PRESTADOR (pode ja estar ativa)
-        clicou_aba = self._clicar_link(page, r"PRESTADOR")
-        if clicou_aba:
-            time.sleep(2)
-        else:
-            self._log("Aba PRESTADOR nao clicada — pode ja estar ativa.")
-        self._shot(page, "aba_prestador")
-
-        # Preenche competencia (Mes e Ano)
-        self._preencher_competencia_portal(page)
+        # Passo 2: preenche competência
+        self._preencher_competencia(page)
         time.sleep(1)
-        self._shot(page, "prestador_competencia_preenchida")
+        self._shot(page, "{}_competencia".format(modulo.lower()))
 
-        # Clica Encerrar Escrituracao
-        encerrou = False
-        for texto in [r"Encerrar Escritura", r"Encerrar Escrituração", r"Encerrar Escrit"]:
+        # Passo 3: tenta Encerrar Escrituração
+        clicou_encerrar = False
+        for texto in ["Encerrar Escrituração", "Encerrar Escrituracao", "Encerrar Escrit"]:
             if self._clicar_link(page, texto):
-                encerrou = True
-                self._log("Clicado: Encerrar Escrituracao (Prestador)")
+                clicou_encerrar = True
+                self._log("{}: 'Encerrar Escrituração' clicado.".format(modulo))
                 break
 
-        if not encerrou:
+        if not clicou_encerrar:
             raise RuntimeError(
-                "Link 'Encerrar Escrituracao' nao encontrado para PRESTADOR. "
-                "Verifique os screenshots."
+                "'Encerrar Escrituração' não encontrado para {}. "
+                "Verifique os screenshots nas evidências.".format(modulo)
             )
 
-        time.sleep(2)
-
-        # Confirma encerramento
-        confirmado = self._confirmar_encerramento(page)
-        if not confirmado:
-            self._log("AVISO: confirmacao do Prestador nao encontrada.")
-
-        self._save_txt(
-            "prestador_resultado",
-            "\n".join(self.logs + [
-                "",
-                "Modulo     : PRESTADOR",
-                "Competencia: {}".format(self.competencia),
-                "Confirmado : {}".format("SIM" if confirmado else "VERIFICAR"),
-            ])
-        )
-        self._log("=== PRESTADOR: concluido ===")
-        return True
-
-    def _encerrar_tomador(self, page):
-        """
-        FLUXO TOMADOR:
-        1. Clica aba TOMADOR
-        2. Preenche Mes e Ano
-        3. Clica Encerrar Escrituracao
-        4a. SE aparecerem dados → confirma com CLIQUE AQUI
-        4b. SE sem dados → volta em TOMADOR → Encerrar Sem Movimento → confirma
-        """
-        self._log("=== TOMADOR: iniciando encerramento ===")
-
-        # Clica na aba TOMADOR
-        if not self._clicar_link(page, r"TOMADOR"):
-            raise RuntimeError("Aba TOMADOR nao encontrada no portal.")
-        time.sleep(2)
-        self._shot(page, "aba_tomador")
-
-        # Preenche competencia
-        self._preencher_competencia_portal(page)
-        time.sleep(1)
-        self._shot(page, "tomador_competencia_preenchida")
-
-        # Clica Encerrar Escrituracao
-        encerrou = False
-        for texto in [r"Encerrar Escritura", r"Encerrar Escrituração", r"Encerrar Escrit"]:
-            if self._clicar_link(page, texto):
-                encerrou = True
-                self._log("Clicado: Encerrar Escrituracao (Tomador)")
-                break
-
-        if not encerrou:
-            raise RuntimeError("Link 'Encerrar Escrituracao' nao encontrado para TOMADOR.")
-
-        # Verifica se ha dados para confirmar
-        tem_dados = self._tem_dados_para_encerrar(page)
-
-        if tem_dados:
-            # HA DADOS — confirma normalmente
-            self._log("TOMADOR: dados encontrados. Confirmando encerramento...")
+        # Passo 4: detecta resultado
+        if self._tem_confirmacao(page):
+            # Há notas — confirma o encerramento
+            self._log("{}: tem movimento → confirmando...".format(modulo))
             confirmado = self._confirmar_encerramento(page)
-            resultado = "ENCERRADO" if confirmado else "VERIFICAR"
+            resultado = "ENCERRADO" if confirmado else "VERIFICAR_MANUAL"
         else:
-            # SEM DADOS — usa Encerrar Sem Movimento
-            self._log("TOMADOR: sem movimento. Voltando para Encerrar Sem Movimento...")
+            # Sem movimento — usa Encerrar Sem Movimento
+            self._log("{}: sem movimento → usando 'Encerrar Sem Movimento'...".format(modulo))
+            self._shot(page, "{}_sem_confirmacao".format(modulo.lower()))
 
-            # Volta para aba TOMADOR
-            self._clicar_link(page, r"TOMADOR")
+            # Volta à aba e preenche competência novamente
+            self._clicar_link(page, modulo)
             time.sleep(2)
-            self._shot(page, "tomador_volta_sem_movimento")
-
-            # Preenche competencia novamente
-            self._preencher_competencia_portal(page)
+            self._preencher_competencia(page)
             time.sleep(1)
 
-            # Clica Encerrar Sem Movimento
-            if not self._clicar_link(page, r"Encerrar Sem Movimento"):
-                raise RuntimeError("Link 'Encerrar Sem Movimento' nao encontrado para TOMADOR.")
-
-            self._log("Clicado: Encerrar Sem Movimento (Tomador)")
+            if not self._clicar_link(page, "Encerrar Sem Movimento"):
+                raise RuntimeError(
+                    "'Encerrar Sem Movimento' não encontrado para {}.".format(modulo)
+                )
+            self._log("{}: 'Encerrar Sem Movimento' clicado.".format(modulo))
             time.sleep(2)
-            self._shot(page, "tomador_sem_movimento_clicado")
 
-            # Confirma
             confirmado = self._confirmar_encerramento(page)
-            resultado = "SEM_MOVIMENTO" if confirmado else "VERIFICAR"
+            resultado = "SEM_MOVIMENTO" if confirmado else "VERIFICAR_MANUAL"
 
+        # Salva resultado
         self._save_txt(
-            "tomador_resultado",
+            "{}_resultado".format(modulo.lower()),
             "\n".join(self.logs + [
                 "",
-                "Modulo     : TOMADOR",
-                "Competencia: {}".format(self.competencia),
+                "Módulo     : {}".format(modulo),
+                "Competência: {}".format(self.competencia),
                 "Resultado  : {}".format(resultado),
             ])
         )
-        self._log("=== TOMADOR: concluido ({}) ===".format(resultado))
-        return True
+        self._log("=== {} concluído: {} ===".format(modulo, resultado))
+        return resultado
 
-    # Mantem compatibilidade com o worker do app.py
-    def _executar_encerramento(self, page, modulo):
-        if modulo.upper() == "PRESTADOR":
-            return self._encerrar_prestador(page)
-        elif modulo.upper() == "TOMADOR":
-            return self._encerrar_tomador(page)
-        else:
-            raise RuntimeError("Modulo desconhecido: {}".format(modulo))
+    # ------------------------------------------------------------------ #
+    # Diagnóstico: salva HTML de cada frame                               #
+    # ------------------------------------------------------------------ #
+
+    def _salvar_evidencias_frames(self, page, sufixo="frames"):
+        import json as _json
+        evidencias = []
+        for idx, frame in enumerate(self._todos_frames(page)):
+            item = {"idx": idx, "name": frame.name, "url": frame.url}
+            try:
+                item["texto"] = frame.evaluate(
+                    "() => document.body ? document.body.innerText.slice(0,2000) : ''")
+                html = frame.content()
+                nome = "{}_{}_{}_frame{}.html".format(
+                    self._stamp(), self._safe(self.cliente_nome), sufixo, idx)
+                (self.download_dir / nome).write_text(html, encoding="utf-8", errors="replace")
+                self.evidencias.append(nome)
+            except Exception as e:
+                item["erro"] = str(e)
+            evidencias.append(item)
+
+        nome_j = "{}_{}_{}_frames.json".format(
+            self._stamp(), self._safe(self.cliente_nome), sufixo)
+        (self.download_dir / nome_j).write_text(
+            _json.dumps(evidencias, ensure_ascii=False, indent=2), encoding="utf-8")
+        self.evidencias.append(nome_j)
+        self._log("Evidências: {} frames salvos.".format(len(evidencias)))
 
     # ------------------------------------------------------------------ #
     # Ponto de entrada                                                     #
@@ -1736,27 +1044,21 @@ class GissBot:
 
             try:
                 self._fazer_login(page)
-                # _aguardar_portal retorna a pagina onde o portal carregou
-                # (pode ser nova aba aberta via window.open)
-                portal_page = self._aguardar_portal(page)
+                portal = self._aguardar_portal(page)
 
                 if executar_prestados:
-                    self._executar_encerramento(portal_page, "PRESTADOR")
-                    mensagens.append("Prestador encerrado")
+                    res = self._encerrar_modulo(portal, "PRESTADOR")
+                    mensagens.append("Prestador: {}".format(res))
 
                 if executar_tomados:
-                    self._executar_encerramento(portal_page, "TOMADOR")
-                    mensagens.append("Tomador encerrado")
-
-            except PlaywrightTimeoutError:
-                self._shot(page, "erro_timeout")
-                self._save_txt("erro_timeout", "\n".join(self.logs))
-                raise RuntimeError("Timeout na navegacao do GissOnline.")
+                    res = self._encerrar_modulo(portal, "TOMADOR")
+                    mensagens.append("Tomador: {}".format(res))
 
             except Exception as e:
-                self._log("ERRO: {}".format(e))
+                self._log("ERRO FATAL: {}".format(e))
                 try:
                     self._shot(page, "erro_geral")
+                    self._salvar_evidencias_frames(page, "erro")
                 except Exception:
                     pass
                 self._save_txt("erro_geral", "\n".join(self.logs))
@@ -1771,6 +1073,6 @@ class GissBot:
 
         return {
             "status":     "SUCESSO",
-            "mensagem":   "; ".join(mensagens) if mensagens else "Sem acoes executadas",
+            "mensagem":   "; ".join(mensagens) if mensagens else "Sem ações executadas",
             "evidencias": self.evidencias,
         }
