@@ -969,56 +969,115 @@ class GissBot:
         )
 
 
+    # ------------------------------------------------------------------ #
+    # Travessia recursiva de frames (child_frames)                        #
+    # ------------------------------------------------------------------ #
+
+    def _iter_frames(self, frame):
+        """Gerador recursivo: percorre frame + todos os child_frames."""
+        yield frame
+        for filho in frame.child_frames:
+            yield from self._iter_frames(filho)
+
     def _todos_frames(self, page):
-        """Retorna todos os frames da pagina em ordem BFS."""
-        visitados = []
-        fila = list(page.frames)
-        for f in fila:
-            if f not in visitados:
-                visitados.append(f)
-        return visitados
+        """Lista completa de frames via travessia recursiva de child_frames."""
+        return list(self._iter_frames(page.main_frame))
+
+    # ------------------------------------------------------------------ #
+    # Diagnostico: salva HTML + resumo JSON de cada frame                 #
+    # ------------------------------------------------------------------ #
+
+    def _salvar_evidencias_frames(self, page, sufixo="frames"):
+        """
+        Salva HTML e resumo textual de todos os frames como evidencia.
+        Essencial para diagnosticar portais com framesets aninhados.
+        """
+        import json as _json
+        pasta = self.download_dir
+        evidencias = []
+        for idx, frame in enumerate(self._todos_frames(page)):
+            item = {"idx": idx, "name": frame.name, "url": frame.url}
+            try:
+                item["texto"] = frame.evaluate(
+                    "() => document.body ? document.body.innerText.slice(0, 2000) : ''"
+                )
+                item["campos"] = frame.evaluate("""
+                    () => Array.from(document.querySelectorAll(
+                        'input:not([type=hidden]), select, textarea, button, a'
+                    )).slice(0, 30).map(el => ({
+                        tag:  el.tagName,
+                        type: el.getAttribute('type') || '',
+                        id:   el.id,
+                        name: el.getAttribute('name') || '',
+                        text: (el.innerText || el.value || el.getAttribute('title') || '').trim().slice(0,60),
+                        href: el.getAttribute('href') || ''
+                    }))
+                """)
+                html = frame.content()
+                nome_html = "{}_{}_{}_frame{}.html".format(
+                    self._stamp(), self._safe(self.cliente_nome), sufixo, idx)
+                (pasta / nome_html).write_text(html, encoding="utf-8", errors="replace")
+                item["html_file"] = nome_html
+                self.evidencias.append(nome_html)
+            except Exception as e:
+                item["erro"] = str(e)
+            evidencias.append(item)
+
+        nome_json = "{}_{}_{}_frames.json".format(
+            self._stamp(), self._safe(self.cliente_nome), sufixo)
+        (pasta / nome_json).write_text(
+            _json.dumps(evidencias, ensure_ascii=False, indent=2), encoding="utf-8")
+        self.evidencias.append(nome_json)
+        self._log("Evidencias frames salvas: {} frames, JSON={}".format(
+            len(evidencias), nome_json))
+        return evidencias
 
     def _dump_portal(self, page):
-        """Loga estrutura de frames e links visiveis — usado para diagnostico."""
-        self._log("=== DUMP PORTAL ===")
-        for f in self._todos_frames(page):
+        """Loga estrutura de frames para diagnostico rapido no console."""
+        self._log("=== DUMP PORTAL ({} frames) ===".format(len(self._todos_frames(page))))
+        for idx, f in enumerate(self._todos_frames(page)):
             try:
-                url = f.url[:80]
-                links = f.evaluate("""
-                    () => Array.from(document.querySelectorAll('a, td[onclick], input[type=button], input[type=submit]'))
-                         .map(el => el.innerText.trim() || el.value || '')
-                         .filter(t => t.length > 0 && t.length < 60)
-                         .slice(0, 20)
+                resumo = f.evaluate("""
+                    () => {
+                        var txt = document.body ? document.body.innerText : '';
+                        var links = Array.from(document.querySelectorAll(
+                            'a, td[onclick], input[type="button"], input[type="submit"], button'
+                        )).map(el => (el.innerText || el.value || '').trim())
+                          .filter(t => t.length > 0 && t.length < 60).slice(0, 15);
+                        var inputs = Array.from(document.querySelectorAll(
+                            'input:not([type=hidden]), select'
+                        )).map(el => (el.name || el.id || '?') + '[' + (el.type||'text') + ']')
+                          .slice(0, 8);
+                        return {txt: txt.slice(0,300), links: links, inputs: inputs};
+                    }
                 """)
-                inputs = f.evaluate("""
-                    () => Array.from(document.querySelectorAll('input[type!=hidden]'))
-                         .map(el => (el.name || el.id || el.placeholder || '?') + '[' + el.type + ']')
-                         .slice(0, 10)
-                """)
-                self._log("  Frame: {} | links={} | inputs={}".format(url, links, inputs))
+                self._log("  [{}] url={} | links={} | inputs={}".format(
+                    idx, f.url[:60], resumo["links"], resumo["inputs"]))
+                if resumo["txt"].strip():
+                    self._log("      texto: {}".format(resumo["txt"][:200].replace("\n", " ")))
             except Exception as e:
-                self._log("  Frame erro: {}".format(e))
+                self._log("  [{}] url={} erro={}".format(idx, f.url[:40], e))
         self._log("=== FIM DUMP ===")
 
+    # ------------------------------------------------------------------ #
+    # Clique via JavaScript em qualquer frame                             #
+    # ------------------------------------------------------------------ #
+
     def _js_clicar_texto(self, page, texto):
-        """
-        Usa JavaScript para encontrar e clicar em qualquer elemento
-        (a, td, span, input[type=button]) que contenha o texto dado.
-        Percorre TODOS os frames via CDPSession nao e possivel, mas
-        podemos iterar page.frames e injetar JS em cada um.
-        """
-        padrao_lower = texto.lower().strip()
+        """Clica via JS no primeiro elemento que contenha o texto em qualquer frame."""
+        padrao_lower = re.sub(r"[^a-z0-9 ]", "", texto.lower().strip())
         script = """
             (padrao) => {
-                var sels = ['a', 'td', 'span', 'div', 'input[type="button"]',
-                            'input[type="submit"]', 'button'];
+                var sels = ['a', 'td', 'span', 'li', 'div',
+                            'input[type="button"]', 'input[type="submit"]', 'button'];
                 for (var s of sels) {
                     var els = document.querySelectorAll(s);
                     for (var el of els) {
-                        var t = (el.innerText || el.value || '').toLowerCase().trim();
-                        if (t.indexOf(padrao) !== -1) {
+                        var t = (el.innerText || el.value || '').toLowerCase()
+                                .replace(/[^a-z0-9 ]/g, '').trim();
+                        if (t.indexOf(padrao) !== -1 && t.length < 120) {
                             el.click();
-                            return 'clicado: ' + (el.tagName) + ' texto=' + t.slice(0,40);
+                            return el.tagName + ':' + t.slice(0, 50);
                         }
                     }
                 }
@@ -1029,50 +1088,81 @@ class GissBot:
             try:
                 res = f.evaluate(script, padrao_lower)
                 if res:
-                    self._log("JS click (frame {}): {}".format(f.url[:40], res))
+                    self._log("JS click (frame[{}]): '{}'".format(f.url[:50], res))
                     return True
             except Exception:
                 pass
         return False
 
+    # ------------------------------------------------------------------ #
+    # Fallback OCR: screenshot + pytesseract                              #
+    # ------------------------------------------------------------------ #
+
+    def _ocr_clicar_texto(self, page, texto):
+        """
+        Fallback: tira screenshot, roda OCR, clica nas coordenadas do texto.
+        Ativado quando o texto nao aparece no DOM de nenhum frame (Java/canvas).
+        """
+        try:
+            import pytesseract
+            from PIL import Image
+            import io as _io
+        except ImportError:
+            self._log("OCR indisponivel (pip install pytesseract pillow). Instale tesseract-ocr tbm.")
+            return False
+
+        try:
+            png = page.screenshot()
+            img = Image.open(_io.BytesIO(png))
+            dados = pytesseract.image_to_data(img, lang="por",
+                                              output_type=pytesseract.Output.DICT)
+            padrao = texto.lower()
+            for i, tok in enumerate(dados["text"]):
+                if padrao in (tok or "").lower():
+                    x = dados["left"][i] + dados["width"][i] // 2
+                    y = dados["top"][i] + dados["height"][i] // 2
+                    self._log("OCR encontrou '{}' em ({},{}) — clicando.".format(tok, x, y))
+                    page.mouse.click(x, y)
+                    return True
+            self._log("OCR: texto '{}' nao encontrado na screenshot.".format(texto))
+        except Exception as e:
+            self._log("OCR erro: {}".format(e))
+        return False
+
+    # ------------------------------------------------------------------ #
+    # Preenche campos mes/ano em qualquer frame                           #
+    # ------------------------------------------------------------------ #
+
     def _preencher_competencia_portal(self, page):
-        """
-        Preenche Mes e Ano no portal interno via JavaScript em todos os frames.
-        """
-        script_mes = """
-            (val) => {
-                var sels = [
-                    'input[name*="mes"]', 'input[id*="mes"]',
-                    'input[name*="MES"]', 'input[id*="MES"]',
-                    'input[size="2"]'
-                ];
-                for (var s of sels) {
+        """Preenche Mes e Ano via JS recursivo em todos os frames."""
+        script = """
+            ([mes, ano]) => {
+                var resultado = [];
+                // Campos de mes
+                var selsMes = ['input[name*="mes" i]','input[id*="mes" i]','input[size="2"]'];
+                for (var s of selsMes) {
                     var el = document.querySelector(s);
                     if (el && el.type !== 'hidden') {
-                        el.value = val;
+                        el.value = mes;
+                        el.dispatchEvent(new Event('input',  {bubbles:true}));
                         el.dispatchEvent(new Event('change', {bubbles:true}));
-                        return 'mes preenchido: ' + (el.name || el.id);
+                        resultado.push('mes:' + (el.name || el.id || s));
+                        break;
                     }
                 }
-                return null;
-            }
-        """
-        script_ano = """
-            (val) => {
-                var sels = [
-                    'input[name*="ano"]', 'input[id*="ano"]',
-                    'input[name*="ANO"]', 'input[id*="ANO"]',
-                    'input[size="4"]'
-                ];
-                for (var s of sels) {
+                // Campos de ano
+                var selsAno = ['input[name*="ano" i]','input[id*="ano" i]','input[size="4"]'];
+                for (var s of selsAno) {
                     var el = document.querySelector(s);
                     if (el && el.type !== 'hidden') {
-                        el.value = val;
+                        el.value = ano;
+                        el.dispatchEvent(new Event('input',  {bubbles:true}));
                         el.dispatchEvent(new Event('change', {bubbles:true}));
-                        return 'ano preenchido: ' + (el.name || el.id);
+                        resultado.push('ano:' + (el.name || el.id || s));
+                        break;
                     }
                 }
-                return null;
+                return resultado;
             }
         """
         preencheu_mes = False
@@ -1080,39 +1170,37 @@ class GissBot:
 
         for f in self._todos_frames(page):
             try:
-                if not preencheu_mes:
-                    res = f.evaluate(script_mes, self.comp_mes)
-                    if res:
-                        self._log("{} (frame: {})".format(res, f.url[:40]))
+                res = f.evaluate(script, [self.comp_mes, self.comp_ano])
+                for r in (res or []):
+                    if r.startswith("mes:"):
+                        self._log("{} (frame: {})".format(r, f.url[:50]))
                         preencheu_mes = True
-                if not preencheu_ano:
-                    res = f.evaluate(script_ano, self.comp_ano)
-                    if res:
-                        self._log("{} (frame: {})".format(res, f.url[:40]))
+                    elif r.startswith("ano:"):
+                        self._log("{} (frame: {})".format(r, f.url[:50]))
                         preencheu_ano = True
                 if preencheu_mes and preencheu_ano:
                     break
             except Exception:
                 pass
 
-        # Fallback Playwright locator
+        # Fallback: Playwright locator em cada frame
         if not preencheu_mes or not preencheu_ano:
-            contextos = self._todos_frames(page)
-            for ctx in contextos:
+            for f in self._todos_frames(page):
                 for sel, val, flag in [
-                    ("input[name*='mes' i],input[id*='mes' i],input[size='2']", self.comp_mes, "mes"),
-                    ("input[name*='ano' i],input[id*='ano' i],input[size='4']", self.comp_ano, "ano"),
+                    ("input[name*='mes' i], input[id*='mes' i], input[size='2']",
+                     self.comp_mes, "mes"),
+                    ("input[name*='ano' i], input[id*='ano' i], input[size='4']",
+                     self.comp_ano, "ano"),
                 ]:
-                    if flag == "mes" and preencheu_mes:
-                        continue
-                    if flag == "ano" and preencheu_ano:
+                    if (flag == "mes" and preencheu_mes) or (flag == "ano" and preencheu_ano):
                         continue
                     try:
-                        loc = ctx.locator(sel).first
+                        loc = f.locator(sel).first
                         if loc.count() > 0:
                             loc.triple_click()
                             loc.fill(val)
-                            self._log("{} preenchido via locator (frame: {})".format(flag, ctx.url[:40]))
+                            self._log("{} preenchido via locator (frame: {})".format(
+                                flag, f.url[:50]))
                             if flag == "mes":
                                 preencheu_mes = True
                             else:
@@ -1121,35 +1209,44 @@ class GissBot:
                         pass
 
         if not preencheu_mes or not preencheu_ano:
-            self._log("AVISO: campos mes/ano nao preenchidos — competencia: {}".format(self.competencia))
+            self._log("AVISO: campos mes/ano nao preenchidos — competencia: {}".format(
+                self.competencia))
+
+    # ------------------------------------------------------------------ #
+    # Clica link em qualquer frame (JS -> locator -> OCR)                 #
+    # ------------------------------------------------------------------ #
 
     def _clicar_link(self, page, padrao):
         """
-        Clica em link/elemento que corresponda ao padrao.
-        Estrategia 1: JavaScript puro em cada frame (mais rapido e abrangente).
-        Estrategia 2: Playwright locator em cada frame (fallback).
+        Clica em elemento que corresponda ao padrao em qualquer frame.
+        Ordem: 1) JS recursivo  2) Playwright locator  3) OCR fallback
         """
-        # Estrategia 1: JS em todos os frames
-        if self._js_clicar_texto(page, padrao.replace(r"\\", "").replace("(", "").replace(")", "")):
-            self._log("Link clicado via JS: '{}'".format(padrao))
+        texto_limpo = re.sub(r"[\\()|^$.*+?{}[\]]", "", padrao).strip()
+
+        # 1. JavaScript em cada frame (child_frames recursivo)
+        if self._js_clicar_texto(page, texto_limpo):
             return True
 
-        # Estrategia 2: Playwright locator em todos os frames
+        # 2. Playwright locator em cada frame
         regexp = re.compile(padrao, re.I)
         for frame in self._todos_frames(page):
             for metodo in [
                 lambda f=frame: f.locator("a").filter(has_text=regexp).first.click(timeout=1500),
-                lambda f=frame: f.locator("td").filter(has_text=regexp).first.click(timeout=1500),
+                lambda f=frame: f.locator("td,li").filter(has_text=regexp).first.click(timeout=1500),
                 lambda f=frame: f.locator("span,div,button").filter(has_text=regexp).first.click(timeout=1500),
-                lambda f=frame: f.get_by_role("link", name=regexp).first.click(timeout=1500),
             ]:
                 try:
                     metodo()
                     self._log("Link clicado via locator (frame {}): '{}'".format(
-                        frame.url[:40], padrao))
+                        frame.url[:50], padrao))
                     return True
                 except Exception:
                     pass
+
+        # 3. OCR fallback (para componentes Java/canvas fora do DOM)
+        self._log("DOM nao encontrou '{}' — tentando OCR...".format(padrao))
+        if self._ocr_clicar_texto(page, texto_limpo):
+            return True
 
         self._log("Link NAO encontrado em nenhum frame: '{}'".format(padrao))
         return False
@@ -1244,13 +1341,15 @@ class GissBot:
         self._shot(page, "prestador_inicio")
 
         # Aguarda frames carregarem completamente
-        time.sleep(3)
+        time.sleep(4)
         try:
             page.wait_for_load_state("networkidle", timeout=15000)
         except Exception:
             pass
+        time.sleep(2)
 
-        # Dump diagnostico para identificar estrutura do portal
+        # Salva HTML de cada frame + dump no log
+        self._salvar_evidencias_frames(page, "prestador_entrada")
         self._dump_portal(page)
 
         # Tenta clicar na aba PRESTADOR (pode ja estar ativa)
