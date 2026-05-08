@@ -761,14 +761,15 @@ class GissBot:
     # Ações no portal                                                      #
     # ------------------------------------------------------------------ #
 
-    def _clicar_link(self, page, texto, timeout_ms=2000):
+    def _clicar_link(self, page, texto, timeout_ms=3000):
         """
-        Localiza elemento pelo texto/atributo em qualquer frame e clica com mouse real.
+        Localiza elemento pelo texto/atributo em qualquer frame e clica.
 
         Estratégias (em ordem):
-          1. JS: localiza elemento → pega BoundingClientRect → mouse real hover+click
-          2. Playwright locator: hover() + click() (dispara mouseover/mouseenter)
-          3. JS sintético: dispara mouseover+mouseenter+click (último recurso)
+          1. Playwright locator direto no frame (mais confiável — gerencia
+             coordenadas do frame automaticamente, dispara onclick corretamente)
+          2. JS: localiza elemento folha → click() nativo no elemento
+          3. JS: containers (td, span, div)
         """
         import unicodedata
         def _norm(s):
@@ -778,6 +779,35 @@ class GissBot:
             return re.sub(r"\s+", " ", s)
 
         termos = list({_norm(texto), texto.lower().strip()})
+
+        # ── Estratégia 1: Playwright locator nativo (melhor para onclick) ──
+        # frame.locator().click() gerencia o frame sem precisar calcular offsets
+        regexp = re.compile(re.escape(texto), re.I)
+        for frame in self._todos_frames(page):
+            # Tenta primeiro <a> (links de navegação)
+            for sel in ["a", "button", "input[type='button']",
+                        "input[type='submit']", "td", "span", "li"]:
+                try:
+                    loc = frame.locator(sel).filter(has_text=regexp).first
+                    if loc.count() > 0 and loc.is_visible(timeout=1000):
+                        loc.scroll_into_view_if_needed(timeout=2000)
+                        loc.click(timeout=timeout_ms)
+                        self._log("Clicado '{}' locator '{}' (frame {}).".format(
+                            texto, sel, frame.url[:50]))
+                        return True
+                except Exception:
+                    pass
+            # Atributos alt/title/value
+            for attr in ["title", "alt", "value"]:
+                try:
+                    loc = frame.locator("[{}*='{}' i]".format(attr, texto)).first
+                    if loc.count() > 0 and loc.is_visible(timeout=500):
+                        loc.click(timeout=timeout_ms)
+                        self._log("Clicado '{}' [{}] (frame {}).".format(
+                            texto, attr, frame.url[:50]))
+                        return True
+                except Exception:
+                    pass
 
         # Script JS passo 1: busca SOMENTE em elementos folha (a, button, img, input)
         # Evita pegar o <td> container que tem o texto de TODOS os links filhos
@@ -998,6 +1028,14 @@ class GissBot:
 
         self._log("Competência {}/{} preenchida: mes={} ano={}".format(
             self.comp_mes, self.comp_ano, ok_mes, ok_ano))
+
+        # Pressiona Tab para disparar onblur/onchange do campo Ano
+        # Alguns portais só validam a competência após blur
+        try:
+            page.keyboard.press("Tab")
+            time.sleep(0.5)
+        except Exception:
+            pass
 
     def _tem_confirmacao(self, page):
         """
