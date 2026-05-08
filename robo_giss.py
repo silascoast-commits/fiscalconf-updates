@@ -872,133 +872,117 @@ class GissBot:
 
     def _preencher_competencia(self, page):
         """
-        Preenche Mês e Ano via JS direto no frame do portal (wwwx.gissonline.com.br).
+        Preenche os campos de competência do GissOnline.
 
-        PROBLEMA IDENTIFICADO: locator falha silenciosamente no frame de login
-        (portal.gissonline.com.br) que depois fica detached. A solução é:
-          1. Iterar apenas frames do domínio wwwx (portal real)
-          2. Usar JS para dumpar todos os campos visíveis (diagnóstico)
-          3. Preencher via JS direto (valor + eventos input/change/blur)
-          4. Fallback: Playwright locator click + fill no frame correto
+        Campos identificados nas telas reais do portal:
+          - Mês : input name="mes_competencia" (ou similar) — 2 dígitos
+          - Ano : input name="ano_competencia" (ou similar) — 4 dígitos
+        URL confirma: ?mes_competencia=05&ano_competencia=2026
         """
         PORTAL = "wwwx.gissonline.com.br"
 
-        script_fill = """([mes, ano]) => {
-            var r = {mes: false, ano: false, campos: []};
-            var all = Array.from(document.querySelectorAll('input,select'));
-            for (var inp of all) {
-                var tipo = (inp.type || '').toLowerCase();
-                if (tipo === 'hidden' || tipo === 'submit' ||
-                    tipo === 'button'  || tipo === 'image'  ||
-                    tipo === 'checkbox'|| tipo === 'radio') continue;
-                var nm  = (inp.name || '').toLowerCase();
-                var idd = (inp.id   || '').toLowerCase();
-                var sz  = parseInt(inp.getAttribute('size')      || '0') || 0;
-                var ml  = parseInt(inp.getAttribute('maxlength') || '0') || 0;
-                r.campos.push({name:inp.name, id:inp.id, type:tipo, size:sz, maxlen:ml, val:inp.value});
-                var isMes = nm.includes('mes') || idd.includes('mes') || sz===2 || (ml>=2&&ml<=3);
-                var isAno = nm.includes('ano') || idd.includes('ano') || sz===4 || ml===4;
-                if (isMes && !r.mes) {
-                    if (inp.tagName==='SELECT') {
-                        for (var o of inp.options) { if (o.value===mes||o.text===mes){inp.value=o.value;break;} }
-                    } else { inp.value = mes; }
-                    ['input','change','blur'].forEach(function(ev){ inp.dispatchEvent(new Event(ev,{bubbles:true})); });
-                    r.mes = (inp.name||inp.id||'?');
-                }
-                if (isAno && !r.ano) {
-                    if (inp.tagName==='SELECT') {
-                        for (var o2 of inp.options) { if (o2.value===ano||o2.text===ano){inp.value=o2.value;break;} }
-                    } else { inp.value = ano; }
-                    ['input','change','blur'].forEach(function(ev2){ inp.dispatchEvent(new Event(ev2,{bubbles:true})); });
-                    r.ano = (inp.name||inp.id||'?');
-                }
-            }
-            return r;
-        }"""
+        # Seletores em ordem de especificidade (mais direto primeiro)
+        SEL_MES = [
+            "input[name='mes_competencia']",
+            "input[name='mes_comp']",
+            "input[name='mes']",
+            "input[id='mes_competencia']",
+            "input[id='mes']",
+            "input[name*='mes' i]",
+            "input[id*='mes' i]",
+            "select[name*='mes' i]",
+            "select[id*='mes' i]",
+            "input[size='2']",
+            "input[maxlength='2']",
+        ]
+        SEL_ANO = [
+            "input[name='ano_competencia']",
+            "input[name='ano_comp']",
+            "input[name='ano']",
+            "input[id='ano_competencia']",
+            "input[id='ano']",
+            "input[name*='ano' i]",
+            "input[id*='ano' i]",
+            "select[name*='ano' i]",
+            "select[id*='ano' i]",
+            "input[size='4']",
+            "input[maxlength='4']",
+        ]
 
         ok_mes = ok_ano = False
 
-        # ── Estratégia 1: JS fill nos frames do portal (wwwx) ──
         for f in self._todos_frames(page):
             if PORTAL not in f.url:
-                continue  # ignora frame de login e outros domínios
-            try:
-                res = f.evaluate(script_fill, [self.comp_mes, self.comp_ano])
-                if res:
-                    self._log("Frame {} campos: {}".format(
-                        f.url[:60], res.get("campos", [])))
-                    if res.get("mes"):
-                        self._log("Mês={} preenchido no campo '{}' (JS).".format(
-                            self.comp_mes, res["mes"]))
-                        ok_mes = True
-                    if res.get("ano"):
-                        self._log("Ano={} preenchido no campo '{}' (JS).".format(
-                            self.comp_ano, res["ano"]))
-                        ok_ano = True
-                    if ok_mes and ok_ano:
-                        break
-            except Exception as e:
-                self._log("  JS fill frame {}: {}".format(f.url[:50], e))
+                continue  # apenas frames do portal real
 
-        # ── Estratégia 2: Playwright locator nos frames do portal ──
-        if not ok_mes or not ok_ano:
-            SEL_MES = ["input[name*='mes' i]","input[id*='mes' i]",
-                       "select[name*='mes' i]","select[id*='mes' i]","input[size='2']"]
-            SEL_ANO = ["input[name*='ano' i]","input[id*='ano' i]",
-                       "select[name*='ano' i]","select[id*='ano' i]","input[size='4']"]
-            for f in self._todos_frames(page):
-                if PORTAL not in f.url:
-                    continue
-                if not ok_mes:
-                    for sel in SEL_MES:
-                        try:
-                            loc = f.locator(sel).first
-                            if loc.count() == 0: continue
-                            tag = loc.evaluate("el => el.tagName.toUpperCase()")
-                            if tag == "SELECT": loc.select_option(self.comp_mes)
-                            else:
-                                loc.click(timeout=2000)
-                                loc.triple_click()
-                                loc.fill(self.comp_mes)
-                            self._log("Mês={} via locator '{}' frame {}.".format(
-                                self.comp_mes, sel, f.url[:50]))
-                            ok_mes = True
-                            break
-                        except Exception:
-                            pass
-                if not ok_ano:
-                    for sel in SEL_ANO:
-                        try:
-                            loc = f.locator(sel).first
-                            if loc.count() == 0: continue
-                            tag = loc.evaluate("el => el.tagName.toUpperCase()")
-                            if tag == "SELECT": loc.select_option(self.comp_ano)
-                            else:
-                                loc.click(timeout=2000)
-                                loc.triple_click()
-                                loc.fill(self.comp_ano)
-                            self._log("Ano={} via locator '{}' frame {}.".format(
-                                self.comp_ano, sel, f.url[:50]))
-                            ok_ano = True
-                            break
-                        except Exception:
-                            pass
-                if ok_mes and ok_ano:
-                    break
+            # Diagnóstico: lista todos os inputs visíveis para identificar os campos
+            try:
+                campos = f.evaluate("""() => {
+                    return Array.from(document.querySelectorAll('input,select'))
+                        .filter(e => e.type !== 'hidden')
+                        .map(e => ({n:e.name, id:e.id, t:e.type,
+                                    sz:e.size, ml:e.maxLength, v:e.value}));
+                }""")
+                if campos:
+                    self._log("Campos frame {}: {}".format(f.url[:60], campos))
+            except Exception:
+                pass
+
+            # Preenche Mês
+            if not ok_mes:
+                for sel in SEL_MES:
+                    try:
+                        loc = f.locator(sel).first
+                        if loc.count() == 0:
+                            continue
+                        tag = loc.evaluate("el => el.tagName.toUpperCase()")
+                        if tag == "SELECT":
+                            loc.select_option(self.comp_mes)
+                        else:
+                            loc.click(timeout=2000)
+                            loc.triple_click()
+                            loc.fill(self.comp_mes)
+                            loc.press("Tab")
+                        self._log("Mês={} via '{}' frame {}.".format(
+                            self.comp_mes, sel, f.url[:50]))
+                        ok_mes = True
+                        break
+                    except Exception:
+                        pass
+
+            # Preenche Ano
+            if not ok_ano:
+                for sel in SEL_ANO:
+                    try:
+                        loc = f.locator(sel).first
+                        if loc.count() == 0:
+                            continue
+                        tag = loc.evaluate("el => el.tagName.toUpperCase()")
+                        if tag == "SELECT":
+                            loc.select_option(self.comp_ano)
+                        else:
+                            loc.click(timeout=2000)
+                            loc.triple_click()
+                            loc.fill(self.comp_ano)
+                            loc.press("Tab")
+                        self._log("Ano={} via '{}' frame {}.".format(
+                            self.comp_ano, sel, f.url[:50]))
+                        ok_ano = True
+                        break
+                    except Exception:
+                        pass
+
+            if ok_mes and ok_ano:
+                break
 
         self._log("Competência {}/{} — mes={} ano={}".format(
             self.comp_mes, self.comp_ano, ok_mes, ok_ano))
 
         if not ok_mes or not ok_ano:
-            self._log("AVISO: campos de competência não encontrados — salvando diagnóstico.")
+            self._log("AVISO: campos não encontrados — salvando diagnóstico.")
             self._salvar_evidencias_frames(page, "competencia_nao_preenchida")
 
-        # Tab para disparar onblur/onchange
-        try:
-            page.keyboard.press("Tab")
-            time.sleep(0.8)
-        except Exception:
-            pass
+        time.sleep(0.5)
 
     def _tem_confirmacao(self, page):
         """
