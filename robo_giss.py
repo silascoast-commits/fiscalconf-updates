@@ -1204,25 +1204,23 @@ class GissBot:
 
     def _encerrar_modulo(self, page, modulo):
         """
-        Encerra escrituração para PRESTADOR ou TOMADOR.
+        Fluxo completo (documento PASSO_A_PASSO):
 
-        Fluxo real (confirmado com screenshots):
-          1. Clica aba PRESTADOR/TOMADOR → mesma janela carrega formulário
-             com campos Competência (Mês/Ano) e links de ação
-          2. Preenche Mês e Ano
-          3. Clica "Encerrar Escrituração"
-             a) COM movimento → tela "CONFIRMAÇÃO DO ENCERRAMENTO" aparece
-                → clica "SE DESEJA ENCERRAR A COMPETÊNCIA CLIQUE AQUI"
-             b) SEM movimento → volta ao módulo, preenche competência,
-                → clica "Encerrar Sem Movimento"
-          4. Repete o mesmo fluxo para TOMADOR
+        1. Clica PRESTADOR/TOMADOR → preenche Mês/Ano → clica "Encerrar Escrituração"
+
+        2a. COM movimento → confirmação aparece → "SE DESEJA ENCERRAR CLIQUE AQUI"
+            → ENCERRADO
+
+        2b. SEM movimento → confirmação NÃO aparece → volta ao módulo
+            → preenche Mês/Ano → "Encerrar Sem Movimento"
+            → confirmação SEMPRE aparece → "SE DESEJA ENCERRAR A COMPETÊNCIA CLIQUE AQUI"
+            → SEM_MOVIMENTO
         """
         self._log("=" * 50)
         self._log("=== {} ===".format(modulo))
         self._log("=" * 50)
         self._shot(page, "{}_inicio".format(modulo.lower()))
 
-        # Aguarda frames estabilizarem
         for _ in range(3):
             try:
                 page.wait_for_load_state("networkidle", timeout=10000)
@@ -1231,76 +1229,49 @@ class GissBot:
                 pass
         time.sleep(2)
 
-        # Passo 1: navega para o módulo (muda conteúdo na mesma janela)
-        clicou = False
+        # ── Passo 1: navega para o módulo ────────────────────────────────
         for tentativa in range(4):
             if self._clicar_aba_modulo(page, modulo):
-                clicou = True
                 self._log("Aba '{}' clicada (tentativa {}).".format(modulo, tentativa + 1))
                 time.sleep(3)
                 break
-            self._log("Aba '{}' não respondeu (tentativa {}), aguardando...".format(
-                modulo, tentativa + 1))
+            self._log("Aba '{}' não respondeu (tentativa {}).".format(modulo, tentativa + 1))
             time.sleep(3)
-
-        if not clicou:
-            self._log("AVISO: aba '{}' não clicada — tentando continuar mesmo assim.".format(modulo))
 
         self._shot(page, "{}_menu".format(modulo.lower()))
 
-        # Passo 2: preenche competência
+        # ── Passo 2: preenche competência ────────────────────────────────
         self._preencher_competencia(page)
         time.sleep(1)
         self._shot(page, "{}_competencia".format(modulo.lower()))
 
-        # Passo 3: clica "Encerrar Escrituração"
-        encerrou = False
+        # ── Passo 3: clica "Encerrar Escrituração" ───────────────────────
+        clicou_escrit = False
         for texto in ["Encerrar Escrituração", "Encerrar Escrituracao", "Encerrar Escrit"]:
             if self._clicar_link(page, texto):
                 self._log("{}: 'Encerrar Escrituração' clicado.".format(modulo))
-                encerrou = True
+                clicou_escrit = True
                 break
 
-        if not encerrou:
-            self._log("{}: 'Encerrar Escrituração' não encontrado — indo direto para 'Encerrar Sem Movimento'.".format(modulo))
-            self._shot(page, "{}_sem_escrit".format(modulo.lower()))
+        if clicou_escrit:
+            time.sleep(5)
+            self._shot(page, "{}_pos_encerrar_escrit".format(modulo.lower()))
 
-        # Passo 4a: verifica se apareceu tela de CONFIRMAÇÃO com movimento
-        if encerrou and self._tem_confirmacao(page):
-            self._log("{}: confirmação com movimento → clicando 'SE DESEJA ENCERRAR'.".format(modulo))
-            confirmado = self._confirmar_encerramento(page)
-            resultado = "ENCERRADO" if confirmado else "VERIFICAR_MANUAL"
+            # Passo 4a: tenta confirmar — se a tela de confirmação apareceu (COM movimento)
+            if self._confirmar_encerramento(page):
+                resultado = "ENCERRADO"
+                self._log("{}: encerrado COM movimento.".format(modulo))
+
+            else:
+                # Passo 4b: SEM movimento — confirmação não apareceu
+                self._log("{}: sem confirmação → sem movimento → usando 'Encerrar Sem Movimento'.".format(modulo))
+                resultado = self._encerrar_sem_movimento(page, modulo)
 
         else:
-            # Passo 4b: sem movimento → volta ao módulo e usa "Encerrar Sem Movimento"
-            self._log("{}: sem movimento → voltando ao módulo para 'Encerrar Sem Movimento'.".format(modulo))
-            self._shot(page, "{}_sem_movimento".format(modulo.lower()))
-
-            # Volta para o formulário do módulo
-            for _ in range(3):
-                if self._clicar_aba_modulo(page, modulo):
-                    time.sleep(3)
-                    break
-                time.sleep(2)
-
-            self._preencher_competencia(page)
-            time.sleep(1)
-            self._shot(page, "{}_competencia_sem_mov".format(modulo.lower()))
-
-            if self._clicar_link(page, "Encerrar Sem Movimento"):
-                self._log("{}: 'Encerrar Sem Movimento' clicado.".format(modulo))
-                time.sleep(3)
-                # Pode aparecer confirmação também para sem movimento
-                if self._tem_confirmacao(page):
-                    self._confirmar_encerramento(page)
-                resultado = "SEM_MOVIMENTO"
-            else:
-                self._shot(page, "{}_erro".format(modulo.lower()))
-                self._salvar_evidencias_frames(page, "{}_erro".format(modulo.lower()))
-                raise RuntimeError(
-                    "'Encerrar Sem Movimento' não encontrado para {}. "
-                    "Verifique screenshots e frames nas evidências.".format(modulo)
-                )
+            # "Encerrar Escrituração" não encontrado — tenta direto sem movimento
+            self._log("{}: 'Encerrar Escrituração' não encontrado → usando 'Encerrar Sem Movimento'.".format(modulo))
+            self._shot(page, "{}_sem_escrit".format(modulo.lower()))
+            resultado = self._encerrar_sem_movimento(page, modulo)
 
         self._shot(page, "{}_concluido".format(modulo.lower()))
         self._save_txt(
@@ -1315,8 +1286,41 @@ class GissBot:
         self._log("=== {} concluído: {} ===".format(modulo, resultado))
         return resultado
 
+    def _encerrar_sem_movimento(self, page, modulo):
+        """
+        Volta ao módulo, preenche competência, clica 'Encerrar Sem Movimento'
+        e confirma na tela seguinte ('SE DESEJA ENCERRAR A COMPETÊNCIA CLIQUE AQUI').
+        Retorna 'SEM_MOVIMENTO'.
+        """
+        self._shot(page, "{}_sem_movimento_inicio".format(modulo.lower()))
+
+        for _ in range(3):
+            if self._clicar_aba_modulo(page, modulo):
+                time.sleep(3)
+                break
+            time.sleep(2)
+
+        self._preencher_competencia(page)
+        time.sleep(1)
+        self._shot(page, "{}_competencia_sem_mov".format(modulo.lower()))
+
+        if not self._clicar_link(page, "Encerrar Sem Movimento"):
+            self._shot(page, "{}_erro_sem_mov".format(modulo.lower()))
+            self._salvar_evidencias_frames(page, "{}_erro_sem_mov".format(modulo.lower()))
+            raise RuntimeError(
+                "'Encerrar Sem Movimento' não encontrado para {}.".format(modulo))
+
+        self._log("{}: 'Encerrar Sem Movimento' clicado.".format(modulo))
+        time.sleep(5)
+        self._shot(page, "{}_pos_sem_movimento".format(modulo.lower()))
+
+        # SEMPRE confirma após "Encerrar Sem Movimento"
+        self._confirmar_encerramento(page)
+        self._log("{}: encerrado SEM movimento.".format(modulo))
+        return "SEM_MOVIMENTO"
+
     def _abrir_janela_modulo(self, page, modulo):
-        """Mantido por compatibilidade — redireciona para _clicar_aba_modulo."""
+        """Mantido por compatibilidade."""
         return self._clicar_aba_modulo(page, modulo)
 
 
