@@ -872,72 +872,128 @@ class GissBot:
 
     def _preencher_competencia(self, page):
         """
-        Preenche Mês e Ano sequencialmente, campo por campo, com Playwright locator.
-        Estratégia literal/UI: clica no campo, limpa, digita valor, Tab para confirmar.
+        Preenche Mês e Ano via JS direto no frame do portal (wwwx.gissonline.com.br).
+
+        PROBLEMA IDENTIFICADO: locator falha silenciosamente no frame de login
+        (portal.gissonline.com.br) que depois fica detached. A solução é:
+          1. Iterar apenas frames do domínio wwwx (portal real)
+          2. Usar JS para dumpar todos os campos visíveis (diagnóstico)
+          3. Preencher via JS direto (valor + eventos input/change/blur)
+          4. Fallback: Playwright locator click + fill no frame correto
         """
-        SEL_MES = [
-            "input[name*='mes' i]", "input[id*='mes' i]",
-            "select[name*='mes' i]", "select[id*='mes' i]",
-            "input[size='2']",
-        ]
-        SEL_ANO = [
-            "input[name*='ano' i]", "input[id*='ano' i]",
-            "select[name*='ano' i]", "select[id*='ano' i]",
-            "input[size='4']",
-        ]
+        PORTAL = "wwwx.gissonline.com.br"
+
+        script_fill = """([mes, ano]) => {
+            var r = {mes: false, ano: false, campos: []};
+            var all = Array.from(document.querySelectorAll('input,select'));
+            for (var inp of all) {
+                var tipo = (inp.type || '').toLowerCase();
+                if (tipo === 'hidden' || tipo === 'submit' ||
+                    tipo === 'button'  || tipo === 'image'  ||
+                    tipo === 'checkbox'|| tipo === 'radio') continue;
+                var nm  = (inp.name || '').toLowerCase();
+                var idd = (inp.id   || '').toLowerCase();
+                var sz  = parseInt(inp.getAttribute('size')      || '0') || 0;
+                var ml  = parseInt(inp.getAttribute('maxlength') || '0') || 0;
+                r.campos.push({name:inp.name, id:inp.id, type:tipo, size:sz, maxlen:ml, val:inp.value});
+                var isMes = nm.includes('mes') || idd.includes('mes') || sz===2 || (ml>=2&&ml<=3);
+                var isAno = nm.includes('ano') || idd.includes('ano') || sz===4 || ml===4;
+                if (isMes && !r.mes) {
+                    if (inp.tagName==='SELECT') {
+                        for (var o of inp.options) { if (o.value===mes||o.text===mes){inp.value=o.value;break;} }
+                    } else { inp.value = mes; }
+                    ['input','change','blur'].forEach(function(ev){ inp.dispatchEvent(new Event(ev,{bubbles:true})); });
+                    r.mes = (inp.name||inp.id||'?');
+                }
+                if (isAno && !r.ano) {
+                    if (inp.tagName==='SELECT') {
+                        for (var o2 of inp.options) { if (o2.value===ano||o2.text===ano){inp.value=o2.value;break;} }
+                    } else { inp.value = ano; }
+                    ['input','change','blur'].forEach(function(ev2){ inp.dispatchEvent(new Event(ev2,{bubbles:true})); });
+                    r.ano = (inp.name||inp.id||'?');
+                }
+            }
+            return r;
+        }"""
 
         ok_mes = ok_ano = False
 
+        # ── Estratégia 1: JS fill nos frames do portal (wwwx) ──
         for f in self._todos_frames(page):
-            # ── Campo MÊS ──
-            if not ok_mes:
-                for sel in SEL_MES:
-                    try:
-                        loc = f.locator(sel).first
-                        if loc.count() == 0:
-                            continue
-                        tag = loc.evaluate("el => el.tagName.toUpperCase()")
-                        if tag == "SELECT":
-                            loc.select_option(self.comp_mes)
-                            self._log("Mês selecionado (select) via '{}'.".format(sel))
-                        else:
-                            loc.click(timeout=2000)
-                            loc.triple_click()
-                            loc.fill(self.comp_mes)
-                            self._log("Mês preenchido via '{}'.".format(sel))
+            if PORTAL not in f.url:
+                continue  # ignora frame de login e outros domínios
+            try:
+                res = f.evaluate(script_fill, [self.comp_mes, self.comp_ano])
+                if res:
+                    self._log("Frame {} campos: {}".format(
+                        f.url[:60], res.get("campos", [])))
+                    if res.get("mes"):
+                        self._log("Mês={} preenchido no campo '{}' (JS).".format(
+                            self.comp_mes, res["mes"]))
                         ok_mes = True
-                        break
-                    except Exception:
-                        pass
-
-            # ── Campo ANO ──
-            if not ok_ano:
-                for sel in SEL_ANO:
-                    try:
-                        loc = f.locator(sel).first
-                        if loc.count() == 0:
-                            continue
-                        tag = loc.evaluate("el => el.tagName.toUpperCase()")
-                        if tag == "SELECT":
-                            loc.select_option(self.comp_ano)
-                            self._log("Ano selecionado (select) via '{}'.".format(sel))
-                        else:
-                            loc.click(timeout=2000)
-                            loc.triple_click()
-                            loc.fill(self.comp_ano)
-                            self._log("Ano preenchido via '{}'.".format(sel))
+                    if res.get("ano"):
+                        self._log("Ano={} preenchido no campo '{}' (JS).".format(
+                            self.comp_ano, res["ano"]))
                         ok_ano = True
+                    if ok_mes and ok_ano:
                         break
-                    except Exception:
-                        pass
+            except Exception as e:
+                self._log("  JS fill frame {}: {}".format(f.url[:50], e))
 
-            if ok_mes and ok_ano:
-                break
+        # ── Estratégia 2: Playwright locator nos frames do portal ──
+        if not ok_mes or not ok_ano:
+            SEL_MES = ["input[name*='mes' i]","input[id*='mes' i]",
+                       "select[name*='mes' i]","select[id*='mes' i]","input[size='2']"]
+            SEL_ANO = ["input[name*='ano' i]","input[id*='ano' i]",
+                       "select[name*='ano' i]","select[id*='ano' i]","input[size='4']"]
+            for f in self._todos_frames(page):
+                if PORTAL not in f.url:
+                    continue
+                if not ok_mes:
+                    for sel in SEL_MES:
+                        try:
+                            loc = f.locator(sel).first
+                            if loc.count() == 0: continue
+                            tag = loc.evaluate("el => el.tagName.toUpperCase()")
+                            if tag == "SELECT": loc.select_option(self.comp_mes)
+                            else:
+                                loc.click(timeout=2000)
+                                loc.triple_click()
+                                loc.fill(self.comp_mes)
+                            self._log("Mês={} via locator '{}' frame {}.".format(
+                                self.comp_mes, sel, f.url[:50]))
+                            ok_mes = True
+                            break
+                        except Exception:
+                            pass
+                if not ok_ano:
+                    for sel in SEL_ANO:
+                        try:
+                            loc = f.locator(sel).first
+                            if loc.count() == 0: continue
+                            tag = loc.evaluate("el => el.tagName.toUpperCase()")
+                            if tag == "SELECT": loc.select_option(self.comp_ano)
+                            else:
+                                loc.click(timeout=2000)
+                                loc.triple_click()
+                                loc.fill(self.comp_ano)
+                            self._log("Ano={} via locator '{}' frame {}.".format(
+                                self.comp_ano, sel, f.url[:50]))
+                            ok_ano = True
+                            break
+                        except Exception:
+                            pass
+                if ok_mes and ok_ano:
+                    break
 
         self._log("Competência {}/{} — mes={} ano={}".format(
             self.comp_mes, self.comp_ano, ok_mes, ok_ano))
 
-        # Tab para disparar onblur/onchange e confirmar a competência no portal
+        if not ok_mes or not ok_ano:
+            self._log("AVISO: campos de competência não encontrados — salvando diagnóstico.")
+            self._salvar_evidencias_frames(page, "competencia_nao_preenchida")
+
+        # Tab para disparar onblur/onchange
         try:
             page.keyboard.press("Tab")
             time.sleep(0.8)
@@ -971,97 +1027,101 @@ class GissBot:
 
     def _confirmar_encerramento(self, page):
         """
-        Na tela de CONFIRMAÇÃO, clica no link positivo:
-          "SE DESEJA ENCERRAR A COMPETÊNCIA CLIQUE AQUI"
-        e NÃO no link de cancelamento:
-          "SE NÃO DESEJA EFETUAR O ENCERRAMENTO CLIQUE AQUI"
+        Aguarda e clica em "SE DESEJA ENCERRAR A COMPETÊNCIA CLIQUE AQUI".
+        Faz polling por até 20s porque a página de confirmação pode demorar.
 
-        Abordagem literal/UI sequencial:
-          1. Percorre todos os <a> links de todos os frames
-          2. Para cada link com "CLIQUE AQUI", verifica o bloco de texto
-             ao redor para distinguir positivo de negativo
-          3. Clica via JS .click() nativo (sem coordenadas de mouse)
+        O portal tem dois links "CLIQUE AQUI":
+          Positivo : "SE DESEJA ENCERRAR A COMPETÊNCIA, CLIQUE AQUI"   ← queremos este
+          Negativo : "SE NÃO DESEJA EFETUAR O ENCERRAMENTO CLIQUE AQUI" ← ignorar
+
+        Estratégia: JS percorre todos os <a>, verifica contexto do pai
+        para distinguir positivo de negativo, e chama .click() nativo.
         """
         self._shot(page, "tela_confirmacao")
-        time.sleep(1)
 
-        # Script JS: busca o link positivo de confirmação
         script_conf = """() => {
+            // Diagnóstico: lista todos os links visíveis
+            var todos = Array.from(document.querySelectorAll('a')).map(function(a){
+                return (a.innerText||a.textContent||'').trim().toUpperCase().slice(0,80);
+            }).filter(function(t){ return t.length > 0; });
+
             var links = Array.from(document.querySelectorAll('a'));
-            // Ordena: coleta info de todos os links "CLIQUE AQUI"
             var candidatos = [];
             for (var lnk of links) {
                 var txt = (lnk.innerText || lnk.textContent || '').trim().toUpperCase();
                 if (!txt.includes('CLIQUE')) continue;
-                // Sobe até 5 níveis para pegar contexto (linha/célula da tabela)
+                // Sobe até 6 níveis para capturar contexto da célula da tabela
                 var el = lnk.parentElement;
                 var ctx = '';
-                for (var i = 0; i < 5 && el; i++) {
+                for (var i = 0; i < 6 && el; i++) {
                     ctx = (el.innerText || el.textContent || '').trim().toUpperCase();
-                    // Para no primeiro container que tem "SE DESEJA" ou "NAO DESEJA"
                     if (ctx.includes('SE DESEJA') || ctx.includes('NAO DESEJA') ||
-                        ctx.includes('NÃO DESEJA')) break;
+                        ctx.includes('NÃO DESEJA') || ctx.includes('ENCERRAMENTO'))
+                        break;
                     el = el.parentElement;
                 }
-                candidatos.push({lnk: lnk, ctx: ctx});
+                candidatos.push({lnk:lnk, ctx:ctx, txt:txt});
             }
-            // Primeiro candidato cujo contexto indica confirmação positiva
+
+            // Link positivo: "SE DESEJA" no contexto, SEM "NÃO"
             for (var c of candidatos) {
-                var ctx = c.ctx;
-                var positivo = ctx.includes('SE DESEJA') &&
-                               !ctx.includes('NAO DESEJA') &&
-                               !ctx.includes('NÃO DESEJA');
-                if (positivo) {
-                    try { c.lnk.focus(); } catch(e) {}
+                var pos = (c.ctx.includes('SE DESEJA') || c.ctx.includes('DESEJA ENCERRAR')) &&
+                          !c.ctx.includes('NAO DESEJA') && !c.ctx.includes('NÃO DESEJA');
+                if (pos) {
+                    try { c.lnk.focus(); } catch(e){}
                     c.lnk.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:0}));
                     c.lnk.dispatchEvent(new MouseEvent('mouseup',  {bubbles:true,button:0}));
                     c.lnk.click();
-                    return {ok:true, ctx:ctx.slice(0,120)};
+                    return {ok:true, ctx:c.ctx.slice(0,120), todos:todos};
                 }
             }
-            // Fallback: se tiver apenas 1 link "CLIQUE" na página, clica nele
+            // Fallback: único link CLIQUE na página → clica
             if (candidatos.length === 1) {
-                try { candidatos[0].lnk.focus(); } catch(e) {}
                 candidatos[0].lnk.click();
-                return {ok:true, fallback:true, ctx:'apenas 1 link CLIQUE'};
+                return {ok:true, fallback:true, ctx:'unico link CLIQUE', todos:todos};
             }
-            return {ok:false, total:candidatos.length};
+            return {ok:false, total:candidatos.length, todos:todos};
         }"""
 
-        for f in self._todos_frames(page):
-            try:
-                res = f.evaluate(script_conf)
-                if res and res.get("ok"):
-                    self._log("Confirmação clicada (frame {}): ctx={}{}".format(
-                        f.url[:40], res.get("ctx","")[:80],
-                        " [fallback]" if res.get("fallback") else ""))
-                    time.sleep(3)
-                    self._shot(page, "encerramento_confirmado")
-                    return True
-                elif res:
-                    self._log("  conf frame {} — links_clique={} sem positivo".format(
-                        f.url[:40], res.get("total", 0)))
-            except Exception as e:
-                self._log("  _confirmar frame {}: {}".format(f.url[:40], e))
-
-        # Fallback final: Playwright locator — procura link cujo texto pai tem "SE DESEJA"
-        for f in self._todos_frames(page):
-            try:
-                # Tenta pelo texto exato do link (caso portal use texto diferente)
-                for txt_link in ["CLIQUE AQUI", "Clique aqui", "clique aqui"]:
-                    links = f.get_by_role("link", name=re.compile(txt_link, re.I)).all()
-                    # Pega o PRIMEIRO link (ordem do DOM = positivo antes do negativo)
-                    if links:
-                        links[0].click(timeout=5000)
-                        self._log("Confirmação (fallback locator): '{}' frame {}.".format(
-                            txt_link, f.url[:40]))
+        # Polling por até 20s (confirmação pode demorar para carregar)
+        for poll in range(20):
+            for f in self._todos_frames(page):
+                try:
+                    res = f.evaluate(script_conf)
+                    if not res:
+                        continue
+                    # Log diagnóstico dos links disponíveis
+                    if poll == 0 or (res.get("todos") and not res.get("ok")):
+                        todos = res.get("todos", [])
+                        if todos:
+                            self._log("  Links na página (frame {}): {}".format(
+                                f.url[:40], todos[:10]))
+                    if res.get("ok"):
+                        self._log("Confirmação clicada (poll={} frame {}): {}{}".format(
+                            poll, f.url[:40], res.get("ctx","")[:80],
+                            " [único]" if res.get("fallback") else ""))
                         time.sleep(3)
                         self._shot(page, "encerramento_confirmado")
                         return True
+                except Exception as e:
+                    if poll == 0:
+                        self._log("  _confirmar frame {}: {}".format(f.url[:40], e))
+            time.sleep(1)
+
+        # Fallback final: Playwright locator — primeiro link com "clique aqui"
+        for f in self._todos_frames(page):
+            try:
+                links = f.get_by_role("link", name=re.compile(r"clique\s+aqui", re.I)).all()
+                if links:
+                    links[0].click(timeout=5000)
+                    self._log("Confirmação fallback locator (frame {}).".format(f.url[:40]))
+                    time.sleep(3)
+                    self._shot(page, "encerramento_confirmado")
+                    return True
             except Exception:
                 pass
 
-        self._log("AVISO: link de confirmação não encontrado na tela.")
+        self._log("AVISO: link de confirmação não encontrado após 20s.")
         return False
 
     # ------------------------------------------------------------------ #
