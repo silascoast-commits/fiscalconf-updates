@@ -941,11 +941,9 @@ class GissBot:
 
     def _tem_confirmacao(self, page):
         """
-        Detecta se apareceu a tela de CONFIRMAÇÃO DO ENCERRAMENTO
-        (indica que a competência tem notas/movimento).
-        Aguarda até 8s para a página carregar antes de verificar.
+        Detecta tela de CONFIRMAÇÃO DO ENCERRAMENTO em qualquer aba/frame do contexto.
+        Aguarda até 10s pois a confirmação pode abrir em nova aba via window.open().
         """
-        time.sleep(5)
         padroes = [
             r"CONFIRMAÇÃO.*ENCERRAMENTO",
             r"SE DESEJA ENCERRAR",
@@ -953,16 +951,26 @@ class GissBot:
             r"TOTAL IMPOSTO",
             r"CLIQUE AQUI",
         ]
-        for padrao in padroes:
-            for f in self._todos_frames(page):
-                try:
-                    if f.get_by_text(re.compile(padrao, re.I)).count() > 0:
-                        self._log("Confirmação detectada: '{}'".format(padrao))
-                        return True
-                except Exception:
-                    pass
-        self._log("Sem confirmação — competência provavelmente sem movimento.")
-        return False
+        # Aguarda até 10s (a nova aba pode demorar para abrir)
+        for _ in range(10):
+            # Verifica TODAS as abas do contexto do browser
+            try:
+                todas_paginas = list(page.context.pages)
+            except Exception:
+                todas_paginas = [page]
+            for p in todas_paginas:
+                for f in self._iter_frames(p.main_frame):
+                    for padrao in padroes:
+                        try:
+                            if f.get_by_text(re.compile(padrao, re.I)).count() > 0:
+                                self._log("Confirmação detectada (aba {}): '{}'".format(
+                                    p.url[:50], padrao))
+                                return p  # retorna a página onde encontrou
+                        except Exception:
+                            pass
+            time.sleep(1)
+        self._log("Sem confirmação após 10s — sem movimento.")
+        return None
 
     def _confirmar_encerramento(self, page):
         """
@@ -1258,18 +1266,18 @@ class GissBot:
             self._salvar_evidencias_frames(page, "{}_sem_escrit".format(modulo.lower()))
             self._shot(page, "{}_sem_escrit".format(modulo.lower()))
 
-        # ── PASSO 5: aguardar tela de confirmação ─────────────────────────
-        self._log("[{}] PASSO 5: aguardando resposta do portal (10s)...".format(modulo))
-        time.sleep(5)
+        # ── PASSO 5: aguardar tela de confirmação (pode abrir em nova aba) ──
+        self._log("[{}] PASSO 5: aguardando resposta do portal...".format(modulo))
+        time.sleep(3)
         self._shot(page, "{}_pos_encerrar_escrit".format(modulo.lower()))
 
-        # Verifica se apareceu tela de confirmação (COM movimento)
-        tem_conf = self._tem_confirmacao(page)
+        # Verifica TODAS as abas do contexto — confirmação pode abrir via window.open
+        pagina_conf = self._tem_confirmacao(page)
 
-        if tem_conf:
+        if pagina_conf:
             # ── PASSO 5a: COM movimento → confirma ────────────────────────
             self._log("[{}] PASSO 5a: confirmação detectada → clicando 'SE DESEJA ENCERRAR'.".format(modulo))
-            self._confirmar_encerramento(page)
+            self._confirmar_encerramento(pagina_conf)
             resultado = "ENCERRADO"
             self._log("[{}] Encerrado COM movimento.".format(modulo))
 
@@ -1337,13 +1345,14 @@ class GissBot:
             raise RuntimeError(
                 "'Encerrar Sem Movimento' não encontrado para {}.".format(modulo))
 
-        # Passo 5: aguarda e confirma
+        # Passo 5: aguarda confirmação em qualquer aba do contexto
         self._log("[{}] SEM_MOV PASSO 5: aguardando confirmação...".format(modulo))
-        time.sleep(5)
+        time.sleep(3)
         self._shot(page, "{}_pos_sem_movimento".format(modulo.lower()))
 
-        # Após "Encerrar Sem Movimento" o portal SEMPRE mostra confirmação
-        self._confirmar_encerramento(page)
+        # Após "Encerrar Sem Movimento" SEMPRE aparece confirmação (pode ser nova aba)
+        pagina_conf = self._tem_confirmacao(page)
+        self._confirmar_encerramento(pagina_conf if pagina_conf else page)
         self._log("[{}] Encerrado SEM movimento.".format(modulo))
         return "SEM_MOVIMENTO"
 
