@@ -761,15 +761,15 @@ class GissBot:
     # Ações no portal                                                      #
     # ------------------------------------------------------------------ #
 
-    def _clicar_link(self, page, texto, timeout_ms=3000):
+    def _clicar_link(self, page, texto, timeout_ms=5000):
         """
-        Localiza elemento pelo texto/atributo em qualquer frame e clica.
+        Localiza elemento pelo texto em qualquer frame e clica via JS nativo.
 
-        Estratégias (em ordem):
-          1. Playwright locator direto no frame (mais confiável — gerencia
-             coordenadas do frame automaticamente, dispara onclick corretamente)
-          2. JS: localiza elemento folha → click() nativo no elemento
-          3. JS: containers (td, span, div)
+        Prioridade:
+          1. JS: chama .click() nativo do elemento <a>/<button> encontrado pelo texto
+             (sem coordenadas de mouse — funciona em qualquer frame/frameset)
+          2. Playwright locator → .click() (gerencia coordenadas automaticamente)
+          3. JS sintético em containers
         """
         import unicodedata
         def _norm(s):
@@ -780,260 +780,167 @@ class GissBot:
 
         termos = list({_norm(texto), texto.lower().strip()})
 
-        # ── Estratégia 1: Playwright locator nativo (melhor para onclick) ──
-        # frame.locator().click() gerencia o frame sem precisar calcular offsets
+        # ── Estratégia 1: JS click() direto no elemento ──────────────────
+        # Não usa coordenadas de mouse — funciona mesmo em frames aninhados.
+        # Prioriza <a> e <button> (folhas). Ignora containers grandes.
+        script_js_click = """(termos) => {
+            const norm = s => {
+                s = (s || '').trim().toLowerCase();
+                s = s.normalize('NFD').replace(/[̀-ͯ]/g,'');
+                return s.replace(/\s+/g,' ');
+            };
+            const FOLHAS = 'a,button,input[type="button"],input[type="submit"],input[type="image"]';
+            for (const el of document.querySelectorAll(FOLHAS)) {
+                const txt = norm([
+                    el.innerText, el.textContent, el.value,
+                    el.alt, el.title
+                ].filter(Boolean).join(' '));
+                if (txt.length > 0 && txt.length < 400 &&
+                        termos.some(t => txt.includes(t))) {
+                    el.scrollIntoView({block:'center'});
+                    try { el.focus(); } catch(e) {}
+                    el.dispatchEvent(new MouseEvent('mouseover',{bubbles:true}));
+                    el.dispatchEvent(new MouseEvent('mouseenter',{bubbles:true}));
+                    el.dispatchEvent(new MouseEvent('mousedown', {bubbles:true, button:0}));
+                    el.dispatchEvent(new MouseEvent('mouseup',   {bubbles:true, button:0}));
+                    el.click();
+                    return {ok:true, tag:el.tagName, txt:txt.slice(0,80), href:(el.href||''), onclick:(el.getAttribute('onclick')||'').slice(0,80)};
+                }
+            }
+            return {ok:false};
+        }"""
+
+        for f in self._todos_frames(page):
+            try:
+                res = f.evaluate(script_js_click, termos)
+                if res and res.get("ok"):
+                    self._log("Clicado '{}' via JS.click() frame {} tag={} txt={} href={} oc={}".format(
+                        texto, f.url[:40], res.get("tag"), res.get("txt","")[:60],
+                        res.get("href","")[:60], res.get("onclick","")[:60]))
+                    return True
+            except Exception as e:
+                self._log("  JS click frame {}: {}".format(f.url[:40], e))
+
+        # ── Estratégia 2: Playwright locator .click() (gerencia frame coords) ──
         regexp = re.compile(re.escape(texto), re.I)
         for frame in self._todos_frames(page):
-            # Tenta primeiro <a> (links de navegação)
-            for sel in ["a", "button", "input[type='button']",
-                        "input[type='submit']", "td", "span", "li"]:
+            for sel in ["a", "button", "input[type='button']", "input[type='submit']"]:
                 try:
                     loc = frame.locator(sel).filter(has_text=regexp).first
-                    if loc.count() > 0 and loc.is_visible(timeout=1000):
+                    if loc.count() > 0 and loc.is_visible(timeout=1500):
                         loc.scroll_into_view_if_needed(timeout=2000)
                         loc.click(timeout=timeout_ms)
-                        self._log("Clicado '{}' locator '{}' (frame {}).".format(
+                        self._log("Clicado '{}' Playwright locator '{}' frame {}.".format(
                             texto, sel, frame.url[:50]))
                         return True
                 except Exception:
                     pass
-            # Atributos alt/title/value
-            for attr in ["title", "alt", "value"]:
-                try:
-                    loc = frame.locator("[{}*='{}' i]".format(attr, texto)).first
-                    if loc.count() > 0 and loc.is_visible(timeout=500):
-                        loc.click(timeout=timeout_ms)
-                        self._log("Clicado '{}' [{}] (frame {}).".format(
-                            texto, attr, frame.url[:50]))
-                        return True
-                except Exception:
-                    pass
 
-        # Script JS passo 1: busca SOMENTE em elementos folha (a, button, img, input)
-        # Evita pegar o <td> container que tem o texto de TODOS os links filhos
-        script_folha = """(termos) => {
-            const norm = s => {
-                s = (s || '').trim().toLowerCase();
-                return s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\\s+/g,' ');
-            };
-            // Apenas elementos interativos folha — não containers
-            const sels = 'a,button,input[type="button"],input[type="submit"],input[type="image"],img[onclick],img[usemap]';
-            for (const el of document.querySelectorAll(sels)) {
-                const txt = norm([
-                    el.innerText, el.textContent, el.value,
-                    el.alt, el.title,
-                    el.getAttribute('href'),
-                    el.getAttribute('onclick')
-                ].filter(Boolean).join(' '));
-                if (txt.length > 0 && txt.length < 300 &&
-                        termos.some(t => txt.includes(t))) {
-                    el.scrollIntoView({block:'center', inline:'center'});
-                    const r = el.getBoundingClientRect();
-                    if (r.width > 0 && r.height > 0)
-                        return {found:true, tag:el.tagName,
-                                x:r.left+r.width/2, y:r.top+r.height/2,
-                                txt:txt.slice(0,80)};
-                    el.dispatchEvent(new MouseEvent('mouseover', {bubbles:true}));
-                    el.click();
-                    return {found:true, synthetic:true, tag:el.tagName, txt:txt.slice(0,80)};
-                }
-            }
-            return {found:false};
-        }"""
-
-        # Script JS passo 2: containers (td, span, div, li) — fallback se não achou link direto
+        # ── Estratégia 3: containers com onclick ──────────────────────────
         script_container = """(termos) => {
             const norm = s => {
                 s = (s || '').trim().toLowerCase();
-                return s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\\s+/g,' ');
+                s = s.normalize('NFD').replace(/[̀-ͯ]/g,'');
+                return s.replace(/\s+/g,' ');
             };
-            const sels = 'td[onclick],span[onclick],li[onclick],div[onclick],tr[onclick],td,span,li';
+            const sels = 'td[onclick],span[onclick],div[onclick],li[onclick]';
             for (const el of document.querySelectorAll(sels)) {
-                // Texto DIRETO do elemento (sem filhos) para evitar container genérico
-                const direto = norm((el.childNodes[0] && el.childNodes[0].nodeValue) || '');
-                // Texto completo (inclui filhos)
-                const txt = norm([
-                    el.innerText, el.textContent, el.value,
-                    el.alt, el.title,
-                    el.getAttribute('href'),
-                    el.getAttribute('onclick')
-                ].filter(Boolean).join(' '));
+                const txt = norm((el.innerText||el.textContent||''));
                 if (txt.length > 0 && txt.length < 200 &&
                         termos.some(t => txt.includes(t))) {
-                    el.scrollIntoView({block:'center', inline:'center'});
-                    const r = el.getBoundingClientRect();
-                    if (r.width > 0 && r.height > 0)
-                        return {found:true, tag:el.tagName,
-                                x:r.left+r.width/2, y:r.top+r.height/2,
-                                txt:txt.slice(0,80)};
-                    el.dispatchEvent(new MouseEvent('mouseover', {bubbles:true}));
+                    el.scrollIntoView({block:'center'});
+                    el.dispatchEvent(new MouseEvent('mouseover',{bubbles:true}));
                     el.click();
-                    return {found:true, synthetic:true, tag:el.tagName, txt:txt.slice(0,80)};
+                    return {ok:true, tag:el.tagName, txt:txt.slice(0,80)};
                 }
             }
-            return {found:false};
+            return {ok:false};
         }"""
 
-        def _executar_click(res, f):
-            """Executa o clique com mouse real nas coordenadas retornadas pelo JS."""
-            if res.get("synthetic"):
-                self._log("Clicado '{}' JS sintético (frame {}): tag={} txt={}".format(
-                    texto, f.url[:50], res.get("tag"), res.get("txt","")[:60]))
-                return True
-            fx, fy = 0.0, 0.0
-            try:
-                box_frame = f.frame_element().bounding_box()
-                if box_frame:
-                    fx, fy = box_frame["x"], box_frame["y"]
-            except Exception:
-                pass
-            px = fx + res["x"]
-            py = fy + res["y"]
-            page.mouse.move(px, py)
-            time.sleep(0.25)
-            page.mouse.click(px, py)
-            self._log("Clicado '{}' mouse real ({:.0f},{:.0f}) frame {}: tag={} txt={}".format(
-                texto, px, py, f.url[:40], res.get("tag"), res.get("txt","")[:60]))
-            return True
-
-        # Estratégia 1a: elementos folha (a, button, img) — preferência máxima
-        # Evita pegar o <td> container que agrega o texto de todos os links filhos
-        for f in self._todos_frames(page):
-            try:
-                res = f.evaluate(script_folha, termos)
-                if res and res.get("found"):
-                    return _executar_click(res, f)
-            except Exception as e:
-                self._log("  JS folha frame {}: {}".format(f.url[:40], e))
-
-        # Estratégia 1b: containers (td, span, div) — fallback
         for f in self._todos_frames(page):
             try:
                 res = f.evaluate(script_container, termos)
-                if res and res.get("found"):
-                    return _executar_click(res, f)
+                if res and res.get("ok"):
+                    self._log("Clicado '{}' container JS frame {}: tag={} txt={}".format(
+                        texto, f.url[:40], res.get("tag"), res.get("txt","")[:60]))
+                    return True
             except Exception as e:
                 self._log("  JS container frame {}: {}".format(f.url[:40], e))
-
-        # Estratégia 2: Playwright locator → hover() + click()
-        regexp = re.compile(re.escape(texto), re.I)
-        for frame in self._todos_frames(page):
-            for sel in ["a", "button", "td", "li", "span", "div",
-                        "input[type='button']", "input[type='submit']", "img"]:
-                try:
-                    loc = frame.locator(sel).filter(has_text=regexp).first
-                    if loc.count() > 0:
-                        loc.hover(timeout=timeout_ms)
-                        time.sleep(0.2)
-                        loc.click(timeout=timeout_ms)
-                        self._log("Clicado '{}' hover+click locator '{}' (frame {}).".format(
-                            texto, sel, frame.url[:40]))
-                        return True
-                except Exception:
-                    pass
-            for attr in ["title", "alt", "value"]:
-                try:
-                    loc = frame.locator("[{}*='{}' i]".format(attr, texto)).first
-                    if loc.count() > 0:
-                        loc.hover(timeout=timeout_ms)
-                        time.sleep(0.2)
-                        loc.click(timeout=timeout_ms)
-                        self._log("Clicado '{}' hover+click [{}] (frame {}).".format(
-                            texto, attr, frame.url[:40]))
-                        return True
-                except Exception:
-                    pass
 
         self._log("Link NAO encontrado: '{}'".format(texto))
         return False
 
     def _preencher_competencia(self, page):
-        """Preenche Mês e Ano em qualquer frame (input ou select)."""
-        script = """([mes, ano]) => {
-            var r = [];
-            // Mês: input ou select
-            var mesSelectors = [
-                'select[name*="mes" i]','select[id*="mes" i]',
-                'input[name*="mes" i]','input[id*="mes" i]','input[size="2"]'
-            ];
-            for (var s of mesSelectors) {
-                var el = document.querySelector(s);
-                if (el && el.type !== 'hidden') {
-                    el.value = mes;
-                    el.dispatchEvent(new Event('input',  {bubbles:true}));
-                    el.dispatchEvent(new Event('change', {bubbles:true}));
-                    r.push('mes'); break;
-                }
-            }
-            // Ano: input ou select
-            var anoSelectors = [
-                'select[name*="ano" i]','select[id*="ano" i]',
-                'input[name*="ano" i]','input[id*="ano" i]','input[size="4"]'
-            ];
-            for (var s of anoSelectors) {
-                var el = document.querySelector(s);
-                if (el && el.type !== 'hidden') {
-                    el.value = ano;
-                    el.dispatchEvent(new Event('input',  {bubbles:true}));
-                    el.dispatchEvent(new Event('change', {bubbles:true}));
-                    r.push('ano'); break;
-                }
-            }
-            return r;
-        }"""
+        """
+        Preenche Mês e Ano sequencialmente, campo por campo, com Playwright locator.
+        Estratégia literal/UI: clica no campo, limpa, digita valor, Tab para confirmar.
+        """
+        SEL_MES = [
+            "input[name*='mes' i]", "input[id*='mes' i]",
+            "select[name*='mes' i]", "select[id*='mes' i]",
+            "input[size='2']",
+        ]
+        SEL_ANO = [
+            "input[name*='ano' i]", "input[id*='ano' i]",
+            "select[name*='ano' i]", "select[id*='ano' i]",
+            "input[size='4']",
+        ]
+
         ok_mes = ok_ano = False
+
         for f in self._todos_frames(page):
-            try:
-                res = f.evaluate(script, [self.comp_mes, self.comp_ano])
-                for r in (res or []):
-                    if r == "mes": ok_mes = True
-                    if r == "ano": ok_ano = True
-                if ok_mes and ok_ano:
-                    break
-            except Exception:
-                pass
-
-        # Fallback: locator direto — input e select
-        if not ok_mes or not ok_ano:
-            for f in self._todos_frames(page):
-                for sel_base, val, flag in [
-                    ("mes", self.comp_mes, "mes"),
-                    ("ano", self.comp_ano, "ano"),
-                ]:
-                    if (flag == "mes" and ok_mes) or (flag == "ano" and ok_ano):
-                        continue
-                    sels = [
-                        "select[name*='{}' i]".format(sel_base),
-                        "select[id*='{}' i]".format(sel_base),
-                        "input[name*='{}' i]".format(sel_base),
-                        "input[id*='{}' i]".format(sel_base),
-                    ]
-                    for sel in sels:
-                        try:
-                            loc = f.locator(sel).first
-                            if loc.count() > 0:
-                                tag = loc.evaluate("el => el.tagName")
-                                if tag == "SELECT":
-                                    loc.select_option(val)
-                                else:
-                                    loc.triple_click()
-                                    loc.fill(val)
-                                if flag == "mes": ok_mes = True
-                                else:             ok_ano  = True
-                                break
-                        except Exception:
-                            pass
-                    if (flag == "mes" and ok_mes) or (flag == "ano" and ok_ano):
+            # ── Campo MÊS ──
+            if not ok_mes:
+                for sel in SEL_MES:
+                    try:
+                        loc = f.locator(sel).first
+                        if loc.count() == 0:
+                            continue
+                        tag = loc.evaluate("el => el.tagName.toUpperCase()")
+                        if tag == "SELECT":
+                            loc.select_option(self.comp_mes)
+                            self._log("Mês selecionado (select) via '{}'.".format(sel))
+                        else:
+                            loc.click(timeout=2000)
+                            loc.triple_click()
+                            loc.fill(self.comp_mes)
+                            self._log("Mês preenchido via '{}'.".format(sel))
+                        ok_mes = True
                         break
+                    except Exception:
+                        pass
 
-        self._log("Competência {}/{} preenchida: mes={} ano={}".format(
+            # ── Campo ANO ──
+            if not ok_ano:
+                for sel in SEL_ANO:
+                    try:
+                        loc = f.locator(sel).first
+                        if loc.count() == 0:
+                            continue
+                        tag = loc.evaluate("el => el.tagName.toUpperCase()")
+                        if tag == "SELECT":
+                            loc.select_option(self.comp_ano)
+                            self._log("Ano selecionado (select) via '{}'.".format(sel))
+                        else:
+                            loc.click(timeout=2000)
+                            loc.triple_click()
+                            loc.fill(self.comp_ano)
+                            self._log("Ano preenchido via '{}'.".format(sel))
+                        ok_ano = True
+                        break
+                    except Exception:
+                        pass
+
+            if ok_mes and ok_ano:
+                break
+
+        self._log("Competência {}/{} — mes={} ano={}".format(
             self.comp_mes, self.comp_ano, ok_mes, ok_ano))
 
-        # Pressiona Tab para disparar onblur/onchange do campo Ano
-        # Alguns portais só validam a competência após blur
+        # Tab para disparar onblur/onchange e confirmar a competência no portal
         try:
             page.keyboard.press("Tab")
-            time.sleep(0.5)
+            time.sleep(0.8)
         except Exception:
             pass
 
@@ -1064,89 +971,97 @@ class GissBot:
 
     def _confirmar_encerramento(self, page):
         """
-        Na tela de CONFIRMAÇÃO DO ENCERRAMENTO, clica em:
-          "SE DESEJA ENCERRAR A COMPETÊNCIA CLIQUE AQUI"  ← primeiro link
-        e NÃO em:
-          "SE NÃO DESEJA EFETUAR O ENCERRAMENTO CLIQUE AQUI"  ← segundo link
+        Na tela de CONFIRMAÇÃO, clica no link positivo:
+          "SE DESEJA ENCERRAR A COMPETÊNCIA CLIQUE AQUI"
+        e NÃO no link de cancelamento:
+          "SE NÃO DESEJA EFETUAR O ENCERRAMENTO CLIQUE AQUI"
 
-        Estratégia: busca o texto âncora "SE DESEJA ENCERRAR" no HTML de cada
-        frame e clica no link mais próximo a ele (que não tenha "NÃO").
+        Abordagem literal/UI sequencial:
+          1. Percorre todos os <a> links de todos os frames
+          2. Para cada link com "CLIQUE AQUI", verifica o bloco de texto
+             ao redor para distinguir positivo de negativo
+          3. Clica via JS .click() nativo (sem coordenadas de mouse)
         """
         self._shot(page, "tela_confirmacao")
         time.sleep(1)
 
-        # Estratégia 1: clica no link cujo texto pai contém "SE DESEJA ENCERRAR"
-        # mas NÃO contém "NÃO" — exclui o link de cancelamento
+        # Script JS: busca o link positivo de confirmação
         script_conf = """() => {
-            // Procura todos os links com texto "CLIQUE AQUI"
             var links = Array.from(document.querySelectorAll('a'));
+            // Ordena: coleta info de todos os links "CLIQUE AQUI"
+            var candidatos = [];
             for (var lnk of links) {
                 var txt = (lnk.innerText || lnk.textContent || '').trim().toUpperCase();
                 if (!txt.includes('CLIQUE')) continue;
-                // Verifica o texto ao redor (linha/célula) para distinguir dos dois links
-                var parent = lnk.parentElement;
+                // Sobe até 5 níveis para pegar contexto (linha/célula da tabela)
+                var el = lnk.parentElement;
                 var ctx = '';
-                for (var i = 0; i < 3 && parent; i++) {
-                    ctx = (parent.innerText || parent.textContent || '').toUpperCase();
-                    if (ctx.includes('SE DESEJA') || ctx.includes('NÃO DESEJA') || ctx.includes('NAO DESEJA'))
-                        break;
-                    parent = parent.parentElement;
+                for (var i = 0; i < 5 && el; i++) {
+                    ctx = (el.innerText || el.textContent || '').trim().toUpperCase();
+                    // Para no primeiro container que tem "SE DESEJA" ou "NAO DESEJA"
+                    if (ctx.includes('SE DESEJA') || ctx.includes('NAO DESEJA') ||
+                        ctx.includes('NÃO DESEJA')) break;
+                    el = el.parentElement;
                 }
-                // Confirma se o contexto é "SE DESEJA ENCERRAR" (não o de cancelamento)
-                if (ctx.includes('SE DESEJA') && !ctx.includes('NÃO DESEJA') && !ctx.includes('NAO DESEJA')) {
-                    var r = lnk.getBoundingClientRect();
-                    if (r.width > 0 && r.height > 0)
-                        return {found:true, x:r.left+r.width/2, y:r.top+r.height/2, ctx:ctx.slice(0,100)};
-                    lnk.click();
-                    return {found:true, synthetic:true, ctx:ctx.slice(0,100)};
+                candidatos.push({lnk: lnk, ctx: ctx});
+            }
+            // Primeiro candidato cujo contexto indica confirmação positiva
+            for (var c of candidatos) {
+                var ctx = c.ctx;
+                var positivo = ctx.includes('SE DESEJA') &&
+                               !ctx.includes('NAO DESEJA') &&
+                               !ctx.includes('NÃO DESEJA');
+                if (positivo) {
+                    try { c.lnk.focus(); } catch(e) {}
+                    c.lnk.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:0}));
+                    c.lnk.dispatchEvent(new MouseEvent('mouseup',  {bubbles:true,button:0}));
+                    c.lnk.click();
+                    return {ok:true, ctx:ctx.slice(0,120)};
                 }
             }
-            return {found:false};
+            // Fallback: se tiver apenas 1 link "CLIQUE" na página, clica nele
+            if (candidatos.length === 1) {
+                try { candidatos[0].lnk.focus(); } catch(e) {}
+                candidatos[0].lnk.click();
+                return {ok:true, fallback:true, ctx:'apenas 1 link CLIQUE'};
+            }
+            return {ok:false, total:candidatos.length};
         }"""
 
         for f in self._todos_frames(page):
             try:
                 res = f.evaluate(script_conf)
-                if not (res and res.get("found")):
-                    continue
-                self._log("Confirmação encontrada: {}".format(res.get("ctx","")[:80]))
-                if res.get("synthetic"):
+                if res and res.get("ok"):
+                    self._log("Confirmação clicada (frame {}): ctx={}{}".format(
+                        f.url[:40], res.get("ctx","")[:80],
+                        " [fallback]" if res.get("fallback") else ""))
                     time.sleep(3)
                     self._shot(page, "encerramento_confirmado")
                     return True
-                fx, fy = 0.0, 0.0
-                try:
-                    box_frame = f.frame_element().bounding_box()
-                    if box_frame:
-                        fx, fy = box_frame["x"], box_frame["y"]
-                except Exception:
-                    pass
-                px, py = fx + res["x"], fy + res["y"]
-                page.mouse.move(px, py)
-                time.sleep(0.2)
-                page.mouse.click(px, py)
-                self._log("'SE DESEJA ENCERRAR CLIQUE AQUI' clicado ({:.0f},{:.0f}).".format(px, py))
-                time.sleep(3)
-                self._shot(page, "encerramento_confirmado")
-                return True
+                elif res:
+                    self._log("  conf frame {} — links_clique={} sem positivo".format(
+                        f.url[:40], res.get("total", 0)))
             except Exception as e:
                 self._log("  _confirmar frame {}: {}".format(f.url[:40], e))
 
-        # Fallback: primeiro link com "CLIQUE" sem "NÃO" no texto do próprio link
+        # Fallback final: Playwright locator — procura link cujo texto pai tem "SE DESEJA"
         for f in self._todos_frames(page):
             try:
-                for link in f.get_by_role("link").all():
-                    txt = (link.inner_text() or "").strip().upper()
-                    if "CLIQUE" in txt and "NÃO" not in txt and "NAO" not in txt:
-                        link.click(timeout=5000)
-                        self._log("Confirmação (fallback link): '{}'".format(txt[:60]))
+                # Tenta pelo texto exato do link (caso portal use texto diferente)
+                for txt_link in ["CLIQUE AQUI", "Clique aqui", "clique aqui"]:
+                    links = f.get_by_role("link", name=re.compile(txt_link, re.I)).all()
+                    # Pega o PRIMEIRO link (ordem do DOM = positivo antes do negativo)
+                    if links:
+                        links[0].click(timeout=5000)
+                        self._log("Confirmação (fallback locator): '{}' frame {}.".format(
+                            txt_link, f.url[:40]))
                         time.sleep(3)
                         self._shot(page, "encerramento_confirmado")
                         return True
             except Exception:
                 pass
 
-        self._log("AVISO: link de confirmação não encontrado.")
+        self._log("AVISO: link de confirmação não encontrado na tela.")
         return False
 
     # ------------------------------------------------------------------ #
@@ -1240,75 +1155,128 @@ class GissBot:
     # Encerramento por módulo                                              #
     # ------------------------------------------------------------------ #
 
+    def _aguardar_link_visivel(self, page, textos, timeout_s=10):
+        """
+        Aguarda até que pelo menos um dos textos esteja visível em qualquer frame.
+        Retorna o texto encontrado ou None se timeout.
+        """
+        import unicodedata
+        def _norm(s):
+            s = (s or "").strip().lower()
+            s = "".join(c for c in unicodedata.normalize("NFD", s)
+                        if unicodedata.category(c) != "Mn")
+            return re.sub(r"\s+", " ", s)
+
+        termos = [_norm(t) for t in textos]
+        inicio = time.time()
+        while time.time() - inicio < timeout_s:
+            for f in self._todos_frames(page):
+                try:
+                    body = _norm(f.evaluate(
+                        "() => document.body ? document.body.innerText : ''") or "")
+                    for i, t in enumerate(termos):
+                        if t in body:
+                            self._log("Link visível detectado: '{}'.".format(textos[i]))
+                            return textos[i]
+                except Exception:
+                    pass
+            time.sleep(1)
+        return None
+
     def _encerrar_modulo(self, page, modulo):
         """
-        Fluxo completo (documento PASSO_A_PASSO):
+        Fluxo PASSO A PASSO literal e sequencial:
 
-        1. Clica PRESTADOR/TOMADOR → preenche Mês/Ano → clica "Encerrar Escrituração"
-
-        2a. COM movimento → confirmação aparece → "SE DESEJA ENCERRAR CLIQUE AQUI"
-            → ENCERRADO
-
-        2b. SEM movimento → confirmação NÃO aparece → volta ao módulo
-            → preenche Mês/Ano → "Encerrar Sem Movimento"
-            → confirmação SEMPRE aparece → "SE DESEJA ENCERRAR A COMPETÊNCIA CLIQUE AQUI"
-            → SEM_MOVIMENTO
+        PASSO 1 — Clicar aba PRESTADOR ou TOMADOR
+        PASSO 2 — Aguardar formulário com campo Mês/Ano
+        PASSO 3 — Preencher Mês e Ano
+        PASSO 4 — Clicar "Encerrar Escrituração"
+        PASSO 5a — COM movimento: aguarda confirmação → clica "SE DESEJA ENCERRAR"
+        PASSO 5b — SEM movimento: volta ao módulo → preenche competência
+                   → clica "Encerrar Sem Movimento" → confirma
         """
-        self._log("=" * 50)
-        self._log("=== {} ===".format(modulo))
-        self._log("=" * 50)
+        self._log("=" * 55)
+        self._log("=== MODULO: {} ===".format(modulo))
+        self._log("=" * 55)
         self._shot(page, "{}_inicio".format(modulo.lower()))
 
-        for _ in range(3):
-            try:
-                page.wait_for_load_state("networkidle", timeout=10000)
-                break
-            except Exception:
-                pass
-        time.sleep(2)
-
-        # ── Passo 1: navega para o módulo ────────────────────────────────
+        # ── PASSO 1: clicar na aba do módulo ─────────────────────────────
+        self._log("[{}] PASSO 1: clicar aba...".format(modulo))
+        clicou_aba = False
         for tentativa in range(4):
             if self._clicar_aba_modulo(page, modulo):
-                self._log("Aba '{}' clicada (tentativa {}).".format(modulo, tentativa + 1))
-                time.sleep(3)
+                clicou_aba = True
+                self._log("[{}] Aba clicada (tentativa {}).".format(modulo, tentativa + 1))
                 break
-            self._log("Aba '{}' não respondeu (tentativa {}).".format(modulo, tentativa + 1))
+            self._log("[{}] Aba não respondeu, aguardando...".format(modulo))
             time.sleep(3)
 
+        if not clicou_aba:
+            self._log("[{}] AVISO: aba não foi clicada após 4 tentativas.".format(modulo))
+
+        # ── PASSO 2: aguardar formulário Mês/Ano aparecer ─────────────────
+        self._log("[{}] PASSO 2: aguardando formulário (até 15s)...".format(modulo))
+        time.sleep(3)
+        # Verifica se apareceu campo de competência
+        form_ok = False
+        for _ in range(5):
+            for f in self._todos_frames(page):
+                for sel in ["input[name*='mes' i]", "input[id*='mes' i]",
+                            "select[name*='mes' i]", "input[size='2']"]:
+                    try:
+                        if f.locator(sel).count() > 0:
+                            form_ok = True
+                            break
+                    except Exception:
+                        pass
+                if form_ok:
+                    break
+            if form_ok:
+                break
+            time.sleep(2)
+        self._log("[{}] Formulário visível: {}.".format(modulo, form_ok))
         self._shot(page, "{}_menu".format(modulo.lower()))
 
-        # ── Passo 2: preenche competência ────────────────────────────────
+        # ── PASSO 3: preencher Mês e Ano ─────────────────────────────────
+        self._log("[{}] PASSO 3: preencher Mês={} Ano={}.".format(
+            modulo, self.comp_mes, self.comp_ano))
         self._preencher_competencia(page)
         time.sleep(1)
         self._shot(page, "{}_competencia".format(modulo.lower()))
 
-        # ── Passo 3: clica "Encerrar Escrituração" ───────────────────────
+        # ── PASSO 4: clicar "Encerrar Escrituração" ───────────────────────
+        self._log("[{}] PASSO 4: clicar 'Encerrar Escrituração'...".format(modulo))
         clicou_escrit = False
-        for texto in ["Encerrar Escrituração", "Encerrar Escrituracao", "Encerrar Escrit"]:
+        for texto in ["Encerrar Escrituração", "Encerrar Escrituracao",
+                      "Encerrar Escrit", "encerrar escrit"]:
             if self._clicar_link(page, texto):
-                self._log("{}: 'Encerrar Escrituração' clicado.".format(modulo))
+                self._log("[{}] 'Encerrar Escrituração' clicado.".format(modulo))
                 clicou_escrit = True
                 break
 
-        if clicou_escrit:
-            time.sleep(5)
-            self._shot(page, "{}_pos_encerrar_escrit".format(modulo.lower()))
+        if not clicou_escrit:
+            self._log("[{}] 'Encerrar Escrituração' não encontrado.".format(modulo))
+            self._salvar_evidencias_frames(page, "{}_sem_escrit".format(modulo.lower()))
+            self._shot(page, "{}_sem_escrit".format(modulo.lower()))
 
-            # Passo 4a: tenta confirmar — se a tela de confirmação apareceu (COM movimento)
-            if self._confirmar_encerramento(page):
-                resultado = "ENCERRADO"
-                self._log("{}: encerrado COM movimento.".format(modulo))
+        # ── PASSO 5: aguardar tela de confirmação ─────────────────────────
+        self._log("[{}] PASSO 5: aguardando resposta do portal (10s)...".format(modulo))
+        time.sleep(5)
+        self._shot(page, "{}_pos_encerrar_escrit".format(modulo.lower()))
 
-            else:
-                # Passo 4b: SEM movimento — confirmação não apareceu
-                self._log("{}: sem confirmação → sem movimento → usando 'Encerrar Sem Movimento'.".format(modulo))
-                resultado = self._encerrar_sem_movimento(page, modulo)
+        # Verifica se apareceu tela de confirmação (COM movimento)
+        tem_conf = self._tem_confirmacao(page)
+
+        if tem_conf:
+            # ── PASSO 5a: COM movimento → confirma ────────────────────────
+            self._log("[{}] PASSO 5a: confirmação detectada → clicando 'SE DESEJA ENCERRAR'.".format(modulo))
+            self._confirmar_encerramento(page)
+            resultado = "ENCERRADO"
+            self._log("[{}] Encerrado COM movimento.".format(modulo))
 
         else:
-            # "Encerrar Escrituração" não encontrado — tenta direto sem movimento
-            self._log("{}: 'Encerrar Escrituração' não encontrado → usando 'Encerrar Sem Movimento'.".format(modulo))
-            self._shot(page, "{}_sem_escrit".format(modulo.lower()))
+            # ── PASSO 5b: SEM movimento → "Encerrar Sem Movimento" ────────
+            self._log("[{}] PASSO 5b: sem confirmação → SEM MOVIMENTO.".format(modulo))
             resultado = self._encerrar_sem_movimento(page, modulo)
 
         self._shot(page, "{}_concluido".format(modulo.lower()))
@@ -1321,40 +1289,63 @@ class GissBot:
                 "Resultado  : {}".format(resultado),
             ])
         )
-        self._log("=== {} concluído: {} ===".format(modulo, resultado))
+        self._log("=== {} CONCLUÍDO: {} ===".format(modulo, resultado))
         return resultado
 
     def _encerrar_sem_movimento(self, page, modulo):
         """
-        Volta ao módulo, preenche competência, clica 'Encerrar Sem Movimento'
-        e confirma na tela seguinte ('SE DESEJA ENCERRAR A COMPETÊNCIA CLIQUE AQUI').
-        Retorna 'SEM_MOVIMENTO'.
+        SEM MOVIMENTO — fluxo sequencial:
+          1. Volta ao módulo (clica aba PRESTADOR/TOMADOR)
+          2. Aguarda formulário aparecer
+          3. Preenche Mês/Ano
+          4. Clica "Encerrar Sem Movimento"
+          5. Aguarda e confirma na tela seguinte
         """
+        self._log("[{}] === Encerrar Sem Movimento ===".format(modulo))
         self._shot(page, "{}_sem_movimento_inicio".format(modulo.lower()))
 
-        for _ in range(3):
+        # Passo 1: volta ao módulo
+        self._log("[{}] SEM_MOV PASSO 1: clicar aba...".format(modulo))
+        for tentativa in range(3):
             if self._clicar_aba_modulo(page, modulo):
-                time.sleep(3)
+                self._log("[{}] Aba clicada (tentativa {}).".format(modulo, tentativa + 1))
                 break
             time.sleep(2)
 
+        # Passo 2: aguarda formulário
+        self._log("[{}] SEM_MOV PASSO 2: aguardando formulário...".format(modulo))
+        time.sleep(3)
+
+        # Passo 3: preenche competência
+        self._log("[{}] SEM_MOV PASSO 3: preencher competência.".format(modulo))
         self._preencher_competencia(page)
         time.sleep(1)
         self._shot(page, "{}_competencia_sem_mov".format(modulo.lower()))
 
-        if not self._clicar_link(page, "Encerrar Sem Movimento"):
+        # Passo 4: clica "Encerrar Sem Movimento"
+        self._log("[{}] SEM_MOV PASSO 4: clicar 'Encerrar Sem Movimento'.".format(modulo))
+        clicou = False
+        for texto in ["Encerrar Sem Movimento", "Encerrar sem movimento",
+                      "sem movimento", "Sem Movimento"]:
+            if self._clicar_link(page, texto):
+                self._log("[{}] 'Encerrar Sem Movimento' clicado.".format(modulo))
+                clicou = True
+                break
+
+        if not clicou:
             self._shot(page, "{}_erro_sem_mov".format(modulo.lower()))
             self._salvar_evidencias_frames(page, "{}_erro_sem_mov".format(modulo.lower()))
             raise RuntimeError(
                 "'Encerrar Sem Movimento' não encontrado para {}.".format(modulo))
 
-        self._log("{}: 'Encerrar Sem Movimento' clicado.".format(modulo))
+        # Passo 5: aguarda e confirma
+        self._log("[{}] SEM_MOV PASSO 5: aguardando confirmação...".format(modulo))
         time.sleep(5)
         self._shot(page, "{}_pos_sem_movimento".format(modulo.lower()))
 
-        # SEMPRE confirma após "Encerrar Sem Movimento"
+        # Após "Encerrar Sem Movimento" o portal SEMPRE mostra confirmação
         self._confirmar_encerramento(page)
-        self._log("{}: encerrado SEM movimento.".format(modulo))
+        self._log("[{}] Encerrado SEM movimento.".format(modulo))
         return "SEM_MOVIMENTO"
 
     def _abrir_janela_modulo(self, page, modulo):
