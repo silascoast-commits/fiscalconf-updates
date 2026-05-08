@@ -872,117 +872,72 @@ class GissBot:
 
     def _preencher_competencia(self, page):
         """
-        Preenche os campos de competência do GissOnline.
+        Preenche os campos Mês e Ano via JavaScript querySelector direto.
 
-        Campos identificados nas telas reais do portal:
-          - Mês : input name="mes_competencia" (ou similar) — 2 dígitos
-          - Ano : input name="ano_competencia" (ou similar) — 4 dígitos
-        URL confirma: ?mes_competencia=05&ano_competencia=2026
+        Campos confirmados pelo log real do portal (contribuinte2.asp):
+          name='mes'  maxlength=2  (campo mês)
+          name='ano'  maxlength=4  (campo ano)
         """
         PORTAL = "wwwx.gissonline.com.br"
 
-        # Seletores em ordem de especificidade (mais direto primeiro)
-        SEL_MES = [
-            "input[name='mes_competencia']",
-            "input[name='mes_comp']",
-            "input[name='mes']",
-            "input[id='mes_competencia']",
-            "input[id='mes']",
-            "input[name*='mes' i]",
-            "input[id*='mes' i]",
-            "select[name*='mes' i]",
-            "select[id*='mes' i]",
-            "input[size='2']",
-            "input[maxlength='2']",
-        ]
-        SEL_ANO = [
-            "input[name='ano_competencia']",
-            "input[name='ano_comp']",
-            "input[name='ano']",
-            "input[id='ano_competencia']",
-            "input[id='ano']",
-            "input[name*='ano' i]",
-            "input[id*='ano' i]",
-            "select[name*='ano' i]",
-            "select[id*='ano' i]",
-            "input[size='4']",
-            "input[maxlength='4']",
-        ]
+        # JS direto com querySelector — mesmo mecanismo que o diagnóstico usa.
+        # Tenta vários seletores em cascata para cobrir variações entre municípios.
+        script = """([mes, ano]) => {
+            function fill(el, val) {
+                if (!el) return false;
+                el.focus();
+                el.value = val;
+                ['input','change','blur'].forEach(function(ev){
+                    el.dispatchEvent(new Event(ev, {bubbles:true}));
+                });
+                return true;
+            }
+            var r = {mes: null, ano: null};
+            // Mês — tenta por name exato, depois por maxlength=2
+            r.mes = fill(document.querySelector("input[name='mes']"), mes) ? 'mes' :
+                    fill(document.querySelector("input[name='mes_competencia']"), mes) ? 'mes_competencia' :
+                    fill(document.querySelector("input[name='mes_comp']"), mes) ? 'mes_comp' :
+                    fill(document.querySelector("input[maxlength='2']:not([type='hidden'])"), mes) ? 'maxlen2' :
+                    null;
+            // Ano — tenta por name exato, depois por maxlength=4
+            r.ano = fill(document.querySelector("input[name='ano']"), ano) ? 'ano' :
+                    fill(document.querySelector("input[name='ano_competencia']"), ano) ? 'ano_competencia' :
+                    fill(document.querySelector("input[name='ano_comp']"), ano) ? 'ano_comp' :
+                    fill(document.querySelector("input[maxlength='4']:not([type='hidden'])"), ano) ? 'maxlen4' :
+                    null;
+            return r;
+        }"""
 
         ok_mes = ok_ano = False
 
         for f in self._todos_frames(page):
             if PORTAL not in f.url:
-                continue  # apenas frames do portal real
-
-            # Diagnóstico: lista todos os inputs visíveis para identificar os campos
+                continue
             try:
-                campos = f.evaluate("""() => {
-                    return Array.from(document.querySelectorAll('input,select'))
-                        .filter(e => e.type !== 'hidden')
-                        .map(e => ({n:e.name, id:e.id, t:e.type,
-                                    sz:e.size, ml:e.maxLength, v:e.value}));
-                }""")
-                if campos:
-                    self._log("Campos frame {}: {}".format(f.url[:60], campos))
-            except Exception:
-                pass
-
-            # Preenche Mês
-            if not ok_mes:
-                for sel in SEL_MES:
-                    try:
-                        loc = f.locator(sel).first
-                        if loc.count() == 0:
-                            continue
-                        tag = loc.evaluate("el => el.tagName.toUpperCase()")
-                        if tag == "SELECT":
-                            loc.select_option(self.comp_mes)
-                        else:
-                            loc.click(timeout=2000)
-                            loc.triple_click()
-                            loc.fill(self.comp_mes)
-                            loc.press("Tab")
-                        self._log("Mês={} via '{}' frame {}.".format(
-                            self.comp_mes, sel, f.url[:50]))
+                res = f.evaluate(script, [self.comp_mes, self.comp_ano])
+                if res:
+                    if res.get("mes"):
+                        self._log("Mês={} via campo '{}' frame {}.".format(
+                            self.comp_mes, res["mes"], f.url[:60]))
                         ok_mes = True
-                        break
-                    except Exception:
-                        pass
-
-            # Preenche Ano
-            if not ok_ano:
-                for sel in SEL_ANO:
-                    try:
-                        loc = f.locator(sel).first
-                        if loc.count() == 0:
-                            continue
-                        tag = loc.evaluate("el => el.tagName.toUpperCase()")
-                        if tag == "SELECT":
-                            loc.select_option(self.comp_ano)
-                        else:
-                            loc.click(timeout=2000)
-                            loc.triple_click()
-                            loc.fill(self.comp_ano)
-                            loc.press("Tab")
-                        self._log("Ano={} via '{}' frame {}.".format(
-                            self.comp_ano, sel, f.url[:50]))
+                    if res.get("ano"):
+                        self._log("Ano={} via campo '{}' frame {}.".format(
+                            self.comp_ano, res["ano"], f.url[:60]))
                         ok_ano = True
+                    if ok_mes and ok_ano:
                         break
-                    except Exception:
-                        pass
-
-            if ok_mes and ok_ano:
-                break
+            except Exception as e:
+                self._log("  fill comp frame {}: {}".format(f.url[:50], e))
 
         self._log("Competência {}/{} — mes={} ano={}".format(
             self.comp_mes, self.comp_ano, ok_mes, ok_ano))
 
-        if not ok_mes or not ok_ano:
-            self._log("AVISO: campos não encontrados — salvando diagnóstico.")
-            self._salvar_evidencias_frames(page, "competencia_nao_preenchida")
-
-        time.sleep(0.5)
+        # Tab para confirmar onblur/onchange do portal
+        try:
+            page.keyboard.press("Tab")
+            time.sleep(0.5)
+        except Exception:
+            pass
 
     def _tem_confirmacao(self, page):
         """
