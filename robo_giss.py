@@ -1208,23 +1208,24 @@ class GissBot:
                     loc = f.get_by_role("link", name=re.compile(re.escape(texto), re.I))
                     if loc.count() == 0:
                         continue
-                    loc.first.scroll_into_view_if_needed(timeout=3000)
 
-                    # ── Tenta capturar popup que abre via window.open() ──
+                    self._log("[{}] Clicando '{}' — aguardando tela abrir...".format(modulo, texto))
+
+                    # ── Captura popup que abre via window.open() ──
                     try:
-                        with page.context.expect_page(timeout=6000) as popup_info:
+                        with page.context.expect_page(timeout=15000) as popup_info:
                             loc.first.click(timeout=5000)
                         popup = popup_info.value
                         popup.bring_to_front()
-                        popup.wait_for_load_state("domcontentloaded", timeout=20000)
-                        self._log("[{}] '{}' → popup capturada: {} (frame {}).".format(
-                            modulo, texto, popup.url[:60], f.url[:50]))
+                        popup.wait_for_load_state("domcontentloaded", timeout=30000)
+                        self._log("[{}] Tela de confirmação aberta: {}".format(
+                            modulo, popup.url[:80]))
+                        self._shot(popup, "{}_tela_confirmacao".format(modulo.lower()))
                         self._popup_encerramento = popup
                         return popup
                     except Exception:
-                        # Sem popup — clique navegou na mesma página
-                        self._log("[{}] '{}' clicado (sem popup) via locator (frame {}).".format(
-                            modulo, texto, f.url[:50]))
+                        # Sem popup — pode ter navegado no mesmo frame
+                        self._log("[{}] '{}' clicado — sem nova janela.".format(modulo, texto))
                         return True
                 except Exception as e:
                     self._log("  locator '{}' frame {}: {}".format(texto, f.url[:40], e))
