@@ -1165,13 +1165,9 @@ class GissBot:
     def _clicar_encerrar(self, page, modulo, tipo):
         """
         Clica em "Encerrar Escrituração" ou "Encerrar Sem Movimento".
+        Captura a popup que o portal abre via window.open().
 
-        tipo: "escrituracao" ou "sem_movimento"
-
-        Estratégias em ordem:
-          1. Playwright locator .click() com mouse real (mais confiável para onclick)
-          2. Chamar NewCaminho(n) diretamente via JS (TOMADOR)
-          3. JS el.click() com todos os eventos de mouse
+        Retorna a página popup (ou True se não abriu popup).
         """
         eh_escrit    = (tipo == "escrituracao")
         textos_busca = (
@@ -1179,65 +1175,51 @@ class GissBot:
             if eh_escrit else
             ["Encerrar Sem Movimento", "Encerrar sem movimento", "Sem Movimento"]
         )
-        # Número do NewCaminho: PRESTADOR escrituração=2, sem_mov=5
-        #                       TOMADOR   escrituração=5, sem_mov=6
-        eh_prestador = "PREST" in modulo.upper()
-        nc_num = (2 if eh_escrit else 5) if eh_prestador else (5 if eh_escrit else 6)
-
         PORTAL = "wwwx.gissonline.com.br"
 
-        # ── Estratégia 1: Playwright locator .click() com mouse real ──────
-        # É o mais confiável pois move o cursor e dispara todos os eventos
+        # Registra handler de dialog (alert/confirm) antes de clicar
+        def _aceitar_dialog(dialog):
+            self._log("Dialog '{}': {}".format(dialog.type, dialog.message[:80]))
+            try:
+                dialog.accept()
+            except Exception:
+                pass
+        try:
+            page.on("dialog", _aceitar_dialog)
+        except Exception:
+            pass
+
         for f in self._todos_frames(page):
             if PORTAL not in f.url:
                 continue
             for texto in textos_busca:
                 try:
                     loc = f.get_by_role("link", name=re.compile(re.escape(texto), re.I))
-                    if loc.count() > 0:
-                        loc.first.scroll_into_view_if_needed(timeout=3000)
-                        loc.first.click(timeout=5000)
-                        self._log("[{}] '{}' clicado via Playwright locator (frame {}).".format(
-                            modulo, texto, f.url[:60]))
+                    if loc.count() == 0:
+                        continue
+                    loc.first.scroll_into_view_if_needed(timeout=3000)
+
+                    # ── Tenta capturar popup que abre via window.open() ──
+                    try:
+                        with page.context.expect_page(timeout=6000) as popup_info:
+                            loc.first.click(timeout=5000)
+                        popup = popup_info.value
+                        popup.bring_to_front()
+                        popup.wait_for_load_state("domcontentloaded", timeout=20000)
+                        self._log("[{}] '{}' → popup capturada: {} (frame {}).".format(
+                            modulo, texto, popup.url[:60], f.url[:50]))
+                        self._popup_encerramento = popup
+                        return popup
+                    except Exception:
+                        # Sem popup — clique navegou na mesma página
+                        self._log("[{}] '{}' clicado (sem popup) via locator (frame {}).".format(
+                            modulo, texto, f.url[:50]))
                         return True
                 except Exception as e:
-                    self._log("  locator '{}': {}".format(texto, e))
+                    self._log("  locator '{}' frame {}: {}".format(texto, f.url[:40], e))
 
-        # ── Estratégia 2: NewCaminho(n) direto via JS ─────────────────────
-        # Para TOMADOR: NewCaminho(5)=escrituração, NewCaminho(6)=sem_movimento
-        # Para PRESTADOR escrituração: a função lê os campos e navega
-        for f in self._todos_frames(page):
-            if PORTAL not in f.url:
-                continue
-            try:
-                res = f.evaluate("""(nc_num) => {
-                    if (typeof NewCaminho === 'function') {
-                        NewCaminho(nc_num);
-                        return {ok:true, via:'NewCaminho'};
-                    }
-                    return {ok:false};
-                }""", nc_num)
-                if res and res.get("ok"):
-                    self._log("[{}] Navegado via NewCaminho({}) (frame {}).".format(
-                        modulo, nc_num, f.url[:60]))
-                    return True
-            except Exception:
-                pass
-
-        # ── Estratégia 3: JS .click() com eventos de mouse completos ──────
-        script = """(termos) => {
-            const norm = s => (s||'').trim().toLowerCase()
-                .normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\\s+/g,' ');
-            for (const a of document.querySelectorAll('a')) {
-                const t = norm(a.innerText || a.textContent || '');
-                if (t && termos.some(tr => t.includes(norm(tr)))) {
-                    a.scrollIntoView({block:'center'});
-                    a.focus();
-                    ['mouseover','mouseenter','mousedown','mouseup','click'].forEach(ev => {
-                        a.dispatchEvent(new MouseEvent(ev, {bubbles:true, cancelable:true, button:0}));
-                    });
-                    return {ok:true, txt:t.slice(0,60), href:(a.href||''), oc:(a.getAttribute('onclick')||'').slice(0,80)};
-                }
+        self._log("[{}] '{}' NÃO encontrado.".format(modulo, tipo))
+        return False
             }
             return {ok:false};
         }"""
@@ -1360,11 +1342,15 @@ class GissBot:
 
         # ── PASSO 5: aguardar tela de confirmação (pode abrir em nova aba) ──
         self._log("[{}] PASSO 5: aguardando resposta do portal...".format(modulo))
-        time.sleep(3)
-        self._shot(page, "{}_pos_encerrar_escrit".format(modulo.lower()))
 
-        # Verifica TODAS as abas do contexto — confirmação pode abrir via window.open
-        pagina_conf = self._tem_confirmacao(page)
+        # Se _clicar_encerrar capturou popup via expect_page, usá-la diretamente
+        if hasattr(clicou_escrit, "url"):
+            pagina_conf = clicou_escrit
+            self._log("[{}] PASSO 5: usando popup capturada: {}".format(modulo, pagina_conf.url[:60]))
+        else:
+            time.sleep(3)
+            self._shot(page, "{}_pos_encerrar_escrit".format(modulo.lower()))
+            pagina_conf = self._tem_confirmacao(page)
 
         if pagina_conf:
             # ── PASSO 5a: COM movimento → confirma ────────────────────────
@@ -1432,11 +1418,16 @@ class GissBot:
 
         # Passo 5: aguarda confirmação em qualquer aba do contexto
         self._log("[{}] SEM_MOV PASSO 5: aguardando confirmação...".format(modulo))
-        time.sleep(3)
-        self._shot(page, "{}_pos_sem_movimento".format(modulo.lower()))
 
-        # Após "Encerrar Sem Movimento" SEMPRE aparece confirmação (pode ser nova aba)
-        pagina_conf = self._tem_confirmacao(page)
+        # Se _clicar_encerrar capturou popup via expect_page, usá-la diretamente
+        if hasattr(clicou, "url"):
+            pagina_conf = clicou
+            self._log("[{}] SEM_MOV PASSO 5: usando popup capturada: {}".format(modulo, pagina_conf.url[:60]))
+        else:
+            time.sleep(3)
+            self._shot(page, "{}_pos_sem_movimento".format(modulo.lower()))
+            pagina_conf = self._tem_confirmacao(page)
+
         self._confirmar_encerramento(pagina_conf if pagina_conf else page)
         self._log("[{}] Encerrado SEM movimento.".format(modulo))
         return "SEM_MOVIMENTO"
