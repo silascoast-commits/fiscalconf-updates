@@ -1235,43 +1235,38 @@ class GissBot:
         for f in self._todos_frames(page):
             if PORTAL not in f.url:
                 continue
+            res = None
             try:
-                self._log("[{}] Tentando JS click em '{}' (frame {})...".format(
+                self._log("[{}] JS click '{}' em frame {}...".format(
                     modulo, tipo, f.url[:60]))
 
-                with page.context.expect_page(timeout=15000) as popup_info:
-                    res = f.evaluate(script_click, [self.comp_mes, self.comp_ano, termos_busca])
-
-                if not res or not res.get("ok"):
-                    self._log("[{}] Link não encontrado no frame {}.".format(modulo, f.url[:50]))
-                    try:
-                        popup_info.value  # descarta evento se capturou algo indevido
-                    except Exception:
-                        pass
-                    continue
-
-                self._log("[{}] Link clicado — mes={} ano={} href={} oc={}".format(
-                    modulo, res.get("mes"), res.get("ano"),
-                    res.get("href","")[:60], res.get("oc","")[:60]))
-
-                popup = popup_info.value
-                popup.bring_to_front()
-                popup.wait_for_load_state("domcontentloaded", timeout=30000)
-                self._log("[{}] Tela de confirmação aberta: {}".format(modulo, popup.url[:80]))
-                self._shot(popup, "{}_tela_confirmacao".format(modulo.lower()))
-                self._popup_encerramento = popup
-                return popup
-
-            except Exception as popup_err:
-                # expect_page timeout = nenhuma nova aba abriu
                 try:
-                    res2 = f.evaluate(script_click, [self.comp_mes, self.comp_ano, termos_busca])
-                    if res2 and res2.get("ok"):
-                        self._log("[{}] Link clicado sem popup — mes={} ano={}".format(
-                            modulo, res2.get("mes"), res2.get("ano")))
+                    with page.context.expect_page(timeout=15000) as popup_info:
+                        res = f.evaluate(script_click, [self.comp_mes, self.comp_ano, termos_busca])
+                    # with block exited sem timeout → popup abriu
+                    if not res or not res.get("ok"):
+                        self._log("[{}] Link não encontrado no frame {}.".format(modulo, f.url[:50]))
+                        continue
+                    self._log("[{}] Link clicado — mes={} ano={} oc={}".format(
+                        modulo, res.get("mes"), res.get("ano"), res.get("oc","")[:80]))
+                    popup = popup_info.value
+                    popup.bring_to_front()
+                    popup.wait_for_load_state("domcontentloaded", timeout=30000)
+                    self._log("[{}] Tela aberta: {}".format(modulo, popup.url[:80]))
+                    self._shot(popup, "{}_tela_confirmacao".format(modulo.lower()))
+                    self._popup_encerramento = popup
+                    return popup
+
+                except Exception:
+                    # expect_page timeout — sem nova janela
+                    if res and res.get("ok"):
+                        self._log("[{}] Link clicado sem popup — mes={} ano={} oc={}".format(
+                            modulo, res.get("mes"), res.get("ano"), res.get("oc","")[:80]))
                         return True
-                except Exception as e2:
-                    self._log("  JS click frame {}: {}".format(f.url[:50], e2))
+                    self._log("[{}] Link não encontrado no frame {}.".format(modulo, f.url[:50]))
+
+            except Exception as e:
+                self._log("  JS click frame {}: {}".format(f.url[:50], e))
 
         self._log("[{}] '{}' NÃO encontrado em nenhum frame.".format(modulo, tipo))
         return False
