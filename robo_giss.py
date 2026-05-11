@@ -917,7 +917,7 @@ class GissBot:
 
                 if loc_mes and not ok_mes:
                     loc_mes.scroll_into_view_if_needed(timeout=3000)
-                    loc_mes.triple_click(timeout=3000)
+                    loc_mes.click(click_count=3, timeout=3000)
                     loc_mes.fill(self.comp_mes, timeout=3000)
                     loc_mes.press("Tab")
                     self._log("Mês={} via fill frame {}.".format(
@@ -926,7 +926,7 @@ class GissBot:
 
                 if loc_ano and not ok_ano:
                     loc_ano.scroll_into_view_if_needed(timeout=3000)
-                    loc_ano.triple_click(timeout=3000)
+                    loc_ano.click(click_count=3, timeout=3000)
                     loc_ano.fill(self.comp_ano, timeout=3000)
                     loc_ano.press("Tab")
                     self._log("Ano={} via fill frame {}.".format(
