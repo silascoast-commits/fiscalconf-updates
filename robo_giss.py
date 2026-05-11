@@ -783,7 +783,7 @@ class GissBot:
         # ── Estratégia 1: JS click() direto no elemento ──────────────────
         # Não usa coordenadas de mouse — funciona mesmo em frames aninhados.
         # Prioriza <a> e <button> (folhas). Ignora containers grandes.
-        script_js_click = """(termos) => {
+        script_js_click = r"""(termos) => {
             const norm = s => {
                 s = (s || '').trim().toLowerCase();
                 s = s.normalize('NFD').replace(/[̀-ͯ]/g,'');
@@ -837,7 +837,7 @@ class GissBot:
                     pass
 
         # ── Estratégia 3: containers com onclick ──────────────────────────
-        script_container = """(termos) => {
+        script_container = r"""(termos) => {
             const norm = s => {
                 s = (s || '').trim().toLowerCase();
                 s = s.normalize('NFD').replace(/[̀-ͯ]/g,'');
@@ -1219,24 +1219,6 @@ class GissBot:
                     self._log("  locator '{}' frame {}: {}".format(texto, f.url[:40], e))
 
         self._log("[{}] '{}' NÃO encontrado.".format(modulo, tipo))
-        return False
-            }
-            return {ok:false};
-        }"""
-        for f in self._todos_frames(page):
-            if PORTAL not in f.url:
-                continue
-            try:
-                res = f.evaluate(script, textos_busca)
-                if res and res.get("ok"):
-                    self._log("[{}] '{}' clicado via JS eventos (frame {}): href={} oc={}".format(
-                        modulo, tipo, f.url[:50],
-                        res.get("href","")[:60], res.get("oc","")[:60]))
-                    return True
-            except Exception as e:
-                self._log("  JS click '{}' frame {}: {}".format(tipo, f.url[:40], e))
-
-        self._log("[{}] '{}' NÃO encontrado em nenhuma estratégia.".format(modulo, tipo))
         return False
 
     # ------------------------------------------------------------------ #
