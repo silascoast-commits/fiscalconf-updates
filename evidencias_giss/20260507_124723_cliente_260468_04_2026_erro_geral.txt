@@ -1,0 +1,8 @@
+[07/05/2026 12:47:22] playwright-stealth nao instalado (opcional).
+[07/05/2026 12:47:22] >>> LOGIN: https://portal.gissonline.com.br/login/index.html
+[07/05/2026 12:47:22] Captura de window.open ativa.
+[07/05/2026 12:47:22] ERRO: Page.goto: net::ERR_CERT_AUTHORITY_INVALID at https://portal.gissonline.com.br/login/index.html
+Call log:
+  - navigating to "https://portal.gissonline.com.br/login/index.html", waiting until "domcontentloaded"
+
+[07/05/2026 12:47:23] Screenshot: 20260507_124722_cliente_260468_04_2026_erro_geral.png
