@@ -1176,15 +1176,16 @@ class GissBot:
     def _clicar_encerrar(self, page, modulo, tipo):
         """
         Clica em "Encerrar Escrituração" ou "Encerrar Sem Movimento".
-        Captura a popup que o portal abre via window.open().
+        Preenche mes/ano e clica o link no mesmo JS para garantir que o
+        portal leia os valores corretos. Captura popup via window.open().
 
         Retorna a página popup (ou True se não abriu popup).
         """
         eh_escrit    = (tipo == "escrituracao")
-        textos_busca = (
-            ["Encerrar Escrituração", "Encerrar Escrituracao", "Encerrar Escrit"]
+        termos_busca = (
+            ["encerrar escrit"]
             if eh_escrit else
-            ["Encerrar Sem Movimento", "Encerrar sem movimento", "Sem Movimento"]
+            ["encerrar sem movimento", "sem movimento"]
         )
         PORTAL = "wwwx.gissonline.com.br"
 
@@ -1200,37 +1201,79 @@ class GissBot:
         except Exception:
             pass
 
+        # Script JS: preenche mes/ano E clica o link no mesmo tick
+        script_click = r"""([mes, ano, termos]) => {
+            function norm(s) {
+                return (s||'').trim().toLowerCase()
+                    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+                    .replace(/\s+/g,' ');
+            }
+            // Preenche mes e ano se existirem
+            var mesEl = document.querySelector("input[name='mes']") ||
+                        document.querySelector("input[maxlength='2']");
+            var anoEl = document.querySelector("input[name='ano']") ||
+                        document.querySelector("input[maxlength='4']");
+            if (mesEl) { mesEl.value = mes; }
+            if (anoEl) { anoEl.value = ano; }
+
+            // Encontra o link pelo texto
+            var links = Array.from(document.querySelectorAll('a'));
+            for (var lnk of links) {
+                var txt = norm(lnk.innerText || lnk.textContent || '');
+                if (termos.some(function(t){ return txt.indexOf(t) >= 0; })) {
+                    var href = lnk.href || '';
+                    var oc   = lnk.getAttribute('onclick') || '';
+                    lnk.click();
+                    return {ok: true, txt: txt, href: href, oc: oc,
+                            mes: mesEl ? mesEl.value : '?',
+                            ano: anoEl ? anoEl.value : '?'};
+                }
+            }
+            return {ok: false};
+        }"""
+
         for f in self._todos_frames(page):
             if PORTAL not in f.url:
                 continue
-            for texto in textos_busca:
-                try:
-                    loc = f.get_by_role("link", name=re.compile(re.escape(texto), re.I))
-                    if loc.count() == 0:
-                        continue
+            try:
+                self._log("[{}] Tentando JS click em '{}' (frame {})...".format(
+                    modulo, tipo, f.url[:60]))
 
-                    self._log("[{}] Clicando '{}' — aguardando tela abrir...".format(modulo, texto))
+                with page.context.expect_page(timeout=15000) as popup_info:
+                    res = f.evaluate(script_click, [self.comp_mes, self.comp_ano, termos_busca])
 
-                    # ── Captura popup que abre via window.open() ──
+                if not res or not res.get("ok"):
+                    self._log("[{}] Link não encontrado no frame {}.".format(modulo, f.url[:50]))
                     try:
-                        with page.context.expect_page(timeout=15000) as popup_info:
-                            loc.first.click(timeout=5000)
-                        popup = popup_info.value
-                        popup.bring_to_front()
-                        popup.wait_for_load_state("domcontentloaded", timeout=30000)
-                        self._log("[{}] Tela de confirmação aberta: {}".format(
-                            modulo, popup.url[:80]))
-                        self._shot(popup, "{}_tela_confirmacao".format(modulo.lower()))
-                        self._popup_encerramento = popup
-                        return popup
+                        popup_info.value  # descarta evento se capturou algo indevido
                     except Exception:
-                        # Sem popup — pode ter navegado no mesmo frame
-                        self._log("[{}] '{}' clicado — sem nova janela.".format(modulo, texto))
-                        return True
-                except Exception as e:
-                    self._log("  locator '{}' frame {}: {}".format(texto, f.url[:40], e))
+                        pass
+                    continue
 
-        self._log("[{}] '{}' NÃO encontrado.".format(modulo, tipo))
+                self._log("[{}] Link clicado — mes={} ano={} href={} oc={}".format(
+                    modulo, res.get("mes"), res.get("ano"),
+                    res.get("href","")[:60], res.get("oc","")[:60]))
+
+                popup = popup_info.value
+                popup.bring_to_front()
+                popup.wait_for_load_state("domcontentloaded", timeout=30000)
+                self._log("[{}] Tela de confirmação aberta: {}".format(modulo, popup.url[:80]))
+                self._shot(popup, "{}_tela_confirmacao".format(modulo.lower()))
+                self._popup_encerramento = popup
+                return popup
+
+            except Exception as popup_err:
+                # expect_page timeout = nenhuma nova aba abriu
+                try:
+                    res2 = f.evaluate(script_click, [self.comp_mes, self.comp_ano, termos_busca])
+                    if res2 and res2.get("ok"):
+                        self._log("[{}] Link clicado sem popup — mes={} ano={}".format(
+                            modulo, res2.get("mes"), res2.get("ano")))
+                        return True
+                except Exception as e2:
+                    self._log("  JS click frame {}: {}".format(f.url[:50], e2))
+
+        self._log("[{}] '{}' NÃO encontrado em nenhum frame.".format(modulo, tipo))
         return False
 
     # ------------------------------------------------------------------ #
