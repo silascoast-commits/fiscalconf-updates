@@ -946,8 +946,9 @@ class GissBot:
         self._log("Competência {}/{} — mes={} ano={}".format(
             self.comp_mes, self.comp_ano, ok_mes, ok_ano))
 
-        # Pausa extra para o portal processar onblur/onchange
-        time.sleep(0.5)
+        # Aguarda 5s para o portal processar onblur/onchange após preenchimento
+        self._log("Aguardando 5s após preenchimento da competência...")
+        time.sleep(5)
 
     def _tem_confirmacao(self, page):
         """
