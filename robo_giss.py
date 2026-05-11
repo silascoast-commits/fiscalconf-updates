@@ -872,41 +872,26 @@ class GissBot:
 
     def _preencher_competencia(self, page):
         """
-        Preenche os campos Mês e Ano via JavaScript querySelector direto.
+        Preenche Mês e Ano via Playwright fill() — envia teclas reais para que
+        o onclick do portal leia o valor corretamente (el.value = x não é suficiente).
 
-        Campos confirmados pelo log real do portal (contribuinte2.asp):
-          name='mes'  maxlength=2  (campo mês)
-          name='ano'  maxlength=4  (campo ano)
+        Campos confirmados: name='mes' (maxlength=2) e name='ano' (maxlength=4)
+        em contribuinte2.asp (PRESTADOR) e tomador.asp (TOMADOR).
         """
         PORTAL = "wwwx.gissonline.com.br"
 
-        # JS direto com querySelector — mesmo mecanismo que o diagnóstico usa.
-        # Tenta vários seletores em cascata para cobrir variações entre municípios.
-        script = """([mes, ano]) => {
-            function fill(el, val) {
-                if (!el) return false;
-                el.focus();
-                el.value = val;
-                ['input','change','blur'].forEach(function(ev){
-                    el.dispatchEvent(new Event(ev, {bubbles:true}));
-                });
-                return true;
-            }
-            var r = {mes: null, ano: null};
-            // Mês — tenta por name exato, depois por maxlength=2
-            r.mes = fill(document.querySelector("input[name='mes']"), mes) ? 'mes' :
-                    fill(document.querySelector("input[name='mes_competencia']"), mes) ? 'mes_competencia' :
-                    fill(document.querySelector("input[name='mes_comp']"), mes) ? 'mes_comp' :
-                    fill(document.querySelector("input[maxlength='2']:not([type='hidden'])"), mes) ? 'maxlen2' :
-                    null;
-            // Ano — tenta por name exato, depois por maxlength=4
-            r.ano = fill(document.querySelector("input[name='ano']"), ano) ? 'ano' :
-                    fill(document.querySelector("input[name='ano_competencia']"), ano) ? 'ano_competencia' :
-                    fill(document.querySelector("input[name='ano_comp']"), ano) ? 'ano_comp' :
-                    fill(document.querySelector("input[maxlength='4']:not([type='hidden'])"), ano) ? 'maxlen4' :
-                    null;
-            return r;
-        }"""
+        SELS_MES = [
+            "input[name='mes']",
+            "input[name='mes_competencia']",
+            "input[name='mes_comp']",
+            "input[maxlength='2']:not([type='hidden'])",
+        ]
+        SELS_ANO = [
+            "input[name='ano']",
+            "input[name='ano_competencia']",
+            "input[name='ano_comp']",
+            "input[maxlength='4']:not([type='hidden'])",
+        ]
 
         ok_mes = ok_ano = False
 
@@ -914,30 +899,51 @@ class GissBot:
             if PORTAL not in f.url:
                 continue
             try:
-                res = f.evaluate(script, [self.comp_mes, self.comp_ano])
-                if res:
-                    if res.get("mes"):
-                        self._log("Mês={} via campo '{}' frame {}.".format(
-                            self.comp_mes, res["mes"], f.url[:60]))
-                        ok_mes = True
-                    if res.get("ano"):
-                        self._log("Ano={} via campo '{}' frame {}.".format(
-                            self.comp_ano, res["ano"], f.url[:60]))
-                        ok_ano = True
-                    if ok_mes and ok_ano:
+                # Encontra locator de mes
+                loc_mes = None
+                for sel in SELS_MES:
+                    lc = f.locator(sel)
+                    if lc.count() > 0:
+                        loc_mes = lc.first
                         break
+
+                # Encontra locator de ano
+                loc_ano = None
+                for sel in SELS_ANO:
+                    lc = f.locator(sel)
+                    if lc.count() > 0:
+                        loc_ano = lc.first
+                        break
+
+                if loc_mes and not ok_mes:
+                    loc_mes.scroll_into_view_if_needed(timeout=3000)
+                    loc_mes.triple_click(timeout=3000)
+                    loc_mes.fill(self.comp_mes, timeout=3000)
+                    loc_mes.press("Tab")
+                    self._log("Mês={} via fill frame {}.".format(
+                        self.comp_mes, f.url[:60]))
+                    ok_mes = True
+
+                if loc_ano and not ok_ano:
+                    loc_ano.scroll_into_view_if_needed(timeout=3000)
+                    loc_ano.triple_click(timeout=3000)
+                    loc_ano.fill(self.comp_ano, timeout=3000)
+                    loc_ano.press("Tab")
+                    self._log("Ano={} via fill frame {}.".format(
+                        self.comp_ano, f.url[:60]))
+                    ok_ano = True
+
+                if ok_mes and ok_ano:
+                    break
+
             except Exception as e:
                 self._log("  fill comp frame {}: {}".format(f.url[:50], e))
 
         self._log("Competência {}/{} — mes={} ano={}".format(
             self.comp_mes, self.comp_ano, ok_mes, ok_ano))
 
-        # Tab para confirmar onblur/onchange do portal
-        try:
-            page.keyboard.press("Tab")
-            time.sleep(0.5)
-        except Exception:
-            pass
+        # Pausa extra para o portal processar onblur/onchange
+        time.sleep(0.5)
 
     def _tem_confirmacao(self, page):
         """
