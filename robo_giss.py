@@ -878,7 +878,7 @@ class GissBot:
         Campos confirmados: name='mes' (maxlength=2) e name='ano' (maxlength=4)
         em contribuinte2.asp (PRESTADOR) e tomador.asp (TOMADOR).
         """
-        PORTAL = "wwwx.gissonline.com.br"
+        PORTAL = "gissonline.com.br"
 
         SELS_MES = [
             "input[name='mes']",
@@ -1187,7 +1187,7 @@ class GissBot:
             if eh_escrit else
             ["encerrar sem movimento", "sem movimento"]
         )
-        PORTAL = "wwwx.gissonline.com.br"
+        PORTAL = "gissonline.com.br"
 
         # Registra handler de dialog (alert/confirm) antes de clicar
         def _aceitar_dialog(dialog):
@@ -1405,21 +1405,6 @@ class GissBot:
         self._preencher_competencia(page)
         time.sleep(1)
         self._shot(page, "{}_competencia".format(modulo.lower()))
-
-        # ── PASSO 3.5: clicar "Pesquisar/OK" se o portal exigir ──────────
-        # Alguns municípios exibem um botão de busca antes de mostrar os
-        # links de encerramento. Aguarda até 6s e clica se encontrar.
-        self._log("[{}] PASSO 3.5: verificando botão Pesquisar...".format(modulo))
-        pesquisar_ok = self._aguardar_link_visivel(
-            page,
-            ["Pesquisar", "Consultar", "Buscar", "Localizar", "OK"],
-            timeout_s=6,
-        )
-        if pesquisar_ok:
-            self._clicar_link(page, pesquisar_ok)
-            self._log("[{}] Clicado '{}' após competência.".format(modulo, pesquisar_ok))
-            time.sleep(3)
-            self._shot(page, "{}_pos_pesquisar".format(modulo.lower()))
 
         # ── PASSO 4: clicar "Encerrar Escrituração" ───────────────────────
         self._log("[{}] PASSO 4: clicar 'Encerrar Escrituração'...".format(modulo))
