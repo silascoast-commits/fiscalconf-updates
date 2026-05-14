@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>FiscalConf — Reforma Tributária 2026-2033</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @media print {
+    .no-print { display:none!important; }
+    body { font-size:11px; }
+    table { page-break-inside:avoid; }
+  }
+  .tab-btn { @apply px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors; }
+  .tab-active { border-color:#2563eb; color:#2563eb; background:#eff6ff; }
+  .tab-inactive { border-color:transparent; color:#6b7280; }
+  .tab-inactive:hover { color:#374151; background:#f9fafb; }
+</style>
+<script>
+tailwind.config = {
+  theme: { extend: { colors: { primary: '#2563eb' } } }
+}
+</script>
+</head>
+<body class="bg-gray-50 min-h-screen text-gray-900">
+
+<div id="app" class="max-w-7xl mx-auto px-4 py-6 space-y-6"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// CONSTANTES — REFORMA TRIBUTÁRIA (EC 132/2023 + LC 214/2025)
+// ════════════════════════════════════════════════════════════════
+const CBS_REF = 8.8;
+const IBS_REF = 17.7;
+
+const CRONOGRAMA = {
+  2026: { fase:"Testes",        cor:"amber",  cbsAliq:0.9,       ibsAliq:0.1,             icmsIssPerc:100, pisExt:false, descr:"Alíquotas simbólicas. Tributos antigos integralmente vigentes.", eventos:["CBS 0,9% e IBS 0,1% — apenas testes (sem efeito financeiro real)","PIS, COFINS, ICMS e ISS seguem integralmente","Novos campos obrigatórios no XML da NF-e (cClassTrib, CST IBS/CBS)"] },
+  2027: { fase:"CBS Efetiva",   cor:"blue",   cbsAliq:CBS_REF,   ibsAliq:0.1,             icmsIssPerc:100, pisExt:true,  descr:"CBS plena substitui PIS/COFINS. IS instituído. ICMS/ISS inalterados.", eventos:["PIS e COFINS extintos — substituídos pela CBS (8,8% referência federal)","Imposto Seletivo (IS) entra em vigor","CBS não-cumulativa — créditos sobre compras tributadas","Simples Nacional: IBS/CBS destacados na NF; DAS com PIS/COFINS embutidos"] },
+  2028: { fase:"Consolidação",  cor:"blue",   cbsAliq:CBS_REF,   ibsAliq:0.1,             icmsIssPerc:100, pisExt:true,  descr:"Mesmo cenário de 2027. Ano de consolidação operacional.", eventos:["CBS segue em vigor; regras consolidadas","Empresas adaptam sistemas e processos"] },
+  2029: { fase:"IBS 10%",       cor:"orange", cbsAliq:CBS_REF,   ibsAliq:IBS_REF*0.1,     icmsIssPerc:90,  pisExt:true,  descr:"IBS (10% da alíquota plena) substitui 10% do ICMS/ISS.", eventos:["IBS = "+(IBS_REF*0.1).toFixed(2)+"% (10% da alíquota referência)","ICMS e ISS reduzidos a 90%","Simples Nacional: PIS/COFINS saem do DAS; CBS paga separadamente"] },
+  2030: { fase:"IBS 20%",       cor:"orange", cbsAliq:CBS_REF,   ibsAliq:IBS_REF*0.2,     icmsIssPerc:80,  pisExt:true,  descr:"IBS (20%) substitui 20% do ICMS/ISS.", eventos:["IBS = "+(IBS_REF*0.2).toFixed(2)+"% (20% da alíquota referência)","ICMS e ISS reduzidos a 80%"] },
+  2031: { fase:"IBS 40%",       cor:"red",    cbsAliq:CBS_REF,   ibsAliq:IBS_REF*0.4,     icmsIssPerc:60,  pisExt:true,  descr:"Aceleração — IBS assume 40%.", eventos:["IBS = "+(IBS_REF*0.4).toFixed(2)+"% (40% da alíquota referência)","ICMS e ISS reduzidos a 60%"] },
+  2032: { fase:"IBS 60%",       cor:"red",    cbsAliq:CBS_REF,   ibsAliq:IBS_REF*0.6,     icmsIssPerc:40,  pisExt:true,  descr:"IBS com 60% da alíquota plena.", eventos:["IBS = "+(IBS_REF*0.6).toFixed(2)+"% (60% da alíquota referência)","ICMS e ISS reduzidos a 40%"] },
+  2033: { fase:"Novo Modelo",   cor:"green",  cbsAliq:CBS_REF,   ibsAliq:IBS_REF,         icmsIssPerc:0,   pisExt:true,  descr:"ICMS e ISS extintos. CBS e IBS plenos. Modelo definitivo.", eventos:["ICMS e ISS integralmente extintos","IBS = "+IBS_REF+"% (alíquota referência plena)","CBS = "+CBS_REF+"% (alíquota referência plena)"] },
+};
+const ANOS = [2026,2027,2028,2029,2030,2031,2032,2033];
+
+// ════════════════════════════════════════════════════════════════
+// TABELAS SIMPLES NACIONAL (LC 123/2006)
+// ════════════════════════════════════════════════════════════════
+const ANEXOS = {
+  I:   { label:"Anexo I — Comércio",                  temICMS:true,  temISS:false,
+         faixas:[ [0,180000,4.0,0],[180000.01,360000,7.3,5940],[360000.01,720000,9.5,13860],[720000.01,1800000,10.7,22500],[1800000.01,3600000,14.3,87300],[3600000.01,4800000,19.0,378000] ],
+         dist:  [ [5.5,3.5,12.74,2.76,41.5,34.0,0],[5.5,3.5,12.74,2.76,41.5,34.0,0],[5.5,3.5,12.74,2.76,42.0,33.5,0],[5.5,3.5,12.74,2.76,42.0,33.5,0],[5.5,3.5,12.74,2.76,42.0,33.5,0],[13.5,10.0,28.27,6.13,42.1,0,0] ] },
+  II:  { label:"Anexo II — Indústria",                temICMS:true,  temISS:false,
+         faixas:[ [0,180000,4.5,0],[180000.01,360000,7.8,5940],[360000.01,720000,10.0,13860],[720000.01,1800000,11.2,22500],[1800000.01,3600000,14.7,85500],[3600000.01,4800000,30.0,720000] ],
+         dist:  [ [5.5,3.5,12.74,2.76,37.0,34.0,0],[5.5,3.5,12.74,2.76,37.0,34.0,0],[5.5,3.5,12.74,2.76,37.0,34.0,0],[5.5,3.5,12.74,2.76,37.0,34.0,0],[5.5,3.5,12.74,2.76,37.0,34.0,0],[13.5,10.0,28.27,6.13,42.1,0,0] ] },
+  III: { label:"Anexo III — Serviços (Fator R ≥ 28%)",temICMS:false, temISS:true,
+         faixas:[ [0,180000,6.0,0],[180000.01,360000,11.2,9360],[360000.01,720000,13.5,17640],[720000.01,1800000,16.0,35640],[1800000.01,3600000,21.0,125640],[3600000.01,4800000,33.0,648000] ],
+         dist:  [ [4.0,3.5,12.82,2.78,43.4,0,33.5],[4.0,3.5,14.05,3.05,43.4,0,32.0],[4.0,3.5,13.64,2.96,43.4,0,32.5],[4.0,3.5,13.64,2.96,43.4,0,32.5],[4.0,3.5,12.82,2.78,43.4,0,33.5],[35.0,15.0,16.03,2.78,16.38,0,14.9] ] },
+  V:   { label:"Anexo V — Serviços (Fator R < 28%)",  temICMS:false, temISS:true,
+         faixas:[ [0,180000,15.5,0],[180000.01,360000,18.0,4500],[360000.01,720000,19.5,9900],[720000.01,1800000,20.5,17100],[1800000.01,3600000,23.0,62100],[3600000.01,4800000,30.5,540000] ],
+         dist:  [ [25.0,15.0,14.1,3.05,28.85,0,14.0],[23.0,15.0,14.1,3.05,27.85,0,17.0],[24.0,15.0,14.92,3.23,23.85,0,19.0],[21.0,15.0,15.74,3.41,23.85,0,21.0],[23.0,12.5,14.1,3.05,23.85,0,23.5],[35.0,15.0,16.03,2.78,16.38,0,14.9] ] },
+};
+
+// ════════════════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════════════════
+const moeda = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const pct   = (v,d=2) => v.toFixed(d)+'%';
+const numParse = s => { const n=parseFloat(String(s).replace(/\./g,'').replace(',','.')); return isNaN(n)?0:n; };
+
+function getFaixa(faixas, rbt12) {
+  return faixas.find(f => rbt12>=f[0] && rbt12<=f[1]) || faixas[faixas.length-1];
+}
+function aliqEfetivaSN(rbt12, f) {
+  if(rbt12===0) return f[2]/100;
+  return (rbt12*(f[2]/100)-f[3])/rbt12;
+}
+
+// ════════════════════════════════════════════════════════════════
+// MOTOR DE CÁLCULO — SIMPLES NACIONAL
+// ════════════════════════════════════════════════════════════════
+function calcSN(rbt12, receita, anexo, icmsIssAliq, ano) {
+  const tab = ANEXOS[anexo];
+  const f   = getFaixa(tab.faixas, rbt12);
+  const fi  = tab.faixas.indexOf(f);
+  const aliqEf = aliqEfetivaSN(rbt12, f);
+  const das = receita * aliqEf;
+  const d   = tab.dist[Math.min(fi, tab.dist.length-1)];
+  // d: [IRPJ,CSLL,COFINS,PIS,CPP,ICMS,ISS] (% dentro do DAS)
+  const pisCofinsPerc = (d[2]+d[3])/100;
+  const icmsIssPerc   = (d[5]+d[6])/100;
+  const cppEtcPerc    = (d[0]+d[1]+d[4])/100;
+  const cn = CRONOGRAMA[ano];
+
+  const pisCofinsNoDAS = cn.pisExt ? 0 : das*pisCofinsPerc;
+  const icmsIssNoDAS   = das * icmsIssPerc * (cn.icmsIssPerc/100);
+  const cppEtc         = das * cppEtcPerc;
+  const dasEf          = cppEtc + pisCofinsNoDAS + icmsIssNoDAS;
+
+  // CBS fora do DAS (a partir de 2029)
+  const cbs = (!cn.pisExt || ano<2029) ? 0 : receita*(cn.cbsAliq/100);
+  const ibs = ano>=2029 ? receita*(cn.ibsAliq/100) : 0;
+  const total = dasEf + cbs + ibs;
+
+  return { das:dasEf, icmsIss:icmsIssNoDAS, pisCofins:pisCofinsNoDAS, cppEtc,
+           cbs, ibs, total, aliqEf:receita>0?total/receita:0,
+           faixaIdx:fi+1, aliqNominal:f[2] };
+}
+
+// ════════════════════════════════════════════════════════════════
+// MOTOR DE CÁLCULO — LUCRO PRESUMIDO
+// ════════════════════════════════════════════════════════════════
+function calcLP(receita, atividade, icmsIssAliq, percCompras, ano) {
+  const cn = CRONOGRAMA[ano];
+  const presIRPJ = atividade==='servicos' ? 32 : 8;
+  const presCSLL = atividade==='servicos' ? 32 : 12;
+  const baseIRPJ = receita*(presIRPJ/100);
+  const baseCSLL = receita*(presCSLL/100);
+  const irpj = baseIRPJ*0.15 + Math.max(0,baseIRPJ-240000)*0.10;
+  const csll = baseCSLL*0.09;
+  const pis    = cn.pisExt ? 0 : receita*0.0065;
+  const cofins = cn.pisExt ? 0 : receita*0.030;
+  const cbsBruta   = cn.pisExt ? receita*(cn.cbsAliq/100) : 0;
+  const cbsCredito = cbsBruta*(percCompras/100);
+  const cbsLiq     = Math.max(0,cbsBruta-cbsCredito);
+  const icmsIss    = receita*(icmsIssAliq/100)*(cn.icmsIssPerc/100);
+  const ibsBruta   = receita*(cn.ibsAliq/100);
+  const ibsCredito = ibsBruta*(percCompras/100);
+  const ibsLiq     = Math.max(0,ibsBruta-ibsCredito);
+  const total = irpj+csll+pis+cofins+cbsLiq+icmsIss+ibsLiq;
+  return { irpj,csll,pis,cofins,cbsBruta,cbsCredito,cbsLiq,icmsIss,
+           ibsBruta,ibsCredito,ibsLiq,total,
+           aliqEf:receita>0?total/receita:0,
+           presIRPJ,presCSLL,baseIRPJ,baseCSLL };
+}
+
+// ════════════════════════════════════════════════════════════════
+// PARSE EXCEL (SheetJS)
+// ════════════════════════════════════════════════════════════════
+const MESES_PT = {janeiro:1,fevereiro:2,'março':3,marco:3,abril:4,maio:5,junho:6,
+  julho:7,agosto:8,setembro:9,outubro:10,novembro:11,dezembro:12,
+  jan:1,fev:2,mar:3,abr:4,mai:5,jun:6,jul:7,ago:8,set:9,out:10,nov:11,dez:12};
+
+function parseExcelFile(buffer) {
+  const wb = XLSX.read(buffer,{type:'array'});
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  const result = {};
+  for(const row of rows) {
+    if(!row||row.length<2) continue;
+    const c0 = String(row[0]).trim();
+    let valor = 0;
+    for(let i=1;i<row.length;i++){
+      const v=parseFloat(String(row[i]).replace(/[^\d,.\-]/g,'').replace(',','.'));
+      if(!isNaN(v)&&v>0){valor=v;break;}
+    }
+    if(valor<=0) continue;
+    // MM/AAAA
+    const m1 = c0.match(/^(\d{1,2})[\/\-](\d{4})$/);
+    if(m1){result[m1[1].padStart(2,'0')+'/'+m1[2]]=valor;continue;}
+    // Nome mês + ano
+    const m2 = c0.toLowerCase().match(/^([\wç]+)[.\s\/\-]*(\d{2,4})$/);
+    if(m2){const mn=MESES_PT[m2[1]];if(mn){const a=m2[2].length===2?'20'+m2[2]:m2[2];result[String(mn).padStart(2,'0')+'/'+a]=valor;continue;}}
+  }
+  return result;
+}
+
+function downloadModeloExcel() {
+  const now = new Date();
+  const rows = [["Mês/Ano","Faturamento Bruto (R$)","Observação"]];
+  for(let i=11;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const mes=String(d.getMonth()+1).padStart(2,'0');
+    const ano=d.getFullYear();
+    rows.push([`${mes}/${ano}`,0,i===0?'← mês mais recente':'']);
+  }
+  rows.push([],[' INSTRUÇÕES:'],[' 1. Preencha a Coluna B com o faturamento BRUTO'],[' 2. NÃO altere a Coluna A (MM/AAAA)'],[' 3. Use apenas números na Coluna B (sem R$, pontos ou vírgulas)']);
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:14},{wch:26},{wch:36}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Faturamento 12 Meses');
+  XLSX.writeFile(wb,'modelo-faturamento-12meses.xlsx');
+}
+
+// ════════════════════════════════════════════════════════════════
+// COR BADGES
+// ════════════════════════════════════════════════════════════════
+const corBadge = {
+  amber:'background:#fef3c7;color:#92400e;border:1px solid #fcd34d',
+  blue:'background:#dbeafe;color:#1e40af;border:1px solid #93c5fd',
+  orange:'background:#ffedd5;color:#9a3412;border:1px solid #fdba74',
+  red:'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5',
+  green:'background:#dcfce7;color:#166534;border:1px solid #86efac',
+};
+function badge(fase,cor){return`<span style="font-size:11px;padding:2px 8px;border-radius:12px;${corBadge[cor]};white-space:nowrap">${fase}</span>`;}
+
+// ════════════════════════════════════════════════════════════════
+// ESTADO DA APLICAÇÃO
+// ════════════════════════════════════════════════════════════════
+let state = {
+  meses: {},
+  regime: 'ambos',
+  anexo: 'I',
+  atividade: 'comercio',
+  icmsIssAliq: 12,
+  percCompras: 60,
+  tab: 'dados',
+};
+
+function setState(patch){ Object.assign(state,patch); render(); }
+
+function getMesKeys() {
+  const now = new Date(), keys=[];
+  for(let i=11;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    keys.push(String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear());
+  }
+  return keys;
+}
+function mesLabel(k){
+  const [m,a]=k.split('/');
+  const ns=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  return ns[parseInt(m)-1]+'/'+a;
+}
+function sortMeses(arr){
+  return [...arr].sort((a,b)=>{
+    const [ma,aa]=a.split('/'), [mb,ab]=b.split('/');
+    return (Number(aa)*12+Number(ma))-(Number(ab)*12+Number(mb));
+  });
+}
+function getRbt12(){ return Object.values(state.meses).reduce((a,b)=>a+b,0); }
+
+// ════════════════════════════════════════════════════════════════
+// RENDER FUNCTIONS
+// ════════════════════════════════════════════════════════════════
+function renderConfig() {
+  const anexoOpts = Object.entries(ANEXOS).map(([k,v])=>`<option value="${k}" ${state.anexo===k?'selected':''}>${v.label}</option>`).join('');
+  const show = (cond,html) => cond ? html : '';
+  return `
+  <div class="bg-white rounded-xl border shadow-sm p-5">
+    <h2 class="font-semibold text-base mb-4 flex items-center gap-2">
+      <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      Configuração da Empresa
+    </h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div>
+        <label class="text-xs font-medium text-gray-600 block mb-1">Regime Tributário</label>
+        <select onchange="setState({regime:this.value})" class="w-full border rounded px-2 py-1.5 text-sm">
+          <option value="simples" ${state.regime==='simples'?'selected':''}>Simples Nacional</option>
+          <option value="presumido" ${state.regime==='presumido'?'selected':''}>Lucro Presumido</option>
+          <option value="ambos" ${state.regime==='ambos'?'selected':''}>Ambos (Comparativo)</option>
+        </select>
+      </div>
+      ${show(state.regime!=='presumido',`
+      <div>
+        <label class="text-xs font-medium text-gray-600 block mb-1">Anexo (Simples Nacional)</label>
+        <select onchange="setState({anexo:this.value})" class="w-full border rounded px-2 py-1.5 text-sm">${anexoOpts}</select>
+      </div>`)}
+      <div>
+        <label class="text-xs font-medium text-gray-600 block mb-1">Atividade</label>
+        <select onchange="setState({atividade:this.value})" class="w-full border rounded px-2 py-1.5 text-sm">
+          <option value="comercio" ${state.atividade==='comercio'?'selected':''}>Comércio</option>
+          <option value="servicos" ${state.atividade==='servicos'?'selected':''}>Serviços</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs font-medium text-gray-600 block mb-1">${state.atividade==='servicos'?'Alíquota ISS (%)':'Alíquota ICMS (%)'}</label>
+        <input type="number" value="${state.icmsIssAliq}" oninput="setState({icmsIssAliq:parseFloat(this.value)||0})"
+               class="w-full border rounded px-2 py-1.5 text-sm" placeholder="Ex: 12" step="0.5" min="0" max="30"/>
+      </div>
+      ${show(state.regime!=='simples',`
+      <div>
+        <label class="text-xs font-medium text-gray-600 block mb-1">% Compras tributadas (crédito CBS/IBS)</label>
+        <input type="number" value="${state.percCompras}" oninput="setState({percCompras:parseFloat(this.value)||0})"
+               class="w-full border rounded px-2 py-1.5 text-sm" placeholder="Ex: 60" step="5" min="0" max="100"/>
+        <p class="text-xs text-gray-400 mt-0.5">Compras que geram crédito não-cumulativo</p>
+      </div>`)}
+    </div>
+  </div>`;
+}
+
+function renderImport() {
+  const mesKeys = getMesKeys();
+  const mesesOrdenados = sortMeses(Object.keys(state.meses));
+  const rbt12 = getRbt12();
+  return `
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <!-- Upload -->
+    <div class="bg-white rounded-xl border shadow-sm p-5 space-y-4">
+      <h2 class="font-semibold text-base flex items-center gap-2">
+        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        Importar Excel / PDF
+      </h2>
+      <!-- Drop zone -->
+      <div id="dropzone" onclick="document.getElementById('fileInput').click()"
+           ondragover="event.preventDefault();this.style.borderColor='#2563eb'"
+           ondragleave="this.style.borderColor=''"
+           ondrop="handleDrop(event)"
+           class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+        <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleFileInput(this)"/>
+        <div class="flex justify-center gap-3 mb-3">
+          <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </div>
+        <p class="text-sm font-medium text-gray-700">Arraste ou clique para importar</p>
+        <p class="text-xs text-gray-400 mt-1">.xlsx · .xls · .csv</p>
+      </div>
+      <!-- Botões download -->
+      <div class="grid grid-cols-1 gap-2">
+        <button onclick="downloadModeloExcel()" class="w-full py-2 px-4 border-2 border-green-500 text-green-700 rounded-lg text-sm font-medium hover:bg-green-50 flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          Baixar Modelo Excel (.xlsx)
+        </button>
+      </div>
+      <!-- Instruções -->
+      <div class="bg-gray-50 rounded-lg p-3 text-xs text-gray-500 space-y-1">
+        <p class="font-semibold text-gray-700">Formato aceito:</p>
+        <p>• <b>Coluna A:</b> Mês/Ano no formato <code class="bg-gray-200 px-1 rounded">MM/AAAA</code> (ex: 05/2025)</p>
+        <p>• <b>Coluna B:</b> Faturamento bruto (apenas números)</p>
+        <p>• Também aceita: <i>Janeiro/2025</i>, <i>Jan/25</i></p>
+      </div>
+      ${Object.keys(state.meses).length>0?`
+      <div class="bg-green-50 border border-green-300 rounded-lg p-3 flex items-center gap-2 text-sm text-green-800">
+        <svg class="w-4 h-4 text-green-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        ${Object.keys(state.meses).length} meses importados · RBT12: <b>${moeda(rbt12)}</b>
+      </div>
+      <button onclick="setState({meses:{}})" class="text-xs text-red-500 hover:underline">Limpar dados</button>
+      `:''}
+    </div>
+
+    <!-- Entrada manual + resumo -->
+    <div class="bg-white rounded-xl border shadow-sm p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="font-semibold text-base flex items-center gap-2">
+          <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          Faturamento 12 Meses
+        </h2>
+        ${rbt12>0?`<span class="text-xs font-bold bg-blue-600 text-white px-2 py-1 rounded-full">${moeda(rbt12)}/ano</span>`:''}
+      </div>
+
+      ${mesesOrdenados.length>0?`
+      <div class="overflow-auto max-h-48 rounded border">
+        <table class="w-full text-xs">
+          <thead class="bg-gray-50 sticky top-0"><tr><th class="text-left px-3 py-1.5">Mês</th><th class="text-right px-3 py-1.5">Faturamento</th></tr></thead>
+          <tbody>
+            ${mesesOrdenados.map(k=>`<tr class="border-t"><td class="px-3 py-1">${mesLabel(k)}</td><td class="px-3 py-1 text-right font-medium">${moeda(state.meses[k])}</td></tr>`).join('')}
+            <tr class="border-t bg-gray-50 font-bold"><td class="px-3 py-1.5">Total RBT12</td><td class="px-3 py-1.5 text-right">${moeda(rbt12)}</td></tr>
+          </tbody>
+        </table>
+      </div>`:''}
+
+      <!-- Entrada manual -->
+      <details class="group">
+        <summary class="cursor-pointer text-sm text-blue-600 hover:underline select-none">Entrada manual mês a mês</summary>
+        <div class="mt-3 grid grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
+          ${mesKeys.map(k=>`
+          <div>
+            <label class="text-xs text-gray-500">${mesLabel(k)}</label>
+            <input type="text" value="${state.meses[k]?state.meses[k].toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):''}"
+              onchange="handleManualInput('${k}',this.value)"
+              class="w-full border rounded px-2 py-1 text-xs" placeholder="0,00"/>
+          </div>`).join('')}
+        </div>
+      </details>
+    </div>
+  </div>`;
+}
+
+function renderTabela(titulo, projecao, tipo) {
+  const isLP = tipo==='lp';
+  const rbt12 = getRbt12();
+  const maxTotal = Math.max(...projecao.map(r=>r.total));
+
+  return `
+  <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
+    <div class="p-4 border-b bg-gray-50 flex items-center justify-between flex-wrap gap-2">
+      <h3 class="font-semibold text-sm">${titulo}</h3>
+      <span class="text-xs text-gray-500">RBT12: <b>${moeda(rbt12)}</b> · ${ANEXOS[state.anexo]?ANEXOS[state.anexo].label:''} · ${state.atividade==='servicos'?'Serviços':'Comércio'}</span>
+    </div>
+    <div class="overflow-x-auto">
+    <table class="w-full text-xs">
+      <thead>
+        <tr class="bg-gray-50 border-b">
+          <th class="text-left px-3 py-2">Ano</th>
+          <th class="px-3 py-2">Fase</th>
+          ${isLP?`
+          <th class="text-right px-3 py-2">IRPJ+CSLL</th>
+          <th class="text-right px-3 py-2">PIS/COFINS</th>
+          <th class="text-right px-3 py-2">CBS (líq.)</th>
+          <th class="text-right px-3 py-2">ICMS/ISS</th>
+          <th class="text-right px-3 py-2">IBS (líq.)</th>
+          `:`
+          <th class="text-right px-3 py-2">DAS</th>
+          <th class="text-right px-3 py-2">CBS</th>
+          <th class="text-right px-3 py-2">IBS</th>
+          `}
+          <th class="text-right px-3 py-2 font-bold">Total</th>
+          <th class="text-right px-3 py-2">Alíq. Ef.</th>
+          <th class="text-right px-3 py-2">Var. vs 2026</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${projecao.map((r,i)=>{
+          const cn=CRONOGRAMA[r.ano];
+          const delta=r.total-projecao[0].total;
+          const barW=Math.round((r.total/maxTotal)*100);
+          const isLast=i===projecao.length-1;
+          return `
+          <tr class="border-t ${isLast?'bg-blue-50 font-semibold':'hover:bg-gray-50'}">
+            <td class="px-3 py-2 font-bold">${r.ano}</td>
+            <td class="px-3 py-2">${badge(cn.fase,cn.cor)}</td>
+            ${isLP?`
+            <td class="text-right px-3 py-2">${moeda(r.irpj+r.csll)}</td>
+            <td class="text-right px-3 py-2">${r.pis+r.cofins>0?moeda(r.pis+r.cofins):'<span class="text-gray-400">Extintos</span>'}</td>
+            <td class="text-right px-3 py-2">${r.cbsLiq>0?`${moeda(r.cbsLiq)}<span class="text-green-600 ml-1">−${moeda(r.cbsCredito)}</span>`:'—'}</td>
+            <td class="text-right px-3 py-2">${r.icmsIss>0?moeda(r.icmsIss):'—'}</td>
+            <td class="text-right px-3 py-2">${r.ibsLiq>0?`${moeda(r.ibsLiq)}<span class="text-green-600 ml-1">−${moeda(r.ibsCredito)}</span>`:'—'}</td>
+            `:`
+            <td class="text-right px-3 py-2">${moeda(r.das)}</td>
+            <td class="text-right px-3 py-2">${r.cbs>0?moeda(r.cbs):'—'}</td>
+            <td class="text-right px-3 py-2">${r.ibs>0?moeda(r.ibs):'—'}</td>
+            `}
+            <td class="text-right px-3 py-2 font-bold">${moeda(r.total)}</td>
+            <td class="text-right px-3 py-2">${pct(r.aliqEf*100)}</td>
+            <td class="text-right px-3 py-2 ${delta>0?'text-red-600':delta<0?'text-green-600':''}">${delta!==0?(delta>0?'+':'')+moeda(delta):'—'}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+    </div>
+    ${isLP?`<p class="text-xs text-gray-400 p-3">Créditos CBS/IBS sobre ${state.percCompras}% de compras. Presunção IRPJ: ${state.atividade==='servicos'?'32%':'8%'} · CSLL: ${state.atividade==='servicos'?'32%':'12%'}.</p>`:`<p class="text-xs text-gray-400 p-3">A partir de 2029 CBS e IBS são pagos separados do DAS no Simples Nacional.</p>`}
+  </div>`;
+}
+
+function renderComparativo(snProj, lpProj) {
+  const rbt12 = getRbt12();
+  const maxVal = Math.max(...snProj.map(r=>r.total),...lpProj.map(r=>r.total));
+  return `
+  <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
+    <div class="p-4 border-b bg-gray-50">
+      <h3 class="font-semibold text-sm">Comparativo Simples Nacional × Lucro Presumido — 2026–2033</h3>
+    </div>
+    <div class="p-4 space-y-4">
+      ${ANOS.map((ano,i)=>{
+        const r_sn=snProj[i], r_lp=lpProj[i];
+        const cn=CRONOGRAMA[ano];
+        const melhorSN=r_sn.total<=r_lp.total;
+        const diff=Math.abs(r_sn.total-r_lp.total);
+        return `
+        <div class="space-y-1">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-bold text-sm w-10">${ano}</span>
+            ${badge(cn.fase,cn.cor)}
+            <span class="text-xs text-gray-500 ml-auto">Economia: <b>${moeda(diff)}</b> com ${melhorSN?'Simples Nacional':'Lucro Presumido'}</span>
+          </div>
+          <div class="flex gap-1 items-center">
+            <span class="text-xs text-gray-400 w-14">SN</span>
+            <div class="flex-1 bg-gray-100 rounded h-6 overflow-hidden">
+              <div class="h-full rounded flex items-center justify-end pr-2 ${melhorSN?'bg-emerald-500':'bg-emerald-300'}" style="width:${Math.round(r_sn.total/maxVal*100)}%">
+                <span class="text-xs text-white font-bold whitespace-nowrap">${moeda(r_sn.total)}</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex gap-1 items-center">
+            <span class="text-xs text-gray-400 w-14">LP</span>
+            <div class="flex-1 bg-gray-100 rounded h-6 overflow-hidden">
+              <div class="h-full rounded flex items-center justify-end pr-2 ${!melhorSN?'bg-blue-500':'bg-blue-300'}" style="width:${Math.round(r_lp.total/maxVal*100)}%">
+                <span class="text-xs text-white font-bold whitespace-nowrap">${moeda(r_lp.total)}</span>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+      <div class="overflow-x-auto mt-4">
+      <table class="w-full text-xs border-t">
+        <thead><tr class="bg-gray-50"><th class="text-left px-3 py-1.5">Ano</th><th class="text-right px-3 py-1.5 text-emerald-700">Simples Nacional</th><th class="text-right px-3 py-1.5 text-blue-700">Lucro Presumido</th><th class="text-right px-3 py-1.5">Diferença</th><th class="text-right px-3 py-1.5">Melhor</th></tr></thead>
+        <tbody>
+          ${ANOS.map((ano,i)=>{
+            const r_sn=snProj[i], r_lp=lpProj[i];
+            const diff=r_lp.total-r_sn.total;
+            return `<tr class="border-t hover:bg-gray-50"><td class="px-3 py-1.5 font-semibold">${ano}</td><td class="text-right px-3 py-1.5">${moeda(r_sn.total)}</td><td class="text-right px-3 py-1.5">${moeda(r_lp.total)}</td><td class="text-right px-3 py-1.5 font-semibold ${diff>0?'text-emerald-600':'text-red-600'}">${diff>0?'−'+moeda(diff)+' LP':'+'+moeda(Math.abs(diff))+' SN'}</td><td class="text-right px-3 py-1.5">${badge(diff>0?'SN':'LP',diff>0?'green':'blue')}</td></tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderCronograma() {
+  const rbt12 = getRbt12();
+  return `
+  <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
+    <div class="p-4 border-b bg-gray-50"><h3 class="font-semibold text-sm">Cronograma Oficial — EC 132/2023 + LC 214/2025</h3></div>
+    <div class="p-4 space-y-3">
+    ${ANOS.map(ano=>{
+      const cn=CRONOGRAMA[ano];
+      const bgMap={amber:'#fffbeb',blue:'#eff6ff',orange:'#fff7ed',red:'#fef2f2',green:'#f0fdf4'};
+      return `
+      <div class="rounded-lg border overflow-hidden">
+        <div class="px-4 py-2 flex items-center justify-between flex-wrap gap-2" style="background:${bgMap[cn.cor]}">
+          <div class="flex items-center gap-3">
+            <span class="font-bold text-lg">${ano}</span>
+            ${badge(cn.fase,cn.cor)}
+          </div>
+          <div class="flex gap-4 text-xs font-medium text-gray-700">
+            <span>CBS: <b>${cn.cbsAliq}%</b></span>
+            <span>IBS: <b>${cn.ibsAliq.toFixed(2)}%</b></span>
+            <span>ICMS/ISS: <b>${cn.icmsIssPerc}%</b></span>
+            ${rbt12>0?`<span class="text-blue-700">CBS bruta: <b>${moeda(rbt12*cn.cbsAliq/100)}</b></span>`:''}
+          </div>
+        </div>
+        <div class="px-4 py-3">
+          <p class="text-xs text-gray-500 mb-2">${cn.descr}</p>
+          ${cn.eventos.map(e=>`<p class="text-xs flex gap-1.5 mb-1"><svg class="w-3 h-3 text-blue-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>${e}</p>`).join('')}
+        </div>
+      </div>`;
+    }).join('')}
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════
+// RENDER PRINCIPAL
+// ════════════════════════════════════════════════════════════════
+function render() {
+  const rbt12 = getRbt12();
+  const snProj = ANOS.map(ano=>({ano,...calcSN(rbt12,rbt12,state.anexo,state.icmsIssAliq,ano)}));
+  const lpProj = ANOS.map(ano=>({ano,...calcLP(rbt12,state.atividade,state.icmsIssAliq,state.percCompras,ano)}));
+
+  const tabs = [
+    {id:'dados',label:'📥 Dados'},
+    ...(state.regime!=='presumido'?[{id:'simples',label:'Simples Nacional'}]:[]),
+    ...(state.regime!=='simples'?[{id:'presumido',label:'Lucro Presumido'}]:[]),
+    ...(state.regime==='ambos'?[{id:'comparativo',label:'⚖️ Comparativo'}]:[]),
+    {id:'cronograma',label:'📅 Cronograma'},
+  ];
+
+  const tabBtns = tabs.map(t=>`
+    <button onclick="setState({tab:'${t.id}'})"
+      class="px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${state.tab===t.id
+        ?'border-blue-600 text-blue-600 bg-blue-50'
+        :'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'}">
+      ${t.label}
+    </button>`).join('');
+
+  let content='';
+  if(state.tab==='dados') content=renderImport();
+  else if(state.tab==='simples') content=rbt12>0?renderTabela('Projeção Simples Nacional — 2026 a 2033',snProj,'sn'):`<div class="bg-white rounded-xl border p-12 text-center text-gray-400">Importe os dados ou preencha o faturamento na aba Dados.</div>`;
+  else if(state.tab==='presumido') content=rbt12>0?renderTabela('Projeção Lucro Presumido — 2026 a 2033',lpProj,'lp'):`<div class="bg-white rounded-xl border p-12 text-center text-gray-400">Importe os dados ou preencha o faturamento na aba Dados.</div>`;
+  else if(state.tab==='comparativo') content=rbt12>0?renderComparativo(snProj,lpProj):`<div class="bg-white rounded-xl border p-12 text-center text-gray-400">Importe os dados ou preencha o faturamento na aba Dados.</div>`;
+  else if(state.tab==='cronograma') content=renderCronograma();
+
+  document.getElementById('app').innerHTML=`
+    <!-- Cabeçalho -->
+    <div class="flex items-center justify-between flex-wrap gap-3 no-print">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight text-gray-900">
+          🧾 FiscalConf — Reforma Tributária 2026–2033
+        </h1>
+        <p class="text-sm text-gray-500 mt-0.5">Simples Nacional · Lucro Presumido · CBS · IBS · IS — EC 132/2023 + LC 214/2025</p>
+      </div>
+      <div class="flex gap-2">
+        ${rbt12>0?`<button onclick="setState({meses:{}})" class="px-3 py-1.5 border rounded text-sm text-red-600 hover:bg-red-50">✕ Limpar</button>`:''}
+        <button onclick="window.print()" class="px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">🖨️ Imprimir</button>
+      </div>
+    </div>
+
+    ${renderConfig()}
+
+    <!-- Abas -->
+    <div>
+      <div class="flex gap-1 border-b no-print">${tabBtns}</div>
+      <div class="mt-4 space-y-4">${content}</div>
+    </div>
+
+    <!-- Rodapé -->
+    <p class="text-xs text-gray-400 text-center pb-6">
+      Base legal: EC 132/2023 · LC 214/2025 · LC 123/2006 · Lei 9.430/1996 · RIR/2018 (Decreto 9.580/2018).
+      CBS 8,8% e IBS 17,7% — alíquotas de referência sujeitas a ajuste pelo Senado e estados.
+      Consulte seu contador para análise do caso concreto.
+    </p>
+  `;
+}
+
+// ════════════════════════════════════════════════════════════════
+// EVENT HANDLERS
+// ════════════════════════════════════════════════════════════════
+function handleDrop(e) {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if(file) processFile(file);
+}
+function handleFileInput(input) {
+  const file = input.files[0];
+  if(file) processFile(file);
+}
+function processFile(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = parseExcelFile(e.target.result);
+      if(Object.keys(data).length===0){
+        alert('Nenhum dado encontrado. Verifique o formato:\n• Coluna A: MM/AAAA\n• Coluna B: Faturamento (número)');
+      } else {
+        setState({meses:data, tab:'dados'});
+        alert(`✅ ${Object.keys(data).length} meses importados com sucesso!\n\nRBT12: ${moeda(Object.values(data).reduce((a,b)=>a+b,0))}`);
+      }
+    } catch(err) {
+      alert('Erro ao processar arquivo: '+err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+function handleManualInput(key, val) {
+  const v = numParse(val);
+  const novo = {...state.meses};
+  if(v<=0) delete novo[key]; else novo[key]=v;
+  setState({meses:novo});
+}
+
+// ════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════
+render();
+</script>
+</body>
+</html>
