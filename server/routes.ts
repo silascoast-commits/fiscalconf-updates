@@ -91,6 +91,67 @@ function parsePgdasPdf(text: string) {
            atividade, anexoDetectado, receitasMeses };
 }
 
+// Parser de PDF genérico de faturamento (relatórios contábeis, extratos, etc.)
+function parseBillingPdf(text: string): { meses: Record<string, number>; tipo: string; confianca: number } {
+  const t = text.replace(/\s+/g, " ");
+  const meses: Record<string, number> = {};
+  let confianca = 0;
+
+  // Tentativa 1: formato PGDAS (reutiliza parser específico)
+  try {
+    const pgdas = parsePgdasPdf(t);
+    if (Object.keys(pgdas.receitasMeses).length > 0) {
+      return { meses: pgdas.receitasMeses, tipo: "pgdas", confianca: 95 };
+    }
+  } catch { /* continua */ }
+
+  const num = (s: string) => parseFloat(s.replace(/\./g, "").replace(",", "."));
+
+  // Mapa de nomes de meses para número (pt-BR)
+  const MESES_NOME: Record<string, string> = {
+    janeiro: "01", fevereiro: "02", março: "03", marco: "03", abril: "04",
+    maio: "05", junho: "06", julho: "07", agosto: "08", setembro: "09",
+    outubro: "10", novembro: "11", dezembro: "12",
+    jan: "01", fev: "02", mar: "03", abr: "04", mai: "05", jun: "06",
+    jul: "07", ago: "08", set: "09", out: "10", nov: "11", dez: "12",
+  };
+
+  // Tentativa 2: padrão "MM/AAAA valor" ou "AAAA-MM valor"
+  const r1 = /(\d{2})[\/\-](\d{4})\s+(?:R\$\s*)?([\d.,]+)/g;
+  let m: RegExpExecArray | null;
+  while ((m = r1.exec(t)) !== null) {
+    const key = `${m[1]}/${m[2]}`;
+    const v = num(m[3]);
+    if (v > 0 && v < 1e9) { meses[key] = (meses[key] || 0) + v; confianca = Math.max(confianca, 70); }
+  }
+
+  // Tentativa 3: padrão "MesNome AAAA valor" ou "MesNome/AAAA valor"
+  const r2 = /\b(janeiro|fevereiro|março|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[.\s\/\-]*(\d{4})\s+(?:R\$\s*)?([\d.,]+)/gi;
+  while ((m = r2.exec(t)) !== null) {
+    const mm = MESES_NOME[m[1].toLowerCase()];
+    if (!mm) continue;
+    const key = `${mm}/${m[2]}`;
+    const v = num(m[3]);
+    if (v > 0 && v < 1e9) { meses[key] = (meses[key] || 0) + v; confianca = Math.max(confianca, 65); }
+  }
+
+  // Tentativa 4: padrão ContaAzul / Omie — "Faturamento Bruto" seguido de valores mensais
+  const r3 = /(?:faturamento|receita)\s+(?:bruto|bruta|mensal)?\s*[:\-]?\s*([\d.,]+)/gi;
+  const anoAtual = new Date().getFullYear();
+  let idx = 0;
+  while ((m = r3.exec(t)) !== null && idx < 12) {
+    const v = num(m[1]);
+    if (v > 0 && v < 1e9) {
+      const mes = String(12 - idx).padStart(2, "0");
+      const ano = mes > String(new Date().getMonth() + 1).padStart(2, "0") ? anoAtual - 1 : anoAtual;
+      const key = `${mes}/${ano}`;
+      if (!meses[key]) { meses[key] = v; confianca = Math.max(confianca, 40); idx++; }
+    }
+  }
+
+  return { meses, tipo: "generico", confianca };
+}
+
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
@@ -855,6 +916,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.get("/api/xml-dashboard", (req, res) => {
     const clienteId = req.query.clienteId ? parseInt(req.query.clienteId as string) : undefined;
     res.json(storage.getXmlDashboard(clienteId));
+  });
+
+  // POST /api/parse-billing-pdf — extrai faturamento mensal de PDF genérico
+  app.post("/api/parse-billing-pdf", upload.single("pdf"), async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: "Nenhum arquivo enviado" });
+    try {
+      const text = await extractPdfText(req.file.buffer);
+      const result = parseBillingPdf(text);
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ error: "Erro ao processar PDF: " + err.message });
+    }
   });
 
   return httpServer;
