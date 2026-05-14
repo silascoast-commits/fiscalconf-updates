@@ -739,16 +739,28 @@ export default function ImportarFaturamento() {
               }
             </div>
 
-            {/* Baixar modelo */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full border-green-400 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/20"
-              onClick={downloadModeloExcel}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Baixar Modelo Excel (.xlsx)
-            </Button>
+            {/* Baixar modelo — dois botões */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 border-green-400 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/20"
+                onClick={downloadModeloExcel}
+              >
+                <Download className="h-4 w-4 mr-1" />
+                Gerar Modelo (.xlsx)
+              </Button>
+              <a href="/api/download/modelo-faturamento" download="modelo-faturamento-12meses.xlsx" className="flex-1">
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  Baixar Modelo Pronto
+                </Button>
+              </a>
+            </div>
 
             {/* Formatos aceitos */}
             <div className="rounded-lg bg-muted/40 p-3 space-y-2 text-xs text-muted-foreground">

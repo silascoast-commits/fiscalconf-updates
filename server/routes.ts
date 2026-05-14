@@ -918,6 +918,17 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json(storage.getXmlDashboard(clienteId));
   });
 
+  // GET /api/download/modelo-faturamento — baixa o modelo Excel de faturamento
+  app.get("/api/download/modelo-faturamento", (req, res) => {
+    const filePath = path.join(process.cwd(), "attached_assets", "modelo-faturamento-12meses.xlsx");
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: "Arquivo não encontrado" });
+    }
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", 'attachment; filename="modelo-faturamento-12meses.xlsx"');
+    res.sendFile(filePath);
+  });
+
   // POST /api/parse-billing-pdf — extrai faturamento mensal de PDF genérico
   app.post("/api/parse-billing-pdf", upload.single("pdf"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "Nenhum arquivo enviado" });

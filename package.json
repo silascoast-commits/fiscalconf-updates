@@ -1,14 +1,73 @@
 {
-  "name": "rest-express",
-  "version": "1.0.0",
+  "name": "fiscalconf",
+  "version": "3.0.0",
+  "productName": "FiscalConf",
+  "description": "Sistema de apuração e projeção tributária — Reforma Tributária 2026-2033",
+  "author": "FiscalConf",
   "license": "MIT",
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
     "build": "tsx script/build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "electron:dev": "npm run build && electron .",
+    "electron:build:win": "npm run build && electron-builder --win --x64",
+    "electron:build:all": "npm run build && electron-builder --win --mac --linux"
+  },
+  "build": {
+    "appId": "br.com.fiscalconf",
+    "productName": "FiscalConf",
+    "copyright": "Copyright © 2025 FiscalConf",
+    "directories": {
+      "output": "dist-installer",
+      "buildResources": "electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/main.cjs",
+      "electron/icon.ico",
+      "node_modules/better-sqlite3/**/*",
+      "node_modules/pdfjs-dist/**/*",
+      "node_modules/multer/**/*",
+      "node_modules/xml2js/**/*",
+      "node_modules/pdf-parse/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "electron/icon.ico",
+        "to": "icon.ico"
+      }
+    ],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "electron/icon.ico",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "FiscalConf",
+      "installerHeaderIcon": "electron/icon.ico",
+      "deleteAppDataOnUninstall": false,
+      "license": null,
+      "installerLanguages": ["pt_BR"],
+      "language": "1046"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "electron/icon.ico",
+      "category": "public.app-category.finance"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Office"
+    }
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -99,7 +158,10 @@
     "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.31.8",
+    "electron": "^42.0.1",
+    "electron-builder": "^26.8.1",
     "esbuild": "^0.25.0",
+    "png-to-ico": "^3.0.1",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.20.5",
