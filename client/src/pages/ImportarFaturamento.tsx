@@ -214,6 +214,38 @@ const ANEXOS: Record<string, { faixas: Faixa[]; dist: Dist[]; label: string; tem
   },
 };
 
+// ─── DOWNLOAD MODELO EXCEL ────────────────────────────────────────────────────
+function downloadModeloExcel() {
+  const now = new Date();
+  const rows: (string | number)[][] = [
+    ["Mês/Ano", "Faturamento Bruto (R$)", "Observação"],
+  ];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const mes = String(d.getMonth() + 1).padStart(2, "0");
+    const ano = d.getFullYear();
+    rows.push([`${mes}/${ano}`, 0, i === 0 ? "← mês mais recente" : ""]);
+  }
+  rows.push([]);
+  rows.push(["INSTRUÇÕES:", "", ""]);
+  rows.push(["• Preencha a coluna B com o faturamento bruto de cada mês", "", ""]);
+  rows.push(["• Não altere o formato da coluna A (MM/AAAA)", "", ""]);
+  rows.push(["• Salve e importe na página Importar Faturamento", "", ""]);
+  rows.push(["• Formatos aceitos: .xlsx, .xls, .csv", "", ""]);
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws["!cols"] = [{ wch: 14 }, { wch: 26 }, { wch: 28 }];
+
+  // Cabeçalho em negrito (via cell style — suportado pelo xlsx community edition de forma básica)
+  ws["A1"] = { v: "Mês/Ano", t: "s" };
+  ws["B1"] = { v: "Faturamento Bruto (R$)", t: "s" };
+  ws["C1"] = { v: "Observação", t: "s" };
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Faturamento 12 Meses");
+  XLSX.writeFile(wb, "modelo-faturamento-12meses.xlsx");
+}
+
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 function moeda(v: number) { return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); }
 function pct(v: number, dec = 2) { return v.toFixed(dec) + "%"; }
@@ -706,6 +738,17 @@ export default function ImportarFaturamento() {
                 </>
               }
             </div>
+
+            {/* Baixar modelo */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full border-green-400 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/20"
+              onClick={downloadModeloExcel}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Baixar Modelo Excel (.xlsx)
+            </Button>
 
             {/* Formatos aceitos */}
             <div className="rounded-lg bg-muted/40 p-3 space-y-2 text-xs text-muted-foreground">
