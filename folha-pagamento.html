@@ -197,7 +197,7 @@ let tabAt=1, mes=hoje.getMonth()+1, ano=hoje.getFullYear();
 let empFA=false, empEId=null;
 let funcFA=false, funcEId=null;
 let funcExp=null;
-let adtFId=null, folhaFId=null;
+let adtFId=null, folhaFId=null, ferFId=null, dec13FId=null;
 let cnpjT=null;
 
 // ══════════════════════════════════════════
@@ -222,6 +222,9 @@ function setMesFunc(eid,entry){
   const m=getMes(eid).filter(e=>e.fid!==entry.fid);
   m.push(entry); setMes(eid,m);
 }
+// Férias por empresa
+const getFers=(eid)=>ls.g(`fp_fer_${eid}`)||[];
+const setFers=(eid,v)=>ls.s(`fp_fer_${eid}`,v);
 
 // ══════════════════════════════════════════
 // HELPERS
@@ -274,6 +277,20 @@ function calcEntry(f, entry){
   const ferTotal= sal>0 ? (sal*avF/12)*(4/3) : 0;
   const fgts   = bruto*0.08;
   return {salProp,vh,he50v,he100v,totalHE,dsr,dsrAuto,totalAdt,bruto,aPagar,av13,dec13,avF,ferTotal,fgts};
+}
+
+function calcFer(f,dias){
+  const sal=num(f.salarioBase),vd=sal/30,vf=vd*dias,ad=vf/3;
+  return {vd,vf,ad,total:vf+ad};
+}
+function calc13(f){
+  const sal=num(f.salarioBase),avos=calcAvos13(f.dataAdmissao,ano);
+  const v13=sal>0?sal*avos/12:0;
+  return {avos,v13,parc1:v13/2,parc2:v13/2};
+}
+function getDec13Nov(eid,fid){
+  const data=ls.g(`fp_m_${eid}_${ano}_11`)||[];
+  return (data.find(x=>x.fid===fid)||{}).dec13?.valor||0;
 }
 
 // ══════════════════════════════════════════
@@ -430,7 +447,8 @@ function rFunc(){
       ${Array.from({length:6},(_,i)=>ano-2+i).map(y=>`<option value="${y}" ${y===ano?'selected':''}>${y}</option>`).join('')}
     </select></div>
     <div style="margin-left:auto;display:flex;gap:8px;align-items:flex-end">
-      <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Imprimir</button>
+      <button class="btn btn-primary btn-sm" onclick="printTodos()">🖨️ Todos Recibos</button>
+      <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Relatório</button>
     </div>
   </div>`;
 
@@ -567,7 +585,10 @@ function funcCard(f, eid){
       h+=`<p style="font-size:12px;color:var(--gray-400);margin-bottom:10px">Nenhum adiantamento lançado neste mês.</p>`;
     }
     if(adtFId!==f.id){
-      h+=`<button class="btn btn-amber btn-sm" onclick="aAdt('${f.id}','${eid}')">+ Lançar adiantamento</button>`;
+      h+=`<div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-amber btn-sm" onclick="aAdt('${f.id}','${eid}')">+ Lançar adiantamento</button>
+        ${entry.adts&&entry.adts.length>1?`<button class="btn btn-outline btn-sm" onclick="printTodosAdts('${f.id}','${eid}')">🖨️ Todos Adiant.</button>`:''}
+      </div>`;
     }
 
     // Folha
@@ -585,6 +606,68 @@ function funcCard(f, eid){
     } else {
       h+=`<p style="font-size:12px;color:var(--gray-400);margin-bottom:10px">Folha ainda não foi rodada para este mês.</p>
         <button class="btn btn-sky btn-sm" onclick="aFolha('${f.id}','${eid}')">📋 Rodar Folha Mensal</button>`;
+    }
+
+
+    // ── Férias ──────────────────────────────
+    h+=`<div class="sdiv" style="margin-top:16px">🌴 Férias — Histórico</div>`;
+    const fers=getFers(eid).filter(fe=>fe.fid===f.id);
+    if(ferFId===f.id) h+=ferForm(f.id,eid);
+    if(fers.length){
+      h+=`<div class="adt-list">`;
+      fers.forEach(fe=>{
+        const di=fe.dataInicio?new Date(fe.dataInicio+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+        const df=fe.dataFim?new Date(fe.dataFim+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+        h+=`<div class="adt-item" style="border-color:#86efac">
+          <span style="font-size:16px">🌴</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600">${brl(fe.total)} · ${fe.dias} dias</div>
+            <div style="font-size:11px;color:var(--gray-400)">${di} até ${df}${fe.pago?' · <span style="color:var(--green)">✅ Pago</span>':''}</div>
+          </div>
+          <div class="adt-val" style="color:var(--green)">${brl(fe.total)}</div>
+          <button class="btn btn-ghost btn-sm" onclick="togFerPago('${fe.id}','${eid}')" title="${fe.pago?'Desmarcar':'Marcar pago'}" style="color:${fe.pago?'var(--amber)':'var(--green)'}">${fe.pago?'↩️':'✅'}</button>
+          <button class="btn btn-outline btn-sm" onclick="printFer('${fe.id}','${f.id}','${eid}')">🖨️ Recibo</button>
+          <button class="btn btn-danger btn-icon btn-sm" onclick="dFer('${fe.id}','${eid}')">🗑️</button>
+        </div>`;
+      });
+      h+=`</div>`;
+    } else if(ferFId!==f.id){
+      h+=`<p style="font-size:12px;color:var(--gray-400);margin-bottom:10px">Nenhum período de férias lançado.</p>`;
+    }
+    if(ferFId!==f.id){
+      h+=`<button class="btn btn-green btn-sm" onclick="aFer('${f.id}','${eid}')">🌴 Lançar Férias</button>`;
+    }
+
+    // ── 13º Salário (apenas Nov/Dez) ─────────
+    if(mes===11||mes===12){
+      h+=`<div class="sdiv" style="margin-top:16px">🎄 13º Salário — ${ano}</div>`;
+      const r13=calc13(f);
+      const parcNum=mes===11?1:2;
+      const temDec13=entry.dec13&&entry.dec13.rodada;
+      if(dec13FId===f.id){
+        h+=dec13Form(f,eid,entry,r13);
+      } else if(temDec13){
+        const novVal=entry.dec13.valorNov||0;
+        h+=`<div class="calc-wrap"><table class="ctab">
+          <tr><td>13º proporcional <span class="cbadge a">${r13.avos}/12 avos</span></td><td>${brl(r13.v13)}</td></tr>
+          ${parcNum===2&&novVal>0?`<tr class="cdesc"><td>(−) 1ª parcela paga em novembro</td><td>−${brl(novVal)}</td></tr>`:''}
+          <tr class="ctotal"><td>${parcNum}ª parcela — ${mes===11?'50% do 13º':'Saldo final'}</td><td>${brl(entry.dec13.valor)}</td></tr>
+        </table></div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-outline btn-sm" onclick="aDec13('${f.id}','${eid}')">✏️ Editar</button>
+          <button class="btn ${entry.dec13.pago?'btn-outline':'btn-green'} btn-sm" onclick="togDec13Pago('${f.id}','${eid}')">${entry.dec13.pago?'↩️ Desmarcar':'✅ Marcar pago'}</button>
+          <button class="btn btn-primary btn-sm" onclick="printDec13('${f.id}','${eid}')">🖨️ Recibo 13º</button>
+        </div>`;
+      } else {
+        const novVal=mes===12?getDec13Nov(eid,f.id):0;
+        const parcVal=mes===11?r13.parc1:Math.max(0,r13.v13-novVal);
+        h+=`<div style="background:var(--amber-light);border:1px solid var(--amber-bd);border-radius:8px;padding:12px;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:600;color:var(--amber)">${parcNum}ª Parcela — ${brl(parcVal)}</div>
+          <div style="font-size:12px;color:var(--gray-600);margin-top:3px">${r13.avos}/12 avos · Base: ${brl(f.salarioBase)}</div>
+          ${mes===12&&novVal>0?`<div style="font-size:11px;color:var(--gray-500);margin-top:2px">Desconta 1ª parcela de novembro (${brl(novVal)})</div>`:''}
+        </div>
+        <button class="btn btn-amber btn-sm" onclick="aDec13('${f.id}','${eid}')">🎄 Rodar ${parcNum}ª Parcela</button>`;
+      }
     }
 
     h+=`</div>`;
@@ -703,7 +786,7 @@ function togPago(fid,eid){
   entry.pago=!entry.pago; setMesFunc(eid,entry); rFunc();
 }
 
-function togExp(fid){ funcExp=funcExp===fid?null:fid; adtFId=null; folhaFId=null; rFunc(); }
+function togExp(fid){ funcExp=funcExp===fid?null:fid; adtFId=null; folhaFId=null; ferFId=null; dec13FId=null; rFunc(); }
 function aFuncF(){ funcFA=true; funcEId=null; rFunc(); setTimeout(()=>document.getElementById('fNome')?.focus(),50); }
 function cFuncF(){ funcFA=false; funcEId=null; rFunc(); }
 function eFuncId(id){ funcEId=id; funcFA=false; funcExp=null; adtFId=null; folhaFId=null; rFunc(); }
@@ -737,7 +820,8 @@ function rFolha(){
       ${Array.from({length:6},(_,i)=>ano-2+i).map(y=>`<option value="${y}" ${y===ano?'selected':''}>${y}</option>`).join('')}
     </select></div>
     <div style="margin-left:auto;display:flex;gap:8px;align-items:flex-end">
-      <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Imprimir</button>
+      <button class="btn btn-primary btn-sm" onclick="printTodos()">🖨️ Todos Recibos</button>
+      <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Relatório</button>
     </div>
   </div>`;
 
@@ -836,6 +920,110 @@ function tabelaCalc(r,f,entry){
 function tipoL(t){ return t==='diarista'?'Diarista':t==='horista'?'Horista':'Mensalista'; }
 function oMes(v){ mes=Number(v); funcExp=null; adtFId=null; folhaFId=null; if(tabAt===2)rFunc(); else rFolha(); }
 function oAno(v){ ano=Number(v); funcExp=null; adtFId=null; folhaFId=null; if(tabAt===2)rFunc(); else rFolha(); }
+
+// ══════════════════════════════════════════
+// FÉRIAS
+// ══════════════════════════════════════════
+function ferForm(fid,eid){
+  return `<div class="fbox" style="border-color:#86efac;background:var(--green-light)">
+    <div class="ftitle">🌴 Lançar Férias</div>
+    <div class="fg3">
+      <div class="ff"><label>Data Início</label><input type="date" id="ferDi" oninput="calcFerDias('${fid}','${eid}')" /></div>
+      <div class="ff"><label>Data Fim</label><input type="date" id="ferDf" oninput="calcFerDias('${fid}','${eid}')" /></div>
+      <div class="ff"><label>Dias de Férias</label><input type="number" id="ferDias" min="1" max="30" value="30" oninput="pvFer('${fid}','${eid}')" /></div>
+    </div>
+    <div id="pvFerBox" style="margin-bottom:10px;"></div>
+    <div class="fa">
+      <button class="btn btn-ghost btn-sm" onclick="cFer()">✕ Cancelar</button>
+      <button class="btn btn-green btn-sm" onclick="sFer('${fid}','${eid}')">💾 Confirmar Férias</button>
+    </div></div>`;
+}
+function calcFerDias(fid,eid){
+  const di=document.getElementById('ferDi')?.value;
+  const df=document.getElementById('ferDf')?.value;
+  const el=document.getElementById('ferDias');
+  if(di&&df&&el){
+    const diff=Math.round((new Date(df+'T12:00:00')-new Date(di+'T12:00:00'))/(864e5))+1;
+    if(diff>0){el.value=diff;pvFer(fid,eid);}
+  }
+}
+function pvFer(fid,eid){
+  const box=document.getElementById('pvFerBox'); if(!box)return;
+  const f=getFuncs(eid).find(x=>x.id===fid); if(!f)return;
+  const dias=num(gv('ferDias')); if(!dias)return;
+  const r=calcFer(f,dias);
+  box.innerHTML=`<div class="calc-wrap"><table class="ctab">
+    <tr><td>Salário diário (${brl(f.salarioBase)}/30)</td><td>${brl(r.vd)}</td></tr>
+    <tr><td>Salário férias (${dias} dias)</td><td>${brl(r.vf)}</td></tr>
+    <tr><td>Adicional 1/3</td><td>${brl(r.ad)}</td></tr>
+    <tr class="ctotal"><td>✅ Total férias</td><td>${brl(r.total)}</td></tr>
+  </table></div>`;
+}
+function aFer(fid,eid){ ferFId=fid; funcExp=fid; adtFId=null; folhaFId=null; dec13FId=null; rFunc(); setTimeout(()=>pvFer(fid,eid),80); }
+function cFer(){ ferFId=null; rFunc(); }
+function sFer(fid,eid){
+  const f=getFuncs(eid).find(x=>x.id===fid); if(!f)return;
+  const dias=num(gv('ferDias')); if(!dias){alert('Informe os dias de férias.');return;}
+  const r=calcFer(f,dias);
+  const list=getFers(eid);
+  list.push({id:genId(),fid,dataInicio:gv('ferDi'),dataFim:gv('ferDf'),dias,vFerias:r.vf,adicional:r.ad,total:r.total,pago:false});
+  setFers(eid,list); ferFId=null; rFunc();
+}
+function dFer(id,eid){
+  if(!confirm('Remover férias?'))return;
+  setFers(eid,getFers(eid).filter(fe=>fe.id!==id)); rFunc();
+}
+function togFerPago(id,eid){
+  const list=getFers(eid), i=list.findIndex(fe=>fe.id===id); if(i===-1)return;
+  list[i].pago=!list[i].pago; setFers(eid,list); rFunc();
+}
+
+// ══════════════════════════════════════════
+// 13º SALÁRIO
+// ══════════════════════════════════════════
+function dec13Form(f,eid,entry,r13){
+  const parcNum=mes===11?1:2;
+  const novVal=mes===12?getDec13Nov(eid,f.id):0;
+  const parcDef=mes===11?r13.parc1:Math.max(0,r13.v13-novVal);
+  return `<div class="fbox" style="border-color:var(--amber-bd);background:var(--amber-light)">
+    <div class="ftitle">🎄 ${parcNum}ª Parcela 13º Salário — ${ano}</div>
+    <div class="fg3">
+      <div class="ff"><label>13º total (${r13.avos}/12 avos) R$</label>
+        <input type="number" id="d13Tot" value="${r13.v13.toFixed(2)}" readonly style="background:var(--gray-100)" /></div>
+      ${mes===12?`<div class="ff"><label>1ª parcela paga (novembro) R$</label>
+        <input type="number" id="d13Nov" value="${novVal.toFixed(2)}" step="0.01" oninput="pvDec13('${f.id}','${eid}')" /></div>`:''}
+      <div class="ff"><label>Valor ${parcNum}ª parcela (R$)</label>
+        <input type="number" id="d13Val" value="${parcDef.toFixed(2)}" step="0.01" oninput="pvDec13('${f.id}','${eid}')" /></div>
+    </div>
+    <div id="pvDec13Box" style="margin-bottom:10px;"></div>
+    <div class="fa">
+      <button class="btn btn-ghost btn-sm" onclick="cDec13()">✕ Cancelar</button>
+      <button class="btn btn-amber btn-sm" onclick="sDec13('${f.id}','${eid}')">✅ Confirmar 13º</button>
+    </div></div>`;
+}
+function pvDec13(fid,eid){
+  const box=document.getElementById('pvDec13Box'); if(!box)return;
+  const f=getFuncs(eid).find(x=>x.id===fid); if(!f)return;
+  const r13=calc13(f); const val=num(gv('d13Val')); const novVal=mes===12?num(gv('d13Nov')):0;
+  box.innerHTML=`<div class="calc-wrap"><table class="ctab">
+    <tr><td>13º proporcional <span class="cbadge a">${r13.avos}/12 avos</span></td><td>${brl(r13.v13)}</td></tr>
+    ${mes===12&&novVal>0?`<tr class="cdesc"><td>(−) 1ª parcela novembro</td><td>−${brl(novVal)}</td></tr>`:''}
+    <tr class="ctotal"><td>${mes===11?'1ª':'2ª'} parcela</td><td>${brl(val)}</td></tr>
+  </table></div>`;
+}
+function aDec13(fid,eid){ dec13FId=fid; funcExp=fid; adtFId=null; folhaFId=null; ferFId=null; rFunc(); setTimeout(()=>pvDec13(fid,eid),80); }
+function cDec13(){ dec13FId=null; rFunc(); }
+function sDec13(fid,eid){
+  const val=num(gv('d13Val')); if(!val){alert('Informe o valor.');return;}
+  const novVal=mes===12?num(gv('d13Nov')):0;
+  const entry=getMesFunc(eid,fid);
+  entry.dec13={rodada:true,parc:mes===11?1:2,valor:val,valorNov:novVal,pago:false};
+  setMesFunc(eid,entry); dec13FId=null; rFunc();
+}
+function togDec13Pago(fid,eid){
+  const entry=getMesFunc(eid,fid); if(!entry.dec13)return;
+  entry.dec13.pago=!entry.dec13.pago; setMesFunc(eid,entry); rFunc();
+}
 
 // ══════════════════════════════════════════
 // IMPRESSÃO DE RECIBOS
@@ -1065,6 +1253,245 @@ function printFolha(fid, eid){
       </div>
     </div>
   </body></html>`);
+  w.document.close();
+}
+
+function printFer(feid,fid,eid){
+  const ea=getAtiva()||getEmps().find(e=>e.id===eid)||{nome:'—'};
+  const f=getFuncs(eid).find(x=>x.id===fid)||{nome:'—'};
+  const fe=getFers(eid).find(x=>x.id===feid); if(!fe){alert('Férias não encontradas.');return;}
+  const di=fe.dataInicio?new Date(fe.dataInicio+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  const df=fe.dataFim?new Date(fe.dataFim+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  const dataAdm=f.dataAdmissao?new Date(f.dataAdmissao+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  const w=window.open('','_blank','width=750,height=900');
+  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Recibo de Férias — ${esc(f.nome)}</title>${estiloRecibo()}</head><body>
+    <div class="rec">
+      <button class="no-print" onclick="window.print()" style="position:absolute;top:12px;right:12px;padding:6px 14px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">🖨️ Imprimir</button>
+      <div class="rec-header">
+        <h1>RECIBO DE PAGAMENTO DE FÉRIAS</h1>
+        <div class="empresa">${esc(ea.nome)}</div>
+        ${ea.cnpj?`<div class="cnpj">CNPJ: ${esc(ea.cnpj)}</div>`:''}
+        ${ea.responsavel?`<div class="cnpj">Responsável: ${esc(ea.responsavel)}</div>`:''}
+      </div>
+      <div class="bloco">
+        <div class="bloco-titulo">Dados do Funcionário</div>
+        <div class="linha"><span class="lbl">Nome</span><span class="val">${esc(f.nome)}</span></div>
+        ${f.funcao?`<div class="linha"><span class="lbl">Função</span><span class="val">${esc(f.funcao)}</span></div>`:''}
+        ${f.dataAdmissao?`<div class="linha"><span class="lbl">Admissão</span><span class="val">${dataAdm}</span></div>`:''}
+        <div class="linha"><span class="lbl">Salário Base</span><span class="val">${brl(f.salarioBase)}</span></div>
+      </div>
+      <div class="bloco">
+        <div class="bloco-titulo">Período de Férias</div>
+        <div class="linha"><span class="lbl">Início</span><span class="val">${di}</span></div>
+        <div class="linha"><span class="lbl">Fim</span><span class="val">${df}</span></div>
+        <div class="linha"><span class="lbl">Duração</span><span class="val">${fe.dias} dias</span></div>
+      </div>
+      <div class="bloco">
+        <div class="bloco-titulo">Demonstrativo</div>
+        <div class="linha"><span class="lbl">Salário diário (base/30)</span><span class="val">${brl(num(f.salarioBase)/30)}</span></div>
+        <div class="linha"><span class="lbl">Salário férias (${fe.dias} dias)</span><span class="val">${brl(fe.vFerias)}</span></div>
+        <div class="linha"><span class="lbl">Adicional 1/3 constitucional</span><span class="val">${brl(fe.adicional)}</span></div>
+      </div>
+      <div class="total-box">
+        <div class="tot-lbl">Total de Férias</div>
+        <div class="tot-val">${brl(fe.total)}</div>
+        <div class="tot-ext">${valorExtenso(fe.total)}</div>
+      </div>
+      <div class="destaque">
+        Declaro ter recebido <strong>${brl(fe.total)}</strong> (${valorExtenso(fe.total)})
+        referente a ${fe.dias} dias de férias no período de ${di} a ${df}.
+      </div>
+      <div class="assinaturas">
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(f.nome)}</div>
+          <div class="cargo-assina">Funcionário${f.funcao?' · '+f.funcao:''}</div>
+        </div>
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(ea.responsavel||ea.nome)}</div>
+          <div class="cargo-assina">Empregador · ${esc(ea.nome)}</div>
+        </div>
+      </div>
+      <div class="rodape">Emitido em ${new Date().toLocaleDateString('pt-BR')} · Sem desconto de INSS/IRRF</div>
+    </div></body></html>`);
+  w.document.close();
+}
+
+function printDec13(fid,eid){
+  const ea=getAtiva()||getEmps().find(e=>e.id===eid)||{nome:'—'};
+  const f=getFuncs(eid).find(x=>x.id===fid); if(!f)return;
+  const entry=getMesFunc(eid,fid);
+  if(!entry.dec13?.rodada){alert('13º não processado.');return;}
+  const r13=calc13(f);
+  const parcNum=entry.dec13.parc, parcLabel=parcNum===1?'1ª Parcela (50%)':'2ª Parcela (Saldo Final)';
+  const dataAdm=f.dataAdmissao?new Date(f.dataAdmissao+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  const w=window.open('','_blank','width=750,height=900');
+  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Recibo 13º — ${esc(f.nome)} — ${ano}</title>${estiloRecibo()}</head><body>
+    <div class="rec">
+      <button class="no-print" onclick="window.print()" style="position:absolute;top:12px;right:12px;padding:6px 14px;background:#d97706;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">🖨️ Imprimir</button>
+      <div class="rec-header">
+        <h1>RECIBO DE 13º SALÁRIO</h1>
+        <h2>${parcLabel} — Ano ${ano}</h2>
+        <div class="empresa">${esc(ea.nome)}</div>
+        ${ea.cnpj?`<div class="cnpj">CNPJ: ${esc(ea.cnpj)}</div>`:''}
+        ${ea.responsavel?`<div class="cnpj">Responsável: ${esc(ea.responsavel)}</div>`:''}
+      </div>
+      <div class="bloco">
+        <div class="bloco-titulo">Dados do Funcionário</div>
+        <div class="linha"><span class="lbl">Nome</span><span class="val">${esc(f.nome)}</span></div>
+        ${f.funcao?`<div class="linha"><span class="lbl">Função</span><span class="val">${esc(f.funcao)}</span></div>`:''}
+        ${f.dataAdmissao?`<div class="linha"><span class="lbl">Admissão</span><span class="val">${dataAdm}</span></div>`:''}
+        <div class="linha"><span class="lbl">Salário Base</span><span class="val">${brl(f.salarioBase)}</span></div>
+      </div>
+      <div class="bloco">
+        <div class="bloco-titulo">Demonstrativo</div>
+        <div class="linha"><span class="lbl">13º proporcional (${r13.avos}/12 avos)</span><span class="val">${brl(r13.v13)}</span></div>
+        ${parcNum===2&&entry.dec13.valorNov>0?`<div class="linha"><span class="lbl" style="color:#d97706">(−) 1ª parcela — novembro</span><span class="val" style="color:#d97706">−${brl(entry.dec13.valorNov)}</span></div>`:''}
+      </div>
+      <div class="total-box">
+        <div class="tot-lbl">${parcLabel}</div>
+        <div class="tot-val">${brl(entry.dec13.valor)}</div>
+        <div class="tot-ext">${valorExtenso(entry.dec13.valor)}</div>
+      </div>
+      <div class="destaque">
+        Declaro ter recebido <strong>${brl(entry.dec13.valor)}</strong> (${valorExtenso(entry.dec13.valor)})
+        referente à ${parcLabel} do 13º salário do ano de ${ano}.
+      </div>
+      <div class="assinaturas">
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(f.nome)}</div>
+          <div class="cargo-assina">Funcionário${f.funcao?' · '+f.funcao:''}</div>
+        </div>
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(ea.responsavel||ea.nome)}</div>
+          <div class="cargo-assina">Empregador · ${esc(ea.nome)}</div>
+        </div>
+      </div>
+      <div class="rodape">Emitido em ${new Date().toLocaleDateString('pt-BR')} · Sem desconto de INSS/IRRF</div>
+    </div></body></html>`);
+  w.document.close();
+}
+
+function printTodosAdts(fid,eid){
+  const ea=getAtiva()||getEmps().find(e=>e.id===eid)||{nome:'—'};
+  const f=getFuncs(eid).find(x=>x.id===fid); if(!f)return;
+  const entry=getMesFunc(eid,fid);
+  const adts=entry.adts||[];
+  if(!adts.length){alert('Nenhum adiantamento lançado.');return;}
+  let pgs='';
+  adts.forEach((a,idx)=>{
+    const dataPag=a.data?new Date(a.data+'T12:00:00').toLocaleDateString('pt-BR'):new Date().toLocaleDateString('pt-BR');
+    pgs+=`<div class="rec" style="${idx>0?'page-break-before:always;margin-top:20px':''}">
+      <div class="rec-header">
+        <h1>RECIBO DE ADIANTAMENTO SALARIAL</h1>
+        <h2>Competência: ${MESES[mes-1].toUpperCase()}/${ano}</h2>
+        <div class="empresa">${esc(ea.nome)}</div>
+        ${ea.cnpj?`<div class="cnpj">CNPJ: ${esc(ea.cnpj)}</div>`:''}
+      </div>
+      <div class="bloco">
+        <div class="bloco-titulo">Funcionário</div>
+        <div class="linha"><span class="lbl">Nome</span><span class="val">${esc(f.nome)}</span></div>
+        ${f.funcao?`<div class="linha"><span class="lbl">Função</span><span class="val">${esc(f.funcao)}</span></div>`:''}
+      </div>
+      <div class="bloco">
+        <div class="bloco-titulo">Adiantamento ${idx+1} de ${adts.length}</div>
+        <div class="linha"><span class="lbl">Data</span><span class="val">${dataPag}</span></div>
+        ${a.obs?`<div class="linha"><span class="lbl">Descrição</span><span class="val">${esc(a.obs)}</span></div>`:''}
+      </div>
+      <div class="total-box">
+        <div class="tot-lbl">Valor deste adiantamento</div>
+        <div class="tot-val">${brl(a.valor)}</div>
+        <div class="tot-ext">${valorExtenso(a.valor)}</div>
+      </div>
+      <div class="destaque">
+        Declaro ter recebido <strong>${brl(a.valor)}</strong> (${valorExtenso(a.valor)}) a título de adiantamento
+        referente ao mês de <strong>${MESES[mes-1]}/${ano}</strong>. Valor a descontar na folha mensal.
+      </div>
+      <div class="assinaturas">
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(f.nome)}</div>
+          <div class="cargo-assina">Funcionário${f.funcao?' · '+f.funcao:''}</div>
+        </div>
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(ea.responsavel||ea.nome)}</div>
+          <div class="cargo-assina">Empregador · ${esc(ea.nome)}</div>
+        </div>
+      </div>
+      <div class="rodape">Emitido em ${new Date().toLocaleDateString('pt-BR')} · Sem desconto de INSS/IRRF</div>
+    </div>`;
+  });
+  const w=window.open('','_blank','width=800,height=1000');
+  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Adiantamentos — ${esc(f.nome)} — ${MESES[mes-1]}/${ano}</title>${estiloRecibo()}</head><body>
+    <button class="no-print" onclick="window.print()" style="position:fixed;top:12px;right:12px;padding:8px 18px;background:#d97706;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:700;z-index:999">🖨️ Imprimir Todos</button>
+    ${pgs}</body></html>`);
+  w.document.close();
+}
+
+function printTodos(){
+  const ea=getAtiva(); if(!ea){alert('Nenhuma empresa ativa.');return;}
+  const eid=ea.id;
+  const funcs=getFuncs(eid);
+  const comFolha=funcs.filter(f=>getMesFunc(eid,f.id).folhaRodada);
+  if(!comFolha.length){alert('Nenhuma folha rodada para imprimir neste mês.');return;}
+  let pgs='';
+  comFolha.forEach((f,idx)=>{
+    const entry=getMesFunc(eid,f.id);
+    const r=calcEntry(f,entry);
+    const isMens=f.tipoSalario==='mensalista'||!f.tipoSalario;
+    const du=num(entry.diasUteis||22),dt=num(entry.diasTrab||0);
+    pgs+=`<div class="rec" style="${idx>0?'page-break-before:always;margin-top:20px':''}">
+      <div class="rec-header">
+        <h1>RECIBO DE PAGAMENTO DE SALÁRIO</h1>
+        <h2>Competência: ${MESES[mes-1].toUpperCase()}/${ano}</h2>
+        <div class="empresa">${esc(ea.nome)}</div>
+        ${ea.cnpj?`<div class="cnpj">CNPJ: ${esc(ea.cnpj)}</div>`:''}
+        ${ea.responsavel?`<div class="cnpj">Responsável: ${esc(ea.responsavel)}</div>`:''}
+      </div>
+      <div class="bloco">
+        <div class="bloco-titulo">Funcionário</div>
+        <div class="linha"><span class="lbl">Nome</span><span class="val">${esc(f.nome)}</span></div>
+        ${f.funcao?`<div class="linha"><span class="lbl">Função</span><span class="val">${esc(f.funcao)}</span></div>`:''}
+        <div class="linha"><span class="lbl">Tipo</span><span class="val">${tipoL(f.tipoSalario)} · ${brl(f.salarioBase)}</span></div>
+      </div>
+      <div class="bloco">
+        <div class="bloco-titulo">Demonstrativo — ${MESES[mes-1]}/${ano}</div>
+        <div class="linha"><span class="lbl">${isMens?`Salário prop. (${dt}/${du} dias)`:`Pagamento (${dt} ${f.tipoSalario==='horista'?'horas':'dias'})`}</span><span class="val">${brl(r.salProp)}</span></div>
+        ${r.he50v>0?`<div class="linha"><span class="lbl">H.Extra 50% (${entry.he50}h × 1,5)</span><span class="val">${brl(r.he50v)}</span></div>`:''}
+        ${r.he100v>0?`<div class="linha"><span class="lbl">H.Extra 100% (${entry.he100}h × 2,0)</span><span class="val">${brl(r.he100v)}</span></div>`:''}
+        ${r.dsr>0?`<div class="linha"><span class="lbl">DSR</span><span class="val">${brl(r.dsr)}</span></div>`:''}
+        <div class="linha" style="font-weight:700;background:#f5f5f5"><span class="lbl">Salário Bruto</span><span class="val">${brl(r.bruto)}</span></div>
+        ${r.totalAdt>0?`<div class="linha"><span class="lbl" style="color:#d97706">(−) Adiantamentos</span><span class="val" style="color:#d97706">−${brl(r.totalAdt)}</span></div>`:''}
+      </div>
+      <div class="total-box">
+        <div class="tot-lbl">Total Líquido a Pagar</div>
+        <div class="tot-val">${brl(r.aPagar)}</div>
+        <div class="tot-ext">${valorExtenso(r.aPagar)}</div>
+      </div>
+      <div class="destaque">
+        Declaro ter recebido <strong>${brl(r.aPagar)}</strong> (${valorExtenso(r.aPagar)})
+        referente ao salário de <strong>${MESES[mes-1]}/${ano}</strong>.
+        ${r.totalAdt>0?`Adiantamentos de ${brl(r.totalAdt)} já foram pagos anteriormente.`:''}
+      </div>
+      <div class="assinaturas">
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(f.nome)}</div>
+          <div class="cargo-assina">Funcionário${f.funcao?' · '+f.funcao:''}</div>
+        </div>
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(ea.responsavel||ea.nome)}</div>
+          <div class="cargo-assina">Empregador · ${esc(ea.nome)}</div>
+        </div>
+      </div>
+      <div class="rodape">Emitido em ${new Date().toLocaleDateString('pt-BR')} · Sem desconto de INSS/IRRF · ${esc(ea.nome)}</div>
+    </div>`;
+  });
+  const w=window.open('','_blank','width=800,height=1100');
+  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Folha Completa — ${MESES[mes-1]}/${ano} — ${esc(ea.nome)}</title>${estiloRecibo()}</head><body>
+    <button class="no-print" onclick="window.print()" style="position:fixed;top:12px;right:12px;padding:8px 18px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:700;z-index:999">🖨️ Imprimir Todos</button>
+    ${pgs}</body></html>`);
   w.document.close();
 }
 
