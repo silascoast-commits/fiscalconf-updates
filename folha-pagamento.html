@@ -447,7 +447,8 @@ function rFunc(){
       ${Array.from({length:6},(_,i)=>ano-2+i).map(y=>`<option value="${y}" ${y===ano?'selected':''}>${y}</option>`).join('')}
     </select></div>
     <div style="margin-left:auto;display:flex;gap:8px;align-items:flex-end">
-      <button class="btn btn-primary btn-sm" onclick="printTodos()">🖨️ Todos Recibos</button>
+      <button class="btn btn-amber btn-sm" onclick="printTodosAdtsGeral()">🖨️ Todos Adiantamentos</button>
+      <button class="btn btn-primary btn-sm" onclick="printTodos()">🖨️ Todos Mensal</button>
       <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Relatório</button>
     </div>
   </div>`;
@@ -820,7 +821,8 @@ function rFolha(){
       ${Array.from({length:6},(_,i)=>ano-2+i).map(y=>`<option value="${y}" ${y===ano?'selected':''}>${y}</option>`).join('')}
     </select></div>
     <div style="margin-left:auto;display:flex;gap:8px;align-items:flex-end">
-      <button class="btn btn-primary btn-sm" onclick="printTodos()">🖨️ Todos Recibos</button>
+      <button class="btn btn-amber btn-sm" onclick="printTodosAdtsGeral()">🖨️ Todos Adiantamentos</button>
+      <button class="btn btn-primary btn-sm" onclick="printTodos()">🖨️ Todos Mensal</button>
       <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Relatório</button>
     </div>
   </div>`;
@@ -1424,6 +1426,72 @@ function printTodosAdts(fid,eid){
   const w=window.open('','_blank','width=800,height=1000');
   w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
     <title>Adiantamentos — ${esc(f.nome)} — ${MESES[mes-1]}/${ano}</title>${estiloRecibo()}</head><body>
+    <button class="no-print" onclick="window.print()" style="position:fixed;top:12px;right:12px;padding:8px 18px;background:#d97706;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:700;z-index:999">🖨️ Imprimir Todos</button>
+    ${pgs}</body></html>`);
+  w.document.close();
+}
+
+function printTodosAdtsGeral(){
+  const ea=getAtiva(); if(!ea){alert('Nenhuma empresa ativa.');return;}
+  const eid=ea.id;
+  const funcs=getFuncs(eid);
+  // Coleta todos os funcionários com adiantamentos no mês
+  const comAdt=funcs.filter(f=>{const e=getMesFunc(eid,f.id);return e.adts&&e.adts.length>0;});
+  if(!comAdt.length){alert('Nenhum adiantamento lançado neste mês.');return;}
+  let pgs='', pgIdx=0;
+  comAdt.forEach(f=>{
+    const entry=getMesFunc(eid,f.id);
+    (entry.adts||[]).forEach(a=>{
+      const dataPag=a.data?new Date(a.data+'T12:00:00').toLocaleDateString('pt-BR'):new Date().toLocaleDateString('pt-BR');
+      const totalAdt=(entry.adts||[]).reduce((s,x)=>s+num(x.valor),0);
+      pgs+=`<div class="rec" style="${pgIdx>0?'page-break-before:always;margin-top:20px':''}">
+        <div class="rec-header">
+          <h1>RECIBO DE ADIANTAMENTO SALARIAL</h1>
+          <h2>Competência: ${MESES[mes-1].toUpperCase()}/${ano}</h2>
+          <div class="empresa">${esc(ea.nome)}</div>
+          ${ea.cnpj?`<div class="cnpj">CNPJ: ${esc(ea.cnpj)}</div>`:''}
+          ${ea.responsavel?`<div class="cnpj">Responsável: ${esc(ea.responsavel)}</div>`:''}
+        </div>
+        <div class="bloco">
+          <div class="bloco-titulo">Dados do Funcionário</div>
+          <div class="linha"><span class="lbl">Nome</span><span class="val">${esc(f.nome)}</span></div>
+          ${f.funcao?`<div class="linha"><span class="lbl">Função</span><span class="val">${esc(f.funcao)}</span></div>`:''}
+          <div class="linha"><span class="lbl">Salário Base</span><span class="val">${brl(f.salarioBase)}</span></div>
+        </div>
+        <div class="bloco">
+          <div class="bloco-titulo">Adiantamento</div>
+          <div class="linha"><span class="lbl">Data do Pagamento</span><span class="val">${dataPag}</span></div>
+          ${a.obs?`<div class="linha"><span class="lbl">Descrição</span><span class="val">${esc(a.obs)}</span></div>`:''}
+          ${entry.adts.length>1?`<div class="linha"><span class="lbl">Total adiantamentos no mês</span><span class="val">${brl(totalAdt)}</span></div>`:''}
+        </div>
+        <div class="total-box">
+          <div class="tot-lbl">Valor deste adiantamento</div>
+          <div class="tot-val">${brl(a.valor)}</div>
+          <div class="tot-ext">${valorExtenso(a.valor)}</div>
+        </div>
+        <div class="destaque">
+          Declaro ter recebido <strong>${brl(a.valor)}</strong> (${valorExtenso(a.valor)}) a título de
+          adiantamento salarial referente ao mês de <strong>${MESES[mes-1]}/${ano}</strong>.
+          Este valor será descontado no fechamento da folha mensal.
+        </div>
+        <div class="assinaturas">
+          <div class="assina"><div class="linha-assina"></div>
+            <div class="nome-assina">${esc(f.nome)}</div>
+            <div class="cargo-assina">Funcionário${f.funcao?' · '+f.funcao:''}</div>
+          </div>
+          <div class="assina"><div class="linha-assina"></div>
+            <div class="nome-assina">${esc(ea.responsavel||ea.nome)}</div>
+            <div class="cargo-assina">Empregador · ${esc(ea.nome)}</div>
+          </div>
+        </div>
+        <div class="rodape">Emitido em ${new Date().toLocaleDateString('pt-BR')} · Sem desconto de INSS/IRRF · ${esc(ea.nome)}</div>
+      </div>`;
+      pgIdx++;
+    });
+  });
+  const w=window.open('','_blank','width=800,height=1100');
+  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Todos Adiantamentos — ${MESES[mes-1]}/${ano} — ${esc(ea.nome)}</title>${estiloRecibo()}</head><body>
     <button class="no-print" onclick="window.print()" style="position:fixed;top:12px;right:12px;padding:8px 18px;background:#d97706;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:700;z-index:999">🖨️ Imprimir Todos</button>
     ${pgs}</body></html>`);
   w.document.close();
