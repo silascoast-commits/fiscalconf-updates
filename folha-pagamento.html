@@ -558,6 +558,7 @@ function funcCard(f, eid){
             <div style="font-size:11px;color:var(--gray-400)">${a.data?new Date(a.data+'T12:00:00').toLocaleDateString('pt-BR'):''} ${a.obs?'· '+esc(a.obs):''}</div>
           </div>
           <div class="adt-val">${brl(a.valor)}</div>
+          <button class="btn btn-outline btn-sm" onclick="printAdt('${a.id}','${f.id}','${eid}')" title="Imprimir recibo">🖨️ Recibo</button>
           <button class="btn btn-danger btn-icon btn-sm" onclick="dAdt('${a.id}','${f.id}','${eid}')">🗑️</button>
         </div>`;
       });
@@ -574,11 +575,12 @@ function funcCard(f, eid){
     if(folhaFId===f.id) h+=folhaForm(f,eid,entry);
     else if(temFolha){
       h+=`<div class="calc-wrap">${tabelaCalc(r,f,entry)}</div>
-        <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+        <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
           <button class="btn btn-outline btn-sm" onclick="aFolha('${f.id}','${eid}')">✏️ Editar folha</button>
           <button class="btn ${entry.pago?'btn-outline':'btn-green'} btn-sm" onclick="togPago('${f.id}','${eid}')">
             ${entry.pago?'↩️ Desmarcar pago':'✅ Marcar como pago'}
           </button>
+          <button class="btn btn-primary btn-sm" onclick="printFolha('${f.id}','${eid}')">🖨️ Recibo da Folha</button>
         </div>`;
     } else {
       h+=`<p style="font-size:12px;color:var(--gray-400);margin-bottom:10px">Folha ainda não foi rodada para este mês.</p>
@@ -834,6 +836,237 @@ function tabelaCalc(r,f,entry){
 function tipoL(t){ return t==='diarista'?'Diarista':t==='horista'?'Horista':'Mensalista'; }
 function oMes(v){ mes=Number(v); funcExp=null; adtFId=null; folhaFId=null; if(tabAt===2)rFunc(); else rFolha(); }
 function oAno(v){ ano=Number(v); funcExp=null; adtFId=null; folhaFId=null; if(tabAt===2)rFunc(); else rFolha(); }
+
+// ══════════════════════════════════════════
+// IMPRESSÃO DE RECIBOS
+// ══════════════════════════════════════════
+function valorExtenso(v){
+  // Extenso simplificado para valores até 999.999,99
+  const n=Math.round(v*100);
+  const reais=Math.floor(n/100), cts=n%100;
+  const ext=n=>{ if(n===0)return'zero';
+    const u=['','um','dois','três','quatro','cinco','seis','sete','oito','nove','dez',
+             'onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'];
+    const d=['','','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'];
+    const c=['','cem','duzentos','trezentos','quatrocentos','quinhentos','seiscentos','setecentos','oitocentos','novecentos'];
+    if(n<20)return u[n];
+    if(n<100)return d[Math.floor(n/10)]+(n%10?' e '+u[n%10]:'');
+    if(n===100)return'cem';
+    if(n<1000)return c[Math.floor(n/100)]+(n%100?' e '+ext(n%100):'');
+    if(n<1000000){const m=Math.floor(n/1000);return(m===1?'mil':ext(m)+' mil')+(n%1000?' e '+ext(n%1000):'');}
+    return String(n);
+  };
+  let s=ext(reais)+' real'+(reais!==1?'s':'');
+  if(cts>0) s+=' e '+ext(cts)+' centavo'+(cts!==1?'s':'');
+  return s.charAt(0).toUpperCase()+s.slice(1);
+}
+
+function estiloRecibo(){
+  return `<style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Courier New',monospace;background:#fff;color:#000;padding:20px;font-size:13px;line-height:1.6}
+    .rec{max-width:680px;margin:0 auto;border:2px solid #000;padding:24px;position:relative}
+    .rec-header{text-align:center;border-bottom:2px solid #000;padding-bottom:14px;margin-bottom:16px}
+    .rec-header h1{font-size:18px;font-weight:700;letter-spacing:1px}
+    .rec-header h2{font-size:13px;font-weight:400;margin-top:4px}
+    .rec-header .empresa{font-size:15px;font-weight:700;margin-top:8px}
+    .rec-header .cnpj{font-size:11px;color:#444}
+    .bloco{margin-bottom:12px;padding:10px 12px;border:1px solid #ccc;border-radius:4px}
+    .bloco-titulo{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#555;margin-bottom:6px}
+    .linha{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px dotted #ddd}
+    .linha:last-child{border-bottom:none}
+    .linha .lbl{color:#333}
+    .linha .val{font-weight:700;text-align:right}
+    .total-box{border:2px solid #000;padding:10px 12px;margin:14px 0;text-align:center}
+    .total-box .tot-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+    .total-box .tot-val{font-size:22px;font-weight:700;margin:4px 0}
+    .total-box .tot-ext{font-size:12px;font-style:italic;color:#444}
+    .assinaturas{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:28px;padding-top:16px;border-top:1px solid #ccc}
+    .assina{text-align:center}
+    .assina .linha-assina{border-top:1px solid #000;margin-bottom:6px;margin-top:36px}
+    .assina .nome-assina{font-size:12px;font-weight:700}
+    .assina .cargo-assina{font-size:11px;color:#555}
+    .rodape{text-align:center;font-size:10px;color:#888;margin-top:14px;padding-top:10px;border-top:1px solid #ddd}
+    .destaque{background:#f5f5f5;padding:8px 12px;border-left:3px solid #000;margin:8px 0;font-size:12px}
+    .separador{border:none;border-top:1px solid #ccc;margin:10px 0}
+    @media print{
+      body{padding:0}
+      .rec{border:none;padding:10px}
+      .no-print{display:none}
+    }
+  </style>`;
+}
+
+function printAdt(aid, fid, eid){
+  const ea=getAtiva()||getEmps().find(e=>e.id===eid)||{nome:'—',cnpj:'',responsavel:''};
+  const f=getFuncs(eid).find(x=>x.id===fid)||{nome:'—',funcao:'',dataAdmissao:''};
+  const entry=getMesFunc(eid,fid);
+  const a=(entry.adts||[]).find(x=>x.id===aid);
+  if(!a){alert('Adiantamento não encontrado.');return;}
+
+  const dataAdm=f.dataAdmissao?new Date(f.dataAdmissao+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  const dataPag=a.data?new Date(a.data+'T12:00:00').toLocaleDateString('pt-BR'):new Date().toLocaleDateString('pt-BR');
+  const totalAdt=(entry.adts||[]).reduce((s,x)=>s+num(x.valor),0);
+  const outrosAdts=totalAdt-num(a.valor);
+
+  const w=window.open('','_blank','width=750,height=900');
+  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Recibo de Adiantamento — ${f.nome}</title>${estiloRecibo()}</head><body>
+    <div class="rec">
+      <button class="no-print" onclick="window.print()" style="position:absolute;top:12px;right:12px;padding:6px 14px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">🖨️ Imprimir</button>
+      <div class="rec-header">
+        <h1>RECIBO DE ADIANTAMENTO SALARIAL</h1>
+        <div class="empresa">${esc(ea.nome)}</div>
+        ${ea.cnpj?`<div class="cnpj">CNPJ: ${esc(ea.cnpj)}</div>`:''}
+        ${ea.responsavel?`<div class="cnpj">Responsável: ${esc(ea.responsavel)}</div>`:''}
+      </div>
+
+      <div class="bloco">
+        <div class="bloco-titulo">Dados do Funcionário</div>
+        <div class="linha"><span class="lbl">Nome</span><span class="val">${esc(f.nome)}</span></div>
+        ${f.funcao?`<div class="linha"><span class="lbl">Função</span><span class="val">${esc(f.funcao)}</span></div>`:''}
+        ${f.dataAdmissao?`<div class="linha"><span class="lbl">Data de Admissão</span><span class="val">${dataAdm}</span></div>`:''}
+        <div class="linha"><span class="lbl">Tipo</span><span class="val">${tipoL(f.tipoSalario)} · Salário: ${brl(f.salarioBase)}</span></div>
+      </div>
+
+      <div class="bloco">
+        <div class="bloco-titulo">Adiantamento</div>
+        <div class="linha"><span class="lbl">Competência</span><span class="val">${MESES[mes-1]}/${ano}</span></div>
+        <div class="linha"><span class="lbl">Data do Pagamento</span><span class="val">${dataPag}</span></div>
+        ${a.obs?`<div class="linha"><span class="lbl">Descrição</span><span class="val">${esc(a.obs)}</span></div>`:''}
+        ${outrosAdts>0?`<div class="linha"><span class="lbl">Outros adiantamentos no mês</span><span class="val">${brl(outrosAdts)}</span></div>`:''}
+        <div class="linha"><span class="lbl">Total de adiantamentos no mês</span><span class="val">${brl(totalAdt)}</span></div>
+      </div>
+
+      <div class="total-box">
+        <div class="tot-lbl">Valor deste adiantamento</div>
+        <div class="tot-val">${brl(a.valor)}</div>
+        <div class="tot-ext">${valorExtenso(a.valor)}</div>
+      </div>
+
+      <div class="destaque">
+        Declaro ter recebido a importância de <strong>${brl(a.valor)}</strong> (${valorExtenso(a.valor)})
+        a título de adiantamento salarial referente ao mês de <strong>${MESES[mes-1]}/${ano}</strong>.
+        Este valor será descontado do salário líquido no fechamento da folha do mesmo mês.
+      </div>
+
+      <div class="assinaturas">
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(f.nome)}</div>
+          <div class="cargo-assina">Funcionário${f.funcao?' · '+f.funcao:''}</div>
+        </div>
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(ea.responsavel||ea.nome)}</div>
+          <div class="cargo-assina">Empregador · ${esc(ea.nome)}</div>
+        </div>
+      </div>
+
+      <div class="rodape">
+        Emitido em ${new Date().toLocaleDateString('pt-BR')} · ${esc(ea.nome)}
+        · Sem vínculo empregatício formal · Sem desconto de INSS/IRRF
+      </div>
+    </div>
+  </body></html>`);
+  w.document.close();
+}
+
+function printFolha(fid, eid){
+  const ea=getAtiva()||getEmps().find(e=>e.id===eid)||{nome:'—',cnpj:'',responsavel:''};
+  const f=getFuncs(eid).find(x=>x.id===fid);
+  if(!f){alert('Funcionário não encontrado.');return;}
+  const entry=getMesFunc(eid,fid);
+  if(!entry.folhaRodada){alert('A folha ainda não foi rodada.');return;}
+  const r=calcEntry(f,entry);
+
+  const dataAdm=f.dataAdmissao?new Date(f.dataAdmissao+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  const isMens=f.tipoSalario==='mensalista'||!f.tipoSalario;
+  const du=num(entry.diasUteis||22), dt=num(entry.diasTrab||0);
+
+  const w=window.open('','_blank','width=750,height=1000');
+  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Recibo de Salário — ${f.nome} — ${MESES[mes-1]}/${ano}</title>${estiloRecibo()}</head><body>
+    <div class="rec">
+      <button class="no-print" onclick="window.print()" style="position:absolute;top:12px;right:12px;padding:6px 14px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">🖨️ Imprimir</button>
+      <div class="rec-header">
+        <h1>RECIBO DE PAGAMENTO DE SALÁRIO</h1>
+        <h2>Competência: ${MESES[mes-1].toUpperCase()}/${ano}</h2>
+        <div class="empresa">${esc(ea.nome)}</div>
+        ${ea.cnpj?`<div class="cnpj">CNPJ: ${esc(ea.cnpj)}</div>`:''}
+        ${ea.responsavel?`<div class="cnpj">Responsável: ${esc(ea.responsavel)}</div>`:''}
+      </div>
+
+      <div class="bloco">
+        <div class="bloco-titulo">Dados do Funcionário</div>
+        <div class="linha"><span class="lbl">Nome</span><span class="val">${esc(f.nome)}</span></div>
+        ${f.funcao?`<div class="linha"><span class="lbl">Função</span><span class="val">${esc(f.funcao)}</span></div>`:''}
+        ${f.dataAdmissao?`<div class="linha"><span class="lbl">Data de Admissão</span><span class="val">${dataAdm}</span></div>`:''}
+        <div class="linha"><span class="lbl">Tipo</span><span class="val">${tipoL(f.tipoSalario)}</span></div>
+        <div class="linha"><span class="lbl">Salário Base</span><span class="val">${brl(f.salarioBase)}</span></div>
+      </div>
+
+      <div class="bloco">
+        <div class="bloco-titulo">Demonstrativo — ${MESES[mes-1]}/${ano}</div>
+        <div class="linha">
+          <span class="lbl">${isMens?`Salário proporcional (${dt}/${du} dias)`:`Pagamento (${dt} ${f.tipoSalario==='horista'?'horas':'dias'})`}</span>
+          <span class="val">${brl(r.salProp)}</span>
+        </div>
+        ${r.he50v>0?`<div class="linha"><span class="lbl">H. Extra 50% — ${entry.he50}h × ${brl(r.vh)} × 1,5</span><span class="val">${brl(r.he50v)}</span></div>`:''}
+        ${r.he100v>0?`<div class="linha"><span class="lbl">H. Extra 100% — ${entry.he100}h × ${brl(r.vh)} × 2,0</span><span class="val">${brl(r.he100v)}</span></div>`:''}
+        ${r.dsr>0?`<div class="linha"><span class="lbl">DSR ${entry.dsrManual?'(informado)':'(calculado sobre H.E.)'}</span><span class="val">${brl(r.dsr)}</span></div>`:''}
+        <div class="linha" style="font-weight:700;background:#f5f5f5;padding:4px 0">
+          <span class="lbl">Salário Bruto</span><span class="val">${brl(r.bruto)}</span>
+        </div>
+      </div>
+
+      ${r.totalAdt>0?`<div class="bloco" style="border-color:#d97706">
+        <div class="bloco-titulo" style="color:#d97706">Adiantamentos a Descontar</div>
+        ${(entry.adts||[]).map(a=>`<div class="linha">
+          <span class="lbl">${a.data?new Date(a.data+'T12:00:00').toLocaleDateString('pt-BR'):''} ${a.obs?'· '+esc(a.obs):''}</span>
+          <span class="val" style="color:#d97706">− ${brl(a.valor)}</span>
+        </div>`).join('')}
+        <div class="linha" style="font-weight:700"><span class="lbl">Total descontado</span><span class="val" style="color:#d97706">− ${brl(r.totalAdt)}</span></div>
+      </div>`:''}
+
+      <div class="total-box">
+        <div class="tot-lbl">Total Líquido a Pagar</div>
+        <div class="tot-val">${brl(r.aPagar)}</div>
+        <div class="tot-ext">${valorExtenso(r.aPagar)}</div>
+      </div>
+
+      ${f.dataAdmissao||true?`<div class="bloco" style="border-color:#7c3aed">
+        <div class="bloco-titulo" style="color:#7c3aed">Provisões e Custo do Empregador (referência)</div>
+        ${f.dataAdmissao?`<div class="linha"><span class="lbl">13º proporcional (${r.av13}/12 avos)</span><span class="val">${brl(r.dec13)}</span></div>`:''}
+        ${f.dataAdmissao?`<div class="linha"><span class="lbl">Férias + 1/3 (${r.avF}/12 avos)</span><span class="val">${brl(r.ferTotal)}</span></div>`:''}
+        <div class="linha"><span class="lbl">FGTS 8% (custo empresa)</span><span class="val">${brl(r.fgts)}</span></div>
+      </div>`:''}
+
+      <div class="destaque">
+        Declaro ter recebido a importância líquida de <strong>${brl(r.aPagar)}</strong>
+        (${valorExtenso(r.aPagar)}) referente ao salário do mês de <strong>${MESES[mes-1]}/${ano}</strong>.
+        ${r.totalAdt>0?`Já haviam sido pagos adiantamentos no valor de ${brl(r.totalAdt)}.`:''}
+      </div>
+
+      ${entry.observacao?`<div class="destaque" style="border-left-color:#6b7280;font-size:11px">Obs.: ${esc(entry.observacao)}</div>`:''}
+
+      <div class="assinaturas">
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(f.nome)}</div>
+          <div class="cargo-assina">Funcionário${f.funcao?' · '+f.funcao:''}</div>
+        </div>
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(ea.responsavel||ea.nome)}</div>
+          <div class="cargo-assina">Empregador · ${esc(ea.nome)}</div>
+        </div>
+      </div>
+
+      <div class="rodape">
+        Emitido em ${new Date().toLocaleDateString('pt-BR')} · ${esc(ea.nome)}
+        · Sem vínculo empregatício formal · Valores brutos sem desconto de INSS/IRRF
+      </div>
+    </div>
+  </body></html>`);
+  w.document.close();
+}
 
 // ══════════════════════════════════════════
 // INIT
