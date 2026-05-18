@@ -197,7 +197,7 @@ let tabAt=1, mes=hoje.getMonth()+1, ano=hoje.getFullYear();
 let empFA=false, empEId=null;
 let funcFA=false, funcEId=null;
 let funcExp=null;
-let adtFId=null, folhaFId=null, ferFId=null, dec13FId=null;
+let adtFId=null, folhaFId=null, ferFId=null, dec13FId=null, rescFId=null;
 let cnpjT=null;
 
 // ══════════════════════════════════════════
@@ -225,6 +225,11 @@ function setMesFunc(eid,entry){
 // Férias por empresa
 const getFers=(eid)=>ls.g(`fp_fer_${eid}`)||[];
 const setFers=(eid,v)=>ls.s(`fp_fer_${eid}`,v);
+// Rescisão por empresa (uma por funcionário)
+const getRescs=(eid)=>ls.g(`fp_resc_${eid}`)||[];
+const setRescs=(eid,v)=>ls.s(`fp_resc_${eid}`,v);
+const getRescFunc=(eid,fid)=>getRescs(eid).find(r=>r.fid===fid)||null;
+function setRescFunc(eid,resc){const l=getRescs(eid).filter(r=>r.fid!==resc.fid);l.push(resc);setRescs(eid,l);}
 
 // ══════════════════════════════════════════
 // HELPERS
@@ -303,6 +308,46 @@ function calc13(f){
 function getDec13Nov(eid,fid){
   const data=ls.g(`fp_m_${eid}_${ano}_11`)||[];
   return (data.find(x=>x.fid===fid)||{}).dec13?.valor||0;
+}
+// Avos de férias até uma data específica (período aquisitivo)
+function calcAvosF_data(adm, dataRef){
+  if(!adm) return 0;
+  const da=new Date(adm+'T12:00:00'), dr=new Date(dataRef+'T12:00:00');
+  const m=(dr.getFullYear()-da.getFullYear())*12+(dr.getMonth()-da.getMonth());
+  return m<0?0:m%12;
+}
+// Avos de 13º até uma data específica
+function calcAvos13_data(adm, dataRef){
+  if(!adm) return 0;
+  const da=new Date(adm+'T12:00:00'), dr=new Date(dataRef+'T12:00:00');
+  const aRef=dr.getFullYear(); let av=0;
+  for(let m=0;m<12;m++){
+    const fim=new Date(aRef,m+1,0);
+    if(fim>dr) continue;
+    if(da>fim) continue;
+    const dia=(da.getFullYear()===aRef&&da.getMonth()===m)?da.getDate():1;
+    if(fim.getDate()-dia+1>=15) av++;
+  }
+  // verifica mês da rescisão
+  const mResc=dr.getMonth();
+  const fimMes=new Date(aRef,mResc+1,0);
+  const diaIni=(da.getFullYear()===aRef&&da.getMonth()===mResc)?da.getDate():1;
+  if(dr.getDate()-diaIni+1>=15) av++;
+  return Math.min(av,12);
+}
+function calcResc(f, dataRescisao, aviso){
+  const sal=num(f.salarioBase); if(!dataRescisao) return null;
+  const dr=new Date(dataRescisao+'T12:00:00');
+  const diasTrab=dr.getDate();
+  const saldoSal=(sal/30)*diasTrab;
+  const avos13=calcAvos13_data(f.dataAdmissao, dataRescisao);
+  const dec13=sal>0?sal*avos13/12:0;
+  const avosF=calcAvosF_data(f.dataAdmissao, dataRescisao);
+  const ferias=sal>0?(sal*avosF/12)*(4/3):0;
+  const avisoVal=aviso==='ind'?sal:0;
+  const total=saldoSal+dec13+ferias+avisoVal;
+  const fgts=total*0.08;
+  return {saldoSal,diasTrab,dec13,avos13,ferias,avosF,avisoVal,total,fgts};
 }
 
 // ══════════════════════════════════════════
@@ -565,6 +610,7 @@ function funcCard(f, eid){
       <div class="func-acts">
         <button class="btn btn-amber btn-sm" onclick="aAdt('${f.id}','${eid}')">💰 Adiantamento</button>
         <button class="btn btn-sky btn-sm" onclick="aFolha('${f.id}','${eid}')">📋 Rodar Folha</button>
+        <button class="btn btn-danger btn-sm" style="background:var(--red);color:#fff" onclick="aResc('${f.id}','${eid}')">🚪 Rescisão</button>
         <button class="btn btn-ghost btn-icon" onclick="eFuncId('${f.id}')">✏️</button>
         <button class="btn btn-danger btn-icon" onclick="dFunc('${f.id}','${eid}')">🗑️</button>
         <button class="btn btn-ghost btn-icon" onclick="togExp('${f.id}')" title="${exp?'Fechar':'Ver detalhes'}">
@@ -681,6 +727,34 @@ function funcCard(f, eid){
         </div>
         <button class="btn btn-amber btn-sm" onclick="aDec13('${f.id}','${eid}')">🎄 Rodar ${parcNum}ª Parcela</button>`;
       }
+    }
+
+    // ── Rescisão ─────────────────────────────
+    h+=`<div class="sdiv" style="margin-top:16px;border-color:#fca5a5;color:var(--red)">🚪 Rescisão de Contrato</div>`;
+    const resc=getRescFunc(eid,f.id);
+    if(rescFId===f.id){
+      h+=rescForm(f,eid,resc);
+    } else if(resc){
+      const dr=new Date(resc.dataRescisao+'T12:00:00').toLocaleDateString('pt-BR');
+      h+=`<div style="background:var(--red-light);border:1px solid #fca5a5;border-radius:8px;padding:12px;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:6px">Rescindido em ${dr} — ${esc(resc.motivo)}</div>
+        <div class="calc-wrap"><table class="ctab">
+          <tr><td>Saldo de salário <span class="cbadge">${resc.diasTrab} dias</span></td><td>${brl(resc.saldoSal)}</td></tr>
+          <tr><td>13º proporcional <span class="cbadge a">${resc.avos13}/12 avos</span></td><td>${brl(resc.dec13)}</td></tr>
+          <tr><td>Férias + 1/3 <span class="cbadge a">${resc.avosF}/12 avos</span></td><td>${brl(resc.ferias)}</td></tr>
+          ${resc.avisoVal>0?`<tr><td>Aviso prévio indenizado</td><td>${brl(resc.avisoVal)}</td></tr>`:''}
+          <tr class="ctotal"><td>Total da rescisão</td><td>${brl(resc.total)}</td></tr>
+          <tr class="cfgts"><td>FGTS 8% <span class="cbadge p">referência</span></td><td>${brl(resc.fgts)}</td></tr>
+        </table></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-outline btn-sm" onclick="aResc('${f.id}','${eid}')">✏️ Editar</button>
+        <button class="btn btn-primary btn-sm" onclick="printResc('${f.id}','${eid}')">🖨️ Recibo de Rescisão</button>
+        <button class="btn btn-danger btn-sm" onclick="dResc('${f.id}','${eid}')">🗑️ Remover</button>
+      </div>`;
+    } else {
+      h+=`<p style="font-size:12px;color:var(--gray-400);margin-bottom:10px">Nenhuma rescisão registrada.</p>
+        <button class="btn btn-sm" style="background:var(--red);color:#fff" onclick="aResc('${f.id}','${eid}')">🚪 Registrar Rescisão</button>`;
     }
 
     h+=`</div>`;
@@ -822,7 +896,7 @@ function togPago(fid,eid){
   entry.pago=!entry.pago; setMesFunc(eid,entry); rFunc();
 }
 
-function togExp(fid){ funcExp=funcExp===fid?null:fid; adtFId=null; folhaFId=null; ferFId=null; dec13FId=null; rFunc(); }
+function togExp(fid){ funcExp=funcExp===fid?null:fid; adtFId=null; folhaFId=null; ferFId=null; dec13FId=null; rescFId=null; rFunc(); }
 function aFuncF(){ funcFA=true; funcEId=null; rFunc(); setTimeout(()=>document.getElementById('fNome')?.focus(),50); }
 function cFuncF(){ funcFA=false; funcEId=null; rFunc(); }
 function eFuncId(id){ funcEId=id; funcFA=false; funcExp=null; adtFId=null; folhaFId=null; rFunc(); }
@@ -962,6 +1036,152 @@ function tabelaCalc(r,f,entry){
 function tipoL(t){ return t==='diarista'?'Diarista':t==='horista'?'Horista':'Mensalista'; }
 function oMes(v){ mes=Number(v); funcExp=null; adtFId=null; folhaFId=null; if(tabAt===2)rFunc(); else rFolha(); }
 function oAno(v){ ano=Number(v); funcExp=null; adtFId=null; folhaFId=null; if(tabAt===2)rFunc(); else rFolha(); }
+
+// ══════════════════════════════════════════
+// RESCISÃO
+// ══════════════════════════════════════════
+function rescForm(f,eid,resc){
+  const dataHoje=new Date().toISOString().slice(0,10);
+  return `<div class="fbox" style="border-color:#fca5a5;background:var(--red-light)">
+    <div class="ftitle" style="color:var(--red)">🚪 Rescisão de Contrato — ${esc(f.nome)}</div>
+    <div class="fg3">
+      <div class="ff"><label>Data da Rescisão *</label>
+        <input type="date" id="rData" value="${resc?.dataRescisao||dataHoje}" oninput="pvResc('${f.id}','${eid}')" /></div>
+      <div class="ff"><label>Motivo</label>
+        <select id="rMotivo">
+          <option value="Dispensa sem justa causa" ${(!resc||resc.motivo==='Dispensa sem justa causa')?'selected':''}>Dispensa sem justa causa</option>
+          <option value="Dispensa com justa causa" ${resc?.motivo==='Dispensa com justa causa'?'selected':''}>Dispensa com justa causa</option>
+          <option value="Pedido de demissão" ${resc?.motivo==='Pedido de demissão'?'selected':''}>Pedido de demissão</option>
+          <option value="Acordo entre partes" ${resc?.motivo==='Acordo entre partes'?'selected':''}>Acordo entre partes</option>
+          <option value="Término de contrato" ${resc?.motivo==='Término de contrato'?'selected':''}>Término de contrato</option>
+        </select></div>
+      <div class="ff"><label>Aviso prévio</label>
+        <select id="rAviso" onchange="pvResc('${f.id}','${eid}')">
+          <option value="nenhum" ${(!resc||resc.aviso==='nenhum')?'selected':''}>Sem aviso prévio</option>
+          <option value="trab" ${resc?.aviso==='trab'?'selected':''}>Aviso trabalhado (30 dias)</option>
+          <option value="ind" ${resc?.aviso==='ind'?'selected':''}>Aviso indenizado pelo empregador</option>
+        </select></div>
+    </div>
+    <div id="pvRescBox" style="margin-bottom:10px;"></div>
+    <div class="fa">
+      <button class="btn btn-ghost btn-sm" onclick="cResc()">✕ Cancelar</button>
+      <button class="btn btn-sm" style="background:var(--red);color:#fff" onclick="sResc('${f.id}','${eid}')">💾 Confirmar Rescisão</button>
+    </div></div>`;
+}
+function pvResc(fid,eid){
+  const box=document.getElementById('pvRescBox'); if(!box)return;
+  const f=getFuncs(eid).find(x=>x.id===fid); if(!f)return;
+  const data=gv('rData'), aviso=gv('rAviso'); if(!data)return;
+  const r=calcResc(f,data,aviso); if(!r)return;
+  box.innerHTML=`<div class="calc-wrap"><table class="ctab">
+    <tr class="csec"><td colspan="2">📊 Verbas rescisórias</td></tr>
+    <tr><td>Saldo de salário <span class="cbadge">${r.diasTrab} dias de ${new Date(data+'T12:00:00').toLocaleString('pt-BR',{month:'long'})}</span></td><td>${brl(r.saldoSal)}</td></tr>
+    <tr><td>13º proporcional <span class="cbadge a">${r.avos13}/12 avos</span></td><td>${brl(r.dec13)}</td></tr>
+    <tr><td>Férias + 1/3 <span class="cbadge a">${r.avosF}/12 avos</span></td><td>${brl(r.ferias)}</td></tr>
+    ${r.avisoVal>0?`<tr><td>Aviso prévio indenizado (30 dias)</td><td>${brl(r.avisoVal)}</td></tr>`:''}
+    <tr class="ctotal"><td>✅ Total da rescisão</td><td>${brl(r.total)}</td></tr>
+    <tr class="cfgts"><td>FGTS 8% <span class="cbadge p">custo empresa — referência</span></td><td>${brl(r.fgts)}</td></tr>
+  </table></div>`;
+}
+function aResc(fid,eid){ rescFId=fid; funcExp=fid; adtFId=null; folhaFId=null; ferFId=null; dec13FId=null; rFunc(); setTimeout(()=>pvResc(fid,eid),80); }
+function cResc(){ rescFId=null; rFunc(); }
+function sResc(fid,eid){
+  const f=getFuncs(eid).find(x=>x.id===fid); if(!f)return;
+  const data=gv('rData'); if(!data){alert('Informe a data da rescisão.');return;}
+  const aviso=gv('rAviso'), motivo=gv('rMotivo');
+  const r=calcResc(f,data,aviso); if(!r)return;
+  setRescFunc(eid,{fid,...r,dataRescisao:data,motivo,aviso,pago:false});
+  rescFId=null; rFunc();
+}
+function dResc(fid,eid){
+  if(!confirm('Remover rescisão?'))return;
+  setRescs(eid,getRescs(eid).filter(r=>r.fid!==fid)); rFunc();
+}
+
+function printResc(fid,eid){
+  const ea=getAtiva()||getEmps().find(e=>e.id===eid)||{nome:'—'};
+  const f=getFuncs(eid).find(x=>x.id===fid); if(!f)return;
+  const resc=getRescFunc(eid,fid); if(!resc){alert('Rescisão não encontrada.');return;}
+  const dataAdm=f.dataAdmissao?new Date(f.dataAdmissao+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  const dataResc=new Date(resc.dataRescisao+'T12:00:00').toLocaleDateString('pt-BR');
+  const w=window.open('','_blank','width=750,height=1000');
+  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Rescisão — ${esc(f.nome)}</title>${estiloRecibo()}</head><body>
+    <div class="rec">
+      <button class="no-print" onclick="window.print()" style="position:absolute;top:12px;right:12px;padding:6px 14px;background:#dc2626;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">🖨️ Imprimir</button>
+      <div class="rec-header">
+        <h1>TERMO DE RESCISÃO DE CONTRATO</h1>
+        <h2>${esc(resc.motivo)}</h2>
+        <div class="empresa">${esc(ea.nome)}</div>
+        ${ea.cnpj?`<div class="cnpj">CNPJ: ${esc(ea.cnpj)}</div>`:''}
+        ${ea.responsavel?`<div class="cnpj">Responsável: ${esc(ea.responsavel)}</div>`:''}
+      </div>
+
+      <div class="bloco">
+        <div class="bloco-titulo">Dados do Funcionário</div>
+        <div class="linha"><span class="lbl">Nome</span><span class="val">${esc(f.nome)}</span></div>
+        ${f.funcao?`<div class="linha"><span class="lbl">Função</span><span class="val">${esc(f.funcao)}</span></div>`:''}
+        ${f.dataAdmissao?`<div class="linha"><span class="lbl">Admissão</span><span class="val">${dataAdm}</span></div>`:''}
+        <div class="linha"><span class="lbl">Rescisão</span><span class="val">${dataResc}</span></div>
+        <div class="linha"><span class="lbl">Aviso prévio</span><span class="val">${resc.aviso==='trab'?'Trabalhado (30 dias)':resc.aviso==='ind'?'Indenizado pelo empregador':'Sem aviso prévio'}</span></div>
+        <div class="linha"><span class="lbl">Salário Base</span><span class="val">${brl(f.salarioBase)}</span></div>
+      </div>
+
+      <div class="bloco">
+        <div class="bloco-titulo">Verbas Rescisórias</div>
+        <div class="linha">
+          <span class="lbl">Saldo de salário (${resc.diasTrab} dias trabalhados)</span>
+          <span class="val">${brl(resc.saldoSal)}</span>
+        </div>
+        <div class="linha" style="font-size:11px;color:#555;padding-left:10px">
+          <span class="lbl">${brl(f.salarioBase)} ÷ 30 × ${resc.diasTrab} dias</span><span class="val"></span>
+        </div>
+        <div class="linha">
+          <span class="lbl">13º salário proporcional (${resc.avos13}/12 avos)</span>
+          <span class="val">${brl(resc.dec13)}</span>
+        </div>
+        <div class="linha">
+          <span class="lbl">Férias proporcionais + 1/3 (${resc.avosF}/12 avos)</span>
+          <span class="val">${brl(resc.ferias)}</span>
+        </div>
+        ${resc.avisoVal>0?`<div class="linha"><span class="lbl">Aviso prévio indenizado (30 dias)</span><span class="val">${brl(resc.avisoVal)}</span></div>`:''}
+      </div>
+
+      <div class="total-box">
+        <div class="tot-lbl">Total a Receber</div>
+        <div class="tot-val">${brl(resc.total)}</div>
+        <div class="tot-ext">${valorExtenso(resc.total)}</div>
+      </div>
+
+      <div class="bloco" style="border-color:#7c3aed">
+        <div class="bloco-titulo" style="color:#7c3aed">Referência — Custo do Empregador</div>
+        <div class="linha"><span class="lbl">FGTS 8% sobre verbas rescisórias</span><span class="val">${brl(resc.fgts)}</span></div>
+      </div>
+
+      <div class="destaque">
+        Declaro ter recebido a importância de <strong>${brl(resc.total)}</strong> (${valorExtenso(resc.total)})
+        referente às verbas rescisórias decorrentes de <strong>${esc(resc.motivo)}</strong>
+        com data de desligamento em <strong>${dataResc}</strong>.
+        ${f.dataAdmissao?`Tempo de serviço: de ${dataAdm} a ${dataResc}.`:''}
+      </div>
+
+      <div class="assinaturas">
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(f.nome)}</div>
+          <div class="cargo-assina">Funcionário${f.funcao?' · '+f.funcao:''}</div>
+        </div>
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(ea.responsavel||ea.nome)}</div>
+          <div class="cargo-assina">Empregador · ${esc(ea.nome)}</div>
+        </div>
+      </div>
+
+      <div class="rodape">
+        Emitido em ${new Date().toLocaleDateString('pt-BR')} · ${esc(ea.nome)} · Sem desconto de INSS/IRRF
+      </div>
+    </div></body></html>`);
+  w.document.close();
+}
 
 // ══════════════════════════════════════════
 // FÉRIAS
