@@ -259,14 +259,26 @@ function calcAvosF(adm){
 }
 
 function calcEntry(f, entry){
-  const sal=num(f.salarioBase), du=num(entry.diasUteis||22), dt=num(entry.diasTrab||0);
+  const sal=num(f.salarioBase);
   const isMens=f.tipoSalario==='mensalista'||!f.tipoSalario;
-  const salProp = isMens ? (sal/du)*dt : sal*dt;
-  const vh = isMens ? sal/du/(num(f.cargaHoraria)||8) : num(entry.valorHora||0);
+  const prop=isMens&&!!entry.mesProporcional;
+
+  let salProp, vh, dt;
+  if(isMens){
+    dt=prop?num(entry.diasTrab||0):30;
+    salProp=prop?(sal/30)*num(entry.diasTrab||0):sal;
+    vh=sal/30/(num(f.cargaHoraria)||8);
+  } else {
+    dt=num(entry.diasTrab||0);
+    salProp=sal*dt;
+    vh=num(entry.valorHora||0);
+  }
+
   const he50v  = vh*(num(entry.he50)||0)*1.5;
   const he100v = vh*(num(entry.he100)||0)*2.0;
   const totalHE= he50v+he100v;
-  const dsrAuto= dt>0&&totalHE>0 ? (totalHE/dt)*(num(entry.diasDSR)||4) : 0;
+  const dsrBase= (isMens&&!prop) ? 30 : dt;
+  const dsrAuto= dsrBase>0&&totalHE>0 ? (totalHE/dsrBase)*(num(entry.diasDSR)||4) : 0;
   const dsr    = entry.dsrManual ? num(entry.dsrValor) : dsrAuto;
   const totalAdt= (entry.adts||[]).reduce((s,a)=>s+num(a.valor),0);
   const bruto  = salProp+totalHE+dsr;
@@ -276,7 +288,7 @@ function calcEntry(f, entry){
   const avF    = calcAvosF(f.dataAdmissao);
   const ferTotal= sal>0 ? (sal*avF/12)*(4/3) : 0;
   const fgts   = bruto*0.08;
-  return {salProp,vh,he50v,he100v,totalHE,dsr,dsrAuto,totalAdt,bruto,aPagar,av13,dec13,avF,ferTotal,fgts};
+  return {salProp,vh,he50v,he100v,totalHE,dsr,dsrAuto,totalAdt,bruto,aPagar,av13,dec13,avF,ferTotal,fgts,dt,prop};
 }
 
 function calcFer(f,dias){
@@ -713,18 +725,30 @@ function folhaForm(f,eid,entry){
   const isMens=f.tipoSalario==='mensalista'||!f.tipoSalario;
   return `<div class="fbox" style="border-color:var(--sky);background:var(--sky-light)">
     <div class="ftitle">📋 Folha Mensal — ${esc(f.nome)} · ${MESES[mes-1]}/${ano}</div>
-    <div class="sdiv">📅 Dias</div>
-    <div class="fg4">
+    <div class="sdiv">📅 Período</div>
+    <div class="fg2" style="margin-bottom:10px">
       ${isMens?`
-      <div class="ff"><label>Dias úteis no mês</label><input type="number" id="fDu" min="1" max="31" value="${entry.diasUteis||22}" oninput="pvFolha('${f.id}','${eid}')" /></div>
-      <div class="ff"><label>Dias trabalhados</label><input type="number" id="fDt" min="0" max="31" value="${entry.diasTrab||''}" oninput="pvFolha('${f.id}','${eid}')" /></div>
+      <div class="ff"><label>Tipo de mês</label>
+        <select id="fProp" onchange="oFolhaProp('${f.id}','${eid}')">
+          <option value="0" ${!entry.mesProporcional?'selected':''}>Mês completo — 30 dias</option>
+          <option value="1" ${entry.mesProporcional?'selected':''}>Proporcional — admissão / rescisão</option>
+        </select></div>
+      <div class="ff" id="fDtRow" style="${!entry.mesProporcional?'display:none':''}">
+        <label>Dias trabalhados (de 30) *</label>
+        <input type="number" id="fDt" min="1" max="30" placeholder="Ex: 15" value="${entry.diasTrab||''}" oninput="pvFolha('${f.id}','${eid}')" />
+      </div>
+      <div class="ff" style="display:none"><input id="fDu" value="30" /><input id="fVh" value="0" /></div>
+      `:`
+      <div class="ff"><label>${f.tipoSalario==='horista'?'Horas':'Dias'} trabalhados</label>
+        <input type="number" id="fDt" min="0" step="0.5" value="${entry.diasTrab||''}" oninput="pvFolha('${f.id}','${eid}')" /></div>
+      <div class="ff"><label>Valor hora extra (R$)</label>
+        <input type="number" id="fVh" min="0" step="0.01" placeholder="0,00" value="${entry.valorHora||''}" oninput="pvFolha('${f.id}','${eid}')" /></div>
+      <div class="ff" style="display:none"><input id="fDu" value="30" /><input id="fProp" value="0" /></div>
+      `}
+    </div>
+    <div class="fg2">
       <div class="ff"><label>Dias de DSR no mês</label><input type="number" id="fDsr" min="0" max="10" value="${entry.diasDSR||4}" oninput="pvFolha('${f.id}','${eid}')" /></div>
       <div class="ff"><label>Carga horária/dia</label><input type="number" id="fCh" min="1" max="12" value="${f.cargaHoraria||8}" oninput="pvFolha('${f.id}','${eid}')" /></div>
-      `:`
-      <div class="ff"><label>${f.tipoSalario==='horista'?'Horas':'Dias'} trabalhados</label><input type="number" id="fDt" min="0" step="0.5" value="${entry.diasTrab||''}" oninput="pvFolha('${f.id}','${eid}')" /></div>
-      <div class="ff"><label>Valor hora extra (R$)</label><input type="number" id="fVh" min="0" step="0.01" placeholder="0,00" value="${entry.valorHora||''}" oninput="pvFolha('${f.id}','${eid}')" /></div>
-      <div class="ff" style="display:none"><input id="fDu" value="22" /><input id="fDsr" value="4" /><input id="fCh" value="8" /></div>
-      `}
     </div>
     <div class="sdiv">⏰ Horas Extras</div>
     <div class="fg4">
@@ -752,14 +776,25 @@ function folhaForm(f,eid,entry){
 function oDsrM(){ const m=gv('fDsrM')==='1'; const w=document.getElementById('fDsrVW'); if(w)w.style.display=m?'':'none'; }
 
 function folhaSnap(f){
+  const isMens=f.tipoSalario==='mensalista'||!f.tipoSalario;
   return {
-    diasUteis:  num(gv('fDu')||22), diasTrab:num(gv('fDt')),
-    diasDSR:    num(gv('fDsr')||4), cargaHoraria:num(gv('fCh')||f.cargaHoraria||8),
+    mesProporcional: isMens ? gv('fProp')==='1' : false,
+    diasUteis:  30,
+    diasTrab:   num(gv('fDt')),
+    diasDSR:    num(gv('fDsr')||4),
+    cargaHoraria: num(gv('fCh')||f.cargaHoraria||8),
     valorHora:  num(gv('fVh')),
     he50:       num(gv('fHe50')), he100:num(gv('fHe100')),
     dsrManual:  gv('fDsrM')==='1', dsrValor:num(gv('fDsrV')),
     observacao: gv('fObsM'),
   };
+}
+
+function oFolhaProp(fid,eid){
+  const prop=gv('fProp')==='1';
+  const row=document.getElementById('fDtRow');
+  if(row) row.style.display=prop?'':'none';
+  pvFolha(fid,eid);
 }
 
 function pvFolha(fid,eid){
@@ -904,7 +939,12 @@ function tabelaCalc(r,f,entry){
   const du=num(entry.diasUteis||22), dt=num(entry.diasTrab||0);
   return `<table class="ctab">
     <tr class="csec"><td colspan="2">📅 Competência ${MESES[mes-1]}/${ano}</td></tr>
-    <tr><td>${isMens?`Salário proporcional <span class="cbadge">${dt}/${du} dias</span>`:`Pagamento (${dt} ${f.tipoSalario==='horista'?'horas':'dias'} × ${brl(f.salarioBase)})`}</td><td>${brl(r.salProp)}</td></tr>
+    <tr><td>${isMens
+      ? r.prop
+        ? `Salário proporcional <span class="cbadge">${r.dt}/30 dias</span>`
+        : `Salário mensal <span class="cbadge">30 dias</span>`
+      : `Pagamento (${r.dt} ${f.tipoSalario==='horista'?'horas':'dias'} × ${brl(f.salarioBase)})`
+    }</td><td>${brl(r.salProp)}</td></tr>
     ${r.he50v>0?`<tr><td>H.E. 50% (${entry.he50}h × ${brl(r.vh)} × 1,5)</td><td>${brl(r.he50v)}</td></tr>`:''}
     ${r.he100v>0?`<tr><td>H.E. 100% (${entry.he100}h × ${brl(r.vh)} × 2,0)</td><td>${brl(r.he100v)}</td></tr>`:''}
     ${r.dsr>0?`<tr><td>DSR ${entry.dsrManual?'(informado)':'(sobre H.E.)'}</td><td>${brl(r.dsr)}</td></tr>`:''}
@@ -1170,7 +1210,8 @@ function printFolha(fid, eid){
 
   const dataAdm=f.dataAdmissao?new Date(f.dataAdmissao+'T12:00:00').toLocaleDateString('pt-BR'):'—';
   const isMens=f.tipoSalario==='mensalista'||!f.tipoSalario;
-  const du=num(entry.diasUteis||22), dt=num(entry.diasTrab||0);
+  const prop=isMens&&!!entry.mesProporcional;
+  const dt=prop?num(entry.diasTrab||0):30;
 
   const w=window.open('','_blank','width=750,height=1000');
   w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
@@ -1197,7 +1238,10 @@ function printFolha(fid, eid){
       <div class="bloco">
         <div class="bloco-titulo">Demonstrativo — ${MESES[mes-1]}/${ano}</div>
         <div class="linha">
-          <span class="lbl">${isMens?`Salário proporcional (${dt}/${du} dias)`:`Pagamento (${dt} ${f.tipoSalario==='horista'?'horas':'dias'})`}</span>
+          <span class="lbl">${isMens
+            ? prop ? `Salário proporcional (${dt}/30 dias)` : `Salário mensal (30 dias)`
+            : `Pagamento (${dt} ${f.tipoSalario==='horista'?'horas':'dias'})`
+          }</span>
           <span class="val">${brl(r.salProp)}</span>
         </div>
         ${r.he50v>0?`<div class="linha"><span class="lbl">H. Extra 50% — ${entry.he50}h × ${brl(r.vh)} × 1,5</span><span class="val">${brl(r.he50v)}</span></div>`:''}
@@ -1508,7 +1552,8 @@ function printTodos(){
     const entry=getMesFunc(eid,f.id);
     const r=calcEntry(f,entry);
     const isMens=f.tipoSalario==='mensalista'||!f.tipoSalario;
-    const du=num(entry.diasUteis||22),dt=num(entry.diasTrab||0);
+    const prop=isMens&&!!entry.mesProporcional;
+    const dt=prop?num(entry.diasTrab||0):isMens?30:num(entry.diasTrab||0);
     pgs+=`<div class="rec" style="${idx>0?'page-break-before:always;margin-top:20px':''}">
       <div class="rec-header">
         <h1>RECIBO DE PAGAMENTO DE SALÁRIO</h1>
@@ -1525,7 +1570,10 @@ function printTodos(){
       </div>
       <div class="bloco">
         <div class="bloco-titulo">Demonstrativo — ${MESES[mes-1]}/${ano}</div>
-        <div class="linha"><span class="lbl">${isMens?`Salário prop. (${dt}/${du} dias)`:`Pagamento (${dt} ${f.tipoSalario==='horista'?'horas':'dias'})`}</span><span class="val">${brl(r.salProp)}</span></div>
+        <div class="linha"><span class="lbl">${isMens
+          ? prop ? `Salário proporcional (${dt}/30 dias)` : `Salário mensal (30 dias)`
+          : `Pagamento (${dt} ${f.tipoSalario==='horista'?'horas':'dias'})`
+        }</span><span class="val">${brl(r.salProp)}</span></div>
         ${r.he50v>0?`<div class="linha"><span class="lbl">H.Extra 50% (${entry.he50}h × 1,5)</span><span class="val">${brl(r.he50v)}</span></div>`:''}
         ${r.he100v>0?`<div class="linha"><span class="lbl">H.Extra 100% (${entry.he100}h × 2,0)</span><span class="val">${brl(r.he100v)}</span></div>`:''}
         ${r.dsr>0?`<div class="linha"><span class="lbl">DSR</span><span class="val">${brl(r.dsr)}</span></div>`:''}
