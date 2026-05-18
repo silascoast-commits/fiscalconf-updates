@@ -270,9 +270,10 @@ function calcEntry(f, entry){
 
   let salProp, vh, dt;
   if(isMens){
-    dt=prop?num(entry.diasTrab||0):30;
-    salProp=prop?(sal/30)*num(entry.diasTrab||0):sal;
-    vh=sal/30/(num(f.cargaHoraria)||8);
+    const dim=diasNoMes(mes,ano); // dias reais do mês vigente
+    dt=prop?num(entry.diasTrab||0):dim;
+    salProp=prop?(sal/dim)*num(entry.diasTrab||0):sal;
+    vh=sal/dim/(num(f.cargaHoraria)||8);
   } else {
     dt=num(entry.diasTrab||0);
     salProp=sal*dt;
@@ -282,7 +283,7 @@ function calcEntry(f, entry){
   const he50v  = vh*(num(entry.he50)||0)*1.5;
   const he100v = vh*(num(entry.he100)||0)*2.0;
   const totalHE= he50v+he100v;
-  const dsrBase= (isMens&&!prop) ? 30 : dt;
+  const dsrBase= (isMens&&!prop) ? diasNoMes(mes,ano) : dt;
   const dsrAuto= dsrBase>0&&totalHE>0 ? (totalHE/dsrBase)*(num(entry.diasDSR)||4) : 0;
   const dsr    = entry.dsrManual ? num(entry.dsrValor) : dsrAuto;
   const totalAdt= (entry.adts||[]).reduce((s,a)=>s+num(a.valor),0);
@@ -296,9 +297,14 @@ function calcEntry(f, entry){
   return {salProp,vh,he50v,he100v,totalHE,dsr,dsrAuto,totalAdt,bruto,aPagar,av13,dec13,avF,ferTotal,fgts,dt,prop};
 }
 
-function calcFer(f,dias){
-  const sal=num(f.salarioBase),vd=sal/30,vf=vd*dias,ad=vf/3;
-  return {vd,vf,ad,total:vf+ad};
+function calcFer(f,dias,dataInicio){
+  const sal=num(f.salarioBase);
+  // Usa os dias reais do mês de início das férias
+  let dim=30;
+  if(dataInicio){const d=new Date(dataInicio+'T12:00:00');dim=diasNoMes(d.getMonth()+1,d.getFullYear());}
+  else{dim=diasNoMes(mes,ano);}
+  const vd=sal/dim,vf=vd*dias,ad=vf/3;
+  return {vd,vf,ad,total:vf+ad,dim};
 }
 function calc13(f){
   const sal=num(f.salarioBase),avos=calcAvos13(f.dataAdmissao,ano);
@@ -354,23 +360,22 @@ function calcResc(f, dataRescisao, motivo, aviso, ferVencPer, fgtsSaldoInput){
   const isAcordo  =motivo==='Acordo entre partes';
   const isTermino =motivo==='Término de contrato';
 
-  // Saldo de salário: dias trabalhados no mês da rescisão
+  // Saldo de salário: dias trabalhados / dias reais do mês da rescisão
   const diasTrab=dr.getDate();
-  const saldoSal=(sal/30)*diasTrab;
+  const dimResc=diasNoMes(dr.getMonth()+1, dr.getFullYear());
+  const saldoSal=(sal/dimResc)*diasTrab;
 
   // Aviso prévio proporcional
   const diasAviso=calcDiasAviso(f.dataAdmissao, dataRescisao);
   let avisoVal=0, avisoDias=0;
 
   if((isSemJusta||isTermino)&&aviso==='ind'){
-    // Indenizado: paga aviso proporcional e estende período para 13º/férias
-    avisoVal=(sal/30)*diasAviso; avisoDias=diasAviso;
+    avisoVal=(sal/dimResc)*diasAviso; avisoDias=diasAviso;
   } else if(isAcordo&&aviso==='ind'){
-    // Acordo art. 484-A: 50% do aviso indenizado
-    avisoVal=(sal/30)*diasAviso*0.5; avisoDias=Math.floor(diasAviso/2);
+    avisoVal=(sal/dimResc)*diasAviso*0.5; avisoDias=Math.floor(diasAviso/2);
   } else if(isDemissao&&aviso==='desc'){
-    // Pedido de demissão sem cumprir aviso: desconta 30 dias do acerto
-    avisoVal=-(sal/30)*30; avisoDias=0;
+    // Não cumpriu aviso: desconta 30 dias baseado nos dias do mês
+    avisoVal=-(sal/dimResc)*30; avisoDias=0;
   }
   // 'trab', 'nenhum', 'disp': sem valor extra, sem extensão
 
@@ -407,7 +412,7 @@ function calcResc(f, dataRescisao, motivo, aviso, ferVencPer, fgtsSaldoInput){
 
   const total=saldoSal+avisoVal+dec13+ferProp+ferVenc+multaFgts;
   return {
-    saldoSal,diasTrab,diasAviso,avisoDias,avisoVal,
+    saldoSal,diasTrab,dimResc,diasAviso,avisoDias,avisoVal,
     dec13,avos13,ferProp,avosF,
     ferVenc,ferVencNum,
     multaFgts,fgtsSaldoVal,fgtsRef,total,
@@ -1079,13 +1084,13 @@ function rFolha(){
 // ══════════════════════════════════════════
 function tabelaCalc(r,f,entry){
   const isMens=f.tipoSalario==='mensalista'||!f.tipoSalario;
-  const du=num(entry.diasUteis||22), dt=num(entry.diasTrab||0);
+  const dim=diasNoMes(mes,ano); const dt=num(entry.diasTrab||0);
   return `<table class="ctab">
     <tr class="csec"><td colspan="2">📅 Competência ${MESES[mes-1]}/${ano}</td></tr>
     <tr><td>${isMens
       ? r.prop
-        ? `Salário proporcional <span class="cbadge">${r.dt}/30 dias</span>`
-        : `Salário mensal <span class="cbadge">30 dias</span>`
+        ? `Salário proporcional <span class="cbadge">${r.dt}/${dim} dias</span>`
+        : `Salário mensal <span class="cbadge">${dim} dias</span>`
       : `Pagamento (${r.dt} ${f.tipoSalario==='horista'?'horas':'dias'} × ${brl(f.salarioBase)})`
     }</td><td>${brl(r.salProp)}</td></tr>
     ${r.he50v>0?`<tr><td>H.E. 50% (${entry.he50}h × ${brl(r.vh)} × 1,5)</td><td>${brl(r.he50v)}</td></tr>`:''}
@@ -1209,7 +1214,7 @@ function pvResc(fid,eid){
   const isAcordo  =motivo==='Acordo entre partes';
   const aviso=isDemissao?gv('rDemAviso'):gv('rAviso');
   const r=calcResc(f,data,motivo,aviso,num(gv('rFerVenc')),num(gv('rFgtsSaldo'))); if(!r)return;
-  let rows=`<tr><td>Saldo de salário <span class="cbadge">${r.diasTrab}/30 dias</span></td><td>${brl(r.saldoSal)}</td></tr>`;
+  let rows=`<tr><td>Saldo de salário <span class="cbadge">${r.diasTrab}/${r.dimResc} dias</span></td><td>${brl(r.saldoSal)}</td></tr>`;
   if(r.avisoVal>0){
     const lbl=isAcordo?`Aviso prévio 50% (${r.avisoDias} dias)`:`Aviso prévio indenizado — ${r.diasAviso} dias (Lei 12.506/2011)`;
     rows+=`<tr><td>${lbl}</td><td>${brl(r.avisoVal)}</td></tr>`;
@@ -1282,7 +1287,7 @@ function printResc(fid,eid){
       <div class="bloco">
         <div class="bloco-titulo">Verbas Rescisórias</div>
         <div class="linha">
-          <span class="lbl">Saldo de salário (${resc.diasTrab} dias — ${brl(f.salarioBase)} ÷ 30)</span>
+          <span class="lbl">Saldo de salário (${resc.diasTrab}/${resc.dimResc} dias de ${new Date(resc.dataRescisao+'T12:00:00').toLocaleString('pt-BR',{month:'long'})})</span>
           <span class="val">${brl(resc.saldoSal)}</span>
         </div>
         ${resc.avisoVal>0?`
@@ -1384,9 +1389,9 @@ function pvFer(fid,eid){
   const box=document.getElementById('pvFerBox'); if(!box)return;
   const f=getFuncs(eid).find(x=>x.id===fid); if(!f)return;
   const dias=num(gv('ferDias')); if(!dias)return;
-  const r=calcFer(f,dias);
+  const r=calcFer(f,dias,gv('ferDi'));
   box.innerHTML=`<div class="calc-wrap"><table class="ctab">
-    <tr><td>Salário diário (${brl(f.salarioBase)}/30)</td><td>${brl(r.vd)}</td></tr>
+    <tr><td>Salário diário (${brl(f.salarioBase)}/${r.dim} dias do mês)</td><td>${brl(r.vd)}</td></tr>
     <tr><td>Salário férias (${dias} dias)</td><td>${brl(r.vf)}</td></tr>
     <tr><td>Adicional 1/3</td><td>${brl(r.ad)}</td></tr>
     <tr class="ctotal"><td>✅ Total férias</td><td>${brl(r.total)}</td></tr>
@@ -1397,9 +1402,9 @@ function cFer(){ ferFId=null; rFunc(); }
 function sFer(fid,eid){
   const f=getFuncs(eid).find(x=>x.id===fid); if(!f)return;
   const dias=num(gv('ferDias')); if(!dias){alert('Informe os dias de férias.');return;}
-  const r=calcFer(f,dias);
+  const r=calcFer(f,dias,gv('ferDi'));
   const list=getFers(eid);
-  list.push({id:genId(),fid,dataInicio:gv('ferDi'),dataFim:gv('ferDf'),dias,vFerias:r.vf,adicional:r.ad,total:r.total,pago:false});
+  list.push({id:genId(),fid,dataInicio:gv('ferDi'),dataFim:gv('ferDf'),dias,dim:r.dim,vFerias:r.vf,adicional:r.ad,total:r.total,pago:false});
   setFers(eid,list); ferFId=null; rFunc();
 }
 function dFer(id,eid){
@@ -1602,7 +1607,8 @@ function printFolha(fid, eid){
   const dataAdm=f.dataAdmissao?new Date(f.dataAdmissao+'T12:00:00').toLocaleDateString('pt-BR'):'—';
   const isMens=f.tipoSalario==='mensalista'||!f.tipoSalario;
   const prop=isMens&&!!entry.mesProporcional;
-  const dt=prop?num(entry.diasTrab||0):30;
+  const dimF=diasNoMes(mes,ano);
+  const dt=prop?num(entry.diasTrab||0):dimF;
 
   const w=window.open('','_blank','width=750,height=1000');
   w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
@@ -1630,7 +1636,7 @@ function printFolha(fid, eid){
         <div class="bloco-titulo">Demonstrativo — ${MESES[mes-1]}/${ano}</div>
         <div class="linha">
           <span class="lbl">${isMens
-            ? prop ? `Salário proporcional (${dt}/30 dias)` : `Salário mensal (30 dias)`
+            ? prop ? `Salário proporcional (${dt}/${dimF} dias)` : `Salário mensal (${dimF} dias)`
             : `Pagamento (${dt} ${f.tipoSalario==='horista'?'horas':'dias'})`
           }</span>
           <span class="val">${brl(r.salProp)}</span>
@@ -1726,7 +1732,7 @@ function printFer(feid,fid,eid){
       </div>
       <div class="bloco">
         <div class="bloco-titulo">Demonstrativo</div>
-        <div class="linha"><span class="lbl">Salário diário (base/30)</span><span class="val">${brl(num(f.salarioBase)/30)}</span></div>
+        <div class="linha"><span class="lbl">Salário diário (${brl(f.salarioBase)}/${fe.dim||30} dias do mês)</span><span class="val">${brl(num(f.salarioBase)/(fe.dim||30))}</span></div>
         <div class="linha"><span class="lbl">Salário férias (${fe.dias} dias)</span><span class="val">${brl(fe.vFerias)}</span></div>
         <div class="linha"><span class="lbl">Adicional 1/3 constitucional</span><span class="val">${brl(fe.adicional)}</span></div>
       </div>
@@ -1944,7 +1950,8 @@ function printTodos(){
     const r=calcEntry(f,entry);
     const isMens=f.tipoSalario==='mensalista'||!f.tipoSalario;
     const prop=isMens&&!!entry.mesProporcional;
-    const dt=prop?num(entry.diasTrab||0):isMens?30:num(entry.diasTrab||0);
+    const dimT=diasNoMes(mes,ano);
+    const dt=prop?num(entry.diasTrab||0):isMens?dimT:num(entry.diasTrab||0);
     pgs+=`<div class="rec" style="${idx>0?'page-break-before:always;margin-top:20px':''}">
       <div class="rec-header">
         <h1>RECIBO DE PAGAMENTO DE SALÁRIO</h1>
@@ -1962,7 +1969,7 @@ function printTodos(){
       <div class="bloco">
         <div class="bloco-titulo">Demonstrativo — ${MESES[mes-1]}/${ano}</div>
         <div class="linha"><span class="lbl">${isMens
-          ? prop ? `Salário proporcional (${dt}/30 dias)` : `Salário mensal (30 dias)`
+          ? prop ? `Salário proporcional (${dt}/${dimT} dias)` : `Salário mensal (${dimT} dias)`
           : `Pagamento (${dt} ${f.tipoSalario==='horista'?'horas':'dias'})`
         }</span><span class="val">${brl(r.salProp)}</span></div>
         ${r.he50v>0?`<div class="linha"><span class="lbl">H.Extra 50% (${entry.he50}h × 1,5)</span><span class="val">${brl(r.he50v)}</span></div>`:''}
