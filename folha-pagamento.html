@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Folha de Pagamento</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #2563eb;
+      --primary-light: #dbeafe;
+      --green: #16a34a;
+      --green-light: #dcfce7;
+      --amber: #d97706;
+      --amber-light: #fef3c7;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-400: #9ca3af;
+      --gray-500: #6b7280;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --radius: 10px;
+      --shadow: 0 1px 4px rgba(0,0,0,.1);
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-800);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: #fff;
+      border-bottom: 1px solid var(--gray-200);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow);
+    }
+    header svg { color: var(--primary); flex-shrink: 0; }
+    header h1 { font-size: 17px; font-weight: 700; color: var(--gray-900); }
+    header span { font-size: 12px; color: var(--gray-500); margin-left: 4px; }
+
+    /* ── Layout ── */
+    main { max-width: 900px; margin: 0 auto; padding: 28px 20px 60px; }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+    .card-header {
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--gray-100);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--gray-800);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-body { padding: 20px; }
+
+    /* ── Filtros ── */
+    .filtros {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: flex-end;
+    }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label { font-size: 11px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: .04em; }
+    .field input, .field select {
+      height: 38px;
+      border: 1px solid var(--gray-300);
+      border-radius: 8px;
+      padding: 0 12px;
+      font-size: 14px;
+      background: #fff;
+      color: var(--gray-800);
+      outline: none;
+      transition: border-color .15s;
+    }
+    .field input:focus, .field select:focus { border-color: var(--primary); }
+    .field.grow { flex: 1; min-width: 200px; }
+    .field select { padding-right: 8px; cursor: pointer; }
+
+    /* ── Sumário ── */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .summary-card {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      box-shadow: var(--shadow);
+    }
+    .summary-label { font-size: 11px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+    .summary-value { font-size: 24px; font-weight: 700; color: var(--gray-900); }
+    .summary-value.green { color: var(--green); }
+    .summary-value.amber { color: var(--amber); }
+    .summary-sub { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+
+    /* ── Botões ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 16px;
+      height: 36px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity .15s, background .15s;
+    }
+    .btn:hover { opacity: .88; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-outline { background: #fff; color: var(--gray-700); border: 1px solid var(--gray-300); }
+    .btn-ghost { background: transparent; color: var(--gray-500); }
+    .btn-ghost:hover { background: var(--gray-100); color: var(--gray-700); }
+    .btn-danger { background: transparent; color: var(--red); border: none; }
+    .btn-danger:hover { background: var(--red-light); }
+    .btn-sm { height: 30px; padding: 0 10px; font-size: 12px; }
+    .btn-icon { width: 30px; height: 30px; padding: 0; justify-content: center; border-radius: 6px; }
+
+    /* ── Form colaborador ── */
+    .form-colab {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 12px;
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .form-field { display: flex; flex-direction: column; gap: 5px; }
+    .form-field label { font-size: 12px; font-weight: 600; color: var(--gray-600); }
+    .form-field input, .form-field select {
+      height: 36px;
+      border: 1px solid var(--gray-300);
+      border-radius: 7px;
+      padding: 0 10px;
+      font-size: 13px;
+      background: #fff;
+      outline: none;
+    }
+    .form-field input:focus, .form-field select:focus { border-color: var(--primary); }
+    .form-total { font-size: 13px; color: var(--gray-500); margin-bottom: 12px; }
+    .form-total strong { font-size: 16px; color: var(--gray-900); }
+    .form-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+    /* ── Lista colaboradores ── */
+    .colab-list { display: flex; flex-direction: column; gap: 8px; }
+    .colab-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--gray-200);
+      background: #fff;
+      transition: background .15s;
+    }
+    .colab-row.pago {
+      background: var(--green-light);
+      border-color: #bbf7d0;
+    }
+    .colab-status { cursor: pointer; flex-shrink: 0; font-size: 18px; line-height: 1; }
+    .colab-info { flex: 1; min-width: 0; }
+    .colab-nome {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-800);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .colab-row.pago .colab-nome-text { text-decoration: line-through; color: var(--gray-400); }
+    .colab-detail { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+    .colab-valor {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gray-900);
+      flex-shrink: 0;
+    }
+    .colab-row.pago .colab-valor { text-decoration: line-through; color: var(--gray-400); }
+    .colab-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-blue { background: var(--primary-light); color: var(--primary); }
+    .badge-green { background: var(--green-light); color: var(--green); }
+    .badge-amber { background: var(--amber-light); color: var(--amber); }
+
+    /* ── Separador ── */
+    hr { border: none; border-top: 1px solid var(--gray-200); margin: 16px 0; }
+
+    /* ── Rodapé lista ── */
+    .list-footer { padding: 12px 0 0; }
+    .list-footer-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      padding: 3px 0;
+    }
+    .list-footer-total { font-size: 18px; font-weight: 700; }
+    .list-footer-green { color: var(--green); font-weight: 600; }
+    .list-footer-amber { color: var(--amber); font-weight: 600; }
+
+    /* ── Vazio ── */
+    .empty {
+      padding: 48px 20px;
+      text-align: center;
+      color: var(--gray-400);
+    }
+    .empty-icon { font-size: 36px; margin-bottom: 10px; }
+    .empty p { font-size: 14px; margin-bottom: 14px; }
+
+    /* ── Aviso ── */
+    .aviso {
+      text-align: center;
+      font-size: 12px;
+      color: var(--gray-400);
+      margin-top: 8px;
+    }
+
+    /* ── Sem empresa ── */
+    .sem-empresa {
+      padding: 56px 20px;
+      text-align: center;
+      color: var(--gray-400);
+    }
+    .sem-empresa-icon { font-size: 40px; margin-bottom: 12px; }
+    .sem-empresa p { font-size: 14px; }
+
+    /* ── Impressão ── */
+    @media print {
+      header, .filtros-card, .btn, .colab-actions, .aviso, .form-colab { display: none !important; }
+      body { background: #fff; }
+      main { padding: 0; max-width: 100%; }
+      .summary-grid { break-inside: avoid; }
+      .card { box-shadow: none; border: 1px solid #ccc; }
+    }
+
+    @media (max-width: 600px) {
+      .summary-grid { grid-template-columns: 1fr; }
+      .form-grid, .form-grid-3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+  </svg>
+  <h1>Folha de Pagamento <span>— Colaboradores Informais</span></h1>
+</header>
+
+<main>
+
+  <!-- Filtros -->
+  <div class="card filtros-card" style="margin-bottom:20px;">
+    <div class="card-body">
+      <div class="filtros">
+        <div class="field grow">
+          <label>Empresa</label>
+          <input type="text" id="empresaInput" placeholder="Digite o nome da empresa..." />
+        </div>
+        <div class="field">
+          <label>Mês</label>
+          <select id="mesSelect"></select>
+        </div>
+        <div class="field">
+          <label>Ano</label>
+          <select id="anoSelect"></select>
+        </div>
+        <div class="field" style="justify-content:flex-end;">
+          <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Imprimir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conteúdo dinâmico -->
+  <div id="conteudo"></div>
+
+</main>
+
+<script>
+// ─── Estado ──────────────────────────────────────────────────────────────────
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const hoje = new Date();
+let empresa = '';
+let mes = hoje.getMonth() + 1;
+let ano = hoje.getFullYear();
+let mostrarForm = false;
+let editandoId = null;
+
+// ─── Inicialização dos selects ────────────────────────────────────────────────
+const mesSelect = document.getElementById('mesSelect');
+const anoSelect = document.getElementById('anoSelect');
+const empresaInput = document.getElementById('empresaInput');
+
+MESES.forEach((m, i) => {
+  const opt = document.createElement('option');
+  opt.value = i + 1;
+  opt.textContent = m;
+  if (i + 1 === mes) opt.selected = true;
+  mesSelect.appendChild(opt);
+});
+
+for (let y = ano - 2; y <= ano + 2; y++) {
+  const opt = document.createElement('option');
+  opt.value = y;
+  opt.textContent = y;
+  if (y === ano) opt.selected = true;
+  anoSelect.appendChild(opt);
+}
+
+mesSelect.addEventListener('change', () => { mes = Number(mesSelect.value); render(); });
+anoSelect.addEventListener('change', () => { ano = Number(anoSelect.value); render(); });
+
+let empresaTimer;
+empresaInput.addEventListener('input', () => {
+  clearTimeout(empresaTimer);
+  empresaTimer = setTimeout(() => {
+    empresa = empresaInput.value.trim();
+    render();
+  }, 300);
+});
+
+// ─── Storage ──────────────────────────────────────────────────────────────────
+function storageKey() {
+  const e = empresa.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') || 'sem_empresa';
+  return `folha_${e}_${ano}_${String(mes).padStart(2,'0')}`;
+}
+
+function carregarColaboradores() {
+  try {
+    const raw = localStorage.getItem(storageKey());
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function salvarColaboradores(lista) {
+  localStorage.setItem(storageKey(), JSON.stringify(lista));
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function genId() { return Math.random().toString(36).slice(2, 10); }
+
+function formatBRL(v) {
+  return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function calcTotal(c) {
+  if (c.tipoCalculo === 'fixo') return Number(c.valorUnitario) || 0;
+  return (Number(c.quantidade) || 0) * (Number(c.valorUnitario) || 0);
+}
+
+function labelTipo(c) {
+  if (c.tipoCalculo === 'fixo') return 'Valor fixo mensal';
+  const unidade = c.tipoCalculo === 'diaria'
+    ? (c.quantidade == 1 ? 'dia' : 'dias')
+    : (c.quantidade == 1 ? 'hora' : 'horas');
+  return `${c.quantidade} ${unidade} × ${formatBRL(c.valorUnitario)}`;
+}
+
+// ─── Render principal ─────────────────────────────────────────────────────────
+function render() {
+  const el = document.getElementById('conteudo');
+
+  if (!empresa) {
+    el.innerHTML = `
+      <div class="card">
+        <div class="sem-empresa">
+          <div class="sem-empresa-icon">🏢</div>
+          <p>Digite o nome da empresa no campo acima para visualizar ou lançar a folha.</p>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const colaboradores = carregarColaboradores();
+  const totalGeral = colaboradores.reduce((s, c) => s + calcTotal(c), 0);
+  const totalPago = colaboradores.filter(c => c.pago).reduce((s, c) => s + calcTotal(c), 0);
+  const totalPendente = totalGeral - totalPago;
+  const qtdPagos = colaboradores.filter(c => c.pago).length;
+  const qtdPendentes = colaboradores.filter(c => !c.pago).length;
+  const periodoLabel = `${MESES[mes-1]}/${ano}`;
+
+  // ── Resumo
+  let html = `
+    <div style="margin-bottom:6px;font-size:13px;color:var(--gray-500);">
+      <strong style="color:var(--gray-800);">${empresa}</strong> — ${periodoLabel}
+    </div>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-label">Total geral</div>
+        <div class="summary-value">${formatBRL(totalGeral)}</div>
+        <div class="summary-sub">${colaboradores.length} colaborador${colaboradores.length !== 1 ? 'es' : ''}</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Já pago</div>
+        <div class="summary-value green">${formatBRL(totalPago)}</div>
+        <div class="summary-sub">${qtdPagos} pago${qtdPagos !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Pendente</div>
+        <div class="summary-value ${totalPendente > 0 ? 'amber' : ''}">${formatBRL(totalPendente)}</div>
+        <div class="summary-sub">${qtdPendentes} pendente${qtdPendentes !== 1 ? 's' : ''}</div>
+      </div>
+    </div>`;
+
+  // ── Lista
+  html += `<div class="card">
+    <div class="card-header">
+      <div class="card-title">👥 Colaboradores — ${periodoLabel}</div>
+      <button class="btn btn-primary btn-sm" onclick="abrirForm()">+ Adicionar</button>
+    </div>
+    <div class="card-body">`;
+
+  // Formulário novo
+  if (mostrarForm && !editandoId) {
+    html += renderForm(null);
+  }
+
+  if (colaboradores.length === 0 && !mostrarForm) {
+    html += `
+      <div class="empty">
+        <div class="empty-icon">👥</div>
+        <p>Nenhum colaborador lançado para ${periodoLabel}.</p>
+        <button class="btn btn-outline" onclick="abrirForm()">+ Adicionar primeiro colaborador</button>
+      </div>`;
+  } else {
+    html += `<div class="colab-list">`;
+    colaboradores.forEach(c => {
+      if (editandoId === c.id) {
+        html += renderForm(c);
+      } else {
+        html += renderRow(c);
+      }
+    });
+    html += `</div>`;
+
+    if (colaboradores.length > 0) {
+      html += `<hr>
+        <div class="list-footer">
+          <div class="list-footer-row">
+            <span style="color:var(--gray-500);">Total — ${colaboradores.length} colaborador${colaboradores.length !== 1 ? 'es' : ''}</span>
+            <span class="list-footer-total">${formatBRL(totalGeral)}</span>
+          </div>
+          ${totalPago > 0 ? `<div class="list-footer-row"><span class="list-footer-green">Pago</span><span class="list-footer-green">${formatBRL(totalPago)}</span></div>` : ''}
+          ${totalPendente > 0 ? `<div class="list-footer-row"><span class="list-footer-amber">Pendente</span><span class="list-footer-amber">${formatBRL(totalPendente)}</span></div>` : ''}
+        </div>`;
+    }
+  }
+
+  html += `</div></div>
+    <p class="aviso">Sistema destinado a pagamentos informais sem vínculo empregatício. Não há cálculo de INSS, IRRF ou outros encargos.</p>`;
+
+  el.innerHTML = html;
+}
+
+// ─── Formulário ───────────────────────────────────────────────────────────────
+function renderForm(c) {
+  const isEdit = !!c;
+  const id = c ? c.id : '';
+  const nome = c ? c.nome : '';
+  const funcao = c ? c.funcao : '';
+  const tipo = c ? c.tipoCalculo : 'diaria';
+  const qtd = c ? c.quantidade : '';
+  const val = c ? c.valorUnitario : '';
+  const obs = c ? c.observacao : '';
+
+  return `
+    <div class="form-colab" id="formColab">
+      <div class="form-grid">
+        <div class="form-field">
+          <label>Nome *</label>
+          <input type="text" id="fNome" placeholder="Nome do colaborador" value="${esc(nome)}" />
+        </div>
+        <div class="form-field">
+          <label>Função / Serviço</label>
+          <input type="text" id="fFuncao" placeholder="Ex.: Diarista, Pintor..." value="${esc(funcao)}" />
+        </div>
+      </div>
+      <div class="form-grid-3">
+        <div class="form-field">
+          <label>Tipo de cálculo</label>
+          <select id="fTipo" onchange="atualizarForm()">
+            <option value="diaria" ${tipo==='diaria'?'selected':''}>Por dia trabalhado</option>
+            <option value="hora"   ${tipo==='hora'?'selected':''}>Por hora trabalhada</option>
+            <option value="fixo"   ${tipo==='fixo'?'selected':''}>Valor fixo mensal</option>
+          </select>
+        </div>
+        <div class="form-field" id="fQtdWrap" style="${tipo==='fixo'?'display:none':''}">
+          <label id="fQtdLabel">${tipo==='hora'?'Horas trabalhadas':'Dias trabalhados'}</label>
+          <input type="number" id="fQtd" min="0" step="0.5" placeholder="0" value="${qtd}" oninput="atualizarTotal()" />
+        </div>
+        <div class="form-field">
+          <label id="fValLabel">${tipo==='hora'?'Valor por hora (R$)':tipo==='fixo'?'Valor mensal (R$)':'Valor por dia (R$)'}</label>
+          <input type="number" id="fVal" min="0" step="0.01" placeholder="0,00" value="${val}" oninput="atualizarTotal()" />
+        </div>
+      </div>
+      <div class="form-field" style="margin-bottom:12px;">
+        <label>Observação (opcional)</label>
+        <input type="text" id="fObs" placeholder="Período, detalhes do serviço..." value="${esc(obs)}" />
+      </div>
+      <div class="form-total" id="fTotalLine" style="display:none;">
+        Total a pagar: <strong id="fTotalVal"></strong>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-ghost btn-sm" onclick="cancelarForm()">✕ Cancelar</button>
+        <button class="btn btn-primary btn-sm" onclick="salvarForm('${id}')">💾 Salvar</button>
+      </div>
+    </div>`;
+}
+
+function atualizarForm() {
+  const tipo = document.getElementById('fTipo')?.value;
+  if (!tipo) return;
+  const wrap = document.getElementById('fQtdWrap');
+  const lbl = document.getElementById('fQtdLabel');
+  const valLbl = document.getElementById('fValLabel');
+  if (wrap) wrap.style.display = tipo === 'fixo' ? 'none' : '';
+  if (lbl) lbl.textContent = tipo === 'hora' ? 'Horas trabalhadas' : 'Dias trabalhados';
+  if (valLbl) valLbl.textContent = tipo === 'hora' ? 'Valor por hora (R$)' : tipo === 'fixo' ? 'Valor mensal (R$)' : 'Valor por dia (R$)';
+  atualizarTotal();
+}
+
+function atualizarTotal() {
+  const tipo = document.getElementById('fTipo')?.value;
+  const qtd = parseFloat(document.getElementById('fQtd')?.value || '0') || 0;
+  const val = parseFloat(document.getElementById('fVal')?.value || '0') || 0;
+  const total = tipo === 'fixo' ? val : qtd * val;
+  const line = document.getElementById('fTotalLine');
+  const valEl = document.getElementById('fTotalVal');
+  if (line && valEl) {
+    if (total > 0) { line.style.display = ''; valEl.textContent = formatBRL(total); }
+    else { line.style.display = 'none'; }
+  }
+}
+
+function salvarForm(id) {
+  const nome = document.getElementById('fNome')?.value.trim();
+  if (!nome) { alert('Informe o nome do colaborador.'); return; }
+  const form = {
+    nome,
+    funcao: document.getElementById('fFuncao')?.value.trim() || '',
+    tipoCalculo: document.getElementById('fTipo')?.value || 'diaria',
+    quantidade: parseFloat(document.getElementById('fQtd')?.value || '0') || 0,
+    valorUnitario: parseFloat(document.getElementById('fVal')?.value || '0') || 0,
+    observacao: document.getElementById('fObs')?.value.trim() || '',
+  };
+
+  const lista = carregarColaboradores();
+  if (id) {
+    const idx = lista.findIndex(c => c.id === id);
+    if (idx !== -1) lista[idx] = { ...lista[idx], ...form };
+  } else {
+    lista.push({ id: genId(), pago: false, ...form });
+  }
+  salvarColaboradores(lista);
+  mostrarForm = false;
+  editandoId = null;
+  render();
+}
+
+function abrirForm() { mostrarForm = true; editandoId = null; render(); }
+function cancelarForm() { mostrarForm = false; editandoId = null; render(); }
+
+// ─── Linha colaborador ────────────────────────────────────────────────────────
+function renderRow(c) {
+  const total = calcTotal(c);
+  const detalhe = labelTipo(c) + (c.observacao ? ` · ${c.observacao}` : '');
+  return `
+    <div class="colab-row ${c.pago ? 'pago' : ''}" id="row_${c.id}">
+      <button class="colab-status btn-ghost btn-icon" onclick="togglePago('${c.id}')" title="${c.pago ? 'Marcar como não pago' : 'Marcar como pago'}">
+        ${c.pago ? '✅' : '🕐'}
+      </button>
+      <div class="colab-info">
+        <div class="colab-nome">
+          <span class="colab-nome-text">${esc(c.nome)}</span>
+          ${c.funcao ? `<span class="badge badge-blue">${esc(c.funcao)}</span>` : ''}
+          ${c.pago ? `<span class="badge badge-green">Pago</span>` : ''}
+        </div>
+        <div class="colab-detail">${esc(detalhe)}</div>
+      </div>
+      <div class="colab-valor">${formatBRL(total)}</div>
+      <div class="colab-actions">
+        <button class="btn btn-ghost btn-icon" onclick="editarColab('${c.id}')" title="Editar">✏️</button>
+        <button class="btn btn-danger btn-icon" onclick="removerColab('${c.id}')" title="Remover">🗑️</button>
+      </div>
+    </div>`;
+}
+
+function togglePago(id) {
+  const lista = carregarColaboradores();
+  const idx = lista.findIndex(c => c.id === id);
+  if (idx !== -1) lista[idx].pago = !lista[idx].pago;
+  salvarColaboradores(lista);
+  render();
+}
+
+function editarColab(id) {
+  mostrarForm = false;
+  editandoId = id;
+  render();
+}
+
+function removerColab(id) {
+  if (!confirm('Remover este colaborador?')) return;
+  const lista = carregarColaboradores().filter(c => c.id !== id);
+  salvarColaboradores(lista);
+  render();
+}
+
+// ─── Escape HTML ──────────────────────────────────────────────────────────────
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Iniciar ──────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
