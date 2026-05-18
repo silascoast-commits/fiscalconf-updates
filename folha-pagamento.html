@@ -323,31 +323,96 @@ function calcAvos13_data(adm, dataRef){
   const aRef=dr.getFullYear(); let av=0;
   for(let m=0;m<12;m++){
     const fim=new Date(aRef,m+1,0);
-    if(fim>dr) continue;
-    if(da>fim) continue;
+    if(fim>dr) continue; if(da>fim) continue;
     const dia=(da.getFullYear()===aRef&&da.getMonth()===m)?da.getDate():1;
     if(fim.getDate()-dia+1>=15) av++;
   }
-  // verifica mês da rescisão
-  const mResc=dr.getMonth();
-  const fimMes=new Date(aRef,mResc+1,0);
-  const diaIni=(da.getFullYear()===aRef&&da.getMonth()===mResc)?da.getDate():1;
-  if(dr.getDate()-diaIni+1>=15) av++;
+  // verifica mês da rescisão/data final
+  const mR=dr.getMonth(), fimM=new Date(aRef,mR+1,0);
+  const dIni=(da.getFullYear()===aRef&&da.getMonth()===mR)?da.getDate():1;
+  if(dr.getDate()-dIni+1>=15) av++;
   return Math.min(av,12);
 }
-function calcResc(f, dataRescisao, aviso){
+// Aviso prévio proporcional — Lei 12.506/2011: 30 + 3 dias/ano completo, máx 90
+function calcDiasAviso(adm, dataResc){
+  if(!adm) return 30;
+  const da=new Date(adm+'T12:00:00'), dr=new Date(dataResc+'T12:00:00');
+  const anos=Math.floor((dr-da)/(365.25*24*60*60*1000));
+  return Math.min(30+anos*3, 90);
+}
+function addDias(dateStr, dias){
+  const d=new Date(dateStr+'T12:00:00'); d.setDate(d.getDate()+dias);
+  return d.toISOString().slice(0,10);
+}
+// ── Cálculo CLT completo por motivo ──────
+function calcResc(f, dataRescisao, motivo, aviso, ferVencPer, fgtsSaldoInput){
   const sal=num(f.salarioBase); if(!dataRescisao) return null;
   const dr=new Date(dataRescisao+'T12:00:00');
+  const isSemJusta=motivo==='Dispensa sem justa causa';
+  const isComJusta=motivo==='Dispensa com justa causa';
+  const isDemissao=motivo==='Pedido de demissão';
+  const isAcordo  =motivo==='Acordo entre partes';
+  const isTermino =motivo==='Término de contrato';
+
+  // Saldo de salário: dias trabalhados no mês da rescisão
   const diasTrab=dr.getDate();
   const saldoSal=(sal/30)*diasTrab;
-  const avos13=calcAvos13_data(f.dataAdmissao, dataRescisao);
-  const dec13=sal>0?sal*avos13/12:0;
-  const avosF=calcAvosF_data(f.dataAdmissao, dataRescisao);
-  const ferias=sal>0?(sal*avosF/12)*(4/3):0;
-  const avisoVal=aviso==='ind'?sal:0;
-  const total=saldoSal+dec13+ferias+avisoVal;
-  const fgts=total*0.08;
-  return {saldoSal,diasTrab,dec13,avos13,ferias,avosF,avisoVal,total,fgts};
+
+  // Aviso prévio proporcional
+  const diasAviso=calcDiasAviso(f.dataAdmissao, dataRescisao);
+  let avisoVal=0, avisoDias=0;
+
+  if((isSemJusta||isTermino)&&aviso==='ind'){
+    // Indenizado: paga aviso proporcional e estende período para 13º/férias
+    avisoVal=(sal/30)*diasAviso; avisoDias=diasAviso;
+  } else if(isAcordo&&aviso==='ind'){
+    // Acordo art. 484-A: 50% do aviso indenizado
+    avisoVal=(sal/30)*diasAviso*0.5; avisoDias=Math.floor(diasAviso/2);
+  } else if(isDemissao&&aviso==='desc'){
+    // Pedido de demissão sem cumprir aviso: desconta 30 dias do acerto
+    avisoVal=-(sal/30)*30; avisoDias=0;
+  }
+  // 'trab', 'nenhum', 'disp': sem valor extra, sem extensão
+
+  // Data virtual — aviso indenizado estende cálculo de 13º e férias (CLT art. 487 §1º)
+  const dataVirtual=avisoDias>0 ? addDias(dataRescisao,avisoDias) : dataRescisao;
+
+  // 13º proporcional (inclui aviso indenizado; justa causa não tem direito)
+  let dec13=0, avos13=0;
+  if(!isComJusta){
+    avos13=calcAvos13_data(f.dataAdmissao, dataVirtual);
+    dec13=sal>0?sal*avos13/12:0;
+  }
+
+  // Férias proporcionais + 1/3 (inclui aviso; justa causa perde as proporcionais)
+  let ferProp=0, avosF=0;
+  if(!isComJusta){
+    avosF=calcAvosF_data(f.dataAdmissao, dataVirtual);
+    ferProp=sal>0?(sal*avosF/12)*(4/3):0;
+  }
+
+  // Férias vencidas + 1/3 (todo motivo tem direito; justa causa também)
+  const ferVencNum=Math.max(0,num(ferVencPer)||0);
+  const ferVenc=ferVencNum>0?sal*ferVencNum*(4/3):0;
+
+  // Multa FGTS (40% sem justa/término · 20% acordo · não se aplica demissão/justa causa)
+  const fgtsSaldoVal=num(fgtsSaldoInput)||0;
+  let multaFgts=0;
+  if((isSemJusta||isTermino)&&fgtsSaldoVal>0) multaFgts=fgtsSaldoVal*0.40;
+  else if(isAcordo&&fgtsSaldoVal>0)           multaFgts=fgtsSaldoVal*0.20;
+
+  // FGTS 8% sobre verbas brutas — custo de referência do empregador
+  const baseFgts=saldoSal+(avisoVal>0?avisoVal:0)+dec13+ferProp+ferVenc;
+  const fgtsRef=baseFgts*0.08;
+
+  const total=saldoSal+avisoVal+dec13+ferProp+ferVenc+multaFgts;
+  return {
+    saldoSal,diasTrab,diasAviso,avisoDias,avisoVal,
+    dec13,avos13,ferProp,avosF,
+    ferVenc,ferVencNum,
+    multaFgts,fgtsSaldoVal,fgtsRef,total,
+    isSemJusta,isComJusta,isDemissao,isAcordo,isTermino
+  };
 }
 
 // ══════════════════════════════════════════
@@ -736,15 +801,19 @@ function funcCard(f, eid){
       h+=rescForm(f,eid,resc);
     } else if(resc){
       const dr=new Date(resc.dataRescisao+'T12:00:00').toLocaleDateString('pt-BR');
+      const isAcordo=resc.motivo==='Acordo entre partes';
       h+=`<div style="background:var(--red-light);border:1px solid #fca5a5;border-radius:8px;padding:12px;margin-bottom:10px">
         <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:6px">Rescindido em ${dr} — ${esc(resc.motivo)}</div>
         <div class="calc-wrap"><table class="ctab">
-          <tr><td>Saldo de salário <span class="cbadge">${resc.diasTrab} dias</span></td><td>${brl(resc.saldoSal)}</td></tr>
-          <tr><td>13º proporcional <span class="cbadge a">${resc.avos13}/12 avos</span></td><td>${brl(resc.dec13)}</td></tr>
-          <tr><td>Férias + 1/3 <span class="cbadge a">${resc.avosF}/12 avos</span></td><td>${brl(resc.ferias)}</td></tr>
-          ${resc.avisoVal>0?`<tr><td>Aviso prévio indenizado</td><td>${brl(resc.avisoVal)}</td></tr>`:''}
+          <tr><td>Saldo de salário <span class="cbadge">${resc.diasTrab}/30 dias</span></td><td>${brl(resc.saldoSal)}</td></tr>
+          ${resc.avisoVal>0?`<tr><td>Aviso prévio indenizado${isAcordo?' 50%':''} (${resc.diasAviso} dias)</td><td>${brl(resc.avisoVal)}</td></tr>`:''}
+          ${resc.avisoVal<0?`<tr class="cdesc"><td>(−) Desconto aviso não cumprido</td><td>−${brl(-resc.avisoVal)}</td></tr>`:''}
+          ${resc.dec13>0?`<tr><td>13º proporcional <span class="cbadge a">${resc.avos13}/12 avos</span></td><td>${brl(resc.dec13)}</td></tr>`:''}
+          ${resc.ferProp>0?`<tr><td>Férias prop. + 1/3 <span class="cbadge a">${resc.avosF}/12 avos</span></td><td>${brl(resc.ferProp)}</td></tr>`:''}
+          ${resc.ferVenc>0?`<tr><td>Férias vencidas + 1/3 <span class="cbadge a">${resc.ferVencNum} período${resc.ferVencNum>1?'s':''}</span></td><td>${brl(resc.ferVenc)}</td></tr>`:''}
+          ${resc.multaFgts>0?`<tr><td>Multa FGTS ${isAcordo?'20%':'40%'}</td><td>${brl(resc.multaFgts)}</td></tr>`:''}
           <tr class="ctotal"><td>Total da rescisão</td><td>${brl(resc.total)}</td></tr>
-          <tr class="cfgts"><td>FGTS 8% <span class="cbadge p">referência</span></td><td>${brl(resc.fgts)}</td></tr>
+          <tr class="cfgts"><td>FGTS 8% s/ verbas <span class="cbadge p">ref. empregador</span></td><td>${brl(resc.fgtsRef||resc.fgts||0)}</td></tr>
         </table></div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
@@ -1042,54 +1111,132 @@ function oAno(v){ ano=Number(v); funcExp=null; adtFId=null; folhaFId=null; if(ta
 // ══════════════════════════════════════════
 function rescForm(f,eid,resc){
   const dataHoje=new Date().toISOString().slice(0,10);
+  const motivo=resc?.motivo||'Dispensa sem justa causa';
+  const isSemJusta=motivo==='Dispensa sem justa causa';
+  const isComJusta=motivo==='Dispensa com justa causa';
+  const isDemissao=motivo==='Pedido de demissão';
+  const isAcordo  =motivo==='Acordo entre partes';
+  const isTermino =motivo==='Término de contrato';
+  const temAviso  =isSemJusta||isAcordo||isTermino;
+  const temFgts   =isSemJusta||isAcordo||isTermino;
+  const diasAv    =f.dataAdmissao?calcDiasAviso(f.dataAdmissao,resc?.dataRescisao||dataHoje):30;
   return `<div class="fbox" style="border-color:#fca5a5;background:var(--red-light)">
     <div class="ftitle" style="color:var(--red)">🚪 Rescisão de Contrato — ${esc(f.nome)}</div>
-    <div class="fg3">
+    <div class="fg2">
       <div class="ff"><label>Data da Rescisão *</label>
-        <input type="date" id="rData" value="${resc?.dataRescisao||dataHoje}" oninput="pvResc('${f.id}','${eid}')" /></div>
+        <input type="date" id="rData" value="${resc?.dataRescisao||dataHoje}" oninput="onRescChange('${f.id}','${eid}')" /></div>
       <div class="ff"><label>Motivo</label>
-        <select id="rMotivo">
-          <option value="Dispensa sem justa causa" ${(!resc||resc.motivo==='Dispensa sem justa causa')?'selected':''}>Dispensa sem justa causa</option>
-          <option value="Dispensa com justa causa" ${resc?.motivo==='Dispensa com justa causa'?'selected':''}>Dispensa com justa causa</option>
-          <option value="Pedido de demissão" ${resc?.motivo==='Pedido de demissão'?'selected':''}>Pedido de demissão</option>
-          <option value="Acordo entre partes" ${resc?.motivo==='Acordo entre partes'?'selected':''}>Acordo entre partes</option>
-          <option value="Término de contrato" ${resc?.motivo==='Término de contrato'?'selected':''}>Término de contrato</option>
-        </select></div>
-      <div class="ff"><label>Aviso prévio</label>
-        <select id="rAviso" onchange="pvResc('${f.id}','${eid}')">
-          <option value="nenhum" ${(!resc||resc.aviso==='nenhum')?'selected':''}>Sem aviso prévio</option>
-          <option value="trab" ${resc?.aviso==='trab'?'selected':''}>Aviso trabalhado (30 dias)</option>
-          <option value="ind" ${resc?.aviso==='ind'?'selected':''}>Aviso indenizado pelo empregador</option>
+        <select id="rMotivo" onchange="onRescChange('${f.id}','${eid}')">
+          <option value="Dispensa sem justa causa" ${isSemJusta?'selected':''}>Dispensa sem justa causa</option>
+          <option value="Dispensa com justa causa" ${isComJusta?'selected':''}>Dispensa com justa causa</option>
+          <option value="Pedido de demissão"       ${isDemissao?'selected':''}>Pedido de demissão</option>
+          <option value="Acordo entre partes"      ${isAcordo?'selected':''}  >Acordo (art. 484-A CLT)</option>
+          <option value="Término de contrato"      ${isTermino?'selected':''} >Término de contrato</option>
         </select></div>
     </div>
-    <div id="pvRescBox" style="margin-bottom:10px;"></div>
+
+    <div id="rAvisoWrap" style="${temAviso?'':'display:none'}">
+      <div class="fg2" style="margin-bottom:0">
+        <div class="ff"><label id="rAvisoLbl">${isAcordo?'Aviso prévio (50% — art. 484-A)':'Aviso prévio'}</label>
+          <select id="rAviso" onchange="onRescChange('${f.id}','${eid}')">
+            <option value="ind"    ${(!resc||resc.aviso==='ind')?'selected':''} >Indenizado pelo empregador</option>
+            <option value="trab"   ${resc?.aviso==='trab'?'selected':''}        >Trabalhado pelo funcionário</option>
+            <option value="nenhum" ${resc?.aviso==='nenhum'?'selected':''}      >Dispensado (sem pagamento)</option>
+          </select></div>
+        <div class="ff">
+          <label>Dias de aviso — Lei 12.506/2011</label>
+          <input type="number" id="rAvisoDias" value="${resc?.diasAviso||diasAv}" readonly
+            style="background:var(--gray-100);color:var(--primary);font-weight:700" />
+        </div>
+      </div>
+    </div>
+
+    <div id="rDemWrap" style="${isDemissao?'':'display:none'}">
+      <div class="fg1" style="margin-bottom:0">
+        <div class="ff"><label>Aviso prévio — pedido de demissão</label>
+          <select id="rDemAviso" onchange="onRescChange('${f.id}','${eid}')">
+            <option value="trab" ${(!resc||resc.aviso==='trab')?'selected':''}>Trabalhará os 30 dias (sem desconto)</option>
+            <option value="desc" ${resc?.aviso==='desc'?'selected':''}        >Não trabalhará — descontar do acerto</option>
+            <option value="disp" ${resc?.aviso==='disp'?'selected':''}        >Empregador dispensou o cumprimento</option>
+          </select></div>
+      </div>
+    </div>
+
+    <div class="fg2" style="margin-top:10px;margin-bottom:0">
+      <div class="ff"><label>Férias vencidas não gozadas <span style="font-size:10px;color:var(--gray-400)">(+ 1/3 incluso)</span></label>
+        <select id="rFerVenc" onchange="onRescChange('${f.id}','${eid}')">
+          <option value="0" ${(resc?.ferVencNum||0)===0?'selected':''}>Nenhuma</option>
+          <option value="1" ${(resc?.ferVencNum||0)===1?'selected':''}>1 período (30 dias)</option>
+          <option value="2" ${(resc?.ferVencNum||0)===2?'selected':''}>2 períodos (60 dias)</option>
+          <option value="3" ${(resc?.ferVencNum||0)===3?'selected':''}>3 períodos (90 dias)</option>
+        </select></div>
+      <div class="ff" id="rFgtsWrap" style="${temFgts?'':'display:none'}">
+        <label>Saldo FGTS acumulado (R$) <span style="font-size:10px;color:var(--gray-400)">para calcular multa</span></label>
+        <input type="number" id="rFgtsSaldo" min="0" step="0.01" placeholder="0,00"
+          value="${resc?.fgtsSaldoVal||''}" oninput="onRescChange('${f.id}','${eid}')" />
+      </div>
+    </div>
+
+    <div id="pvRescBox" style="margin:12px 0;"></div>
     <div class="fa">
       <button class="btn btn-ghost btn-sm" onclick="cResc()">✕ Cancelar</button>
       <button class="btn btn-sm" style="background:var(--red);color:#fff" onclick="sResc('${f.id}','${eid}')">💾 Confirmar Rescisão</button>
     </div></div>`;
 }
+function onRescChange(fid,eid){
+  const motivo=gv('rMotivo');
+  const isSemJusta=motivo==='Dispensa sem justa causa';
+  const isComJusta=motivo==='Dispensa com justa causa';
+  const isDemissao=motivo==='Pedido de demissão';
+  const isAcordo  =motivo==='Acordo entre partes';
+  const isTermino =motivo==='Término de contrato';
+  const temAviso  =isSemJusta||isAcordo||isTermino;
+  const temFgts   =isSemJusta||isAcordo||isTermino;
+  const show=(id,v)=>{const el=document.getElementById(id);if(el)el.style.display=v?'':'none';};
+  show('rAvisoWrap',temAviso); show('rDemWrap',isDemissao); show('rFgtsWrap',temFgts);
+  const lbl=document.getElementById('rAvisoLbl');
+  if(lbl) lbl.textContent=isAcordo?'Aviso prévio (50% — art. 484-A)':'Aviso prévio';
+  // Atualiza dias de aviso automaticamente
+  const data=gv('rData'), f=getFuncs(eid).find(x=>x.id===fid);
+  if(data&&f){const el=document.getElementById('rAvisoDias');if(el)el.value=calcDiasAviso(f.dataAdmissao,data);}
+  pvResc(fid,eid);
+}
 function pvResc(fid,eid){
   const box=document.getElementById('pvRescBox'); if(!box)return;
   const f=getFuncs(eid).find(x=>x.id===fid); if(!f)return;
-  const data=gv('rData'), aviso=gv('rAviso'); if(!data)return;
-  const r=calcResc(f,data,aviso); if(!r)return;
+  const data=gv('rData'), motivo=gv('rMotivo'); if(!data||!motivo)return;
+  const isDemissao=motivo==='Pedido de demissão';
+  const isAcordo  =motivo==='Acordo entre partes';
+  const aviso=isDemissao?gv('rDemAviso'):gv('rAviso');
+  const r=calcResc(f,data,motivo,aviso,num(gv('rFerVenc')),num(gv('rFgtsSaldo'))); if(!r)return;
+  let rows=`<tr><td>Saldo de salário <span class="cbadge">${r.diasTrab}/30 dias</span></td><td>${brl(r.saldoSal)}</td></tr>`;
+  if(r.avisoVal>0){
+    const lbl=isAcordo?`Aviso prévio 50% (${r.avisoDias} dias)`:`Aviso prévio indenizado — ${r.diasAviso} dias (Lei 12.506/2011)`;
+    rows+=`<tr><td>${lbl}</td><td>${brl(r.avisoVal)}</td></tr>`;
+    if(r.avisoDias>0) rows+=`<tr style="font-size:11px;color:var(--gray-500)"><td colspan="2" style="padding-left:10px">↳ Estende período de 13º e férias até ${new Date(addDias(data,r.avisoDias)+'T12:00:00').toLocaleDateString('pt-BR')}</td></tr>`;
+  } else if(r.avisoVal<0){
+    rows+=`<tr class="cdesc"><td>(−) Desconto aviso não cumprido (30 dias)</td><td>−${brl(-r.avisoVal)}</td></tr>`;
+  }
+  if(r.dec13>0)   rows+=`<tr><td>13º proporcional <span class="cbadge a">${r.avos13}/12 avos</span></td><td>${brl(r.dec13)}</td></tr>`;
+  if(r.ferProp>0) rows+=`<tr><td>Férias prop. + 1/3 <span class="cbadge a">${r.avosF}/12 avos</span></td><td>${brl(r.ferProp)}</td></tr>`;
+  if(r.ferVenc>0) rows+=`<tr><td>Férias vencidas + 1/3 <span class="cbadge a">${r.ferVencNum} período${r.ferVencNum>1?'s':''}</span></td><td>${brl(r.ferVenc)}</td></tr>`;
+  if(r.multaFgts>0) rows+=`<tr><td>Multa FGTS ${isAcordo?'20%':'40%'} s/ saldo ${brl(r.fgtsSaldoVal)}</td><td>${brl(r.multaFgts)}</td></tr>`;
   box.innerHTML=`<div class="calc-wrap"><table class="ctab">
-    <tr class="csec"><td colspan="2">📊 Verbas rescisórias</td></tr>
-    <tr><td>Saldo de salário <span class="cbadge">${r.diasTrab} dias de ${new Date(data+'T12:00:00').toLocaleString('pt-BR',{month:'long'})}</span></td><td>${brl(r.saldoSal)}</td></tr>
-    <tr><td>13º proporcional <span class="cbadge a">${r.avos13}/12 avos</span></td><td>${brl(r.dec13)}</td></tr>
-    <tr><td>Férias + 1/3 <span class="cbadge a">${r.avosF}/12 avos</span></td><td>${brl(r.ferias)}</td></tr>
-    ${r.avisoVal>0?`<tr><td>Aviso prévio indenizado (30 dias)</td><td>${brl(r.avisoVal)}</td></tr>`:''}
-    <tr class="ctotal"><td>✅ Total da rescisão</td><td>${brl(r.total)}</td></tr>
-    <tr class="cfgts"><td>FGTS 8% <span class="cbadge p">custo empresa — referência</span></td><td>${brl(r.fgts)}</td></tr>
+    <tr class="csec"><td colspan="2">📊 Verbas rescisórias — ${esc(motivo)}</td></tr>
+    ${rows}
+    <tr class="ctotal"><td>✅ Total a receber</td><td>${brl(r.total)}</td></tr>
+    <tr class="cfgts"><td>FGTS 8% s/ verbas brutas <span class="cbadge p">custo empregador</span></td><td>${brl(r.fgtsRef)}</td></tr>
   </table></div>`;
 }
-function aResc(fid,eid){ rescFId=fid; funcExp=fid; adtFId=null; folhaFId=null; ferFId=null; dec13FId=null; rFunc(); setTimeout(()=>pvResc(fid,eid),80); }
+function aResc(fid,eid){ rescFId=fid; funcExp=fid; adtFId=null; folhaFId=null; ferFId=null; dec13FId=null; rFunc(); setTimeout(()=>{onRescChange(fid,eid);},80); }
 function cResc(){ rescFId=null; rFunc(); }
 function sResc(fid,eid){
   const f=getFuncs(eid).find(x=>x.id===fid); if(!f)return;
   const data=gv('rData'); if(!data){alert('Informe a data da rescisão.');return;}
-  const aviso=gv('rAviso'), motivo=gv('rMotivo');
-  const r=calcResc(f,data,aviso); if(!r)return;
+  const motivo=gv('rMotivo');
+  const isDemissao=motivo==='Pedido de demissão';
+  const aviso=isDemissao?gv('rDemAviso'):gv('rAviso');
+  const r=calcResc(f,data,motivo,aviso,num(gv('rFerVenc')),num(gv('rFgtsSaldo'))); if(!r)return;
   setRescFunc(eid,{fid,...r,dataRescisao:data,motivo,aviso,pago:false});
   rescFId=null; rFunc();
 }
@@ -1123,28 +1270,51 @@ function printResc(fid,eid){
         ${f.funcao?`<div class="linha"><span class="lbl">Função</span><span class="val">${esc(f.funcao)}</span></div>`:''}
         ${f.dataAdmissao?`<div class="linha"><span class="lbl">Admissão</span><span class="val">${dataAdm}</span></div>`:''}
         <div class="linha"><span class="lbl">Rescisão</span><span class="val">${dataResc}</span></div>
-        <div class="linha"><span class="lbl">Aviso prévio</span><span class="val">${resc.aviso==='trab'?'Trabalhado (30 dias)':resc.aviso==='ind'?'Indenizado pelo empregador':'Sem aviso prévio'}</span></div>
+        <div class="linha"><span class="lbl">Aviso prévio</span><span class="val">${
+          resc.aviso==='ind'?`Indenizado — ${resc.diasAviso} dias (Lei 12.506/2011)`:
+          resc.aviso==='trab'?`Trabalhado (${resc.diasAviso} dias)`:
+          resc.aviso==='desc'?'Descontado do acerto (não cumprido)':
+          resc.aviso==='disp'?'Dispensado pelo empregador':'Sem aviso prévio'
+        }</span></div>
         <div class="linha"><span class="lbl">Salário Base</span><span class="val">${brl(f.salarioBase)}</span></div>
       </div>
 
       <div class="bloco">
         <div class="bloco-titulo">Verbas Rescisórias</div>
         <div class="linha">
-          <span class="lbl">Saldo de salário (${resc.diasTrab} dias trabalhados)</span>
+          <span class="lbl">Saldo de salário (${resc.diasTrab} dias — ${brl(f.salarioBase)} ÷ 30)</span>
           <span class="val">${brl(resc.saldoSal)}</span>
         </div>
-        <div class="linha" style="font-size:11px;color:#555;padding-left:10px">
-          <span class="lbl">${brl(f.salarioBase)} ÷ 30 × ${resc.diasTrab} dias</span><span class="val"></span>
-        </div>
+        ${resc.avisoVal>0?`
         <div class="linha">
-          <span class="lbl">13º salário proporcional (${resc.avos13}/12 avos)</span>
+          <span class="lbl">Aviso prévio indenizado${resc.isAcordo?' 50%':''} — ${resc.diasAviso} dias (Lei 12.506/2011)${resc.avisoDias>0?' — estende 13º e férias':''}</span>
+          <span class="val">${brl(resc.avisoVal)}</span>
+        </div>`:''}
+        ${resc.avisoVal<0?`
+        <div class="linha">
+          <span class="lbl" style="color:#d97706">(−) Desconto: aviso prévio não cumprido (30 dias)</span>
+          <span class="val" style="color:#d97706">−${brl(-resc.avisoVal)}</span>
+        </div>`:''}
+        ${resc.dec13>0?`
+        <div class="linha">
+          <span class="lbl">13º salário proporcional (${resc.avos13}/12 avos${resc.avisoDias>0?' + aviso':''}) </span>
           <span class="val">${brl(resc.dec13)}</span>
-        </div>
+        </div>`:''}
+        ${resc.ferProp>0?`
         <div class="linha">
-          <span class="lbl">Férias proporcionais + 1/3 (${resc.avosF}/12 avos)</span>
-          <span class="val">${brl(resc.ferias)}</span>
-        </div>
-        ${resc.avisoVal>0?`<div class="linha"><span class="lbl">Aviso prévio indenizado (30 dias)</span><span class="val">${brl(resc.avisoVal)}</span></div>`:''}
+          <span class="lbl">Férias proporcionais + 1/3 (${resc.avosF}/12 avos${resc.avisoDias>0?' + aviso':''})</span>
+          <span class="val">${brl(resc.ferProp)}</span>
+        </div>`:''}
+        ${resc.ferVenc>0?`
+        <div class="linha">
+          <span class="lbl">Férias vencidas + 1/3 constitucional (${resc.ferVencNum} período${resc.ferVencNum>1?'s':''} de 30 dias)</span>
+          <span class="val">${brl(resc.ferVenc)}</span>
+        </div>`:''}
+        ${resc.multaFgts>0?`
+        <div class="linha">
+          <span class="lbl">Multa FGTS ${resc.isAcordo?'20% (art. 484-A CLT)':'40% (art. 18 Lei 8.036/90)'} s/ saldo ${brl(resc.fgtsSaldoVal)}</span>
+          <span class="val">${brl(resc.multaFgts)}</span>
+        </div>`:''}
       </div>
 
       <div class="total-box">
@@ -1155,7 +1325,8 @@ function printResc(fid,eid){
 
       <div class="bloco" style="border-color:#7c3aed">
         <div class="bloco-titulo" style="color:#7c3aed">Referência — Custo do Empregador</div>
-        <div class="linha"><span class="lbl">FGTS 8% sobre verbas rescisórias</span><span class="val">${brl(resc.fgts)}</span></div>
+        <div class="linha"><span class="lbl">FGTS 8% sobre verbas brutas rescisórias</span><span class="val">${brl(resc.fgtsRef||0)}</span></div>
+        ${resc.multaFgts>0?`<div class="linha"><span class="lbl">Multa FGTS ${resc.isAcordo?'20%':'40%'} (inclusa no total)</span><span class="val">${brl(resc.multaFgts)}</span></div>`:''}
       </div>
 
       <div class="destaque">
