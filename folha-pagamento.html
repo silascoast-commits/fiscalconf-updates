@@ -147,6 +147,25 @@
     .colab-row.pago .colab-valor { text-decoration: line-through; color: var(--gray-400); }
     .colab-actions { display: flex; gap: 4px; flex-shrink: 0; }
 
+    /* ─── CNPJ status ─── */
+    .cnpj-wrap { position: relative; }
+    .cnpj-status {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      font-size: 16px; line-height: 1; pointer-events: none;
+    }
+    .cnpj-spin {
+      width: 16px; height: 16px; border: 2px solid var(--gray-300);
+      border-top-color: var(--primary); border-radius: 50%;
+      animation: spin .7s linear infinite; display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .cnpj-info {
+      margin-top: 6px; padding: 10px 12px; border-radius: 8px;
+      font-size: 12px; display: none;
+    }
+    .cnpj-info.ok   { background: var(--green-light); border: 1px solid var(--green-border); color: var(--green); display: block; }
+    .cnpj-info.erro { background: var(--red-light); border: 1px solid #fca5a5; color: var(--red); display: block; }
+
     /* ─── Misc ─── */
     hr { border: none; border-top: 1px solid var(--gray-200); margin: 16px 0; }
     .list-footer-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; padding: 3px 0; }
@@ -348,12 +367,11 @@ function renderEmpresas() {
                 ${isAtiva ? `<span class="badge badge-green">✓ ATIVA</span>` : ''}
               </div>
               <div class="empresa-detalhe">
-                ${e.cnpj ? `CNPJ: ${esc(e.cnpj)}` : ''}
-                ${e.cnpj && e.responsavel ? ' · ' : ''}
-                ${e.responsavel ? `Resp.: ${esc(e.responsavel)}` : ''}
-                ${(e.cnpj || e.responsavel) && e.telefone ? ' · ' : ''}
-                ${e.telefone ? `Tel.: ${esc(e.telefone)}` : ''}
-                ${!e.cnpj && !e.responsavel && !e.telefone ? '<span style="color:var(--gray-300)">Sem informações adicionais</span>' : ''}
+                ${e.cnpj ? `CNPJ: <strong>${esc(e.cnpj)}</strong>` : ''}
+                ${e.responsavel ? ` · Resp.: ${esc(e.responsavel)}` : ''}
+                ${e.telefone ? ` · Tel.: ${esc(e.telefone)}` : ''}
+                ${e.endereco ? `<br>${esc(e.endereco)}` : ''}
+                ${!e.cnpj && !e.responsavel && !e.telefone && !e.endereco ? '<span style="color:var(--gray-300)">Sem informações adicionais</span>' : ''}
               </div>
             </div>
             <div class="empresa-actions">
@@ -381,25 +399,34 @@ function renderFormEmpresa(e) {
       <div style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:14px;">
         ${id ? '✏️ Editar Empresa' : '➕ Nova Empresa'}
       </div>
-      <div class="form-grid">
-        <div class="form-field" style="grid-column:1/-1;">
-          <label>Nome da Empresa *</label>
-          <input type="text" id="eNome" placeholder="Razão social ou nome fantasia" value="${esc(e?.nome||'')}" />
-        </div>
-      </div>
-      <div class="form-grid-3">
+      <div class="form-grid-3" style="margin-bottom:12px;">
         <div class="form-field">
-          <label>CNPJ / CPF</label>
-          <input type="text" id="eCnpj" placeholder="00.000.000/0001-00" value="${esc(e?.cnpj||'')}" />
+          <label>CNPJ <span style="font-weight:400;color:var(--gray-400)">(busca automática)</span></label>
+          <div class="cnpj-wrap">
+            <input type="text" id="eCnpj" placeholder="00.000.000/0001-00" maxlength="18"
+              value="${esc(e?.cnpj||'')}"
+              oninput="onCnpjInput(this)"
+              style="padding-right:34px;" />
+            <span class="cnpj-status" id="eCnpjStatus"></span>
+          </div>
+          <div class="cnpj-info" id="eCnpjInfo"></div>
         </div>
         <div class="form-field">
-          <label>Responsável</label>
+          <label>Responsável / Sócio</label>
           <input type="text" id="eResp" placeholder="Nome do responsável" value="${esc(e?.responsavel||'')}" />
         </div>
         <div class="form-field">
           <label>Telefone</label>
           <input type="text" id="eTel" placeholder="(00) 00000-0000" value="${esc(e?.telefone||'')}" />
         </div>
+      </div>
+      <div class="form-field" style="margin-bottom:12px;">
+        <label>Nome da Empresa *</label>
+        <input type="text" id="eNome" placeholder="Razão social ou nome fantasia" value="${esc(e?.nome||'')}" />
+      </div>
+      <div class="form-field" style="margin-bottom:14px;">
+        <label>Endereço</label>
+        <input type="text" id="eEnd" placeholder="Logradouro, número, cidade — UF" value="${esc(e?.endereco||'')}" />
       </div>
       <div class="form-actions">
         <button class="btn btn-ghost btn-sm" onclick="cancelarFormEmpresa()">✕ Cancelar</button>
@@ -408,11 +435,83 @@ function renderFormEmpresa(e) {
     </div>`;
 }
 
+// ─── CNPJ máscara + busca ────────────────────────────────────
+function mascararCnpj(v) {
+  v = v.replace(/\D/g,'').slice(0,14);
+  if (v.length > 12) v = v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5,8)+'/'+v.slice(8,12)+'-'+v.slice(12);
+  else if (v.length > 8) v = v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5,8)+'/'+v.slice(8);
+  else if (v.length > 5) v = v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5);
+  else if (v.length > 2) v = v.slice(0,2)+'.'+v.slice(2);
+  return v;
+}
+
+let cnpjTimer = null;
+function onCnpjInput(el) {
+  const cur = el.selectionStart;
+  const raw  = el.value.replace(/\D/g,'');
+  el.value   = mascararCnpj(raw);
+  // mantém cursor
+  try { el.setSelectionRange(cur, cur); } catch(e) {}
+
+  clearTimeout(cnpjTimer);
+  const statusEl = document.getElementById('eCnpjStatus');
+  const infoEl   = document.getElementById('eCnpjInfo');
+  if (!statusEl || !infoEl) return;
+
+  if (raw.length < 14) {
+    statusEl.innerHTML = '';
+    infoEl.className   = 'cnpj-info';
+    infoEl.textContent = '';
+    return;
+  }
+  // dispara busca após 400ms
+  statusEl.innerHTML = `<span class="cnpj-spin"></span>`;
+  infoEl.className   = 'cnpj-info';
+  infoEl.textContent = '';
+  cnpjTimer = setTimeout(() => buscarCnpj(raw), 400);
+}
+
+async function buscarCnpj(cnpj) {
+  const statusEl = document.getElementById('eCnpjStatus');
+  const infoEl   = document.getElementById('eCnpjInfo');
+  if (!statusEl || !infoEl) return;
+
+  try {
+    const res  = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+    if (!res.ok) throw new Error('não encontrado');
+    const d = await res.json();
+
+    // Preenche campos automaticamente se estiverem vazios
+    const nomeInput = document.getElementById('eNome');
+    const respInput = document.getElementById('eResp');
+    const endInput  = document.getElementById('eEnd');
+
+    const razao   = d.razao_social || '';
+    const fantasia = d.nome_fantasia || '';
+    const socio   = d.qsa?.[0]?.nome_socio || '';
+    const logr    = [d.logradouro, d.numero, d.municipio, d.uf].filter(Boolean).join(', ');
+
+    if (nomeInput && !nomeInput.value.trim()) nomeInput.value = fantasia || razao;
+    if (respInput && !respInput.value.trim() && socio) respInput.value = socio;
+    if (endInput  && !endInput.value.trim()  && logr)  endInput.value  = logr;
+
+    statusEl.innerHTML = '✅';
+    infoEl.className   = 'cnpj-info ok';
+    infoEl.innerHTML   = `<strong>${razao}</strong>${fantasia && fantasia !== razao ? ` · ${fantasia}` : ''}<br>
+      ${d.descricao_situacao_cadastral ? `Situação: <strong>${d.descricao_situacao_cadastral}</strong>` : ''}
+      ${d.cnae_fiscal_descricao ? ` · ${d.cnae_fiscal_descricao}` : ''}`;
+  } catch {
+    statusEl.innerHTML = '❌';
+    infoEl.className   = 'cnpj-info erro';
+    infoEl.textContent = 'CNPJ não encontrado na Receita Federal. Verifique o número ou preencha os campos manualmente.';
+  }
+}
+
 function abrirFormEmpresa() {
   mostrarFormEmpresa = true;
   empresaEditandoId = null;
   renderEmpresas();
-  setTimeout(() => document.getElementById('eNome')?.focus(), 50);
+  setTimeout(() => document.getElementById('eCnpj')?.focus(), 50);
 }
 
 function cancelarFormEmpresa() {
@@ -426,9 +525,10 @@ function salvarEmpresa(id) {
   if (!nome) { alert('Informe o nome da empresa.'); return; }
   const dados = {
     nome,
-    cnpj: document.getElementById('eCnpj')?.value.trim() || '',
-    responsavel: document.getElementById('eResp')?.value.trim() || '',
-    telefone: document.getElementById('eTel')?.value.trim() || '',
+    cnpj:       document.getElementById('eCnpj')?.value.trim() || '',
+    responsavel:document.getElementById('eResp')?.value.trim() || '',
+    telefone:   document.getElementById('eTel')?.value.trim()  || '',
+    endereco:   document.getElementById('eEnd')?.value.trim()  || '',
   };
   const lista = getEmpresas();
   if (id) {
@@ -447,7 +547,7 @@ function editarEmpresa(id) {
   empresaEditandoId = id;
   mostrarFormEmpresa = false;
   renderEmpresas();
-  setTimeout(() => document.getElementById('eNome')?.focus(), 50);
+  setTimeout(() => document.getElementById('eCnpj')?.focus(), 50);
 }
 
 function excluirEmpresa(id) {
