@@ -7,857 +7,804 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --primary: #2563eb;
-      --primary-light: #dbeafe;
-      --green: #16a34a;
-      --green-light: #dcfce7;
-      --green-border: #86efac;
-      --amber: #d97706;
-      --amber-light: #fef3c7;
-      --red: #dc2626;
-      --red-light: #fee2e2;
-      --gray-50: #f9fafb;
-      --gray-100: #f3f4f6;
-      --gray-200: #e5e7eb;
-      --gray-300: #d1d5db;
-      --gray-400: #9ca3af;
-      --gray-500: #6b7280;
-      --gray-600: #4b5563;
-      --gray-700: #374151;
-      --gray-800: #1f2937;
-      --gray-900: #111827;
-      --radius: 10px;
-      --shadow: 0 1px 4px rgba(0,0,0,.08);
+      --primary: #2563eb; --primary-light: #dbeafe;
+      --green: #16a34a;   --green-light: #dcfce7; --green-border: #86efac;
+      --amber: #d97706;   --amber-light: #fef3c7;
+      --purple: #7c3aed;  --purple-light: #ede9fe;
+      --red: #dc2626;     --red-light: #fee2e2;
+      --gray-50:#f9fafb; --gray-100:#f3f4f6; --gray-200:#e5e7eb;
+      --gray-300:#d1d5db; --gray-400:#9ca3af; --gray-500:#6b7280;
+      --gray-600:#4b5563; --gray-700:#374151; --gray-800:#1f2937; --gray-900:#111827;
+      --radius:10px; --shadow:0 1px 4px rgba(0,0,0,.08);
     }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--gray-50); color: var(--gray-800); min-height: 100vh; }
+    body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--gray-50); color:var(--gray-800); min-height:100vh; }
 
-    /* ─── Header ─── */
-    header {
-      background: #fff; border-bottom: 1px solid var(--gray-200);
-      padding: 0 24px; height: 56px; display: flex; align-items: center;
-      gap: 14px; position: sticky; top: 0; z-index: 200; box-shadow: var(--shadow);
-    }
-    .header-logo { font-size: 22px; line-height: 1; }
-    .header-title { font-size: 16px; font-weight: 700; color: var(--gray-900); }
-    .header-sub { font-size: 12px; color: var(--gray-400); margin-left: 6px; }
-    .header-empresa-ativa {
-      margin-left: auto; display: flex; align-items: center; gap: 8px;
-      background: var(--green-light); border: 1px solid var(--green-border);
-      border-radius: 8px; padding: 4px 12px; font-size: 13px;
-    }
-    .header-empresa-ativa span { font-weight: 600; color: var(--green); }
-    .header-empresa-ativa small { color: var(--gray-500); font-size: 11px; }
+    /* ── Header ── */
+    header { background:#fff; border-bottom:1px solid var(--gray-200); padding:0 24px; height:56px; display:flex; align-items:center; gap:14px; position:sticky; top:0; z-index:200; box-shadow:var(--shadow); }
+    .h-title { font-size:16px; font-weight:700; color:var(--gray-900); }
+    .h-sub   { font-size:12px; color:var(--gray-400); margin-left:6px; }
+    .h-empresa { margin-left:auto; display:flex; align-items:center; gap:8px; background:var(--green-light); border:1px solid var(--green-border); border-radius:8px; padding:4px 12px; font-size:13px; }
+    .h-empresa strong { font-weight:600; color:var(--green); }
 
-    /* ─── Tabs ─── */
-    .tabs {
-      background: #fff; border-bottom: 2px solid var(--gray-200);
-      display: flex; gap: 0; padding: 0 24px;
-    }
-    .tab-btn {
-      padding: 14px 20px; font-size: 14px; font-weight: 600;
-      color: var(--gray-500); border: none; background: transparent;
-      cursor: pointer; border-bottom: 2px solid transparent;
-      margin-bottom: -2px; transition: color .15s, border-color .15s;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .tab-btn:hover { color: var(--gray-800); }
-    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+    /* ── Tabs ── */
+    .tabs { background:#fff; border-bottom:2px solid var(--gray-200); display:flex; padding:0 24px; }
+    .tab-btn { padding:13px 20px; font-size:14px; font-weight:600; color:var(--gray-500); border:none; background:transparent; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; transition:color .15s,border-color .15s; }
+    .tab-btn:hover { color:var(--gray-800); }
+    .tab-btn.active { color:var(--primary); border-bottom-color:var(--primary); }
 
-    /* ─── Layout ─── */
-    main { max-width: 920px; margin: 0 auto; padding: 28px 20px 60px; }
+    /* ── Layout ── */
+    main { max-width:960px; margin:0 auto; padding:28px 20px 60px; }
 
-    /* ─── Cards ─── */
-    .card { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; }
-    .card-header { padding: 16px 20px 12px; border-bottom: 1px solid var(--gray-100); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .card-title { font-size: 15px; font-weight: 600; color: var(--gray-800); display: flex; align-items: center; gap: 8px; }
-    .card-body { padding: 20px; }
+    /* ── Card ── */
+    .card { background:#fff; border:1px solid var(--gray-200); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:20px; }
+    .card-header { padding:14px 20px; border-bottom:1px solid var(--gray-100); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .card-title { font-size:15px; font-weight:600; color:var(--gray-800); display:flex; align-items:center; gap:8px; }
+    .card-body { padding:20px; }
 
-    /* ─── Botões ─── */
-    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 0 16px; height: 36px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: opacity .15s, background .15s; white-space: nowrap; }
-    .btn:hover { opacity: .85; }
-    .btn-primary { background: var(--primary); color: #fff; }
-    .btn-green { background: var(--green); color: #fff; }
-    .btn-outline { background: #fff; color: var(--gray-700); border: 1px solid var(--gray-300); }
-    .btn-ghost { background: transparent; color: var(--gray-500); border: none; }
-    .btn-ghost:hover { background: var(--gray-100); color: var(--gray-700); }
-    .btn-danger { background: transparent; color: var(--red); border: none; }
-    .btn-danger:hover { background: var(--red-light); }
-    .btn-sm { height: 30px; padding: 0 10px; font-size: 12px; border-radius: 7px; }
-    .btn-icon { width: 30px; height: 30px; padding: 0; justify-content: center; border-radius: 6px; }
+    /* ── Botões ── */
+    .btn { display:inline-flex; align-items:center; gap:6px; padding:0 16px; height:36px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:opacity .15s; white-space:nowrap; }
+    .btn:hover { opacity:.85; }
+    .btn-primary { background:var(--primary); color:#fff; }
+    .btn-green   { background:var(--green);   color:#fff; }
+    .btn-outline { background:#fff; color:var(--gray-700); border:1px solid var(--gray-300); }
+    .btn-ghost   { background:transparent; color:var(--gray-500); border:none; }
+    .btn-ghost:hover { background:var(--gray-100); color:var(--gray-700); }
+    .btn-danger  { background:transparent; color:var(--red); border:none; }
+    .btn-danger:hover { background:var(--red-light); }
+    .btn-sm   { height:30px; padding:0 10px; font-size:12px; border-radius:7px; }
+    .btn-icon { width:30px; height:30px; padding:0; justify-content:center; border-radius:6px; }
 
-    /* ─── Form ─── */
-    .form-box { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 18px; margin-bottom: 16px; }
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-    .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-    .form-grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-    .form-field { display: flex; flex-direction: column; gap: 5px; }
-    .form-field label { font-size: 12px; font-weight: 600; color: var(--gray-600); }
-    .form-field input, .form-field select {
-      height: 36px; border: 1px solid var(--gray-300); border-radius: 7px;
-      padding: 0 10px; font-size: 13px; background: #fff; outline: none; color: var(--gray-800);
-    }
-    .form-field input:focus, .form-field select:focus { border-color: var(--primary); }
-    .form-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    /* ── Form ── */
+    .form-box { background:var(--gray-50); border:1px solid var(--gray-200); border-radius:var(--radius); padding:18px; margin-bottom:14px; }
+    .form-title { font-size:13px; font-weight:700; color:var(--gray-700); margin-bottom:14px; }
+    .fg1 { display:grid; grid-template-columns:1fr; gap:12px; margin-bottom:12px; }
+    .fg2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+    .fg3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:12px; }
+    .fg4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px; margin-bottom:12px; }
+    .ff { display:flex; flex-direction:column; gap:5px; }
+    .ff label { font-size:12px; font-weight:600; color:var(--gray-600); }
+    .ff input,.ff select { height:36px; border:1px solid var(--gray-300); border-radius:7px; padding:0 10px; font-size:13px; background:#fff; outline:none; color:var(--gray-800); }
+    .ff input:focus,.ff select:focus { border-color:var(--primary); }
+    .form-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:4px; }
+    .section-divider { font-size:11px; font-weight:700; color:var(--gray-400); text-transform:uppercase; letter-spacing:.06em; margin:14px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--gray-200); }
 
-    /* ─── Lista empresas ─── */
-    .empresa-list { display: flex; flex-direction: column; gap: 10px; }
-    .empresa-row {
-      display: flex; align-items: center; gap: 14px;
-      padding: 14px 18px; border-radius: 10px; border: 2px solid var(--gray-200);
-      background: #fff; transition: border-color .15s, background .15s;
-    }
-    .empresa-row.ativa { border-color: var(--green); background: var(--green-light); }
-    .empresa-icon { font-size: 24px; flex-shrink: 0; }
-    .empresa-info { flex: 1; min-width: 0; }
-    .empresa-nome { font-size: 15px; font-weight: 700; color: var(--gray-900); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .empresa-detalhe { font-size: 12px; color: var(--gray-500); margin-top: 3px; }
-    .empresa-actions { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
+    /* ── Empresas ── */
+    .emp-list { display:flex; flex-direction:column; gap:10px; }
+    .emp-row { display:flex; align-items:center; gap:14px; padding:14px 18px; border-radius:10px; border:2px solid var(--gray-200); background:#fff; }
+    .emp-row.ativa { border-color:var(--green); background:var(--green-light); }
+    .emp-info { flex:1; min-width:0; }
+    .emp-nome { font-size:15px; font-weight:700; color:var(--gray-900); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .emp-det  { font-size:12px; color:var(--gray-500); margin-top:3px; line-height:1.6; }
+    .emp-actions { display:flex; gap:6px; flex-shrink:0; align-items:center; }
 
-    /* ─── Badges ─── */
-    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; }
-    .badge-green { background: var(--green); color: #fff; }
-    .badge-blue { background: var(--primary-light); color: var(--primary); }
-    .badge-gray { background: var(--gray-200); color: var(--gray-600); }
+    /* ── CNPJ lookup ── */
+    .cnpj-wrap { position:relative; }
+    .cnpj-ico { position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:16px; pointer-events:none; }
+    .spin { width:16px; height:16px; border:2px solid var(--gray-300); border-top-color:var(--primary); border-radius:50%; animation:spin .7s linear infinite; display:inline-block; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .cnpj-res { margin-top:6px; padding:10px 12px; border-radius:8px; font-size:12px; display:none; }
+    .cnpj-res.ok   { background:var(--green-light); border:1px solid var(--green-border); color:var(--green); display:block; }
+    .cnpj-res.erro { background:var(--red-light); border:1px solid #fca5a5; color:var(--red); display:block; }
 
-    /* ─── Filtros folha ─── */
-    .folha-filtros { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; margin-bottom: 20px; }
-    .field { display: flex; flex-direction: column; gap: 5px; }
-    .field label { font-size: 11px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: .04em; }
-    .field select, .field input { height: 38px; border: 1px solid var(--gray-300); border-radius: 8px; padding: 0 12px; font-size: 14px; background: #fff; color: var(--gray-800); outline: none; }
-    .field select:focus, .field input:focus { border-color: var(--primary); }
+    /* ── Filtros folha ── */
+    .filtros { display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; margin-bottom:20px; }
+    .fld { display:flex; flex-direction:column; gap:5px; }
+    .fld label { font-size:11px; font-weight:600; color:var(--gray-500); text-transform:uppercase; letter-spacing:.04em; }
+    .fld select,.fld input { height:38px; border:1px solid var(--gray-300); border-radius:8px; padding:0 12px; font-size:14px; background:#fff; color:var(--gray-800); outline:none; }
 
-    /* ─── Resumo ─── */
-    .summary-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 20px; }
-    .summary-card { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 16px 20px; box-shadow: var(--shadow); }
-    .summary-label { font-size: 11px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
-    .summary-value { font-size: 24px; font-weight: 700; color: var(--gray-900); }
-    .summary-value.green { color: var(--green); }
-    .summary-value.amber { color: var(--amber); }
-    .summary-sub { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+    /* ── Resumo ── */
+    .sum-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+    .sum-card { background:#fff; border:1px solid var(--gray-200); border-radius:var(--radius); padding:14px 18px; box-shadow:var(--shadow); }
+    .sum-lbl { font-size:10px; font-weight:700; color:var(--gray-500); text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
+    .sum-val { font-size:20px; font-weight:700; color:var(--gray-900); }
+    .sum-val.green  { color:var(--green); }
+    .sum-val.amber  { color:var(--amber); }
+    .sum-val.purple { color:var(--purple); }
+    .sum-sub { font-size:11px; color:var(--gray-400); margin-top:2px; }
 
-    /* ─── Lista colaboradores ─── */
-    .colab-list { display: flex; flex-direction: column; gap: 8px; }
-    .colab-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--gray-200); background: #fff; }
-    .colab-row.pago { background: var(--green-light); border-color: var(--green-border); }
-    .colab-info { flex: 1; min-width: 0; }
-    .colab-nome { font-size: 14px; font-weight: 600; color: var(--gray-800); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .colab-row.pago .colab-nome-text { text-decoration: line-through; color: var(--gray-400); }
-    .colab-detail { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
-    .colab-valor { font-size: 14px; font-weight: 700; color: var(--gray-900); flex-shrink: 0; }
-    .colab-row.pago .colab-valor { text-decoration: line-through; color: var(--gray-400); }
-    .colab-actions { display: flex; gap: 4px; flex-shrink: 0; }
+    /* ── Colaborador row ── */
+    .colab-card { border:1px solid var(--gray-200); border-radius:10px; background:#fff; margin-bottom:10px; overflow:hidden; }
+    .colab-card.pago { border-color:var(--green-border); background:var(--green-light); }
+    .colab-header { display:flex; align-items:center; gap:12px; padding:12px 16px; cursor:pointer; }
+    .colab-header:hover { background:var(--gray-50); }
+    .colab-card.pago .colab-header:hover { background:#bbf7d030; }
+    .colab-status { font-size:20px; flex-shrink:0; }
+    .colab-info { flex:1; min-width:0; }
+    .colab-nome { font-size:14px; font-weight:700; color:var(--gray-900); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .colab-card.pago .colab-nome-txt { text-decoration:line-through; color:var(--gray-400); }
+    .colab-sub { font-size:12px; color:var(--gray-400); margin-top:2px; }
+    .colab-val { text-align:right; flex-shrink:0; }
+    .colab-val-main { font-size:15px; font-weight:700; color:var(--gray-900); }
+    .colab-card.pago .colab-val-main { text-decoration:line-through; color:var(--gray-400); }
+    .colab-val-sub { font-size:11px; color:var(--gray-400); margin-top:1px; }
+    .colab-actions { display:flex; gap:4px; flex-shrink:0; }
+    .colab-body { border-top:1px solid var(--gray-100); padding:14px 16px; background:#fafafa; }
+    .colab-card.pago .colab-body { background:#f0fdf450; }
 
-    /* ─── CNPJ status ─── */
-    .cnpj-wrap { position: relative; }
-    .cnpj-status {
-      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-      font-size: 16px; line-height: 1; pointer-events: none;
-    }
-    .cnpj-spin {
-      width: 16px; height: 16px; border: 2px solid var(--gray-300);
-      border-top-color: var(--primary); border-radius: 50%;
-      animation: spin .7s linear infinite; display: inline-block;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .cnpj-info {
-      margin-top: 6px; padding: 10px 12px; border-radius: 8px;
-      font-size: 12px; display: none;
-    }
-    .cnpj-info.ok   { background: var(--green-light); border: 1px solid var(--green-border); color: var(--green); display: block; }
-    .cnpj-info.erro { background: var(--red-light); border: 1px solid #fca5a5; color: var(--red); display: block; }
+    /* ── Tabela de cálculo ── */
+    .calc-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .calc-table td { padding:5px 8px; }
+    .calc-table td:last-child { text-align:right; font-weight:600; white-space:nowrap; }
+    .calc-table tr.subtotal td { border-top:1px solid var(--gray-200); font-weight:700; padding-top:8px; }
+    .calc-table tr.total-pagar td { border-top:2px solid var(--gray-300); font-size:15px; font-weight:700; color:var(--primary); padding-top:10px; }
+    .calc-table tr.custo td { font-size:12px; color:var(--gray-500); }
+    .calc-table tr.deducao td:last-child { color:var(--red); }
+    .calc-table tr.fgts td { color:var(--purple); }
+    .calc-section { font-size:11px; font-weight:700; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; padding:10px 8px 4px; }
+    .calc-badge { display:inline-block; padding:1px 7px; border-radius:99px; font-size:10px; font-weight:700; background:var(--primary-light); color:var(--primary); margin-left:6px; }
+    .calc-badge.amber { background:var(--amber-light); color:var(--amber); }
+    .calc-badge.purple { background:var(--purple-light); color:var(--purple); }
 
-    /* ─── Misc ─── */
-    hr { border: none; border-top: 1px solid var(--gray-200); margin: 16px 0; }
-    .list-footer-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; padding: 3px 0; }
-    .list-footer-total { font-size: 18px; font-weight: 700; }
-    .text-green { color: var(--green); font-weight: 600; }
-    .text-amber { color: var(--amber); font-weight: 600; }
-    .empty { padding: 48px 20px; text-align: center; color: var(--gray-400); }
-    .empty-icon { font-size: 40px; margin-bottom: 12px; }
-    .empty p { font-size: 14px; margin-bottom: 14px; }
-    .form-total { font-size: 13px; color: var(--gray-500); margin-bottom: 12px; }
-    .form-total strong { font-size: 16px; color: var(--gray-900); }
-    .aviso { text-align: center; font-size: 12px; color: var(--gray-400); margin-top: 8px; }
+    /* ── Misc ── */
+    .badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:700; }
+    .badge-green  { background:var(--green);  color:#fff; }
+    .badge-blue   { background:var(--primary-light); color:var(--primary); }
+    .badge-amber  { background:var(--amber-light);   color:var(--amber); }
+    .badge-purple { background:var(--purple-light);  color:var(--purple); }
+    hr { border:none; border-top:1px solid var(--gray-200); margin:14px 0; }
+    .lf-row { display:flex; justify-content:space-between; align-items:center; font-size:14px; padding:3px 0; }
+    .lf-total { font-size:18px; font-weight:700; }
+    .text-green  { color:var(--green);  font-weight:600; }
+    .text-amber  { color:var(--amber);  font-weight:600; }
+    .text-purple { color:var(--purple); font-weight:600; }
+    .empty { padding:48px 20px; text-align:center; color:var(--gray-400); }
+    .empty-icon { font-size:40px; margin-bottom:12px; }
+    .empty p { font-size:14px; margin-bottom:14px; }
+    .aviso { text-align:center; font-size:12px; color:var(--gray-400); margin-top:8px; }
+    .alerta { background:#fffbeb; border:1px solid #fde68a; border-radius:var(--radius); padding:16px 20px; display:flex; align-items:flex-start; gap:12px; font-size:14px; color:var(--amber); margin-bottom:20px; }
+    .alerta strong { color:var(--gray-800); }
+    .empresa-banner { display:flex; align-items:center; gap:10px; margin-bottom:16px; padding:10px 16px; background:var(--green-light); border:1px solid var(--green-border); border-radius:var(--radius); font-size:13px; }
 
-    /* ─── Alerta empresa ─── */
-    .alerta-empresa {
-      background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius);
-      padding: 16px 20px; display: flex; align-items: center; gap: 12px;
-      font-size: 14px; color: var(--amber); margin-bottom: 20px;
-    }
-    .alerta-empresa strong { color: var(--gray-800); }
-
-    /* ─── Print ─── */
+    /* ── Print ── */
     @media print {
-      .tabs, .btn, .colab-actions, .empresa-actions, .aviso,
-      .form-box, .folha-filtros, .alerta-empresa { display: none !important; }
-      body { background: #fff; }
-      main { padding: 0; max-width: 100%; }
-      .card { box-shadow: none; border: 1px solid #ccc; }
-      header { position: static; }
+      .tabs,.btn,.colab-actions,.emp-actions,.aviso,.form-box,
+      .filtros,.alerta,.colab-header-toggle { display:none !important; }
+      body { background:#fff; }
+      main { padding:0; max-width:100%; }
+      .card { box-shadow:none; border:1px solid #ccc; }
+      header { position:static; box-shadow:none; }
+      .colab-body { display:block !important; }
     }
 
-    @media (max-width: 640px) {
-      .summary-grid { grid-template-columns: 1fr; }
-      .form-grid, .form-grid-3, .form-grid-4 { grid-template-columns: 1fr; }
-      .empresa-row { flex-wrap: wrap; }
+    @media (max-width:680px) {
+      .sum-grid { grid-template-columns:1fr 1fr; }
+      .fg2,.fg3,.fg4 { grid-template-columns:1fr; }
     }
   </style>
 </head>
 <body>
 
-<!-- ═══ HEADER ═══ -->
 <header>
-  <div class="header-logo">📋</div>
+  <span style="font-size:22px">📋</span>
   <div>
-    <span class="header-title">Folha de Pagamento</span>
-    <span class="header-sub">Colaboradores Informais</span>
+    <span class="h-title">Folha de Pagamento</span>
+    <span class="h-sub">Colaboradores Informais</span>
   </div>
-  <div id="headerEmpresa" style="margin-left:auto;"></div>
+  <div id="hEmpresa" style="margin-left:auto;"></div>
 </header>
 
-<!-- ═══ TABS ═══ -->
 <div class="tabs">
-  <button class="tab-btn active" id="tabEmpresasBtn" onclick="mudarTab('empresas')">🏢 Empresas</button>
-  <button class="tab-btn" id="tabFolhaBtn" onclick="mudarTab('folha')">👥 Folha de Pagamento</button>
+  <button class="tab-btn active" id="tabEmpBtn" onclick="tab('emp')">🏢 Empresas</button>
+  <button class="tab-btn" id="tabFolhaBtn" onclick="tab('folha')">👥 Folha de Pagamento</button>
 </div>
 
-<!-- ═══ MAIN ═══ -->
 <main>
-  <div id="tabEmpresasContent"></div>
-  <div id="tabFolhaContent" style="display:none;"></div>
+  <div id="pgEmp"></div>
+  <div id="pgFolha" style="display:none;"></div>
 </main>
 
 <script>
-// ══════════════════════════════════════════════════════════════
-// ESTADO GLOBAL
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
+// ESTADO
+// ══════════════════════════════════════════════════════
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-const hoje = new Date();
-
-let tabAtiva = 'empresas';
-let empresaEditandoId = null;
-let mostrarFormEmpresa = false;
-
-let mes = hoje.getMonth() + 1;
-let ano = hoje.getFullYear();
-let mostrarFormColab = false;
-let colabEditandoId = null;
-
-// ══════════════════════════════════════════════════════════════
-// STORAGE — EMPRESAS
-// ══════════════════════════════════════════════════════════════
-function getEmpresas() {
-  try { return JSON.parse(localStorage.getItem('fp_empresas') || '[]'); } catch { return []; }
-}
-function setEmpresas(list) { localStorage.setItem('fp_empresas', JSON.stringify(list)); }
-
-function getEmpresaAtivaId() { return localStorage.getItem('fp_empresa_ativa') || null; }
-function setEmpresaAtivaId(id) {
-  if (id) localStorage.setItem('fp_empresa_ativa', id);
-  else localStorage.removeItem('fp_empresa_ativa');
-}
-function getEmpresaAtiva() {
-  const id = getEmpresaAtivaId();
-  if (!id) return null;
-  return getEmpresas().find(e => e.id === id) || null;
-}
-
-// ══════════════════════════════════════════════════════════════
-// STORAGE — COLABORADORES
-// ══════════════════════════════════════════════════════════════
-function colabKey(empresaId) {
-  return `fp_colabs_${empresaId}_${ano}_${String(mes).padStart(2,'0')}`;
-}
-function getColabs(empresaId) {
-  try { return JSON.parse(localStorage.getItem(colabKey(empresaId)) || '[]'); } catch { return []; }
-}
-function setColabs(empresaId, list) { localStorage.setItem(colabKey(empresaId), JSON.stringify(list)); }
-
-// ══════════════════════════════════════════════════════════════
-// HELPERS
-// ══════════════════════════════════════════════════════════════
-function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function formatBRL(v) { return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
-function calcTotal(c) {
-  if (c.tipoCalculo === 'fixo') return Number(c.valorUnitario)||0;
-  return (Number(c.quantidade)||0) * (Number(c.valorUnitario)||0);
-}
-function labelTipo(c) {
-  if (c.tipoCalculo === 'fixo') return 'Valor fixo mensal';
-  const un = c.tipoCalculo === 'diaria' ? (c.quantidade==1?'dia':'dias') : (c.quantidade==1?'hora':'horas');
-  return `${c.quantidade} ${un} × ${formatBRL(c.valorUnitario)}`;
-}
-
-// ══════════════════════════════════════════════════════════════
-// TABS
-// ══════════════════════════════════════════════════════════════
-function mudarTab(tab) {
-  tabAtiva = tab;
-  document.getElementById('tabEmpresasBtn').classList.toggle('active', tab === 'empresas');
-  document.getElementById('tabFolhaBtn').classList.toggle('active', tab === 'folha');
-  document.getElementById('tabEmpresasContent').style.display = tab === 'empresas' ? '' : 'none';
-  document.getElementById('tabFolhaContent').style.display = tab === 'folha' ? '' : 'none';
-  if (tab === 'empresas') renderEmpresas();
-  else renderFolha();
-}
-
-// ══════════════════════════════════════════════════════════════
-// HEADER
-// ══════════════════════════════════════════════════════════════
-function renderHeader() {
-  const ea = getEmpresaAtiva();
-  const el = document.getElementById('headerEmpresa');
-  if (ea) {
-    el.innerHTML = `
-      <div class="header-empresa-ativa">
-        🏢 <span>${esc(ea.nome)}</span>
-        <small>ATIVA</small>
-        <button class="btn btn-ghost btn-sm" style="margin-left:4px;height:24px;padding:0 8px;font-size:11px;" onclick="desativarEmpresa()">✕</button>
-      </div>`;
-  } else {
-    el.innerHTML = `<span style="font-size:12px;color:var(--gray-400);">Nenhuma empresa ativa</span>`;
-  }
-}
-
-// ══════════════════════════════════════════════════════════════
-// ABA EMPRESAS
-// ══════════════════════════════════════════════════════════════
-function renderEmpresas() {
-  renderHeader();
-  const empresas = getEmpresas();
-  const ativaId = getEmpresaAtivaId();
-  const el = document.getElementById('tabEmpresasContent');
-
-  let html = `
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">🏢 Empresas Cadastradas</div>
-        <button class="btn btn-primary btn-sm" onclick="abrirFormEmpresa()">+ Nova Empresa</button>
-      </div>
-      <div class="card-body">`;
-
-  if (mostrarFormEmpresa) {
-    const e = empresaEditandoId ? getEmpresas().find(x => x.id === empresaEditandoId) : null;
-    html += renderFormEmpresa(e);
-  }
-
-  if (empresas.length === 0 && !mostrarFormEmpresa) {
-    html += `
-      <div class="empty">
-        <div class="empty-icon">🏢</div>
-        <p>Nenhuma empresa cadastrada ainda.</p>
-        <button class="btn btn-primary" onclick="abrirFormEmpresa()">+ Cadastrar primeira empresa</button>
-      </div>`;
-  } else {
-    html += `<div class="empresa-list">`;
-    empresas.forEach(e => {
-      if (empresaEditandoId === e.id) {
-        html += renderFormEmpresa(e);
-      } else {
-        const isAtiva = e.id === ativaId;
-        html += `
-          <div class="empresa-row ${isAtiva ? 'ativa' : ''}">
-            <div class="empresa-icon">🏢</div>
-            <div class="empresa-info">
-              <div class="empresa-nome">
-                ${esc(e.nome)}
-                ${isAtiva ? `<span class="badge badge-green">✓ ATIVA</span>` : ''}
-              </div>
-              <div class="empresa-detalhe">
-                ${e.cnpj ? `CNPJ: <strong>${esc(e.cnpj)}</strong>` : ''}
-                ${e.responsavel ? ` · Resp.: ${esc(e.responsavel)}` : ''}
-                ${e.telefone ? ` · Tel.: ${esc(e.telefone)}` : ''}
-                ${e.endereco ? `<br>${esc(e.endereco)}` : ''}
-                ${!e.cnpj && !e.responsavel && !e.telefone && !e.endereco ? '<span style="color:var(--gray-300)">Sem informações adicionais</span>' : ''}
-              </div>
-            </div>
-            <div class="empresa-actions">
-              ${!isAtiva
-                ? `<button class="btn btn-green btn-sm" onclick="ativarEmpresa('${e.id}')">⚡ Ativar</button>`
-                : `<button class="btn btn-outline btn-sm" onclick="irParaFolha()">📋 Ver Folha</button>`
-              }
-              <button class="btn btn-ghost btn-icon" onclick="editarEmpresa('${e.id}')" title="Editar">✏️</button>
-              <button class="btn btn-danger btn-icon" onclick="excluirEmpresa('${e.id}')" title="Excluir">🗑️</button>
-            </div>
-          </div>`;
-      }
-    });
-    html += `</div>`;
-  }
-
-  html += `</div></div>`;
-  el.innerHTML = html;
-}
-
-function renderFormEmpresa(e) {
-  const id = e ? e.id : '';
-  return `
-    <div class="form-box">
-      <div style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:14px;">
-        ${id ? '✏️ Editar Empresa' : '➕ Nova Empresa'}
-      </div>
-      <div class="form-grid-3" style="margin-bottom:12px;">
-        <div class="form-field">
-          <label>CNPJ <span style="font-weight:400;color:var(--gray-400)">(busca automática)</span></label>
-          <div class="cnpj-wrap">
-            <input type="text" id="eCnpj" placeholder="00.000.000/0001-00" maxlength="18"
-              value="${esc(e?.cnpj||'')}"
-              oninput="onCnpjInput(this)"
-              style="padding-right:34px;" />
-            <span class="cnpj-status" id="eCnpjStatus"></span>
-          </div>
-          <div class="cnpj-info" id="eCnpjInfo"></div>
-        </div>
-        <div class="form-field">
-          <label>Responsável / Sócio</label>
-          <input type="text" id="eResp" placeholder="Nome do responsável" value="${esc(e?.responsavel||'')}" />
-        </div>
-        <div class="form-field">
-          <label>Telefone</label>
-          <input type="text" id="eTel" placeholder="(00) 00000-0000" value="${esc(e?.telefone||'')}" />
-        </div>
-      </div>
-      <div class="form-field" style="margin-bottom:12px;">
-        <label>Nome da Empresa *</label>
-        <input type="text" id="eNome" placeholder="Razão social ou nome fantasia" value="${esc(e?.nome||'')}" />
-      </div>
-      <div class="form-field" style="margin-bottom:14px;">
-        <label>Endereço</label>
-        <input type="text" id="eEnd" placeholder="Logradouro, número, cidade — UF" value="${esc(e?.endereco||'')}" />
-      </div>
-      <div class="form-actions">
-        <button class="btn btn-ghost btn-sm" onclick="cancelarFormEmpresa()">✕ Cancelar</button>
-        <button class="btn btn-primary btn-sm" onclick="salvarEmpresa('${id}')">💾 Salvar Empresa</button>
-      </div>
-    </div>`;
-}
-
-// ─── CNPJ máscara + busca ────────────────────────────────────
-function mascararCnpj(v) {
-  v = v.replace(/\D/g,'').slice(0,14);
-  if (v.length > 12) v = v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5,8)+'/'+v.slice(8,12)+'-'+v.slice(12);
-  else if (v.length > 8) v = v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5,8)+'/'+v.slice(8);
-  else if (v.length > 5) v = v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5);
-  else if (v.length > 2) v = v.slice(0,2)+'.'+v.slice(2);
-  return v;
-}
-
+const hoje  = new Date();
+let tabAtiva = 'emp';
+let empFormAberto = false, empEditId = null;
+let mes = hoje.getMonth()+1, ano = hoje.getFullYear();
+let colabFormAberto = false, colabEditId = null;
+let colabExpandido = null;
 let cnpjTimer = null;
-function onCnpjInput(el) {
-  const cur = el.selectionStart;
-  const raw  = el.value.replace(/\D/g,'');
-  el.value   = mascararCnpj(raw);
-  // mantém cursor
-  try { el.setSelectionRange(cur, cur); } catch(e) {}
 
-  clearTimeout(cnpjTimer);
-  const statusEl = document.getElementById('eCnpjStatus');
-  const infoEl   = document.getElementById('eCnpjInfo');
-  if (!statusEl || !infoEl) return;
+// ══════════════════════════════════════════════════════
+// STORAGE
+// ══════════════════════════════════════════════════════
+const ls = { g: k => { try { return JSON.parse(localStorage.getItem(k)||'null'); } catch { return null; } }, s: (k,v) => localStorage.setItem(k,JSON.stringify(v)) };
+function getEmpresas()      { return ls.g('fp_empresas') || []; }
+function setEmpresas(v)     { ls.s('fp_empresas', v); }
+function getAtivaId()       { return localStorage.getItem('fp_ativa') || null; }
+function setAtivaId(id)     { id ? localStorage.setItem('fp_ativa',id) : localStorage.removeItem('fp_ativa'); }
+function getAtiva()         { const id=getAtivaId(); return id ? getEmpresas().find(e=>e.id===id)||null : null; }
+function colabKey(eid)      { return `fp_c_${eid}_${ano}_${String(mes).padStart(2,'0')}`; }
+function getColabs(eid)     { return ls.g(colabKey(eid)) || []; }
+function setColabs(eid,v)   { ls.s(colabKey(eid), v); }
 
-  if (raw.length < 14) {
-    statusEl.innerHTML = '';
-    infoEl.className   = 'cnpj-info';
-    infoEl.textContent = '';
-    return;
+// ══════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════
+function genId() { return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+function esc(s)  { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function brl(v)  { return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function pct(v,p){ return (Number(v||0)*Number(p||0)/100); }
+
+// ── Cálculos trabalhistas ──────────────────────────────
+function diasNoMes(m,a){ return new Date(a,m,0).getDate(); }
+
+function calcAvos13(admissao, anoRef) {
+  if (!admissao) return 0;
+  const adm = new Date(admissao+'T12:00:00');
+  let avos = 0;
+  for (let m = 0; m < 12; m++) {
+    const iniMes = new Date(anoRef, m, 1);
+    const fimMes = new Date(anoRef, m+1, 0);
+    if (adm > fimMes) continue;                    // não admitido ainda
+    if (anoRef < hoje.getFullYear() && fimMes > new Date(anoRef,11,31)) continue;
+    if (anoRef === hoje.getFullYear() && m > hoje.getMonth()) continue;
+    const diaAdm = (adm.getFullYear()===anoRef && adm.getMonth()===m) ? adm.getDate() : 1;
+    const diasTrab = fimMes.getDate() - diaAdm + 1;
+    if (diasTrab >= 15) avos++;
   }
-  // dispara busca após 400ms
-  statusEl.innerHTML = `<span class="cnpj-spin"></span>`;
-  infoEl.className   = 'cnpj-info';
-  infoEl.textContent = '';
-  cnpjTimer = setTimeout(() => buscarCnpj(raw), 400);
+  return Math.min(avos, 12);
 }
 
-async function buscarCnpj(cnpj) {
-  const statusEl = document.getElementById('eCnpjStatus');
-  const infoEl   = document.getElementById('eCnpjInfo');
-  if (!statusEl || !infoEl) return;
+function calcAvosFerias(admissao) {
+  if (!admissao) return 0;
+  const adm = new Date(admissao+'T12:00:00');
+  const ref = new Date(ano, mes-1, 1);
+  let meses = (ref.getFullYear()-adm.getFullYear())*12 + (ref.getMonth()-adm.getMonth());
+  if (meses < 0) return 0;
+  return meses % 12;
+}
 
-  try {
-    const res  = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
-    if (!res.ok) throw new Error('não encontrado');
-    const d = await res.json();
+function calcColab(c) {
+  const sal   = Number(c.salarioBase)||0;
+  const duMes = Number(c.diasUteisMes)||22;
+  const dt    = Number(c.diasTrabalhados)||0;
 
-    // Preenche campos automaticamente se estiverem vazios
-    const nomeInput = document.getElementById('eNome');
-    const respInput = document.getElementById('eResp');
-    const endInput  = document.getElementById('eEnd');
+  // Salário proporcional
+  const salProp = c.tipoSalario==='mensalista' ? (sal/duMes)*dt : sal*dt;
 
-    const razao   = d.razao_social || '';
-    const fantasia = d.nome_fantasia || '';
-    const socio   = d.qsa?.[0]?.nome_socio || '';
-    const logr    = [d.logradouro, d.numero, d.municipio, d.uf].filter(Boolean).join(', ');
+  // Valor da hora (mensalista: sal/duMes/8)
+  const valorHora = c.tipoSalario==='mensalista' ? sal/duMes/(Number(c.cargaHoraria)||8) : (Number(c.valorHora)||0);
 
-    if (nomeInput && !nomeInput.value.trim()) nomeInput.value = fantasia || razao;
-    if (respInput && !respInput.value.trim() && socio) respInput.value = socio;
-    if (endInput  && !endInput.value.trim()  && logr)  endInput.value  = logr;
+  // Horas extras
+  const he50v  = valorHora * (Number(c.he50)||0) * 1.5;
+  const he100v = valorHora * (Number(c.he100)||0) * 2.0;
+  const totalHE = he50v + he100v;
 
-    statusEl.innerHTML = '✅';
-    infoEl.className   = 'cnpj-info ok';
-    infoEl.innerHTML   = `<strong>${razao}</strong>${fantasia && fantasia !== razao ? ` · ${fantasia}` : ''}<br>
-      ${d.descricao_situacao_cadastral ? `Situação: <strong>${d.descricao_situacao_cadastral}</strong>` : ''}
-      ${d.cnae_fiscal_descricao ? ` · ${d.cnae_fiscal_descricao}` : ''}`;
-  } catch {
-    statusEl.innerHTML = '❌';
-    infoEl.className   = 'cnpj-info erro';
-    infoEl.textContent = 'CNPJ não encontrado na Receita Federal. Verifique o número ou preencha os campos manualmente.';
+  // DSR sobre HE
+  const dsrHE = dt > 0 && totalHE > 0 ? (totalHE / dt) * (Number(c.diasDSR)||4) : 0;
+  const dsr   = c.dsrManual ? (Number(c.dsrValor)||0) : dsrHE;
+
+  // Adiantamento
+  const adt   = Number(c.adiantamento)||0;
+
+  // Bruto do mês
+  const brutoMes = salProp + totalHE + dsr;
+
+  // 13º proporcional
+  const avos13  = calcAvos13(c.dataAdmissao, ano);
+  const dec13   = sal>0 ? sal*avos13/12 : 0;
+
+  // Férias proporcionais + 1/3
+  const avosF   = calcAvosFerias(c.dataAdmissao);
+  const ferBase = sal>0 ? sal*avosF/12 : 0;
+  const ferTotal= ferBase * (4/3);
+
+  // FGTS (8%) — custo empregador, não descontado do colaborador
+  const fgts    = brutoMes * 0.08;
+
+  // Total a pagar
+  const aPagar  = brutoMes - adt;
+
+  return { salProp, valorHora, he50v, he100v, totalHE, dsr, dsrHE, adt, brutoMes, avos13, dec13, avosF, ferBase, ferTotal, fgts, aPagar };
+}
+
+// ══════════════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════════════
+function tab(t) {
+  tabAtiva = t;
+  document.getElementById('tabEmpBtn').classList.toggle('active', t==='emp');
+  document.getElementById('tabFolhaBtn').classList.toggle('active', t==='folha');
+  document.getElementById('pgEmp').style.display   = t==='emp'   ? '' : 'none';
+  document.getElementById('pgFolha').style.display = t==='folha' ? '' : 'none';
+  t==='emp' ? renderEmp() : renderFolha();
+}
+
+// ══════════════════════════════════════════════════════
+// HEADER
+// ══════════════════════════════════════════════════════
+function renderHeader() {
+  const ea = getAtiva();
+  document.getElementById('hEmpresa').innerHTML = ea
+    ? `<div class="h-empresa">🏢 <strong>${esc(ea.nome)}</strong> <small style="color:var(--gray-500)">ATIVA</small>
+         <button class="btn btn-ghost btn-sm" style="height:24px;padding:0 8px;font-size:11px;" onclick="desativar()">✕</button></div>`
+    : `<span style="font-size:12px;color:var(--gray-400)">Nenhuma empresa ativa</span>`;
+}
+
+// ══════════════════════════════════════════════════════
+// ABA EMPRESAS
+// ══════════════════════════════════════════════════════
+function renderEmp() {
+  renderHeader();
+  const emps = getEmpresas(), ativaId = getAtivaId();
+  let h = `<div class="card"><div class="card-header">
+    <div class="card-title">🏢 Empresas Cadastradas</div>
+    <button class="btn btn-primary btn-sm" onclick="abrirEmpForm()">+ Nova Empresa</button>
+  </div><div class="card-body">`;
+
+  if (empFormAberto) h += empForm(null);
+
+  if (!emps.length && !empFormAberto) {
+    h += `<div class="empty"><div class="empty-icon">🏢</div>
+      <p>Nenhuma empresa cadastrada.</p>
+      <button class="btn btn-primary" onclick="abrirEmpForm()">+ Cadastrar primeira empresa</button></div>`;
+  } else {
+    h += `<div class="emp-list">`;
+    emps.forEach(e => {
+      if (empEditId===e.id) { h += empForm(e); return; }
+      const at = e.id===ativaId;
+      h += `<div class="emp-row ${at?'ativa':''}">
+        <span style="font-size:26px">🏢</span>
+        <div class="emp-info">
+          <div class="emp-nome">${esc(e.nome)} ${at?'<span class="badge badge-green">✓ ATIVA</span>':''}</div>
+          <div class="emp-det">
+            ${e.cnpj?`CNPJ: <strong>${esc(e.cnpj)}</strong>`:''}
+            ${e.responsavel?` · Resp.: ${esc(e.responsavel)}`:''}
+            ${e.telefone?` · Tel.: ${esc(e.telefone)}`:''}
+            ${e.endereco?`<br>${esc(e.endereco)}`:''}
+            ${!e.cnpj&&!e.responsavel&&!e.telefone&&!e.endereco?'<span style="color:var(--gray-300)">Sem informações adicionais</span>':''}
+          </div>
+        </div>
+        <div class="emp-actions">
+          ${!at?`<button class="btn btn-green btn-sm" onclick="ativar('${e.id}')">⚡ Ativar</button>`
+               :`<button class="btn btn-outline btn-sm" onclick="tab('folha')">📋 Ver Folha</button>`}
+          <button class="btn btn-ghost btn-icon" onclick="editEmp('${e.id}')">✏️</button>
+          <button class="btn btn-danger btn-icon" onclick="delEmp('${e.id}')">🗑️</button>
+        </div>
+      </div>`;
+    });
+    h += `</div>`;
   }
+  h += `</div></div>`;
+  document.getElementById('pgEmp').innerHTML = h;
 }
 
-function abrirFormEmpresa() {
-  mostrarFormEmpresa = true;
-  empresaEditandoId = null;
-  renderEmpresas();
-  setTimeout(() => document.getElementById('eCnpj')?.focus(), 50);
+function empForm(e) {
+  const id = e?.id||'';
+  return `<div class="form-box"><div class="form-title">${id?'✏️ Editar':'➕ Nova'} Empresa</div>
+    <div class="fg3">
+      <div class="ff">
+        <label>CNPJ <span style="font-weight:400;color:var(--gray-400)">(busca automática)</span></label>
+        <div class="cnpj-wrap">
+          <input type="text" id="eCnpj" maxlength="18" placeholder="00.000.000/0001-00"
+            value="${esc(e?.cnpj||'')}" oninput="onCnpj(this)" style="padding-right:34px;" />
+          <span class="cnpj-ico" id="eCnpjIco"></span>
+        </div>
+        <div class="cnpj-res" id="eCnpjRes"></div>
+      </div>
+      <div class="ff"><label>Responsável / Sócio</label>
+        <input type="text" id="eResp" placeholder="Nome do responsável" value="${esc(e?.responsavel||'')}" /></div>
+      <div class="ff"><label>Telefone</label>
+        <input type="text" id="eTel" placeholder="(00) 00000-0000" value="${esc(e?.telefone||'')}" /></div>
+    </div>
+    <div class="fg1">
+      <div class="ff"><label>Nome da Empresa *</label>
+        <input type="text" id="eNome" placeholder="Razão social ou nome fantasia" value="${esc(e?.nome||'')}" /></div>
+      <div class="ff"><label>Endereço</label>
+        <input type="text" id="eEnd" placeholder="Logradouro, número, cidade — UF" value="${esc(e?.endereco||'')}" /></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost btn-sm" onclick="cancelEmpForm()">✕ Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="saveEmp('${id}')">💾 Salvar Empresa</button>
+    </div></div>`;
 }
 
-function cancelarFormEmpresa() {
-  mostrarFormEmpresa = false;
-  empresaEditandoId = null;
-  renderEmpresas();
-}
+function abrirEmpForm()  { empFormAberto=true; empEditId=null; renderEmp(); setTimeout(()=>document.getElementById('eCnpj')?.focus(),50); }
+function cancelEmpForm() { empFormAberto=false; empEditId=null; renderEmp(); }
+function editEmp(id)     { empEditId=id; empFormAberto=false; renderEmp(); setTimeout(()=>document.getElementById('eCnpj')?.focus(),50); }
+function ativar(id)      { setAtivaId(id); renderEmp(); }
+function desativar()     { setAtivaId(null); renderHeader(); if(tabAtiva==='folha') renderFolha(); }
 
-function salvarEmpresa(id) {
+function saveEmp(id) {
   const nome = document.getElementById('eNome')?.value.trim();
   if (!nome) { alert('Informe o nome da empresa.'); return; }
-  const dados = {
-    nome,
-    cnpj:       document.getElementById('eCnpj')?.value.trim() || '',
-    responsavel:document.getElementById('eResp')?.value.trim() || '',
-    telefone:   document.getElementById('eTel')?.value.trim()  || '',
-    endereco:   document.getElementById('eEnd')?.value.trim()  || '',
-  };
-  const lista = getEmpresas();
-  if (id) {
-    const idx = lista.findIndex(e => e.id === id);
-    if (idx !== -1) lista[idx] = { ...lista[idx], ...dados };
-  } else {
-    lista.push({ id: genId(), ...dados });
+  const d = { nome, cnpj:document.getElementById('eCnpj')?.value.trim()||'',
+    responsavel:document.getElementById('eResp')?.value.trim()||'',
+    telefone:document.getElementById('eTel')?.value.trim()||'',
+    endereco:document.getElementById('eEnd')?.value.trim()||'' };
+  const list = getEmpresas();
+  if (id) { const i=list.findIndex(e=>e.id===id); if(i!==-1) list[i]={...list[i],...d}; }
+  else list.push({id:genId(),...d});
+  setEmpresas(list); empFormAberto=false; empEditId=null; renderEmp();
+}
+
+function delEmp(id) {
+  const e = getEmpresas().find(x=>x.id===id);
+  if (!confirm(`Excluir "${e?.nome}"?`)) return;
+  setEmpresas(getEmpresas().filter(x=>x.id!==id));
+  if (getAtivaId()===id) setAtivaId(null);
+  renderEmp();
+}
+
+// ── CNPJ lookup ──────────────────────────────────────
+function mascaraCnpj(v) {
+  v=v.replace(/\D/g,'').slice(0,14);
+  if(v.length>12) v=v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5,8)+'/'+v.slice(8,12)+'-'+v.slice(12);
+  else if(v.length>8) v=v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5,8)+'/'+v.slice(8);
+  else if(v.length>5) v=v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5);
+  else if(v.length>2) v=v.slice(0,2)+'.'+v.slice(2);
+  return v;
+}
+function onCnpj(el) {
+  const raw=el.value.replace(/\D/g,''); el.value=mascaraCnpj(raw);
+  clearTimeout(cnpjTimer);
+  const ico=document.getElementById('eCnpjIco'), res=document.getElementById('eCnpjRes');
+  if(!ico||!res) return;
+  if(raw.length<14){ ico.innerHTML=''; res.className='cnpj-res'; return; }
+  ico.innerHTML='<span class="spin"></span>'; res.className='cnpj-res';
+  cnpjTimer=setTimeout(()=>buscaCnpj(raw),400);
+}
+async function buscaCnpj(cnpj) {
+  const ico=document.getElementById('eCnpjIco'), res=document.getElementById('eCnpjRes');
+  if(!ico||!res) return;
+  try {
+    const d=await(await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`)).json();
+    if(d.message) throw new Error();
+    const nomeEl=document.getElementById('eNome'), respEl=document.getElementById('eResp'), endEl=document.getElementById('eEnd');
+    if(nomeEl&&!nomeEl.value.trim()) nomeEl.value=d.nome_fantasia||d.razao_social||'';
+    if(respEl&&!respEl.value.trim()&&d.qsa?.[0]) respEl.value=d.qsa[0].nome_socio||'';
+    if(endEl&&!endEl.value.trim()) endEl.value=[d.logradouro,d.numero,d.municipio,d.uf].filter(Boolean).join(', ');
+    ico.innerHTML='✅';
+    res.className='cnpj-res ok';
+    res.innerHTML=`<strong>${d.razao_social}</strong>${d.nome_fantasia&&d.nome_fantasia!==d.razao_social?' · '+d.nome_fantasia:''}<br>
+      ${d.descricao_situacao_cadastral?'Situação: <strong>'+d.descricao_situacao_cadastral+'</strong>':''}
+      ${d.cnae_fiscal_descricao?' · '+d.cnae_fiscal_descricao:''}`;
+  } catch {
+    ico.innerHTML='❌'; res.className='cnpj-res erro';
+    res.textContent='CNPJ não encontrado. Verifique o número ou preencha manualmente.';
   }
-  setEmpresas(lista);
-  mostrarFormEmpresa = false;
-  empresaEditandoId = null;
-  renderEmpresas();
 }
 
-function editarEmpresa(id) {
-  empresaEditandoId = id;
-  mostrarFormEmpresa = false;
-  renderEmpresas();
-  setTimeout(() => document.getElementById('eCnpj')?.focus(), 50);
-}
-
-function excluirEmpresa(id) {
-  const e = getEmpresas().find(x => x.id === id);
-  if (!confirm(`Excluir a empresa "${e?.nome}"? Esta ação não pode ser desfeita.`)) return;
-  setEmpresas(getEmpresas().filter(x => x.id !== id));
-  if (getEmpresaAtivaId() === id) setEmpresaAtivaId(null);
-  renderEmpresas();
-}
-
-function ativarEmpresa(id) {
-  setEmpresaAtivaId(id);
-  mostrarFormColab = false;
-  colabEditandoId = null;
-  renderEmpresas();
-}
-
-function desativarEmpresa() {
-  setEmpresaAtivaId(null);
-  renderHeader();
-  if (tabAtiva === 'folha') renderFolha();
-}
-
-function irParaFolha() {
-  mudarTab('folha');
-}
-
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 // ABA FOLHA
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 function renderFolha() {
   renderHeader();
-  const el = document.getElementById('tabFolhaContent');
-  const ea = getEmpresaAtiva();
-
-  // ── Selects de mês/ano (rebuild once)
-  let filtrosHtml = `
-    <div class="folha-filtros">
-      <div class="field">
-        <label>Mês</label>
-        <select id="mesSelect" onchange="onMesChange(this.value)">
-          ${MESES.map((m,i) => `<option value="${i+1}" ${i+1===mes?'selected':''}>${m}</option>`).join('')}
-        </select>
-      </div>
-      <div class="field">
-        <label>Ano</label>
-        <select id="anoSelect" onchange="onAnoChange(this.value)">
-          ${Array.from({length:6},(_,i)=>ano-2+i).map(y=>`<option value="${y}" ${y===ano?'selected':''}>${y}</option>`).join('')}
-        </select>
-      </div>
-      <div style="margin-left:auto;display:flex;gap:8px;align-items:flex-end;">
-        <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Imprimir</button>
-      </div>
-    </div>`;
+  const ea = getAtiva();
+  const filtros = `<div class="filtros">
+    <div class="fld"><label>Mês</label>
+      <select onchange="onMes(this.value)">
+        ${MESES.map((m,i)=>`<option value="${i+1}" ${i+1===mes?'selected':''}>${m}</option>`).join('')}
+      </select></div>
+    <div class="fld"><label>Ano</label>
+      <select onchange="onAno(this.value)">
+        ${Array.from({length:6},(_,i)=>ano-2+i).map(y=>`<option value="${y}" ${y===ano?'selected':''}>${y}</option>`).join('')}
+      </select></div>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:flex-end;">
+      <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Imprimir</button>
+    </div>
+  </div>`;
 
   if (!ea) {
-    el.innerHTML = filtrosHtml + `
-      <div class="alerta-empresa">
-        <span style="font-size:22px;">⚠️</span>
-        <div>
-          <strong>Nenhuma empresa ativa.</strong>
-          Vá até a aba <strong>Empresas</strong>, selecione uma empresa e clique em
-          <strong>⚡ Ativar</strong> para lançar a folha.
-          <div style="margin-top:8px;">
-            <button class="btn btn-primary btn-sm" onclick="mudarTab('empresas')">🏢 Ir para Empresas</button>
-          </div>
-        </div>
-      </div>`;
-    return;
+    document.getElementById('pgFolha').innerHTML = filtros + `
+      <div class="alerta"><span style="font-size:22px">⚠️</span>
+        <div><strong>Nenhuma empresa ativa.</strong> Vá até a aba Empresas e clique em ⚡ Ativar.
+          <div style="margin-top:8px"><button class="btn btn-primary btn-sm" onclick="tab('emp')">🏢 Ir para Empresas</button></div>
+        </div></div>`; return;
   }
 
   const colabs = getColabs(ea.id);
-  const totalGeral = colabs.reduce((s,c) => s+calcTotal(c), 0);
-  const totalPago  = colabs.filter(c=>c.pago).reduce((s,c) => s+calcTotal(c), 0);
-  const totalPend  = totalGeral - totalPago;
-  const qtdPagos   = colabs.filter(c=>c.pago).length;
-  const qtdPend    = colabs.filter(c=>!c.pago).length;
-  const periodo    = `${MESES[mes-1]}/${ano}`;
+  const periodo = `${MESES[mes-1]}/${ano}`;
 
-  let html = filtrosHtml;
+  // Totais
+  let totPagar=0, totPago=0, totFgts=0, totDec13=0;
+  colabs.forEach(c => {
+    const r = calcColab(c);
+    totPagar += r.aPagar;
+    if (c.pago) totPago += r.aPagar;
+    totFgts  += r.fgts;
+    totDec13 += r.dec13;
+  });
+  const totPend = totPagar - totPago;
 
-  // Banner empresa ativa
-  html += `
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:10px 16px;background:var(--green-light);border:1px solid var(--green-border);border-radius:var(--radius);font-size:13px;">
-      🏢 <strong style="color:var(--green);">${esc(ea.nome)}</strong>
-      ${ea.cnpj ? `<span style="color:var(--gray-500);">· ${esc(ea.cnpj)}</span>` : ''}
-      <button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="mudarTab('empresas')">Trocar empresa</button>
-    </div>`;
+  let h = filtros;
+  h += `<div class="empresa-banner">🏢 <strong style="color:var(--green)">${esc(ea.nome)}</strong>
+    ${ea.cnpj?`<span style="color:var(--gray-500)">· ${esc(ea.cnpj)}</span>`:''}
+    <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="tab('emp')">Trocar empresa</button></div>`;
 
-  // Resumo
-  html += `
-    <div class="summary-grid">
-      <div class="summary-card">
-        <div class="summary-label">Total Geral</div>
-        <div class="summary-value">${formatBRL(totalGeral)}</div>
-        <div class="summary-sub">${colabs.length} colaborador${colabs.length!==1?'es':''}</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-label">Já Pago</div>
-        <div class="summary-value green">${formatBRL(totalPago)}</div>
-        <div class="summary-sub">${qtdPagos} pago${qtdPagos!==1?'s':''}</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-label">Pendente</div>
-        <div class="summary-value ${totalPend>0?'amber':''}">${formatBRL(totalPend)}</div>
-        <div class="summary-sub">${qtdPend} pendente${qtdPend!==1?'s':''}</div>
-      </div>
-    </div>`;
+  h += `<div class="sum-grid">
+    <div class="sum-card"><div class="sum-lbl">Total a Pagar</div>
+      <div class="sum-val">${brl(totPagar)}</div>
+      <div class="sum-sub">${colabs.length} colaborador${colabs.length!==1?'es':''}</div></div>
+    <div class="sum-card"><div class="sum-lbl">Já Pago</div>
+      <div class="sum-val green">${brl(totPago)}</div>
+      <div class="sum-sub">${colabs.filter(c=>c.pago).length} pago${colabs.filter(c=>c.pago).length!==1?'s':''}</div></div>
+    <div class="sum-card"><div class="sum-lbl">Pendente</div>
+      <div class="sum-val ${totPend>0?'amber':''}">${brl(totPend)}</div>
+      <div class="sum-sub">${colabs.filter(c=>!c.pago).length} pendente${colabs.filter(c=>!c.pago).length!==1?'s':''}</div></div>
+    <div class="sum-card"><div class="sum-lbl">FGTS Estimado</div>
+      <div class="sum-val purple">${brl(totFgts)}</div>
+      <div class="sum-sub">Custo do empregador</div></div>
+  </div>`;
 
-  // Lista
-  html += `
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">👥 Colaboradores — ${periodo}</div>
-        <button class="btn btn-primary btn-sm" onclick="abrirFormColab()">+ Adicionar</button>
-      </div>
-      <div class="card-body">`;
+  h += `<div class="card"><div class="card-header">
+    <div class="card-title">👥 Colaboradores — ${periodo}</div>
+    <button class="btn btn-primary btn-sm" onclick="abrirColabForm()">+ Adicionar</button>
+  </div><div class="card-body">`;
 
-  if (mostrarFormColab && !colabEditandoId) html += renderFormColab(null, ea.id);
+  if (colabFormAberto && !colabEditId) h += colabForm(null, ea.id);
 
-  if (colabs.length === 0 && !mostrarFormColab) {
-    html += `
-      <div class="empty">
-        <div class="empty-icon">👥</div>
-        <p>Nenhum colaborador lançado para ${periodo}.</p>
-        <button class="btn btn-outline" onclick="abrirFormColab()">+ Adicionar primeiro colaborador</button>
-      </div>`;
+  if (!colabs.length && !colabFormAberto) {
+    h += `<div class="empty"><div class="empty-icon">👥</div>
+      <p>Nenhum colaborador lançado para ${periodo}.</p>
+      <button class="btn btn-outline" onclick="abrirColabForm()">+ Adicionar primeiro colaborador</button></div>`;
   } else {
-    html += `<div class="colab-list">`;
     colabs.forEach(c => {
-      html += colabEditandoId === c.id ? renderFormColab(c, ea.id) : renderColabRow(c, ea.id);
+      if (colabEditId===c.id) { h += colabForm(c, ea.id); return; }
+      h += colabRow(c, ea.id);
     });
-    html += `</div>`;
-
-    if (colabs.length > 0) {
-      html += `<hr>
-        <div>
-          <div class="list-footer-row">
-            <span style="color:var(--gray-500);">Total — ${colabs.length} colaborador${colabs.length!==1?'es':''}</span>
-            <span class="list-footer-total">${formatBRL(totalGeral)}</span>
-          </div>
-          ${totalPago>0?`<div class="list-footer-row"><span class="text-green">Pago</span><span class="text-green">${formatBRL(totalPago)}</span></div>`:''}
-          ${totalPend>0?`<div class="list-footer-row"><span class="text-amber">Pendente</span><span class="text-amber">${formatBRL(totalPend)}</span></div>`:''}
-        </div>`;
+    if (colabs.length) {
+      h += `<hr><div>
+        <div class="lf-row"><span style="color:var(--gray-500)">Total a pagar — ${colabs.length} colaborador${colabs.length!==1?'es':''}</span><span class="lf-total">${brl(totPagar)}</span></div>
+        ${totPago>0?`<div class="lf-row"><span class="text-green">Já pago</span><span class="text-green">${brl(totPago)}</span></div>`:''}
+        ${totPend>0?`<div class="lf-row"><span class="text-amber">Pendente</span><span class="text-amber">${brl(totPend)}</span></div>`:''}
+        <div class="lf-row" style="margin-top:4px"><span class="text-purple" style="font-size:12px">FGTS total (custo empresa)</span><span class="text-purple" style="font-size:12px">${brl(totFgts)}</span></div>
+      </div>`;
     }
   }
 
-  html += `</div></div>
-    <p class="aviso">Sistema para pagamentos informais sem vínculo empregatício · Sem cálculo de INSS, IRRF ou encargos</p>`;
-
-  el.innerHTML = html;
+  h += `</div></div><p class="aviso">Sem desconto de INSS, IRRF ou outros impostos · FGTS exibido apenas como custo estimado do empregador</p>`;
+  document.getElementById('pgFolha').innerHTML = h;
 }
 
-function onMesChange(v) { mes = Number(v); mostrarFormColab = false; colabEditandoId = null; renderFolha(); }
-function onAnoChange(v) { ano = Number(v); mostrarFormColab = false; colabEditandoId = null; renderFolha(); }
+function onMes(v){ mes=Number(v); colabFormAberto=false; colabEditId=null; renderFolha(); }
+function onAno(v){ ano=Number(v); colabFormAberto=false; colabEditId=null; renderFolha(); }
 
-// ─── Formulário colaborador ───────────────────────────────────
-function renderFormColab(c, empresaId) {
-  const id   = c ? c.id : '';
-  const tipo = c ? c.tipoCalculo : 'diaria';
-  return `
-    <div class="form-box">
-      <div style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:14px;">
-        ${id ? '✏️ Editar Colaborador' : '➕ Novo Colaborador'}
-      </div>
-      <div class="form-grid">
-        <div class="form-field">
-          <label>Nome *</label>
-          <input type="text" id="cNome" placeholder="Nome do colaborador" value="${esc(c?.nome||'')}" />
-        </div>
-        <div class="form-field">
-          <label>Função / Serviço</label>
-          <input type="text" id="cFuncao" placeholder="Ex.: Diarista, Pintor..." value="${esc(c?.funcao||'')}" />
-        </div>
-      </div>
-      <div class="form-grid-3">
-        <div class="form-field">
-          <label>Tipo de cálculo</label>
-          <select id="cTipo" onchange="onTipoChange()">
-            <option value="diaria" ${tipo==='diaria'?'selected':''}>Por dia trabalhado</option>
-            <option value="hora"   ${tipo==='hora'?'selected':''}>Por hora trabalhada</option>
-            <option value="fixo"   ${tipo==='fixo'?'selected':''}>Valor fixo mensal</option>
-          </select>
-        </div>
-        <div class="form-field" id="cQtdWrap" style="${tipo==='fixo'?'display:none':''}">
-          <label id="cQtdLabel">${tipo==='hora'?'Horas':'Dias'} trabalhados</label>
-          <input type="number" id="cQtd" min="0" step="0.5" placeholder="0" value="${c&&c.tipoCalculo!=='fixo'?c.quantidade:''}" oninput="onTotalChange()" />
-        </div>
-        <div class="form-field">
-          <label id="cValLabel">${tipo==='fixo'?'Valor mensal':tipo==='hora'?'Valor/hora':'Valor/dia'} (R$)</label>
-          <input type="number" id="cVal" min="0" step="0.01" placeholder="0,00" value="${esc(c?.valorUnitario||'')}" oninput="onTotalChange()" />
-        </div>
-      </div>
-      <div class="form-field" style="margin-bottom:12px;">
-        <label>Observação</label>
-        <input type="text" id="cObs" placeholder="Período, detalhes..." value="${esc(c?.observacao||'')}" />
-      </div>
-      <div class="form-total" id="cTotalLine" style="display:none;">
-        Total a pagar: <strong id="cTotalVal"></strong>
-      </div>
-      <div class="form-actions">
-        <button class="btn btn-ghost btn-sm" onclick="cancelarFormColab()">✕ Cancelar</button>
-        <button class="btn btn-primary btn-sm" onclick="salvarColab('${id}','${empresaId}')">💾 Salvar</button>
-      </div>
-    </div>`;
+// ── Formulário colaborador ────────────────────────────
+function colabForm(c, eid) {
+  const id   = c?.id||'';
+  const tipo = c?.tipoSalario||'mensalista';
+  const isMens = tipo==='mensalista';
+  return `<div class="form-box">
+    <div class="form-title">${id?'✏️ Editar':'➕ Novo'} Colaborador</div>
+
+    <div class="section-divider">📋 Dados do colaborador</div>
+    <div class="fg2">
+      <div class="ff"><label>Nome *</label>
+        <input type="text" id="cNome" placeholder="Nome completo" value="${esc(c?.nome||'')}" /></div>
+      <div class="ff"><label>Função / Serviço</label>
+        <input type="text" id="cFuncao" placeholder="Ex.: Diarista, Eletricista..." value="${esc(c?.funcao||'')}" /></div>
+    </div>
+    <div class="fg3">
+      <div class="ff"><label>Data de Admissão</label>
+        <input type="date" id="cAdm" value="${esc(c?.dataAdmissao||'')}" onchange="previewCalc()" /></div>
+      <div class="ff"><label>Tipo de pagamento</label>
+        <select id="cTipo" onchange="onColabTipo()">
+          <option value="mensalista" ${tipo==='mensalista'?'selected':''}>Mensalista (salário fixo)</option>
+          <option value="diarista"   ${tipo==='diarista'?'selected':''}>Diarista (por dia)</option>
+          <option value="horista"    ${tipo==='horista'?'selected':''}>Horista (por hora)</option>
+        </select></div>
+      <div class="ff"><label id="cSalLbl">${isMens?'Salário mensal':'Valor por dia'} (R$)</label>
+        <input type="number" id="cSal" min="0" step="0.01" placeholder="0,00"
+          value="${esc(c?.salarioBase||'')}" oninput="previewCalc()" /></div>
+    </div>
+    <div class="fg4" id="cMensRow" style="${!isMens?'display:none':''}">
+      <div class="ff"><label>Carga horária/dia (h)</label>
+        <input type="number" id="cCarga" min="1" max="12" step="1" value="${c?.cargaHoraria||8}" oninput="previewCalc()" /></div>
+      <div class="ff"><label>Dias úteis no mês</label>
+        <input type="number" id="cDuMes" min="1" max="31" value="${c?.diasUteisMes||22}" oninput="previewCalc()" /></div>
+      <div class="ff"><label>Dias trabalhados</label>
+        <input type="number" id="cDt" min="0" max="31" value="${c?.diasTrabalhados||22}" oninput="previewCalc()" /></div>
+      <div class="ff"><label>Dias de DSR no mês</label>
+        <input type="number" id="cDsr" min="0" max="10" value="${c?.diasDSR||4}" oninput="previewCalc()" /></div>
+    </div>
+    <div class="fg2" id="cDiarRow" style="${isMens?'display:none':''}">
+      <div class="ff"><label id="cQtdLbl">${tipo==='horista'?'Horas':'Dias'} trabalhados</label>
+        <input type="number" id="cQtdD" min="0" step="0.5" value="${esc(c?.diasTrabalhados||'')}" oninput="previewCalc()" /></div>
+      <div class="ff"><label>Valor hora extra (R$) <span style="font-weight:400;color:var(--gray-400)">opcional</span></label>
+        <input type="number" id="cVh" min="0" step="0.01" placeholder="0,00" value="${esc(c?.valorHora||'')}" oninput="previewCalc()" /></div>
+    </div>
+
+    <div class="section-divider">⏰ Horas extras e adicionais</div>
+    <div class="fg4">
+      <div class="ff"><label>H.E. 50% (horas)</label>
+        <input type="number" id="cHe50" min="0" step="0.5" placeholder="0" value="${esc(c?.he50||'')}" oninput="previewCalc()" /></div>
+      <div class="ff"><label>H.E. 100% (horas)</label>
+        <input type="number" id="cHe100" min="0" step="0.5" placeholder="0" value="${esc(c?.he100||'')}" oninput="previewCalc()" /></div>
+      <div class="ff"><label>DSR <span style="font-weight:400;color:var(--gray-400)">(auto ou manual)</span></label>
+        <select id="cDsrM" onchange="onDsrManual()">
+          <option value="0" ${!c?.dsrManual?'selected':''}>Automático</option>
+          <option value="1" ${c?.dsrManual?'selected':''}>Informar valor</option>
+        </select></div>
+      <div class="ff" id="cDsrValWrap" style="${!c?.dsrManual?'display:none':''}">
+        <label>Valor DSR (R$)</label>
+        <input type="number" id="cDsrV" min="0" step="0.01" placeholder="0,00" value="${esc(c?.dsrValor||'')}" oninput="previewCalc()" /></div>
+    </div>
+
+    <div class="section-divider">💰 Adiantamento</div>
+    <div class="fg2">
+      <div class="ff"><label>Adiantamento já pago (R$)</label>
+        <input type="number" id="cAdt" min="0" step="0.01" placeholder="0,00" value="${esc(c?.adiantamento||'')}" oninput="previewCalc()" /></div>
+      <div class="ff"><label>Observação</label>
+        <input type="text" id="cObs" placeholder="Detalhes, período..." value="${esc(c?.observacao||'')}" /></div>
+    </div>
+
+    <div id="calcPreview" style="margin-bottom:12px;"></div>
+
+    <div class="form-actions">
+      <button class="btn btn-ghost btn-sm" onclick="cancelColabForm()">✕ Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="saveColab('${id}','${eid}')">💾 Salvar</button>
+    </div>
+  </div>`;
 }
 
-function onTipoChange() {
-  const tipo = document.getElementById('cTipo')?.value;
-  if (!tipo) return;
-  const wrap = document.getElementById('cQtdWrap');
-  const lbl  = document.getElementById('cQtdLabel');
-  const vLbl = document.getElementById('cValLabel');
-  if (wrap) wrap.style.display = tipo === 'fixo' ? 'none' : '';
-  if (lbl)  lbl.textContent = tipo === 'hora' ? 'Horas trabalhadas' : 'Dias trabalhados';
-  if (vLbl) vLbl.textContent = tipo === 'fixo' ? 'Valor mensal (R$)' : tipo === 'hora' ? 'Valor/hora (R$)' : 'Valor/dia (R$)';
-  onTotalChange();
+function onColabTipo() {
+  const t = document.getElementById('cTipo')?.value;
+  const isMens = t==='mensalista';
+  const el = id => document.getElementById(id);
+  if(el('cMensRow')) el('cMensRow').style.display = isMens?'':'none';
+  if(el('cDiarRow')) el('cDiarRow').style.display = isMens?'none':'';
+  if(el('cSalLbl'))  el('cSalLbl').textContent = isMens?'Salário mensal (R$)':t==='diarista'?'Valor por dia (R$)':'Valor por hora (R$)';
+  if(el('cQtdLbl'))  el('cQtdLbl').textContent = t==='horista'?'Horas trabalhadas':'Dias trabalhados';
+  previewCalc();
 }
 
-function onTotalChange() {
-  const tipo  = document.getElementById('cTipo')?.value;
-  const qtd   = parseFloat(document.getElementById('cQtd')?.value||'0')||0;
-  const val   = parseFloat(document.getElementById('cVal')?.value||'0')||0;
-  const total = tipo === 'fixo' ? val : qtd * val;
-  const line  = document.getElementById('cTotalLine');
-  const vEl   = document.getElementById('cTotalVal');
-  if (line && vEl) {
-    line.style.display = total > 0 ? '' : 'none';
-    if (total > 0) vEl.textContent = formatBRL(total);
-  }
+function onDsrManual() {
+  const m = document.getElementById('cDsrM')?.value==='1';
+  const w = document.getElementById('cDsrValWrap');
+  if(w) w.style.display = m?'':'none';
+  previewCalc();
 }
 
-function abrirFormColab() { mostrarFormColab = true; colabEditandoId = null; renderFolha(); setTimeout(()=>document.getElementById('cNome')?.focus(),50); }
-function cancelarFormColab() { mostrarFormColab = false; colabEditandoId = null; renderFolha(); }
-
-function salvarColab(id, empresaId) {
-  const nome = document.getElementById('cNome')?.value.trim();
-  if (!nome) { alert('Informe o nome do colaborador.'); return; }
-  const dados = {
-    nome,
-    funcao:        document.getElementById('cFuncao')?.value.trim()||'',
-    tipoCalculo:   document.getElementById('cTipo')?.value||'diaria',
-    quantidade:    parseFloat(document.getElementById('cQtd')?.value||'0')||0,
-    valorUnitario: parseFloat(document.getElementById('cVal')?.value||'0')||0,
-    observacao:    document.getElementById('cObs')?.value.trim()||'',
+function colabSnapshot() {
+  const g = id => document.getElementById(id)?.value||'';
+  const tipo = g('cTipo')||'mensalista';
+  return {
+    tipoSalario:     tipo,
+    salarioBase:     parseFloat(g('cSal'))||0,
+    cargaHoraria:    parseFloat(g('cCarga'))||8,
+    diasUteisMes:    parseFloat(g('cDuMes'))||22,
+    diasTrabalhados: parseFloat(tipo==='mensalista'?g('cDt'):g('cQtdD'))||0,
+    diasDSR:         parseFloat(g('cDsr'))||4,
+    valorHora:       parseFloat(g('cVh'))||0,
+    he50:            parseFloat(g('cHe50'))||0,
+    he100:           parseFloat(g('cHe100'))||0,
+    dsrManual:       g('cDsrM')==='1',
+    dsrValor:        parseFloat(g('cDsrV'))||0,
+    adiantamento:    parseFloat(g('cAdt'))||0,
+    dataAdmissao:    g('cAdm'),
   };
-  const lista = getColabs(empresaId);
-  if (id) {
-    const idx = lista.findIndex(c => c.id === id);
-    if (idx !== -1) lista[idx] = { ...lista[idx], ...dados };
-  } else {
-    lista.push({ id: genId(), pago: false, ...dados });
-  }
-  setColabs(empresaId, lista);
-  mostrarFormColab = false;
-  colabEditandoId  = null;
-  renderFolha();
 }
 
-// ─── Linha colaborador ────────────────────────────────────────
-function renderColabRow(c, empresaId) {
-  const total   = calcTotal(c);
-  const detalhe = labelTipo(c) + (c.observacao ? ` · ${c.observacao}` : '');
-  return `
-    <div class="colab-row ${c.pago?'pago':''}">
-      <button class="btn btn-ghost btn-icon" onclick="togglePago('${c.id}','${empresaId}')" title="${c.pago?'Marcar não pago':'Marcar pago'}" style="font-size:18px;">
-        ${c.pago ? '✅' : '🕐'}
+function previewCalc() {
+  const el = document.getElementById('calcPreview');
+  if (!el) return;
+  const snap = colabSnapshot();
+  if (!snap.salarioBase && !snap.diasTrabalhados) { el.innerHTML=''; return; }
+  const r = calcColab(snap);
+  el.innerHTML = tabelaCalc(r, snap);
+}
+
+// ── Row colaborador ───────────────────────────────────
+function colabRow(c, eid) {
+  const r   = calcColab(c);
+  const exp = colabExpandido===c.id;
+  const adm = c.dataAdmissao ? new Date(c.dataAdmissao+'T12:00:00').toLocaleDateString('pt-BR') : '';
+  return `<div class="colab-card ${c.pago?'pago':''}">
+    <div class="colab-header" onclick="toggleExp('${c.id}','${eid}')">
+      <button class="btn btn-ghost btn-icon colab-status" onclick="event.stopPropagation();togglePago('${c.id}','${eid}')"
+        title="${c.pago?'Desmarcar':'Marcar como pago'}" style="font-size:20px;">
+        ${c.pago?'✅':'🕐'}
       </button>
       <div class="colab-info">
         <div class="colab-nome">
-          <span class="colab-nome-text">${esc(c.nome)}</span>
-          ${c.funcao ? `<span class="badge badge-blue">${esc(c.funcao)}</span>` : ''}
-          ${c.pago ? `<span class="badge" style="background:var(--green);color:#fff;">Pago</span>` : ''}
+          <span class="colab-nome-txt">${esc(c.nome)}</span>
+          ${c.funcao?`<span class="badge badge-blue">${esc(c.funcao)}</span>`:''}
+          ${c.pago?'<span class="badge badge-green">Pago</span>':''}
+          ${c.adiantamento>0?`<span class="badge badge-amber">Adt: ${brl(c.adiantamento)}</span>`:''}
         </div>
-        <div class="colab-detail">${esc(detalhe)}</div>
+        <div class="colab-sub">
+          ${tipoLabel(c.tipoSalario)} · ${brl(c.salarioBase)}
+          ${adm?' · Adm: '+adm:''}
+          ${c.dataAdmissao?' · 13º: '+calcAvos13(c.dataAdmissao,ano)+'/12 avos':''}
+          ${exp?'':' · <span style="color:var(--primary);font-size:11px">ver cálculos ▾</span>'}
+        </div>
       </div>
-      <div class="colab-valor">${formatBRL(total)}</div>
+      <div class="colab-val">
+        <div class="colab-val-main">${brl(r.aPagar)}</div>
+        <div class="colab-val-sub">a pagar</div>
+      </div>
       <div class="colab-actions">
-        <button class="btn btn-ghost btn-icon" onclick="editarColab('${c.id}')" title="Editar">✏️</button>
-        <button class="btn btn-danger btn-icon" onclick="removerColab('${c.id}','${empresaId}')" title="Remover">🗑️</button>
+        <button class="btn btn-ghost btn-icon" onclick="event.stopPropagation();editColab('${c.id}')">✏️</button>
+        <button class="btn btn-danger btn-icon" onclick="event.stopPropagation();delColab('${c.id}','${eid}')">🗑️</button>
       </div>
-    </div>`;
+    </div>
+    ${exp?`<div class="colab-body">${tabelaCalc(r,c)}</div>`:''}
+  </div>`;
 }
 
-function togglePago(id, empresaId) {
-  const lista = getColabs(empresaId);
-  const idx   = lista.findIndex(c => c.id === id);
-  if (idx !== -1) lista[idx].pago = !lista[idx].pago;
-  setColabs(empresaId, lista);
+function tabelaCalc(r, c) {
+  const isMens = c.tipoSalario==='mensalista'||!c.tipoSalario;
+  const duMes  = Number(c.diasUteisMes)||22;
+  const dt     = Number(c.diasTrabalhados)||0;
+  const avos13 = c.dataAdmissao ? calcAvos13(c.dataAdmissao, ano) : null;
+  const avosF  = c.dataAdmissao ? calcAvosFerias(c.dataAdmissao) : null;
+
+  let rows = `<table class="calc-table">
+    <tr><td class="calc-section" colspan="2">📅 Competência ${MESES[mes-1]}/${ano}</td></tr>`;
+
+  if (isMens) {
+    rows += `<tr><td>Salário proporcional <span class="calc-badge">${dt}/${duMes} dias</span></td><td>${brl(r.salProp)}</td></tr>`;
+  } else {
+    rows += `<tr><td>Pagamento (${dt} ${c.tipoSalario==='horista'?'horas':'dias'} × ${brl(c.salarioBase)})</td><td>${brl(r.salProp)}</td></tr>`;
+  }
+
+  if (r.he50v>0)  rows += `<tr><td>Horas extras 50% (${c.he50}h × ${brl(r.valorHora)} × 1,5)</td><td>${brl(r.he50v)}</td></tr>`;
+  if (r.he100v>0) rows += `<tr><td>Horas extras 100% (${c.he100}h × ${brl(r.valorHora)} × 2,0)</td><td>${brl(r.he100v)}</td></tr>`;
+  if (r.dsr>0)    rows += `<tr><td>DSR ${c.dsrManual?'(informado)':'(calculado sobre H.E.)'}</td><td>${brl(r.dsr)}</td></tr>`;
+
+  rows += `<tr class="subtotal"><td>Bruto do mês</td><td>${brl(r.brutoMes)}</td></tr>`;
+
+  if (r.adt>0) rows += `<tr class="deducao"><td>(−) Adiantamento já pago</td><td>−${brl(r.adt)}</td></tr>`;
+
+  rows += `<tr class="total-pagar"><td>✅ Total a pagar ao colaborador</td><td>${brl(r.aPagar)}</td></tr>`;
+
+  if (c.dataAdmissao) {
+    rows += `<tr><td class="calc-section" colspan="2">📊 Provisões (referência — sem desconto)</td></tr>`;
+    rows += `<tr class="custo"><td>13º proporcional <span class="calc-badge amber">${avos13}/12 avos</span></td><td>${brl(r.dec13)}</td></tr>`;
+    rows += `<tr class="custo"><td>Férias + 1/3 <span class="calc-badge amber">${avosF}/12 avos</span></td><td>${brl(r.ferTotal)}</td></tr>`;
+  }
+  rows += `<tr class="fgts"><td>FGTS 8% <span class="calc-badge purple">custo empresa</span></td><td>${brl(r.fgts)}</td></tr>`;
+  rows += `</table>`;
+  return rows;
+}
+
+function tipoLabel(t) {
+  if(t==='diarista') return 'Diarista';
+  if(t==='horista')  return 'Horista';
+  return 'Mensalista';
+}
+
+function toggleExp(id, eid) {
+  colabExpandido = colabExpandido===id ? null : id;
   renderFolha();
 }
 
-function editarColab(id) {
-  mostrarFormColab = false;
-  colabEditandoId  = id;
-  renderFolha();
-  setTimeout(()=>document.getElementById('cNome')?.focus(),50);
+function togglePago(id, eid) {
+  const list = getColabs(eid);
+  const i = list.findIndex(c=>c.id===id);
+  if(i!==-1) list[i].pago=!list[i].pago;
+  setColabs(eid, list); renderFolha();
 }
 
-function removerColab(id, empresaId) {
-  if (!confirm('Remover este colaborador?')) return;
-  setColabs(empresaId, getColabs(empresaId).filter(c => c.id !== id));
-  renderFolha();
+function abrirColabForm()  { colabFormAberto=true; colabEditId=null; renderFolha(); setTimeout(()=>document.getElementById('cNome')?.focus(),50); }
+function cancelColabForm() { colabFormAberto=false; colabEditId=null; renderFolha(); }
+function editColab(id)     { colabEditId=id; colabFormAberto=false; renderFolha(); setTimeout(()=>document.getElementById('cNome')?.focus(),50); }
+
+function saveColab(id, eid) {
+  const nome=document.getElementById('cNome')?.value.trim();
+  if(!nome){ alert('Informe o nome.'); return; }
+  const s=colabSnapshot();
+  const dados={...s, nome, funcao:document.getElementById('cFuncao')?.value.trim()||'',
+    observacao:document.getElementById('cObs')?.value.trim()||''};
+  const list=getColabs(eid);
+  if(id){ const i=list.findIndex(c=>c.id===id); if(i!==-1) list[i]={...list[i],...dados}; }
+  else list.push({id:genId(),pago:false,...dados});
+  setColabs(eid,list); colabFormAberto=false; colabEditId=null; renderFolha();
 }
 
-// ══════════════════════════════════════════════════════════════
+function delColab(id, eid) {
+  if(!confirm('Remover este colaborador?')) return;
+  setColabs(eid, getColabs(eid).filter(c=>c.id!==id)); renderFolha();
+}
+
+// ══════════════════════════════════════════════════════
 // INIT
-// ══════════════════════════════════════════════════════════════
-renderHeader();
-renderEmpresas();
+// ══════════════════════════════════════════════════════
+renderHeader(); renderEmp();
 </script>
 </body>
 </html>
