@@ -167,6 +167,40 @@
       .fg2,.fg3,.fg4 { grid-template-columns:1fr; }
       .func-acts { flex-wrap:wrap; }
     }
+
+    /* ── Login Overlay ── */
+    #loginOverlay {
+      position:fixed; inset:0; z-index:9999;
+      background:rgba(15,23,42,0.7);
+      backdrop-filter:blur(6px);
+      display:flex; align-items:center; justify-content:center;
+    }
+    #loginOverlay.hidden { display:none; }
+    .login-card {
+      background:#fff; border-radius:16px; padding:40px 36px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.25);
+      width:100%; max-width:380px;
+      display:flex; flex-direction:column; gap:20px;
+    }
+    .login-logo { text-align:center; }
+    .login-logo .icon { font-size:40px; margin-bottom:6px; }
+    .login-logo h1 { font-size:20px; font-weight:700; color:var(--gray-900); }
+    .login-logo p  { font-size:13px; color:var(--gray-400); margin-top:2px; }
+    .login-fields { display:flex; flex-direction:column; gap:14px; }
+    .login-fields .ff label { font-size:12px; }
+    .login-fields .ff input { height:40px; font-size:14px; border-radius:8px; }
+    .login-err { background:var(--red-light); border:1px solid #fca5a5; color:var(--red);
+      border-radius:8px; padding:10px 14px; font-size:13px; font-weight:600; display:none; text-align:center; }
+    .login-err.show { display:block; }
+    .btn-login { height:42px; width:100%; font-size:15px; border-radius:10px; }
+
+    /* ── User info in header ── */
+    .h-user { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--gray-600); }
+    .h-user strong { color:var(--gray-900); }
+    .btn-sair { padding:0 12px; height:30px; font-size:12px; border-radius:6px;
+      background:transparent; color:var(--gray-500); border:1px solid var(--gray-300); cursor:pointer;
+      font-weight:600; transition:opacity .15s; }
+    .btn-sair:hover { background:var(--red-light); color:var(--red); border-color:#fca5a5; }
   </style>
 </head>
 <body>
