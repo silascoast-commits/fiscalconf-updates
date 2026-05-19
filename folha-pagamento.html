@@ -205,16 +205,35 @@
 </head>
 <body>
 
+<!-- Login Overlay -->
+<div id="loginOverlay">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="icon">📋</div>
+      <h1>Folha de Pagamento</h1>
+      <p>Colaboradores Informais — acesso restrito</p>
+    </div>
+    <div class="login-fields">
+      <div class="ff"><label>Usuário</label><input type="text" id="loginUser" placeholder="Nome de usuário" autocomplete="username" /></div>
+      <div class="ff"><label>Senha</label><input type="password" id="loginPass" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" /></div>
+    </div>
+    <div class="login-err" id="loginErr">Usuário ou senha inválidos</div>
+    <button class="btn btn-primary btn-login" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
 <header>
   <span style="font-size:22px">📋</span>
   <div><span class="h-title">Folha de Pagamento</span><span class="h-sub">Colaboradores Informais</span></div>
   <div id="hEmp" style="margin-left:auto;"></div>
-  <div style="display:flex;gap:6px;margin-left:10px">
+  <div style="display:flex;gap:6px;margin-left:10px;align-items:center">
+    <div class="h-user" id="hUser" style="display:none"></div>
     <button onclick="exportarDados()" title="Salvar backup em arquivo JSON" style="padding:5px 10px;font-size:12px;font-weight:600;border:1px solid #2563eb;background:#eff6ff;color:#2563eb;border-radius:6px;cursor:pointer">⬇ Exportar</button>
     <button onclick="importarDados()" title="Restaurar dados de arquivo JSON" style="padding:5px 10px;font-size:12px;font-weight:600;border:1px solid #16a34a;background:#f0fdf4;color:#16a34a;border-radius:6px;cursor:pointer">⬆ Importar</button>
+    <button class="btn-sair" onclick="logout()">Sair</button>
   </div>
 </header>
-<div class="tabs">
+<div class="tabs" id="mainTabs">
   <button class="tab on"  id="t1" onclick="tab(1)">🏢 Empresas</button>
   <button class="tab"     id="t2" onclick="tab(2)">👤 Funcionários</button>
   <button class="tab"     id="t3" onclick="tab(3)">📋 Folha Mensal</button>
@@ -223,6 +242,7 @@
   <div id="p1"></div>
   <div id="p2" style="display:none"></div>
   <div id="p3" style="display:none"></div>
+  <div id="p4" style="display:none"></div>
 </main>
 
 <script>
@@ -237,21 +257,72 @@ let funcFA=false, funcEId=null;
 let funcExp=null;
 let adtFId=null, folhaFId=null, ferFId=null, dec13FId=null, rescFId=null;
 let cnpjT=null;
+let ses=null; // session object {uid, nome, isAdmin}
 
 // ══════════════════════════════════════════
-// STORAGE
+// AUTH / SESSION STORAGE
 // ══════════════════════════════════════════
 const ls={g:k=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null}},s:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
-const getEmps=()=>ls.g('fp_emps')||[];
-const setEmps=v=>ls.s('fp_emps',v);
-const getAId=()=>localStorage.getItem('fp_a')||null;
-const setAId=id=>id?localStorage.setItem('fp_a',id):localStorage.removeItem('fp_a');
+// User prefix based on current session
+const up=()=>ses?`_u${ses.uid}`:'_u?';
+// Users list (global, unscoped)
+const getUsers=()=>ls.g('fp_users')||[];
+const setUsers=v=>ls.s('fp_users',v);
+// Session (sessionStorage — clears on browser close)
+const getSes=()=>{try{return JSON.parse(sessionStorage.getItem('fp_ses')||'null')}catch{return null}};
+const setSes=v=>{if(v)sessionStorage.setItem('fp_ses',JSON.stringify(v));else sessionStorage.removeItem('fp_ses');};
+
+// ══════════════════════════════════════════
+// DATA MIGRATION (legacy unprefixed → Silas namespace)
+// ══════════════════════════════════════════
+function migrateLegacyData(uid){
+  // Check if there is legacy fp_emps (no user prefix)
+  const legacyEmps=ls.g('fp_emps');
+  if(!legacyEmps||!legacyEmps.length) return;
+  // Migrate fp_emps
+  if(!ls.g(`fp_emps_u${uid}`)){
+    ls.s(`fp_emps_u${uid}`,legacyEmps);
+  }
+  // Migrate fp_a
+  const legacyA=localStorage.getItem('fp_a');
+  if(legacyA&&!localStorage.getItem(`fp_a_u${uid}`)){
+    localStorage.setItem(`fp_a_u${uid}`,legacyA);
+  }
+  // Migrate per-company keys
+  legacyEmps.forEach(emp=>{
+    const eid=emp.id;
+    // Funcionários
+    const lf=ls.g(`fp_f_${eid}`);
+    if(lf&&!ls.g(`fp_f_${eid}_u${uid}`)) ls.s(`fp_f_${eid}_u${uid}`,lf);
+    // Férias
+    const lfer=ls.g(`fp_fer_${eid}`);
+    if(lfer&&!ls.g(`fp_fer_${eid}_u${uid}`)) ls.s(`fp_fer_${eid}_u${uid}`,lfer);
+    // Rescisões
+    const lresc=ls.g(`fp_resc_${eid}`);
+    if(lresc&&!ls.g(`fp_resc_${eid}_u${uid}`)) ls.s(`fp_resc_${eid}_u${uid}`,lresc);
+    // Monthly data — scan all keys
+    Object.keys(localStorage).forEach(k=>{
+      if(k.startsWith(`fp_m_${eid}_`)&&!k.includes('_u')){
+        const nk=k+`_u${uid}`;
+        if(!localStorage.getItem(nk)) localStorage.setItem(nk,localStorage.getItem(k));
+      }
+    });
+  });
+}
+
+// ══════════════════════════════════════════
+// STORAGE (user-scoped)
+// ══════════════════════════════════════════
+const getEmps=()=>ls.g(`fp_emps${up()}`)||[];
+const setEmps=v=>ls.s(`fp_emps${up()}`,v);
+const getAId=()=>localStorage.getItem(`fp_a${up()}`)||null;
+const setAId=id=>id?localStorage.setItem(`fp_a${up()}`,id):localStorage.removeItem(`fp_a${up()}`);
 const getAtiva=()=>{const id=getAId();return id?getEmps().find(e=>e.id===id)||null:null};
 // Funcionários permanentes por empresa
-const getFuncs=eid=>ls.g(`fp_f_${eid}`)||[];
-const setFuncs=(eid,v)=>ls.s(`fp_f_${eid}`,v);
+const getFuncs=eid=>ls.g(`fp_f_${eid}${up()}`)||[];
+const setFuncs=(eid,v)=>ls.s(`fp_f_${eid}${up()}`,v);
 // Dados mensais por empresa+ano+mes
-const getMesKey=(eid)=>`fp_m_${eid}_${ano}_${String(mes).padStart(2,'0')}`;
+const getMesKey=(eid)=>`fp_m_${eid}_${ano}_${String(mes).padStart(2,'0')}${up()}`;
 const getMes=eid=>ls.g(getMesKey(eid))||[];
 const setMes=(eid,v)=>ls.s(getMesKey(eid),v);
 // Pega ou cria entrada mensal de um funcionário
@@ -261,13 +332,79 @@ function setMesFunc(eid,entry){
   m.push(entry); setMes(eid,m);
 }
 // Férias por empresa
-const getFers=(eid)=>ls.g(`fp_fer_${eid}`)||[];
-const setFers=(eid,v)=>ls.s(`fp_fer_${eid}`,v);
+const getFers=(eid)=>ls.g(`fp_fer_${eid}${up()}`)||[];
+const setFers=(eid,v)=>ls.s(`fp_fer_${eid}${up()}`,v);
 // Rescisão por empresa (uma por funcionário)
-const getRescs=(eid)=>ls.g(`fp_resc_${eid}`)||[];
-const setRescs=(eid,v)=>ls.s(`fp_resc_${eid}`,v);
+const getRescs=(eid)=>ls.g(`fp_resc_${eid}${up()}`)||[];
+const setRescs=(eid,v)=>ls.s(`fp_resc_${eid}${up()}`,v);
 const getRescFunc=(eid,fid)=>getRescs(eid).find(r=>r.fid===fid)||null;
 function setRescFunc(eid,resc){const l=getRescs(eid).filter(r=>r.fid!==resc.fid);l.push(resc);setRescs(eid,l);}
+
+// ══════════════════════════════════════════
+// LOGIN / LOGOUT
+// ══════════════════════════════════════════
+function initApp(){
+  // Ensure default admin exists
+  let users=getUsers();
+  if(!users.find(u=>u.id==='silas')){
+    users.unshift({id:'silas',nome:'Silas',senha:'admin123',isAdmin:true,ativo:true});
+    setUsers(users);
+  }
+  ses=getSes();
+  if(ses){
+    showApp();
+  } else {
+    document.getElementById('loginOverlay').classList.remove('hidden');
+  }
+}
+
+function doLogin(){
+  const uid=document.getElementById('loginUser').value.trim().toLowerCase();
+  const pw=document.getElementById('loginPass').value;
+  const errEl=document.getElementById('loginErr');
+  errEl.classList.remove('show');
+  const users=getUsers();
+  const user=users.find(u=>u.id.toLowerCase()===uid||u.nome.toLowerCase()===uid);
+  if(!user||!user.ativo||user.senha!==pw){
+    errEl.classList.add('show');
+    return;
+  }
+  ses={uid:user.id,nome:user.nome,isAdmin:!!user.isAdmin};
+  setSes(ses);
+  // Migrate legacy data when Silas logs in
+  if(user.id==='silas') migrateLegacyData('silas');
+  showApp();
+}
+
+function logout(){
+  ses=null; setSes(null);
+  document.getElementById('loginOverlay').classList.remove('hidden');
+  document.getElementById('loginUser').value='';
+  document.getElementById('loginPass').value='';
+  document.getElementById('loginErr').classList.remove('show');
+  // Hide user info
+  const hu=document.getElementById('hUser'); if(hu) hu.style.display='none';
+}
+
+function showApp(){
+  document.getElementById('loginOverlay').classList.add('hidden');
+  // Show/hide admin tab
+  const t4=document.getElementById('t4');
+  if(ses&&ses.isAdmin){
+    if(!t4){
+      const tabs=document.getElementById('mainTabs');
+      const btn=document.createElement('button');
+      btn.className='tab'; btn.id='t4'; btn.textContent='👥 Usuários';
+      btn.onclick=()=>tab(4);
+      tabs.appendChild(btn);
+    }
+    // Ensure p4 exists
+    const p4=document.getElementById('p4'); if(p4) p4.style.display='none';
+  } else {
+    if(t4) t4.remove();
+  }
+  rHeader(); rEmp();
+}
 
 // ══════════════════════════════════════════
 // HELPERS
@@ -350,7 +487,7 @@ function calc13(f){
   return {avos,v13,parc1:v13/2,parc2:v13/2};
 }
 function getDec13Nov(eid,fid){
-  const data=ls.g(`fp_m_${eid}_${ano}_11`)||[];
+  const data=ls.g(`fp_m_${eid}_${ano}_11${up()}`)||[];
   return (data.find(x=>x.fid===fid)||{}).dec13?.valor||0;
 }
 // Avos de férias até uma data específica (período aquisitivo)
@@ -463,11 +600,15 @@ function calcResc(f, dataRescisao, motivo, aviso, ferVencPer, fgtsSaldoInput){
 // ══════════════════════════════════════════
 function tab(n){
   tabAt=n;
-  [1,2,3].forEach(i=>{
-    document.getElementById('t'+i).classList.toggle('on',i===n);
-    document.getElementById('p'+i).style.display=i===n?'':'none';
+  const tabs=ses&&ses.isAdmin?[1,2,3,4]:[1,2,3];
+  tabs.forEach(i=>{
+    const t=document.getElementById('t'+i); if(t) t.classList.toggle('on',i===n);
+    const p=document.getElementById('p'+i); if(p) p.style.display=i===n?'':'none';
   });
-  [rEmp,rFunc,rFolha][n-1]();
+  if(n===1) rEmp();
+  else if(n===2) rFunc();
+  else if(n===3) rFolha();
+  else if(n===4) rUsuarios();
 }
 
 // ══════════════════════════════════════════
@@ -479,6 +620,13 @@ function rHeader(){
     ?`<div class="h-emp">🏢 <strong>${esc(ea.nome)}</strong> <small style="color:var(--gray-500)">ATIVA</small>
        <button class="btn btn-ghost btn-sm" style="height:22px;padding:0 7px;font-size:11px" onclick="desativar()">✕</button></div>`
     :`<span style="font-size:12px;color:var(--gray-400)">Nenhuma empresa ativa</span>`;
+  if(ses){
+    const hu=document.getElementById('hUser');
+    if(hu){
+      hu.style.display='flex';
+      hu.innerHTML=`<strong>${esc(ses.nome)}</strong>${ses.isAdmin?'<span class="badge b-purple" style="font-size:10px">Admin</span>':''}`;
+    }
+  }
 }
 
 // ══════════════════════════════════════════
@@ -2048,11 +2196,112 @@ function printTodos(){
 }
 
 // ══════════════════════════════════════════
+// ABA 4 — USUÁRIOS (apenas admin)
+// ══════════════════════════════════════════
+function rUsuarios(){
+  if(!ses||!ses.isAdmin){document.getElementById('p4').innerHTML='<div class="empty"><p>Acesso restrito.</p></div>';return;}
+  const users=getUsers();
+  let h=`<div class="card"><div class="card-hd">
+    <div class="card-ti">👥 Gerenciamento de Usuários</div>
+  </div><div class="card-bd">`;
+  // User list
+  h+=`<div class="emp-list" style="margin-bottom:20px">`;
+  users.forEach(u=>{
+    const isSilas=u.id==='silas';
+    h+=`<div class="emp-row${u.ativo?'':' ' }">
+      <span style="font-size:22px">${u.isAdmin?'👑':'👤'}</span>
+      <div class="emp-info">
+        <div class="emp-nome">${esc(u.nome)}
+          ${u.isAdmin?'<span class="badge b-purple">Admin</span>':''}
+          ${!u.ativo?'<span class="badge b-gray">Inativo</span>':'<span class="badge b-green">Ativo</span>'}
+        </div>
+        <div class="emp-det">ID: <strong>${esc(u.id)}</strong></div>
+      </div>
+      <div class="emp-acts">
+        ${!isSilas?`<button class="btn btn-outline btn-sm" onclick="toggleAtivo('${esc(u.id)}')">${u.ativo?'🔒 Desativar':'🔓 Ativar'}</button>`:''}
+        <button class="btn btn-ghost btn-sm" onclick="editUser('${esc(u.id)}')">✏️ Editar senha</button>
+      </div>
+    </div>`;
+  });
+  h+=`</div>`;
+  // New user form
+  h+=`<div class="fbox"><div class="ftitle">➕ Novo Usuário</div>
+    <div class="fg3">
+      <div class="ff"><label>Nome *</label><input type="text" id="nuNome" placeholder="Nome de exibição" /></div>
+      <div class="ff"><label>ID de login *</label><input type="text" id="nuId" placeholder="sem espaços, ex: joao" /></div>
+      <div class="ff"><label>Senha *</label><input type="password" id="nuSenha" placeholder="Senha inicial" /></div>
+    </div>
+    <div class="fg1" style="margin-bottom:0">
+      <div class="ff" style="flex-direction:row;align-items:center;gap:8px">
+        <input type="checkbox" id="nuAtivo" checked style="width:16px;height:16px" />
+        <label style="text-transform:none;font-size:13px;font-weight:600;color:var(--gray-700)">Usuário ativo</label>
+      </div>
+    </div>
+    <div class="fa">
+      <button class="btn btn-primary btn-sm" onclick="salvarNovoUser()">💾 Criar Usuário</button>
+    </div></div>`;
+
+  // Edit modal inline (if editing)
+  h+=`<div id="editUserBox"></div>`;
+  h+=`</div></div>`;
+  document.getElementById('p4').innerHTML=h;
+}
+
+function toggleAtivo(uid){
+  const users=getUsers();
+  const i=users.findIndex(u=>u.id===uid); if(i===-1)return;
+  if(users[i].id==='silas'){alert('Não é possível desativar o admin principal.');return;}
+  users[i].ativo=!users[i].ativo;
+  setUsers(users); rUsuarios();
+}
+
+function editUser(uid){
+  const users=getUsers();
+  const u=users.find(x=>x.id===uid); if(!u)return;
+  const box=document.getElementById('editUserBox');
+  if(!box)return;
+  box.innerHTML=`<div class="fbox" style="border-color:var(--primary);background:var(--primary-light)">
+    <div class="ftitle">✏️ Editar senha — ${esc(u.nome)}</div>
+    <div class="fg2">
+      <div class="ff"><label>Nova senha</label><input type="password" id="euSenha" placeholder="Nova senha" /></div>
+    </div>
+    <div class="fa">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('editUserBox').innerHTML=''">✕ Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarEditUser('${esc(uid)}')">💾 Salvar</button>
+    </div></div>`;
+}
+
+function salvarEditUser(uid){
+  const senha=document.getElementById('euSenha')?.value||'';
+  if(!senha){alert('Informe a nova senha.');return;}
+  const users=getUsers();
+  const i=users.findIndex(u=>u.id===uid); if(i===-1)return;
+  users[i].senha=senha;
+  setUsers(users);
+  alert('Senha atualizada!');
+  rUsuarios();
+}
+
+function salvarNovoUser(){
+  const nome=(document.getElementById('nuNome')?.value||'').trim();
+  const uid=(document.getElementById('nuId')?.value||'').trim().toLowerCase().replace(/\s+/g,'');
+  const senha=document.getElementById('nuSenha')?.value||'';
+  const ativo=document.getElementById('nuAtivo')?.checked!==false;
+  if(!nome||!uid||!senha){alert('Preencha todos os campos obrigatórios.');return;}
+  const users=getUsers();
+  if(users.find(u=>u.id===uid)){alert('ID de usuário já existe. Escolha outro.');return;}
+  users.push({id:uid,nome,senha,isAdmin:false,ativo});
+  setUsers(users);
+  rUsuarios();
+}
+
+// ══════════════════════════════════════════
 // BACKUP — EXPORTAR / IMPORTAR
 // ══════════════════════════════════════════
 function exportarDados(){
   const emps=getEmps();
-  const backup={versao:1,exportadoEm:new Date().toISOString(),empresas:[]};
+  const pref=up();
+  const backup={versao:2,exportadoEm:new Date().toISOString(),usuario:ses?.uid||'',empresas:[]};
   emps.forEach(emp=>{
     const entry={...emp,funcionarios:[],meses:{},ferias:{},rescisoes:{}};
     const funcs=getFuncs(emp.id);
@@ -2060,7 +2309,7 @@ function exportarDados(){
     // todos os meses de todos os anos (varredura de 2020 a ano+2)
     for(let a=2020;a<=ano+2;a++){
       for(let m=1;m<=12;m++){
-        const k=`fp_m_${emp.id}_${a}_${String(m).padStart(2,'0')}`;
+        const k=`fp_m_${emp.id}_${a}_${String(m).padStart(2,'0')}${pref}`;
         const v=ls.g(k);
         if(v&&v.length) entry.meses[k]=v;
       }
@@ -2069,9 +2318,10 @@ function exportarDados(){
     if(fer&&fer.length) entry.ferias=fer;
     const resc=getRescs(emp.id);
     if(resc&&resc.length) entry.rescisoes=resc;
-    // 13º novembro
-    const nov=ls.g(`fp_m_${emp.id}_${ano}_11`);
-    if(nov&&nov.length) entry.meses[`fp_m_${emp.id}_${ano}_11`]=nov;
+    // 13º novembro (use scoped key)
+    const novKey=`fp_m_${emp.id}_${ano}_11${pref}`;
+    const nov=ls.g(novKey);
+    if(nov&&nov.length) entry.meses[novKey]=nov;
     backup.empresas.push(entry);
   });
   const json=JSON.stringify(backup,null,2);
@@ -2094,15 +2344,16 @@ function importarDados(){
       try{
         const backup=JSON.parse(ev.target.result);
         if(!backup.versao||!Array.isArray(backup.empresas)) throw new Error('Arquivo inválido');
+        const pref=up();
         const modo=confirm(
           `Backup de ${new Date(backup.exportadoEm).toLocaleString('pt-BR')}\n`+
           `${backup.empresas.length} empresa(s) encontrada(s).\n\n`+
           `Clique OK para MESCLAR com os dados atuais.\n`+
-          `Clique Cancelar para SUBSTITUIR tudo (apaga dados atuais).`
+          `Clique Cancelar para SUBSTITUIR (apaga dados do usuário atual).`
         );
         if(!modo){
-          // substituir — limpar tudo
-          Object.keys(localStorage).filter(k=>k.startsWith('fp_')).forEach(k=>localStorage.removeItem(k));
+          // substituir — limpar dados do usuário atual
+          Object.keys(localStorage).filter(k=>k.includes(pref)).forEach(k=>localStorage.removeItem(k));
         }
         backup.empresas.forEach(emp=>{
           const {funcionarios,meses,ferias,rescisoes,...empData}=emp;
@@ -2112,7 +2363,11 @@ function importarDados(){
             setEmps([...existentes,empData]);
           }
           if(funcionarios) setFuncs(empData.id,funcionarios);
-          if(meses) Object.entries(meses).forEach(([k,v])=>ls.s(k,v));
+          if(meses) Object.entries(meses).forEach(([k,v])=>{
+            // Re-key: strip any existing user prefix and apply current user's prefix
+            const stripped=k.replace(/_u[^_]+$/,'');
+            ls.s(stripped+pref,v);
+          });
           if(ferias&&ferias.length) setFers(empData.id,ferias);
           if(rescisoes&&rescisoes.length) setRescs(empData.id,rescisoes);
         });
@@ -2130,7 +2385,7 @@ function importarDados(){
 // ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
-rHeader(); rEmp();
+initApp();
 </script>
 </body>
 </html>
