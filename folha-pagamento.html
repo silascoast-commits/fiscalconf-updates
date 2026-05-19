@@ -175,6 +175,10 @@
   <span style="font-size:22px">📋</span>
   <div><span class="h-title">Folha de Pagamento</span><span class="h-sub">Colaboradores Informais</span></div>
   <div id="hEmp" style="margin-left:auto;"></div>
+  <div style="display:flex;gap:6px;margin-left:10px">
+    <button onclick="exportarDados()" title="Salvar backup em arquivo JSON" style="padding:5px 10px;font-size:12px;font-weight:600;border:1px solid #2563eb;background:#eff6ff;color:#2563eb;border-radius:6px;cursor:pointer">⬇ Exportar</button>
+    <button onclick="importarDados()" title="Restaurar dados de arquivo JSON" style="padding:5px 10px;font-size:12px;font-weight:600;border:1px solid #16a34a;background:#f0fdf4;color:#16a34a;border-radius:6px;cursor:pointer">⬆ Importar</button>
+  </div>
 </header>
 <div class="tabs">
   <button class="tab on"  id="t1" onclick="tab(1)">🏢 Empresas</button>
@@ -2007,6 +2011,86 @@ function printTodos(){
     <button class="no-print" onclick="window.print()" style="position:fixed;top:12px;right:12px;padding:8px 18px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:700;z-index:999">🖨️ Imprimir Todos</button>
     ${pgs}</body></html>`);
   w.document.close();
+}
+
+// ══════════════════════════════════════════
+// BACKUP — EXPORTAR / IMPORTAR
+// ══════════════════════════════════════════
+function exportarDados(){
+  const emps=getEmps();
+  const backup={versao:1,exportadoEm:new Date().toISOString(),empresas:[]};
+  emps.forEach(emp=>{
+    const entry={...emp,funcionarios:[],meses:{},ferias:{},rescisoes:{}};
+    const funcs=getFuncs(emp.id);
+    entry.funcionarios=funcs;
+    // todos os meses de todos os anos (varredura de 2020 a ano+2)
+    for(let a=2020;a<=ano+2;a++){
+      for(let m=1;m<=12;m++){
+        const k=`fp_m_${emp.id}_${a}_${String(m).padStart(2,'0')}`;
+        const v=ls.g(k);
+        if(v&&v.length) entry.meses[k]=v;
+      }
+    }
+    const fer=getFers(emp.id);
+    if(fer&&fer.length) entry.ferias=fer;
+    const resc=getRescs(emp.id);
+    if(resc&&resc.length) entry.rescisoes=resc;
+    // 13º novembro
+    const nov=ls.g(`fp_m_${emp.id}_${ano}_11`);
+    if(nov&&nov.length) entry.meses[`fp_m_${emp.id}_${ano}_11`]=nov;
+    backup.empresas.push(entry);
+  });
+  const json=JSON.stringify(backup,null,2);
+  const blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const dt=new Date().toISOString().slice(0,10);
+  a.href=url; a.download=`folha-backup-${dt}.json`; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importarDados(){
+  const inp=document.createElement('input');
+  inp.type='file'; inp.accept='.json,application/json';
+  inp.onchange=e=>{
+    const file=e.target.files[0];
+    if(!file) return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const backup=JSON.parse(ev.target.result);
+        if(!backup.versao||!Array.isArray(backup.empresas)) throw new Error('Arquivo inválido');
+        const modo=confirm(
+          `Backup de ${new Date(backup.exportadoEm).toLocaleString('pt-BR')}\n`+
+          `${backup.empresas.length} empresa(s) encontrada(s).\n\n`+
+          `Clique OK para MESCLAR com os dados atuais.\n`+
+          `Clique Cancelar para SUBSTITUIR tudo (apaga dados atuais).`
+        );
+        if(!modo){
+          // substituir — limpar tudo
+          Object.keys(localStorage).filter(k=>k.startsWith('fp_')).forEach(k=>localStorage.removeItem(k));
+        }
+        backup.empresas.forEach(emp=>{
+          const {funcionarios,meses,ferias,rescisoes,...empData}=emp;
+          // mesclar empresas
+          const existentes=getEmps();
+          if(!existentes.find(e=>e.id===empData.id)){
+            setEmps([...existentes,empData]);
+          }
+          if(funcionarios) setFuncs(empData.id,funcionarios);
+          if(meses) Object.entries(meses).forEach(([k,v])=>ls.s(k,v));
+          if(ferias&&ferias.length) setFers(empData.id,ferias);
+          if(rescisoes&&rescisoes.length) setRescs(empData.id,rescisoes);
+        });
+        alert('✅ Dados importados com sucesso!');
+        rHeader(); rEmp(); tab(1);
+      }catch(err){
+        alert('❌ Erro ao importar: '+err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
 }
 
 // ══════════════════════════════════════════
