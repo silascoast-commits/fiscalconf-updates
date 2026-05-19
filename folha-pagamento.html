@@ -1,0 +1,2391 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Folha de Pagamento</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary:#2563eb; --primary-light:#dbeafe;
+      --green:#16a34a;   --green-light:#dcfce7; --green-bd:#86efac;
+      --amber:#d97706;   --amber-light:#fef3c7; --amber-bd:#fcd34d;
+      --purple:#7c3aed;  --purple-light:#ede9fe;
+      --red:#dc2626;     --red-light:#fee2e2;
+      --sky:#0284c7;     --sky-light:#e0f2fe;
+      --gray-50:#f9fafb; --gray-100:#f3f4f6; --gray-200:#e5e7eb;
+      --gray-300:#d1d5db; --gray-400:#9ca3af; --gray-500:#6b7280;
+      --gray-600:#4b5563; --gray-700:#374151; --gray-800:#1f2937; --gray-900:#111827;
+      --r:10px; --sh:0 1px 4px rgba(0,0,0,.08);
+    }
+    body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--gray-50); color:var(--gray-800); min-height:100vh; }
+
+    /* ── Header ── */
+    header { background:#fff; border-bottom:1px solid var(--gray-200); padding:0 24px; height:56px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:200; box-shadow:var(--sh); }
+    .h-title { font-size:16px; font-weight:700; }
+    .h-sub   { font-size:12px; color:var(--gray-400); margin-left:4px; }
+    .h-emp   { margin-left:auto; display:flex; align-items:center; gap:8px; background:var(--green-light); border:1px solid var(--green-bd); border-radius:8px; padding:4px 12px; font-size:13px; }
+    .h-emp strong { color:var(--green); font-weight:700; }
+
+    /* ── Tabs ── */
+    .tabs { background:#fff; border-bottom:2px solid var(--gray-200); display:flex; padding:0 24px; }
+    .tab  { padding:13px 18px; font-size:14px; font-weight:600; color:var(--gray-500); border:none; background:transparent; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; transition:color .15s,border-color .15s; }
+    .tab:hover { color:var(--gray-800); }
+    .tab.on { color:var(--primary); border-bottom-color:var(--primary); }
+
+    /* ── Main ── */
+    main { max-width:960px; margin:0 auto; padding:24px 20px 60px; }
+
+    /* ── Card ── */
+    .card { background:#fff; border:1px solid var(--gray-200); border-radius:var(--r); box-shadow:var(--sh); margin-bottom:18px; }
+    .card-hd { padding:13px 20px; border-bottom:1px solid var(--gray-100); display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .card-ti { font-size:15px; font-weight:600; display:flex; align-items:center; gap:8px; }
+    .card-bd { padding:18px 20px; }
+
+    /* ── Botões ── */
+    .btn { display:inline-flex; align-items:center; gap:5px; padding:0 14px; height:34px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:opacity .15s; white-space:nowrap; }
+    .btn:hover { opacity:.85; }
+    .btn-primary { background:var(--primary); color:#fff; }
+    .btn-green   { background:var(--green);   color:#fff; }
+    .btn-amber   { background:var(--amber);   color:#fff; }
+    .btn-sky     { background:var(--sky);     color:#fff; }
+    .btn-outline { background:#fff; color:var(--gray-700); border:1px solid var(--gray-300); }
+    .btn-ghost   { background:transparent; color:var(--gray-500); border:none; }
+    .btn-ghost:hover { background:var(--gray-100); }
+    .btn-danger  { background:transparent; color:var(--red); border:none; }
+    .btn-danger:hover { background:var(--red-light); }
+    .btn-sm   { height:28px; padding:0 10px; font-size:12px; border-radius:6px; }
+    .btn-icon { width:28px; height:28px; padding:0; justify-content:center; border-radius:6px; }
+
+    /* ── Form ── */
+    .fbox { background:var(--gray-50); border:1px solid var(--gray-200); border-radius:var(--r); padding:16px; margin-bottom:12px; }
+    .ftitle { font-size:13px; font-weight:700; color:var(--gray-700); margin-bottom:12px; }
+    .fg1 { display:grid; grid-template-columns:1fr; gap:10px; margin-bottom:10px; }
+    .fg2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+    .fg3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:10px; }
+    .fg4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px; margin-bottom:10px; }
+    .ff  { display:flex; flex-direction:column; gap:4px; }
+    .ff label { font-size:11px; font-weight:700; color:var(--gray-600); text-transform:uppercase; letter-spacing:.03em; }
+    .ff input,.ff select { height:34px; border:1px solid var(--gray-300); border-radius:7px; padding:0 10px; font-size:13px; background:#fff; outline:none; color:var(--gray-800); }
+    .ff input:focus,.ff select:focus { border-color:var(--primary); }
+    .fa { display:flex; gap:8px; justify-content:flex-end; margin-top:6px; }
+    .sdiv { font-size:10px; font-weight:700; color:var(--gray-400); text-transform:uppercase; letter-spacing:.06em; margin:12px 0 8px; padding-bottom:5px; border-bottom:1px solid var(--gray-200); }
+
+    /* ── Badges ── */
+    .badge { display:inline-flex; align-items:center; gap:3px; padding:2px 7px; border-radius:99px; font-size:11px; font-weight:700; }
+    .b-green  { background:var(--green);  color:#fff; }
+    .b-amber  { background:var(--amber-light); color:var(--amber); border:1px solid var(--amber-bd); }
+    .b-sky    { background:var(--sky-light); color:var(--sky); }
+    .b-purple { background:var(--purple-light); color:var(--purple); }
+    .b-gray   { background:var(--gray-200); color:var(--gray-600); }
+    .b-blue   { background:var(--primary-light); color:var(--primary); }
+
+    /* ── Resumo ── */
+    .sum4 { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
+    .scard { background:#fff; border:1px solid var(--gray-200); border-radius:var(--r); padding:14px 16px; box-shadow:var(--sh); }
+    .slbl { font-size:10px; font-weight:700; color:var(--gray-500); text-transform:uppercase; letter-spacing:.04em; margin-bottom:3px; }
+    .sval { font-size:20px; font-weight:700; color:var(--gray-900); }
+    .sval.g { color:var(--green); } .sval.a { color:var(--amber); } .sval.p { color:var(--purple); }
+    .ssub { font-size:11px; color:var(--gray-400); margin-top:2px; }
+
+    /* ── Funcionário card ── */
+    .func-card { border:1px solid var(--gray-200); border-radius:10px; background:#fff; margin-bottom:10px; overflow:hidden; }
+    .func-card.adt-ok  { border-left:3px solid var(--amber); }
+    .func-card.folha-ok { border-left:3px solid var(--green); }
+    .func-hd { display:flex; align-items:center; gap:10px; padding:12px 16px; }
+    .func-info { flex:1; min-width:0; }
+    .func-nome { font-size:14px; font-weight:700; color:var(--gray-900); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .func-sub  { font-size:12px; color:var(--gray-400); margin-top:2px; }
+    .func-acts { display:flex; gap:6px; flex-shrink:0; align-items:center; }
+    .func-body { border-top:1px solid var(--gray-100); padding:14px 16px; background:var(--gray-50); }
+
+    /* ── Adiantamento inline ── */
+    .adt-list { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+    .adt-item { display:flex; align-items:center; gap:10px; padding:8px 12px; background:#fff; border:1px solid var(--amber-bd); border-radius:8px; }
+    .adt-item .adt-val { font-weight:700; color:var(--amber); margin-left:auto; }
+
+    /* ── Tabela cálculo ── */
+    .calc-wrap { background:#fff; border:1px solid var(--gray-200); border-radius:8px; padding:12px 14px; }
+    .ctab { width:100%; border-collapse:collapse; font-size:13px; }
+    .ctab td { padding:4px 6px; }
+    .ctab td:last-child { text-align:right; font-weight:600; white-space:nowrap; }
+    .ctab .csec td { font-size:10px; font-weight:700; color:var(--gray-400); text-transform:uppercase; letter-spacing:.05em; padding:10px 6px 4px; }
+    .ctab .csub td { border-top:1px solid var(--gray-200); font-weight:700; padding-top:7px; }
+    .ctab .ctotal td { border-top:2px solid var(--gray-300); font-size:14px; font-weight:700; color:var(--primary); padding-top:8px; }
+    .ctab .cdesc td:last-child { color:var(--red); }
+    .ctab .cfgts td { color:var(--purple); }
+    .ctab .cprov td { color:var(--gray-500); font-size:12px; }
+    .cbadge { display:inline-block; padding:1px 6px; border-radius:99px; font-size:10px; font-weight:700; background:var(--primary-light); color:var(--primary); margin-left:4px; }
+    .cbadge.a { background:var(--amber-light); color:var(--amber); }
+    .cbadge.p { background:var(--purple-light); color:var(--purple); }
+
+    /* ── CNPJ ── */
+    .cw { position:relative; }
+    .cico { position:absolute; right:9px; top:50%; transform:translateY(-50%); font-size:15px; pointer-events:none; }
+    .cspin { width:15px; height:15px; border:2px solid var(--gray-300); border-top-color:var(--primary); border-radius:50%; animation:spin .7s linear infinite; display:inline-block; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .cres { margin-top:5px; padding:8px 10px; border-radius:7px; font-size:12px; display:none; }
+    .cres.ok   { background:var(--green-light); border:1px solid var(--green-bd); color:var(--green); display:block; }
+    .cres.err  { background:var(--red-light); border:1px solid #fca5a5; color:var(--red); display:block; }
+
+    /* ── Misc ── */
+    hr { border:none; border-top:1px solid var(--gray-200); margin:12px 0; }
+    .lf { display:flex; justify-content:space-between; align-items:center; font-size:13px; padding:3px 0; }
+    .lf-t { font-size:16px; font-weight:700; }
+    .tg { color:var(--green); font-weight:600; } .ta { color:var(--amber); font-weight:600; } .tp { color:var(--purple); font-weight:600; }
+    .empty { padding:40px 20px; text-align:center; color:var(--gray-400); }
+    .empty-i { font-size:36px; margin-bottom:10px; }
+    .empty p { font-size:14px; margin-bottom:12px; }
+    .aviso { text-align:center; font-size:11px; color:var(--gray-400); margin-top:6px; }
+    .alerta { background:#fffbeb; border:1px solid var(--amber-bd); border-radius:var(--r); padding:14px 18px; display:flex; gap:10px; font-size:14px; color:var(--amber); margin-bottom:18px; }
+    .emp-banner { display:flex; align-items:center; gap:10px; margin-bottom:14px; padding:10px 14px; background:var(--green-light); border:1px solid var(--green-bd); border-radius:var(--r); font-size:13px; }
+    .filtros { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; margin-bottom:18px; }
+    .fld { display:flex; flex-direction:column; gap:4px; }
+    .fld label { font-size:10px; font-weight:700; color:var(--gray-500); text-transform:uppercase; letter-spacing:.04em; }
+    .fld select { height:36px; border:1px solid var(--gray-300); border-radius:8px; padding:0 10px; font-size:13px; background:#fff; outline:none; }
+
+    /* ── Status barra ── */
+    .status-bar { display:flex; gap:6px; flex-wrap:wrap; margin-top:5px; }
+
+    /* ── Emp list ── */
+    .emp-list { display:flex; flex-direction:column; gap:8px; }
+    .emp-row { display:flex; align-items:center; gap:12px; padding:12px 16px; border-radius:10px; border:2px solid var(--gray-200); background:#fff; }
+    .emp-row.on { border-color:var(--green); background:var(--green-light); }
+    .emp-info { flex:1; min-width:0; }
+    .emp-nome { font-size:14px; font-weight:700; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .emp-det  { font-size:12px; color:var(--gray-500); margin-top:2px; }
+    .emp-acts { display:flex; gap:6px; flex-shrink:0; }
+
+    @media print {
+      .tabs,.btn,.func-acts,.emp-acts,.aviso,.fbox,.filtros,.alerta { display:none !important; }
+      body { background:#fff; } main { padding:0; max-width:100%; }
+      .card { box-shadow:none; border:1px solid #ccc; } header { position:static; box-shadow:none; }
+      .func-body { display:block !important; }
+    }
+    @media (max-width:680px) {
+      .sum4 { grid-template-columns:1fr 1fr; }
+      .fg2,.fg3,.fg4 { grid-template-columns:1fr; }
+      .func-acts { flex-wrap:wrap; }
+    }
+
+    /* ── Login Overlay ── */
+    #loginOverlay {
+      position:fixed; inset:0; z-index:9999;
+      background:rgba(15,23,42,0.7);
+      backdrop-filter:blur(6px);
+      display:flex; align-items:center; justify-content:center;
+    }
+    #loginOverlay.hidden { display:none; }
+    .login-card {
+      background:#fff; border-radius:16px; padding:40px 36px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.25);
+      width:100%; max-width:380px;
+      display:flex; flex-direction:column; gap:20px;
+    }
+    .login-logo { text-align:center; }
+    .login-logo .icon { font-size:40px; margin-bottom:6px; }
+    .login-logo h1 { font-size:20px; font-weight:700; color:var(--gray-900); }
+    .login-logo p  { font-size:13px; color:var(--gray-400); margin-top:2px; }
+    .login-fields { display:flex; flex-direction:column; gap:14px; }
+    .login-fields .ff label { font-size:12px; }
+    .login-fields .ff input { height:40px; font-size:14px; border-radius:8px; }
+    .login-err { background:var(--red-light); border:1px solid #fca5a5; color:var(--red);
+      border-radius:8px; padding:10px 14px; font-size:13px; font-weight:600; display:none; text-align:center; }
+    .login-err.show { display:block; }
+    .btn-login { height:42px; width:100%; font-size:15px; border-radius:10px; }
+
+    /* ── User info in header ── */
+    .h-user { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--gray-600); }
+    .h-user strong { color:var(--gray-900); }
+    .btn-sair { padding:0 12px; height:30px; font-size:12px; border-radius:6px;
+      background:transparent; color:var(--gray-500); border:1px solid var(--gray-300); cursor:pointer;
+      font-weight:600; transition:opacity .15s; }
+    .btn-sair:hover { background:var(--red-light); color:var(--red); border-color:#fca5a5; }
+  </style>
+</head>
+<body>
+
+<!-- Login Overlay -->
+<div id="loginOverlay">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="icon">📋</div>
+      <h1>Folha de Pagamento</h1>
+      <p>Colaboradores Informais — acesso restrito</p>
+    </div>
+    <div class="login-fields">
+      <div class="ff"><label>Usuário</label><input type="text" id="loginUser" placeholder="Nome de usuário" autocomplete="username" /></div>
+      <div class="ff"><label>Senha</label><input type="password" id="loginPass" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" /></div>
+    </div>
+    <div class="login-err" id="loginErr">Usuário ou senha inválidos</div>
+    <button class="btn btn-primary btn-login" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<header>
+  <span style="font-size:22px">📋</span>
+  <div><span class="h-title">Folha de Pagamento</span><span class="h-sub">Colaboradores Informais</span></div>
+  <div id="hEmp" style="margin-left:auto;"></div>
+  <div style="display:flex;gap:6px;margin-left:10px;align-items:center">
+    <div class="h-user" id="hUser" style="display:none"></div>
+    <button onclick="exportarDados()" title="Salvar backup em arquivo JSON" style="padding:5px 10px;font-size:12px;font-weight:600;border:1px solid #2563eb;background:#eff6ff;color:#2563eb;border-radius:6px;cursor:pointer">⬇ Exportar</button>
+    <button onclick="importarDados()" title="Restaurar dados de arquivo JSON" style="padding:5px 10px;font-size:12px;font-weight:600;border:1px solid #16a34a;background:#f0fdf4;color:#16a34a;border-radius:6px;cursor:pointer">⬆ Importar</button>
+    <button class="btn-sair" onclick="logout()">Sair</button>
+  </div>
+</header>
+<div class="tabs" id="mainTabs">
+  <button class="tab on"  id="t1" onclick="tab(1)">🏢 Empresas</button>
+  <button class="tab"     id="t2" onclick="tab(2)">👤 Funcionários</button>
+  <button class="tab"     id="t3" onclick="tab(3)">📋 Folha Mensal</button>
+</div>
+<main>
+  <div id="p1"></div>
+  <div id="p2" style="display:none"></div>
+  <div id="p3" style="display:none"></div>
+  <div id="p4" style="display:none"></div>
+</main>
+
+<script>
+// ══════════════════════════════════════════
+// ESTADO
+// ══════════════════════════════════════════
+const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const hoje=new Date();
+let tabAt=1, mes=hoje.getMonth()+1, ano=hoje.getFullYear();
+let empFA=false, empEId=null;
+let funcFA=false, funcEId=null;
+let funcExp=null;
+let adtFId=null, folhaFId=null, ferFId=null, dec13FId=null, rescFId=null;
+let cnpjT=null;
+let ses=null; // session object {uid, nome, isAdmin}
+
+// ══════════════════════════════════════════
+// AUTH / SESSION STORAGE
+// ══════════════════════════════════════════
+const ls={g:k=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch{return null}},s:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
+// User prefix based on current session
+const up=()=>ses?`_u${ses.uid}`:'_u?';
+// Users list (global, unscoped)
+const getUsers=()=>ls.g('fp_users')||[];
+const setUsers=v=>ls.s('fp_users',v);
+// Session (sessionStorage — clears on browser close)
+const getSes=()=>{try{return JSON.parse(sessionStorage.getItem('fp_ses')||'null')}catch{return null}};
+const setSes=v=>{if(v)sessionStorage.setItem('fp_ses',JSON.stringify(v));else sessionStorage.removeItem('fp_ses');};
+
+// ══════════════════════════════════════════
+// DATA MIGRATION (legacy unprefixed → Silas namespace)
+// ══════════════════════════════════════════
+function migrateLegacyData(uid){
+  // Check if there is legacy fp_emps (no user prefix)
+  const legacyEmps=ls.g('fp_emps');
+  if(!legacyEmps||!legacyEmps.length) return;
+  // Migrate fp_emps
+  if(!ls.g(`fp_emps_u${uid}`)){
+    ls.s(`fp_emps_u${uid}`,legacyEmps);
+  }
+  // Migrate fp_a
+  const legacyA=localStorage.getItem('fp_a');
+  if(legacyA&&!localStorage.getItem(`fp_a_u${uid}`)){
+    localStorage.setItem(`fp_a_u${uid}`,legacyA);
+  }
+  // Migrate per-company keys
+  legacyEmps.forEach(emp=>{
+    const eid=emp.id;
+    // Funcionários
+    const lf=ls.g(`fp_f_${eid}`);
+    if(lf&&!ls.g(`fp_f_${eid}_u${uid}`)) ls.s(`fp_f_${eid}_u${uid}`,lf);
+    // Férias
+    const lfer=ls.g(`fp_fer_${eid}`);
+    if(lfer&&!ls.g(`fp_fer_${eid}_u${uid}`)) ls.s(`fp_fer_${eid}_u${uid}`,lfer);
+    // Rescisões
+    const lresc=ls.g(`fp_resc_${eid}`);
+    if(lresc&&!ls.g(`fp_resc_${eid}_u${uid}`)) ls.s(`fp_resc_${eid}_u${uid}`,lresc);
+    // Monthly data — scan all keys
+    Object.keys(localStorage).forEach(k=>{
+      if(k.startsWith(`fp_m_${eid}_`)&&!k.includes('_u')){
+        const nk=k+`_u${uid}`;
+        if(!localStorage.getItem(nk)) localStorage.setItem(nk,localStorage.getItem(k));
+      }
+    });
+  });
+}
+
+// ══════════════════════════════════════════
+// STORAGE (user-scoped)
+// ══════════════════════════════════════════
+const getEmps=()=>ls.g(`fp_emps${up()}`)||[];
+const setEmps=v=>ls.s(`fp_emps${up()}`,v);
+const getAId=()=>localStorage.getItem(`fp_a${up()}`)||null;
+const setAId=id=>id?localStorage.setItem(`fp_a${up()}`,id):localStorage.removeItem(`fp_a${up()}`);
+const getAtiva=()=>{const id=getAId();return id?getEmps().find(e=>e.id===id)||null:null};
+// Funcionários permanentes por empresa
+const getFuncs=eid=>ls.g(`fp_f_${eid}${up()}`)||[];
+const setFuncs=(eid,v)=>ls.s(`fp_f_${eid}${up()}`,v);
+// Dados mensais por empresa+ano+mes
+const getMesKey=(eid)=>`fp_m_${eid}_${ano}_${String(mes).padStart(2,'0')}${up()}`;
+const getMes=eid=>ls.g(getMesKey(eid))||[];
+const setMes=(eid,v)=>ls.s(getMesKey(eid),v);
+// Pega ou cria entrada mensal de um funcionário
+function getMesFunc(eid,fid){const m=getMes(eid);return m.find(e=>e.fid===fid)||{fid,adts:[],folhaRodada:false,pago:false};}
+function setMesFunc(eid,entry){
+  const m=getMes(eid).filter(e=>e.fid!==entry.fid);
+  m.push(entry); setMes(eid,m);
+}
+// Férias por empresa
+const getFers=(eid)=>ls.g(`fp_fer_${eid}${up()}`)||[];
+const setFers=(eid,v)=>ls.s(`fp_fer_${eid}${up()}`,v);
+// Rescisão por empresa (uma por funcionário)
+const getRescs=(eid)=>ls.g(`fp_resc_${eid}${up()}`)||[];
+const setRescs=(eid,v)=>ls.s(`fp_resc_${eid}${up()}`,v);
+const getRescFunc=(eid,fid)=>getRescs(eid).find(r=>r.fid===fid)||null;
+function setRescFunc(eid,resc){const l=getRescs(eid).filter(r=>r.fid!==resc.fid);l.push(resc);setRescs(eid,l);}
+
+// ══════════════════════════════════════════
+// LOGIN / LOGOUT
+// ══════════════════════════════════════════
+function initApp(){
+  // Ensure default admin exists
+  let users=getUsers();
+  if(!users.find(u=>u.id==='silas')){
+    users.unshift({id:'silas',nome:'Silas',senha:'admin123',isAdmin:true,ativo:true});
+    setUsers(users);
+  }
+  ses=getSes();
+  if(ses){
+    showApp();
+  } else {
+    document.getElementById('loginOverlay').classList.remove('hidden');
+  }
+}
+
+function doLogin(){
+  const uid=document.getElementById('loginUser').value.trim().toLowerCase();
+  const pw=document.getElementById('loginPass').value;
+  const errEl=document.getElementById('loginErr');
+  errEl.classList.remove('show');
+  const users=getUsers();
+  const user=users.find(u=>u.id.toLowerCase()===uid||u.nome.toLowerCase()===uid);
+  if(!user||!user.ativo||user.senha!==pw){
+    errEl.classList.add('show');
+    return;
+  }
+  ses={uid:user.id,nome:user.nome,isAdmin:!!user.isAdmin};
+  setSes(ses);
+  // Migrate legacy data when Silas logs in
+  if(user.id==='silas') migrateLegacyData('silas');
+  showApp();
+}
+
+function logout(){
+  ses=null; setSes(null);
+  document.getElementById('loginOverlay').classList.remove('hidden');
+  document.getElementById('loginUser').value='';
+  document.getElementById('loginPass').value='';
+  document.getElementById('loginErr').classList.remove('show');
+  // Hide user info
+  const hu=document.getElementById('hUser'); if(hu) hu.style.display='none';
+}
+
+function showApp(){
+  document.getElementById('loginOverlay').classList.add('hidden');
+  // Show/hide admin tab
+  const t4=document.getElementById('t4');
+  if(ses&&ses.isAdmin){
+    if(!t4){
+      const tabs=document.getElementById('mainTabs');
+      const btn=document.createElement('button');
+      btn.className='tab'; btn.id='t4'; btn.textContent='👥 Usuários';
+      btn.onclick=()=>tab(4);
+      tabs.appendChild(btn);
+    }
+    // Ensure p4 exists
+    const p4=document.getElementById('p4'); if(p4) p4.style.display='none';
+  } else {
+    if(t4) t4.remove();
+  }
+  rHeader(); rEmp();
+}
+
+// ══════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════
+const genId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const brl=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const num=v=>parseFloat(String(v||0))||0;
+const gv=id=>document.getElementById(id)?.value||'';
+
+function diasNoMes(m,a){return new Date(a,m,0).getDate();}
+
+function calcAvos13(adm,aRef){
+  if(!adm) return 0;
+  const d=new Date(adm+'T12:00:00'); let av=0;
+  for(let m=0;m<12;m++){
+    if(aRef===hoje.getFullYear()&&m>hoje.getMonth()) continue;
+    if(aRef<hoje.getFullYear()&&m>11) continue;
+    const fim=new Date(aRef,m+1,0);
+    if(d>fim) continue;
+    const dia=(d.getFullYear()===aRef&&d.getMonth()===m)?d.getDate():1;
+    if(fim.getDate()-dia+1>=15) av++;
+  }
+  return Math.min(av,12);
+}
+function calcAvosF(adm){
+  if(!adm) return 0;
+  const d=new Date(adm+'T12:00:00');
+  const r=new Date(ano,mes-1,1);
+  const m=(r.getFullYear()-d.getFullYear())*12+(r.getMonth()-d.getMonth());
+  return m<0?0:m%12;
+}
+
+function calcEntry(f, entry){
+  const sal=num(f.salarioBase);
+  const isMens=f.tipoSalario==='mensalista'||!f.tipoSalario;
+  const prop=isMens&&!!entry.mesProporcional;
+
+  let salProp, vh, dt;
+  if(isMens){
+    const dim=diasNoMes(mes,ano); // dias reais do mês vigente
+    dt=prop?num(entry.diasTrab||0):dim;
+    salProp=prop?(sal/dim)*num(entry.diasTrab||0):sal;
+    vh=sal/dim/(num(f.cargaHoraria)||8);
+  } else {
+    dt=num(entry.diasTrab||0);
+    salProp=sal*dt;
+    vh=num(entry.valorHora||0);
+  }
+
+  const he50v  = vh*(num(entry.he50)||0)*1.5;
+  const he100v = vh*(num(entry.he100)||0)*2.0;
+  const totalHE= he50v+he100v;
+  const dsrBase= (isMens&&!prop) ? diasNoMes(mes,ano) : dt;
+  const dsrAuto= dsrBase>0&&totalHE>0 ? (totalHE/dsrBase)*(num(entry.diasDSR)||4) : 0;
+  const dsr    = entry.dsrManual ? num(entry.dsrValor) : dsrAuto;
+  const totalAdt= (entry.adts||[]).reduce((s,a)=>s+num(a.valor),0);
+  const bruto  = salProp+totalHE+dsr;
+  const aPagar = bruto-totalAdt;
+  const av13   = calcAvos13(f.dataAdmissao,ano);
+  const dec13  = sal>0 ? sal*av13/12 : 0;
+  const avF    = calcAvosF(f.dataAdmissao);
+  const ferTotal= sal>0 ? (sal*avF/12)*(4/3) : 0;
+  const fgts   = bruto*0.08;
+  return {salProp,vh,he50v,he100v,totalHE,dsr,dsrAuto,totalAdt,bruto,aPagar,av13,dec13,avF,ferTotal,fgts,dt,prop};
+}
+
+function calcFer(f,dias,dataInicio){
+  const sal=num(f.salarioBase);
+  // Usa os dias reais do mês de início das férias
+  let dim=30;
+  if(dataInicio){const d=new Date(dataInicio+'T12:00:00');dim=diasNoMes(d.getMonth()+1,d.getFullYear());}
+  else{dim=diasNoMes(mes,ano);}
+  const vd=sal/dim,vf=vd*dias,ad=vf/3;
+  return {vd,vf,ad,total:vf+ad,dim};
+}
+function calc13(f){
+  const sal=num(f.salarioBase),avos=calcAvos13(f.dataAdmissao,ano);
+  const v13=sal>0?sal*avos/12:0;
+  return {avos,v13,parc1:v13/2,parc2:v13/2};
+}
+function getDec13Nov(eid,fid){
+  const data=ls.g(`fp_m_${eid}_${ano}_11${up()}`)||[];
+  return (data.find(x=>x.fid===fid)||{}).dec13?.valor||0;
+}
+// Avos de férias até uma data específica (período aquisitivo)
+function calcAvosF_data(adm, dataRef){
+  if(!adm) return 0;
+  const da=new Date(adm+'T12:00:00'), dr=new Date(dataRef+'T12:00:00');
+  const m=(dr.getFullYear()-da.getFullYear())*12+(dr.getMonth()-da.getMonth());
+  return m<0?0:m%12;
+}
+// Avos de 13º até uma data específica
+function calcAvos13_data(adm, dataRef){
+  if(!adm) return 0;
+  const da=new Date(adm+'T12:00:00'), dr=new Date(dataRef+'T12:00:00');
+  const aRef=dr.getFullYear(); let av=0;
+  for(let m=0;m<12;m++){
+    const fim=new Date(aRef,m+1,0);
+    if(fim>dr) continue; if(da>fim) continue;
+    const dia=(da.getFullYear()===aRef&&da.getMonth()===m)?da.getDate():1;
+    if(fim.getDate()-dia+1>=15) av++;
+  }
+  // verifica mês da rescisão/data final
+  const mR=dr.getMonth(), fimM=new Date(aRef,mR+1,0);
+  const dIni=(da.getFullYear()===aRef&&da.getMonth()===mR)?da.getDate():1;
+  if(dr.getDate()-dIni+1>=15) av++;
+  return Math.min(av,12);
+}
+// Aviso prévio proporcional — Lei 12.506/2011: 30 + 3 dias/ano completo, máx 90
+function calcDiasAviso(adm, dataResc){
+  if(!adm) return 30;
+  const da=new Date(adm+'T12:00:00'), dr=new Date(dataResc+'T12:00:00');
+  const anos=Math.floor((dr-da)/(365.25*24*60*60*1000));
+  return Math.min(30+anos*3, 90);
+}
+function addDias(dateStr, dias){
+  const d=new Date(dateStr+'T12:00:00'); d.setDate(d.getDate()+dias);
+  return d.toISOString().slice(0,10);
+}
+// ── Cálculo CLT completo por motivo ──────
+function calcResc(f, dataRescisao, motivo, aviso, ferVencPer, fgtsSaldoInput){
+  const sal=num(f.salarioBase); if(!dataRescisao) return null;
+  const dr=new Date(dataRescisao+'T12:00:00');
+  const isSemJusta=motivo==='Dispensa sem justa causa';
+  const isComJusta=motivo==='Dispensa com justa causa';
+  const isDemissao=motivo==='Pedido de demissão';
+  const isAcordo  =motivo==='Acordo entre partes';
+  const isTermino =motivo==='Término de contrato';
+
+  // Saldo de salário: dias trabalhados / dias reais do mês da rescisão
+  const diasTrab=dr.getDate();
+  const dimResc=diasNoMes(dr.getMonth()+1, dr.getFullYear());
+  const saldoSal=(sal/dimResc)*diasTrab;
+
+  // Aviso prévio proporcional
+  const diasAviso=calcDiasAviso(f.dataAdmissao, dataRescisao);
+  let avisoVal=0, avisoDias=0;
+
+  if((isSemJusta||isTermino)&&aviso==='ind'){
+    avisoVal=(sal/dimResc)*diasAviso; avisoDias=diasAviso;
+  } else if(isAcordo&&aviso==='ind'){
+    avisoVal=(sal/dimResc)*diasAviso*0.5; avisoDias=Math.floor(diasAviso/2);
+  } else if(isDemissao&&aviso==='desc'){
+    // Não cumpriu aviso: desconta 30 dias baseado nos dias do mês
+    avisoVal=-(sal/dimResc)*30; avisoDias=0;
+  }
+  // 'trab', 'nenhum', 'disp': sem valor extra, sem extensão
+
+  // Data virtual — aviso indenizado estende cálculo de 13º e férias (CLT art. 487 §1º)
+  const dataVirtual=avisoDias>0 ? addDias(dataRescisao,avisoDias) : dataRescisao;
+
+  // 13º proporcional (inclui aviso indenizado; justa causa não tem direito)
+  let dec13=0, avos13=0;
+  if(!isComJusta){
+    avos13=calcAvos13_data(f.dataAdmissao, dataVirtual);
+    dec13=sal>0?sal*avos13/12:0;
+  }
+
+  // Férias proporcionais + 1/3 (inclui aviso; justa causa perde as proporcionais)
+  let ferProp=0, avosF=0;
+  if(!isComJusta){
+    avosF=calcAvosF_data(f.dataAdmissao, dataVirtual);
+    ferProp=sal>0?(sal*avosF/12)*(4/3):0;
+  }
+
+  // Férias vencidas + 1/3 (todo motivo tem direito; justa causa também)
+  const ferVencNum=Math.max(0,num(ferVencPer)||0);
+  const ferVenc=ferVencNum>0?sal*ferVencNum*(4/3):0;
+
+  // Multa FGTS (40% sem justa/término · 20% acordo · não se aplica demissão/justa causa)
+  const fgtsSaldoVal=num(fgtsSaldoInput)||0;
+  let multaFgts=0;
+  if((isSemJusta||isTermino)&&fgtsSaldoVal>0) multaFgts=fgtsSaldoVal*0.40;
+  else if(isAcordo&&fgtsSaldoVal>0)           multaFgts=fgtsSaldoVal*0.20;
+
+  // FGTS 8% sobre verbas brutas — custo de referência do empregador
+  const baseFgts=saldoSal+(avisoVal>0?avisoVal:0)+dec13+ferProp+ferVenc;
+  const fgtsRef=baseFgts*0.08;
+
+  const total=saldoSal+avisoVal+dec13+ferProp+ferVenc+multaFgts;
+  return {
+    saldoSal,diasTrab,dimResc,diasAviso,avisoDias,avisoVal,
+    dec13,avos13,ferProp,avosF,
+    ferVenc,ferVencNum,
+    multaFgts,fgtsSaldoVal,fgtsRef,total,
+    isSemJusta,isComJusta,isDemissao,isAcordo,isTermino
+  };
+}
+
+// ══════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════
+function tab(n){
+  tabAt=n;
+  const tabs=ses&&ses.isAdmin?[1,2,3,4]:[1,2,3];
+  tabs.forEach(i=>{
+    const t=document.getElementById('t'+i); if(t) t.classList.toggle('on',i===n);
+    const p=document.getElementById('p'+i); if(p) p.style.display=i===n?'':'none';
+  });
+  if(n===1) rEmp();
+  else if(n===2) rFunc();
+  else if(n===3) rFolha();
+  else if(n===4) rUsuarios();
+}
+
+// ══════════════════════════════════════════
+// HEADER
+// ══════════════════════════════════════════
+function rHeader(){
+  const ea=getAtiva();
+  document.getElementById('hEmp').innerHTML=ea
+    ?`<div class="h-emp">🏢 <strong>${esc(ea.nome)}</strong> <small style="color:var(--gray-500)">ATIVA</small>
+       <button class="btn btn-ghost btn-sm" style="height:22px;padding:0 7px;font-size:11px" onclick="desativar()">✕</button></div>`
+    :`<span style="font-size:12px;color:var(--gray-400)">Nenhuma empresa ativa</span>`;
+  if(ses){
+    const hu=document.getElementById('hUser');
+    if(hu){
+      hu.style.display='flex';
+      hu.innerHTML=`<strong>${esc(ses.nome)}</strong>${ses.isAdmin?'<span class="badge b-purple" style="font-size:10px">Admin</span>':''}`;
+    }
+  }
+}
+
+// ══════════════════════════════════════════
+// ABA 1 — EMPRESAS
+// ══════════════════════════════════════════
+function rEmp(){
+  rHeader();
+  const emps=getEmps(), aid=getAId();
+  let h=`<div class="card"><div class="card-hd">
+    <div class="card-ti">🏢 Empresas Cadastradas</div>
+    <button class="btn btn-primary btn-sm" onclick="aEmpF()">+ Nova Empresa</button>
+  </div><div class="card-bd">`;
+  if(empFA) h+=empForm(null);
+  if(!emps.length&&!empFA){
+    h+=`<div class="empty"><div class="empty-i">🏢</div><p>Nenhuma empresa cadastrada.</p>
+      <button class="btn btn-primary" onclick="aEmpF()">+ Cadastrar primeira empresa</button></div>`;
+  } else {
+    h+=`<div class="emp-list">`;
+    emps.forEach(e=>{
+      if(empEId===e.id){h+=empForm(e);return;}
+      const at=e.id===aid;
+      h+=`<div class="emp-row ${at?'on':''}">
+        <span style="font-size:24px">🏢</span>
+        <div class="emp-info">
+          <div class="emp-nome">${esc(e.nome)} ${at?'<span class="badge b-green">✓ ATIVA</span>':''}</div>
+          <div class="emp-det">${e.cnpj?`CNPJ: <strong>${esc(e.cnpj)}</strong>`:''}${e.responsavel?` · ${esc(e.responsavel)}`:''}${e.telefone?` · ${esc(e.telefone)}`:''}${e.endereco?`<br>${esc(e.endereco)}`:''}</div>
+        </div>
+        <div class="emp-acts">
+          ${!at?`<button class="btn btn-green btn-sm" onclick="ativar('${e.id}')">⚡ Ativar</button>`
+               :`<button class="btn btn-sky btn-sm" onclick="tab(2)">👤 Funcionários</button>`}
+          <button class="btn btn-ghost btn-icon" onclick="eEmp('${e.id}')">✏️</button>
+          <button class="btn btn-danger btn-icon" onclick="dEmp('${e.id}')">🗑️</button>
+        </div>
+      </div>`;
+    });
+    h+=`</div>`;
+  }
+  h+=`</div></div>`;
+  document.getElementById('p1').innerHTML=h;
+}
+
+function empForm(e){
+  const id=e?.id||'';
+  return `<div class="fbox"><div class="ftitle">${id?'✏️ Editar':'➕ Nova'} Empresa</div>
+    <div class="fg3">
+      <div class="ff"><label>CNPJ (busca automática)</label>
+        <div class="cw"><input type="text" id="eCnpj" maxlength="18" placeholder="00.000.000/0001-00"
+          value="${esc(e?.cnpj||'')}" oninput="oCnpj(this)" style="padding-right:32px;" />
+          <span class="cico" id="eCI"></span></div>
+        <div class="cres" id="eCR"></div></div>
+      <div class="ff"><label>Responsável</label><input type="text" id="eResp" placeholder="Nome" value="${esc(e?.responsavel||'')}" /></div>
+      <div class="ff"><label>Telefone</label><input type="text" id="eTel" placeholder="(00) 00000-0000" value="${esc(e?.telefone||'')}" /></div>
+    </div>
+    <div class="fg1">
+      <div class="ff"><label>Nome da Empresa *</label><input type="text" id="eNome" placeholder="Razão social ou nome fantasia" value="${esc(e?.nome||'')}" /></div>
+      <div class="ff"><label>Endereço</label><input type="text" id="eEnd" placeholder="Logradouro, número, cidade — UF" value="${esc(e?.endereco||'')}" /></div>
+    </div>
+    <div class="fa">
+      <button class="btn btn-ghost btn-sm" onclick="cEmpF()">✕ Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="sEmp('${id}')">💾 Salvar</button>
+    </div></div>`;
+}
+
+function aEmpF(){ empFA=true; empEId=null; rEmp(); setTimeout(()=>document.getElementById('eCnpj')?.focus(),50); }
+function cEmpF(){ empFA=false; empEId=null; rEmp(); }
+function eEmp(id){ empEId=id; empFA=false; rEmp(); setTimeout(()=>document.getElementById('eCnpj')?.focus(),50); }
+function ativar(id){ setAId(id); rEmp(); }
+function desativar(){ setAId(null); rHeader(); if(tabAt===2)rFunc(); if(tabAt===3)rFolha(); }
+
+function sEmp(id){
+  const nome=gv('eNome').trim(); if(!nome){alert('Informe o nome.');return;}
+  const d={nome,cnpj:gv('eCnpj').trim(),responsavel:gv('eResp').trim(),telefone:gv('eTel').trim(),endereco:gv('eEnd').trim()};
+  const list=getEmps();
+  if(id){const i=list.findIndex(e=>e.id===id);if(i!==-1)list[i]={...list[i],...d};}
+  else list.push({id:genId(),...d});
+  setEmps(list); empFA=false; empEId=null; rEmp();
+}
+function dEmp(id){
+  if(!confirm('Excluir empresa?'))return;
+  setEmps(getEmps().filter(e=>e.id!==id));
+  if(getAId()===id)setAId(null); rEmp();
+}
+
+// CNPJ
+function mCnpj(v){
+  v=v.replace(/\D/g,'').slice(0,14);
+  if(v.length>12)v=v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5,8)+'/'+v.slice(8,12)+'-'+v.slice(12);
+  else if(v.length>8)v=v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5,8)+'/'+v.slice(8);
+  else if(v.length>5)v=v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5);
+  else if(v.length>2)v=v.slice(0,2)+'.'+v.slice(2);
+  return v;
+}
+function oCnpj(el){
+  const raw=el.value.replace(/\D/g,''); el.value=mCnpj(raw);
+  clearTimeout(cnpjT);
+  const ic=document.getElementById('eCI'),re=document.getElementById('eCR');
+  if(!ic||!re)return;
+  if(raw.length<14){ic.innerHTML='';re.className='cres';return;}
+  ic.innerHTML='<span class="cspin"></span>'; re.className='cres';
+  cnpjT=setTimeout(()=>bCnpj(raw),400);
+}
+async function bCnpj(c){
+  const ic=document.getElementById('eCI'),re=document.getElementById('eCR');
+  if(!ic||!re)return;
+  try{
+    const d=await(await fetch(`https://brasilapi.com.br/api/cnpj/v1/${c}`)).json();
+    if(d.message)throw 0;
+    const n=document.getElementById('eNome'),r=document.getElementById('eResp'),en=document.getElementById('eEnd');
+    if(n&&!n.value.trim()) n.value=d.nome_fantasia||d.razao_social||'';
+    if(r&&!r.value.trim()&&d.qsa?.[0]) r.value=d.qsa[0].nome_socio||'';
+    if(en&&!en.value.trim()) en.value=[d.logradouro,d.numero,d.municipio,d.uf].filter(Boolean).join(', ');
+    ic.innerHTML='✅'; re.className='cres ok';
+    re.innerHTML=`<strong>${d.razao_social}</strong>${d.nome_fantasia&&d.nome_fantasia!==d.razao_social?' · '+d.nome_fantasia:''}<br>${d.descricao_situacao_cadastral?'Situação: <strong>'+d.descricao_situacao_cadastral+'</strong>':''}${d.cnae_fiscal_descricao?' · '+d.cnae_fiscal_descricao:''}`;
+  }catch{
+    ic.innerHTML='❌'; re.className='cres err';
+    re.textContent='CNPJ não encontrado. Preencha manualmente.';
+  }
+}
+
+// ══════════════════════════════════════════
+// ABA 2 — FUNCIONÁRIOS
+// ══════════════════════════════════════════
+function rFunc(){
+  rHeader();
+  const ea=getAtiva();
+  const filtros=`<div class="filtros">
+    <div class="fld"><label>Mês</label><select onchange="oMes(this.value)">
+      ${MESES.map((m,i)=>`<option value="${i+1}" ${i+1===mes?'selected':''}>${m}</option>`).join('')}
+    </select></div>
+    <div class="fld"><label>Ano</label><select onchange="oAno(this.value)">
+      ${Array.from({length:6},(_,i)=>ano-2+i).map(y=>`<option value="${y}" ${y===ano?'selected':''}>${y}</option>`).join('')}
+    </select></div>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:flex-end">
+      <button class="btn btn-amber btn-sm" onclick="printTodosAdtsGeral()">🖨️ Todos Adiantamentos</button>
+      <button class="btn btn-primary btn-sm" onclick="printTodos()">🖨️ Todos Mensal</button>
+      <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Relatório</button>
+    </div>
+  </div>`;
+
+  if(!ea){
+    document.getElementById('p2').innerHTML=filtros+`<div class="alerta"><span style="font-size:20px">⚠️</span>
+      <div><strong>Nenhuma empresa ativa.</strong> Vá até a aba Empresas e clique em ⚡ Ativar.
+      <div style="margin-top:8px"><button class="btn btn-primary btn-sm" onclick="tab(1)">🏢 Ir para Empresas</button></div></div></div>`;
+    return;
+  }
+
+  const funcs=getFuncs(ea.id);
+  let h=filtros;
+  h+=`<div class="emp-banner">👤 <strong style="color:var(--green)">${esc(ea.nome)}</strong>
+    <span style="color:var(--gray-500)">· ${MESES[mes-1]}/${ano}</span>
+    <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="tab(1)">Trocar empresa</button></div>`;
+
+  h+=`<div class="card"><div class="card-hd">
+    <div class="card-ti">👤 Funcionários Cadastrados</div>
+    <button class="btn btn-primary btn-sm" onclick="aFuncF()">+ Novo Funcionário</button>
+  </div><div class="card-bd">`;
+
+  if(funcFA&&!funcEId) h+=funcForm(null,ea.id);
+
+  if(!funcs.length&&!funcFA){
+    h+=`<div class="empty"><div class="empty-i">👤</div>
+      <p>Nenhum funcionário cadastrado para esta empresa.</p>
+      <button class="btn btn-primary" onclick="aFuncF()">+ Cadastrar primeiro funcionário</button></div>`;
+  } else {
+    funcs.forEach(f=>{
+      if(funcEId===f.id){h+=funcForm(f,ea.id);return;}
+      h+=funcCard(f,ea.id);
+    });
+  }
+  h+=`</div></div><p class="aviso">Sem desconto de INSS, IRRF ou outros impostos</p>`;
+  document.getElementById('p2').innerHTML=h;
+}
+
+function funcForm(f,eid){
+  const id=f?.id||'', tipo=f?.tipoSalario||'mensalista', isMens=tipo==='mensalista';
+  return `<div class="fbox"><div class="ftitle">${id?'✏️ Editar':'➕ Novo'} Funcionário</div>
+    <div class="sdiv">📋 Dados pessoais</div>
+    <div class="fg2">
+      <div class="ff"><label>Nome completo *</label><input type="text" id="fNome" placeholder="Nome" value="${esc(f?.nome||'')}" /></div>
+      <div class="ff"><label>Função / Cargo</label><input type="text" id="fFun" placeholder="Ex.: Diarista, Pedreiro..." value="${esc(f?.funcao||'')}" /></div>
+    </div>
+    <div class="fg3">
+      <div class="ff"><label>Data de Admissão</label><input type="date" id="fAdm" value="${esc(f?.dataAdmissao||'')}" /></div>
+      <div class="ff"><label>Tipo de pagamento</label>
+        <select id="fTipo" onchange="oFuncTipo()">
+          <option value="mensalista" ${tipo==='mensalista'?'selected':''}>Mensalista</option>
+          <option value="diarista"   ${tipo==='diarista'?'selected':''}>Diarista (por dia)</option>
+          <option value="horista"    ${tipo==='horista'?'selected':''}>Horista (por hora)</option>
+        </select></div>
+      <div class="ff"><label id="fSalLbl">${isMens?'Salário mensal':tipo==='diarista'?'Valor por dia':'Valor por hora'} (R$)</label>
+        <input type="number" id="fSal" min="0" step="0.01" placeholder="0,00" value="${esc(f?.salarioBase||'')}" /></div>
+    </div>
+    <div class="fg2" id="fMensRow" style="${!isMens?'display:none':''}">
+      <div class="ff"><label>Carga horária/dia (h)</label><input type="number" id="fCarga" min="1" max="12" value="${f?.cargaHoraria||8}" /></div>
+      <div class="ff"><label>Observação</label><input type="text" id="fObs" placeholder="Observações gerais" value="${esc(f?.observacao||'')}" /></div>
+    </div>
+    <div class="fa">
+      <button class="btn btn-ghost btn-sm" onclick="cFuncF()">✕ Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="sFunc('${id}','${eid}')">💾 Salvar Funcionário</button>
+    </div></div>`;
+}
+
+function oFuncTipo(){
+  const t=gv('fTipo'), isMens=t==='mensalista';
+  const r=document.getElementById('fMensRow'), l=document.getElementById('fSalLbl');
+  if(r) r.style.display=isMens?'':'none';
+  if(l) l.textContent=(t==='diarista'?'Valor por dia':t==='horista'?'Valor por hora':'Salário mensal')+' (R$)';
+}
+
+function funcCard(f, eid){
+  const entry=getMesFunc(eid,f.id);
+  const exp=funcExp===f.id;
+  const temAdts=entry.adts&&entry.adts.length>0;
+  const temFolha=entry.folhaRodada;
+  const adm=f.dataAdmissao?new Date(f.dataAdmissao+'T12:00:00').toLocaleDateString('pt-BR'):'';
+  let classe='func-card';
+  if(temFolha) classe+=' folha-ok';
+  else if(temAdts) classe+=' adt-ok';
+
+  const r=temFolha?calcEntry(f,entry):null;
+
+  let h=`<div class="${classe}" id="fc_${f.id}">
+    <div class="func-hd">
+      <span style="font-size:26px">👤</span>
+      <div class="func-info">
+        <div class="func-nome">
+          ${esc(f.nome)}
+          ${f.funcao?`<span class="badge b-blue">${esc(f.funcao)}</span>`:''}
+          ${temFolha&&entry.pago?'<span class="badge b-green">✅ Pago</span>':''}
+        </div>
+        <div class="func-sub">${tipoL(f.tipoSalario)} · ${brl(f.salarioBase)}${adm?' · Adm: '+adm:''}</div>
+        <div class="status-bar">
+          ${temAdts?`<span class="badge b-amber">💰 Adt: ${brl(entry.adts.reduce((s,a)=>s+num(a.valor),0))}</span>`:'<span class="badge b-gray">Sem adiantamento</span>'}
+          ${temFolha?`<span class="badge b-green">📋 Folha rodada · ${brl(r.aPagar)} a pagar</span>`:'<span class="badge b-gray">Folha não rodada</span>'}
+        </div>
+      </div>
+      <div class="func-acts">
+        <button class="btn btn-amber btn-sm" onclick="aAdt('${f.id}','${eid}')">💰 Adiantamento</button>
+        <button class="btn btn-sky btn-sm" onclick="aFolha('${f.id}','${eid}')">📋 Rodar Folha</button>
+        <button class="btn btn-danger btn-sm" style="background:var(--red);color:#fff" onclick="aResc('${f.id}','${eid}')">🚪 Rescisão</button>
+        <button class="btn btn-ghost btn-icon" onclick="eFuncId('${f.id}')">✏️</button>
+        <button class="btn btn-danger btn-icon" onclick="dFunc('${f.id}','${eid}')">🗑️</button>
+        <button class="btn btn-ghost btn-icon" onclick="togExp('${f.id}')" title="${exp?'Fechar':'Ver detalhes'}">
+          ${exp?'▲':'▼'}
+        </button>
+      </div>
+    </div>`;
+
+  if(exp){
+    h+=`<div class="func-body">`;
+
+    // Adiantamentos
+    h+=`<div class="sdiv">💰 Adiantamentos — ${MESES[mes-1]}/${ano}</div>`;
+    if(adtFId===f.id) h+=adtForm(f.id,eid,entry);
+    if(entry.adts&&entry.adts.length>0){
+      h+=`<div class="adt-list">`;
+      entry.adts.forEach(a=>{
+        h+=`<div class="adt-item">
+          <span style="font-size:16px">💰</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600">${brl(a.valor)}</div>
+            <div style="font-size:11px;color:var(--gray-400)">${a.data?new Date(a.data+'T12:00:00').toLocaleDateString('pt-BR'):''} ${a.obs?'· '+esc(a.obs):''}</div>
+          </div>
+          <div class="adt-val">${brl(a.valor)}</div>
+          <button class="btn btn-outline btn-sm" onclick="printAdt('${a.id}','${f.id}','${eid}')" title="Imprimir recibo">🖨️ Recibo</button>
+          <button class="btn btn-danger btn-icon btn-sm" onclick="dAdt('${a.id}','${f.id}','${eid}')">🗑️</button>
+        </div>`;
+      });
+      h+=`</div>`;
+    } else if(adtFId!==f.id){
+      h+=`<p style="font-size:12px;color:var(--gray-400);margin-bottom:10px">Nenhum adiantamento lançado neste mês.</p>`;
+    }
+    if(adtFId!==f.id){
+      h+=`<div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-amber btn-sm" onclick="aAdt('${f.id}','${eid}')">+ Lançar adiantamento</button>
+        ${entry.adts&&entry.adts.length>1?`<button class="btn btn-outline btn-sm" onclick="printTodosAdts('${f.id}','${eid}')">🖨️ Todos Adiant.</button>`:''}
+      </div>`;
+    }
+
+    // Folha
+    h+=`<div class="sdiv" style="margin-top:16px">📋 Folha — ${MESES[mes-1]}/${ano}</div>`;
+    if(folhaFId===f.id) h+=folhaForm(f,eid,entry);
+    else if(temFolha){
+      h+=`<div class="calc-wrap">${tabelaCalc(r,f,entry)}</div>
+        <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-outline btn-sm" onclick="aFolha('${f.id}','${eid}')">✏️ Editar folha</button>
+          <button class="btn ${entry.pago?'btn-outline':'btn-green'} btn-sm" onclick="togPago('${f.id}','${eid}')">
+            ${entry.pago?'↩️ Desmarcar pago':'✅ Marcar como pago'}
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="printFolha('${f.id}','${eid}')">🖨️ Recibo da Folha</button>
+        </div>`;
+    } else {
+      h+=`<p style="font-size:12px;color:var(--gray-400);margin-bottom:10px">Folha ainda não foi rodada para este mês.</p>
+        <button class="btn btn-sky btn-sm" onclick="aFolha('${f.id}','${eid}')">📋 Rodar Folha Mensal</button>`;
+    }
+
+
+    // ── Férias ──────────────────────────────
+    h+=`<div class="sdiv" style="margin-top:16px">🌴 Férias — Histórico</div>`;
+    const fers=getFers(eid).filter(fe=>fe.fid===f.id);
+    if(ferFId===f.id) h+=ferForm(f.id,eid);
+    if(fers.length){
+      h+=`<div class="adt-list">`;
+      fers.forEach(fe=>{
+        const di=fe.dataInicio?new Date(fe.dataInicio+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+        const df=fe.dataFim?new Date(fe.dataFim+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+        h+=`<div class="adt-item" style="border-color:#86efac">
+          <span style="font-size:16px">🌴</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600">${brl(fe.total)} · ${fe.dias} dias</div>
+            <div style="font-size:11px;color:var(--gray-400)">${di} até ${df}${fe.pago?' · <span style="color:var(--green)">✅ Pago</span>':''}</div>
+          </div>
+          <div class="adt-val" style="color:var(--green)">${brl(fe.total)}</div>
+          <button class="btn btn-ghost btn-sm" onclick="togFerPago('${fe.id}','${eid}')" title="${fe.pago?'Desmarcar':'Marcar pago'}" style="color:${fe.pago?'var(--amber)':'var(--green)'}">${fe.pago?'↩️':'✅'}</button>
+          <button class="btn btn-outline btn-sm" onclick="printFer('${fe.id}','${f.id}','${eid}')">🖨️ Recibo</button>
+          <button class="btn btn-danger btn-icon btn-sm" onclick="dFer('${fe.id}','${eid}')">🗑️</button>
+        </div>`;
+      });
+      h+=`</div>`;
+    } else if(ferFId!==f.id){
+      h+=`<p style="font-size:12px;color:var(--gray-400);margin-bottom:10px">Nenhum período de férias lançado.</p>`;
+    }
+    if(ferFId!==f.id){
+      h+=`<button class="btn btn-green btn-sm" onclick="aFer('${f.id}','${eid}')">🌴 Lançar Férias</button>`;
+    }
+
+    // ── 13º Salário (apenas Nov/Dez) ─────────
+    if(mes===11||mes===12){
+      h+=`<div class="sdiv" style="margin-top:16px">🎄 13º Salário — ${ano}</div>`;
+      const r13=calc13(f);
+      const parcNum=mes===11?1:2;
+      const temDec13=entry.dec13&&entry.dec13.rodada;
+      if(dec13FId===f.id){
+        h+=dec13Form(f,eid,entry,r13);
+      } else if(temDec13){
+        const novVal=entry.dec13.valorNov||0;
+        h+=`<div class="calc-wrap"><table class="ctab">
+          <tr><td>13º proporcional <span class="cbadge a">${r13.avos}/12 avos</span></td><td>${brl(r13.v13)}</td></tr>
+          ${parcNum===2&&novVal>0?`<tr class="cdesc"><td>(−) 1ª parcela paga em novembro</td><td>−${brl(novVal)}</td></tr>`:''}
+          <tr class="ctotal"><td>${parcNum}ª parcela — ${mes===11?'50% do 13º':'Saldo final'}</td><td>${brl(entry.dec13.valor)}</td></tr>
+        </table></div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-outline btn-sm" onclick="aDec13('${f.id}','${eid}')">✏️ Editar</button>
+          <button class="btn ${entry.dec13.pago?'btn-outline':'btn-green'} btn-sm" onclick="togDec13Pago('${f.id}','${eid}')">${entry.dec13.pago?'↩️ Desmarcar':'✅ Marcar pago'}</button>
+          <button class="btn btn-primary btn-sm" onclick="printDec13('${f.id}','${eid}')">🖨️ Recibo 13º</button>
+        </div>`;
+      } else {
+        const novVal=mes===12?getDec13Nov(eid,f.id):0;
+        const parcVal=mes===11?r13.parc1:Math.max(0,r13.v13-novVal);
+        h+=`<div style="background:var(--amber-light);border:1px solid var(--amber-bd);border-radius:8px;padding:12px;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:600;color:var(--amber)">${parcNum}ª Parcela — ${brl(parcVal)}</div>
+          <div style="font-size:12px;color:var(--gray-600);margin-top:3px">${r13.avos}/12 avos · Base: ${brl(f.salarioBase)}</div>
+          ${mes===12&&novVal>0?`<div style="font-size:11px;color:var(--gray-500);margin-top:2px">Desconta 1ª parcela de novembro (${brl(novVal)})</div>`:''}
+        </div>
+        <button class="btn btn-amber btn-sm" onclick="aDec13('${f.id}','${eid}')">🎄 Rodar ${parcNum}ª Parcela</button>`;
+      }
+    }
+
+    // ── Rescisão ─────────────────────────────
+    h+=`<div class="sdiv" style="margin-top:16px;border-color:#fca5a5;color:var(--red)">🚪 Rescisão de Contrato</div>`;
+    const resc=getRescFunc(eid,f.id);
+    if(rescFId===f.id){
+      h+=rescForm(f,eid,resc);
+    } else if(resc){
+      const dr=new Date(resc.dataRescisao+'T12:00:00').toLocaleDateString('pt-BR');
+      const isAcordo=resc.motivo==='Acordo entre partes';
+      h+=`<div style="background:var(--red-light);border:1px solid #fca5a5;border-radius:8px;padding:12px;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:6px">Rescindido em ${dr} — ${esc(resc.motivo)}</div>
+        <div class="calc-wrap"><table class="ctab">
+          <tr><td>Saldo de salário <span class="cbadge">${resc.diasTrab}/30 dias</span></td><td>${brl(resc.saldoSal)}</td></tr>
+          ${resc.avisoVal>0?`<tr><td>Aviso prévio indenizado${isAcordo?' 50%':''} (${resc.diasAviso} dias)</td><td>${brl(resc.avisoVal)}</td></tr>`:''}
+          ${resc.avisoVal<0?`<tr class="cdesc"><td>(−) Desconto aviso não cumprido</td><td>−${brl(-resc.avisoVal)}</td></tr>`:''}
+          ${resc.dec13>0?`<tr><td>13º proporcional <span class="cbadge a">${resc.avos13}/12 avos</span></td><td>${brl(resc.dec13)}</td></tr>`:''}
+          ${resc.ferProp>0?`<tr><td>Férias prop. + 1/3 <span class="cbadge a">${resc.avosF}/12 avos</span></td><td>${brl(resc.ferProp)}</td></tr>`:''}
+          ${resc.ferVenc>0?`<tr><td>Férias vencidas + 1/3 <span class="cbadge a">${resc.ferVencNum} período${resc.ferVencNum>1?'s':''}</span></td><td>${brl(resc.ferVenc)}</td></tr>`:''}
+          ${resc.multaFgts>0?`<tr><td>Multa FGTS ${isAcordo?'20%':'40%'}</td><td>${brl(resc.multaFgts)}</td></tr>`:''}
+          <tr class="ctotal"><td>Total da rescisão</td><td>${brl(resc.total)}</td></tr>
+          <tr class="cfgts"><td>FGTS 8% s/ verbas <span class="cbadge p">ref. empregador</span></td><td>${brl(resc.fgtsRef||resc.fgts||0)}</td></tr>
+        </table></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-outline btn-sm" onclick="aResc('${f.id}','${eid}')">✏️ Editar</button>
+        <button class="btn btn-primary btn-sm" onclick="printResc('${f.id}','${eid}')">🖨️ Recibo de Rescisão</button>
+        <button class="btn btn-danger btn-sm" onclick="dResc('${f.id}','${eid}')">🗑️ Remover</button>
+      </div>`;
+    } else {
+      h+=`<p style="font-size:12px;color:var(--gray-400);margin-bottom:10px">Nenhuma rescisão registrada.</p>
+        <button class="btn btn-sm" style="background:var(--red);color:#fff" onclick="aResc('${f.id}','${eid}')">🚪 Registrar Rescisão</button>`;
+    }
+
+    h+=`</div>`;
+  }
+  h+=`</div>`;
+  return h;
+}
+
+// ── Adiantamento form ─────────────────────
+function adtForm(fid,eid,entry){
+  return `<div class="fbox" style="border-color:var(--amber-bd);background:var(--amber-light)">
+    <div class="ftitle">💰 Lançar Adiantamento — ${MESES[mes-1]}/${ano}</div>
+    <div class="fg3">
+      <div class="ff"><label>Valor (R$) *</label><input type="number" id="aVal" min="0" step="0.01" placeholder="0,00" /></div>
+      <div class="ff"><label>Data do pagamento</label><input type="date" id="aDat" value="${hoje.toISOString().slice(0,10)}" /></div>
+      <div class="ff"><label>Descrição</label><input type="text" id="aObs" placeholder="Ex.: Adiantamento quinzena" /></div>
+    </div>
+    <div class="fa">
+      <button class="btn btn-ghost btn-sm" onclick="cAdt()">✕ Cancelar</button>
+      <button class="btn btn-amber btn-sm" onclick="sAdt('${fid}','${eid}')">💾 Confirmar Adiantamento</button>
+    </div></div>`;
+}
+
+function aAdt(fid,eid){ adtFId=fid; funcExp=fid; folhaFId=null; rFunc(); setTimeout(()=>document.getElementById('aVal')?.focus(),50); }
+function cAdt(){ adtFId=null; rFunc(); }
+function sAdt(fid,eid){
+  const val=num(gv('aVal')); if(!val){alert('Informe o valor.');return;}
+  const entry=getMesFunc(eid,fid);
+  if(!entry.adts) entry.adts=[];
+  entry.adts.push({id:genId(),valor:val,data:gv('aDat'),obs:gv('aObs').trim()});
+  setMesFunc(eid,entry); adtFId=null; rFunc();
+}
+function dAdt(aid,fid,eid){
+  if(!confirm('Remover adiantamento?'))return;
+  const entry=getMesFunc(eid,fid);
+  entry.adts=(entry.adts||[]).filter(a=>a.id!==aid);
+  setMesFunc(eid,entry); rFunc();
+}
+
+// ── Folha form ────────────────────────────
+function folhaForm(f,eid,entry){
+  const isMens=f.tipoSalario==='mensalista'||!f.tipoSalario;
+  return `<div class="fbox" style="border-color:var(--sky);background:var(--sky-light)">
+    <div class="ftitle">📋 Folha Mensal — ${esc(f.nome)} · ${MESES[mes-1]}/${ano}</div>
+    <div class="sdiv">📅 Período</div>
+    <div class="fg2" style="margin-bottom:10px">
+      ${isMens?`
+      <div class="ff"><label>Tipo de mês</label>
+        <select id="fProp" onchange="oFolhaProp('${f.id}','${eid}')">
+          <option value="0" ${!entry.mesProporcional?'selected':''}>Mês completo — 30 dias</option>
+          <option value="1" ${entry.mesProporcional?'selected':''}>Proporcional — admissão / rescisão</option>
+        </select></div>
+      <div class="ff" id="fDtRow" style="${!entry.mesProporcional?'display:none':''}">
+        <label>Dias trabalhados (de 30) *</label>
+        <input type="number" id="fDt" min="1" max="30" placeholder="Ex: 15" value="${entry.diasTrab||''}" oninput="pvFolha('${f.id}','${eid}')" />
+      </div>
+      <div class="ff" style="display:none"><input id="fDu" value="30" /><input id="fVh" value="0" /></div>
+      `:`
+      <div class="ff"><label>${f.tipoSalario==='horista'?'Horas':'Dias'} trabalhados</label>
+        <input type="number" id="fDt" min="0" step="0.5" value="${entry.diasTrab||''}" oninput="pvFolha('${f.id}','${eid}')" /></div>
+      <div class="ff"><label>Valor hora extra (R$)</label>
+        <input type="number" id="fVh" min="0" step="0.01" placeholder="0,00" value="${entry.valorHora||''}" oninput="pvFolha('${f.id}','${eid}')" /></div>
+      <div class="ff" style="display:none"><input id="fDu" value="30" /><input id="fProp" value="0" /></div>
+      `}
+    </div>
+    <div class="fg2">
+      <div class="ff"><label>Dias de DSR no mês</label><input type="number" id="fDsr" min="0" max="10" value="${entry.diasDSR||4}" oninput="pvFolha('${f.id}','${eid}')" /></div>
+      <div class="ff"><label>Carga horária/dia</label><input type="number" id="fCh" min="1" max="12" value="${f.cargaHoraria||8}" oninput="pvFolha('${f.id}','${eid}')" /></div>
+    </div>
+    <div class="sdiv">⏰ Horas Extras</div>
+    <div class="fg4">
+      <div class="ff"><label>H.E. 50% (horas)</label><input type="number" id="fHe50" min="0" step="0.5" placeholder="0" value="${entry.he50||''}" oninput="pvFolha('${f.id}','${eid}')" /></div>
+      <div class="ff"><label>H.E. 100% (horas)</label><input type="number" id="fHe100" min="0" step="0.5" placeholder="0" value="${entry.he100||''}" oninput="pvFolha('${f.id}','${eid}')" /></div>
+      <div class="ff"><label>DSR</label>
+        <select id="fDsrM" onchange="oDsrM();pvFolha('${f.id}','${eid}')">
+          <option value="0" ${!entry.dsrManual?'selected':''}>Automático</option>
+          <option value="1" ${entry.dsrManual?'selected':''}>Informar valor</option>
+        </select></div>
+      <div class="ff" id="fDsrVW" style="${!entry.dsrManual?'display:none':''}">
+        <label>Valor DSR (R$)</label><input type="number" id="fDsrV" min="0" step="0.01" placeholder="0,00" value="${entry.dsrValor||''}" oninput="pvFolha('${f.id}','${eid}')" /></div>
+    </div>
+    <div class="sdiv">📝 Observação</div>
+    <div class="fg1">
+      <div class="ff"><label>Observação</label><input type="text" id="fObsM" placeholder="Observações da folha deste mês" value="${esc(entry.observacao||'')}" /></div>
+    </div>
+    <div id="pvFolhaBox" style="margin-bottom:10px;"></div>
+    <div class="fa">
+      <button class="btn btn-ghost btn-sm" onclick="cFolha()">✕ Cancelar</button>
+      <button class="btn btn-sky btn-sm" onclick="sFolha('${f.id}','${eid}')">✅ Confirmar Folha</button>
+    </div></div>`;
+}
+
+function oDsrM(){ const m=gv('fDsrM')==='1'; const w=document.getElementById('fDsrVW'); if(w)w.style.display=m?'':'none'; }
+
+function folhaSnap(f){
+  const isMens=f.tipoSalario==='mensalista'||!f.tipoSalario;
+  return {
+    mesProporcional: isMens ? gv('fProp')==='1' : false,
+    diasUteis:  30,
+    diasTrab:   num(gv('fDt')),
+    diasDSR:    num(gv('fDsr')||4),
+    cargaHoraria: num(gv('fCh')||f.cargaHoraria||8),
+    valorHora:  num(gv('fVh')),
+    he50:       num(gv('fHe50')), he100:num(gv('fHe100')),
+    dsrManual:  gv('fDsrM')==='1', dsrValor:num(gv('fDsrV')),
+    observacao: gv('fObsM'),
+  };
+}
+
+function oFolhaProp(fid,eid){
+  const prop=gv('fProp')==='1';
+  const row=document.getElementById('fDtRow');
+  if(row) row.style.display=prop?'':'none';
+  pvFolha(fid,eid);
+}
+
+function pvFolha(fid,eid){
+  const box=document.getElementById('pvFolhaBox'); if(!box) return;
+  const f=getFuncs(eid).find(x=>x.id===fid); if(!f) return;
+  const entry=getMesFunc(eid,fid);
+  const snap={...entry,...folhaSnap(f)};
+  const r=calcEntry(f,snap);
+  box.innerHTML=`<div class="calc-wrap">${tabelaCalc(r,f,snap)}</div>`;
+}
+
+function aFolha(fid,eid){ folhaFId=fid; funcExp=fid; adtFId=null; rFunc(); setTimeout(()=>pvFolha(fid,eid),80); }
+function cFolha(){ folhaFId=null; rFunc(); }
+
+function sFolha(fid,eid){
+  const f=getFuncs(eid).find(x=>x.id===fid); if(!f) return;
+  const entry=getMesFunc(eid,fid);
+  const snap=folhaSnap(f);
+  const updated={...entry,...snap,folhaRodada:true};
+  setMesFunc(eid,updated); folhaFId=null; rFunc();
+}
+
+function togPago(fid,eid){
+  const entry=getMesFunc(eid,fid);
+  entry.pago=!entry.pago; setMesFunc(eid,entry); rFunc();
+}
+
+function togExp(fid){ funcExp=funcExp===fid?null:fid; adtFId=null; folhaFId=null; ferFId=null; dec13FId=null; rescFId=null; rFunc(); }
+function aFuncF(){ funcFA=true; funcEId=null; rFunc(); setTimeout(()=>document.getElementById('fNome')?.focus(),50); }
+function cFuncF(){ funcFA=false; funcEId=null; rFunc(); }
+function eFuncId(id){ funcEId=id; funcFA=false; funcExp=null; adtFId=null; folhaFId=null; rFunc(); }
+
+function sFunc(id,eid){
+  const nome=gv('fNome').trim(); if(!nome){alert('Informe o nome.');return;}
+  const t=gv('fTipo')||'mensalista';
+  const d={nome,funcao:gv('fFun').trim(),dataAdmissao:gv('fAdm'),tipoSalario:t,
+    salarioBase:num(gv('fSal')),cargaHoraria:num(gv('fCarga')||8),observacao:gv('fObs').trim()};
+  const list=getFuncs(eid);
+  if(id){const i=list.findIndex(f=>f.id===id);if(i!==-1)list[i]={...list[i],...d};}
+  else list.push({id:genId(),...d});
+  setFuncs(eid,list); funcFA=false; funcEId=null; rFunc();
+}
+function dFunc(id,eid){
+  if(!confirm('Remover funcionário?'))return;
+  setFuncs(eid,getFuncs(eid).filter(f=>f.id!==id)); rFunc();
+}
+
+// ══════════════════════════════════════════
+// ABA 3 — FOLHA MENSAL (RELATÓRIO)
+// ══════════════════════════════════════════
+function rFolha(){
+  rHeader();
+  const ea=getAtiva();
+  const filtros=`<div class="filtros">
+    <div class="fld"><label>Mês</label><select onchange="oMes(this.value)">
+      ${MESES.map((m,i)=>`<option value="${i+1}" ${i+1===mes?'selected':''}>${m}</option>`).join('')}
+    </select></div>
+    <div class="fld"><label>Ano</label><select onchange="oAno(this.value)">
+      ${Array.from({length:6},(_,i)=>ano-2+i).map(y=>`<option value="${y}" ${y===ano?'selected':''}>${y}</option>`).join('')}
+    </select></div>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:flex-end">
+      <button class="btn btn-amber btn-sm" onclick="printTodosAdtsGeral()">🖨️ Todos Adiantamentos</button>
+      <button class="btn btn-primary btn-sm" onclick="printTodos()">🖨️ Todos Mensal</button>
+      <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Relatório</button>
+    </div>
+  </div>`;
+
+  if(!ea){
+    document.getElementById('p3').innerHTML=filtros+`<div class="alerta"><span style="font-size:20px">⚠️</span>
+      <div><strong>Nenhuma empresa ativa.</strong><div style="margin-top:8px">
+      <button class="btn btn-primary btn-sm" onclick="tab(1)">🏢 Empresas</button></div></div></div>`;
+    return;
+  }
+
+  const funcs=getFuncs(ea.id);
+  const comFolha=funcs.filter(f=>getMesFunc(ea.id,f.id).folhaRodada);
+  let totPagar=0, totPago=0, totFgts=0, totAdt=0;
+  comFolha.forEach(f=>{
+    const entry=getMesFunc(ea.id,f.id);
+    const r=calcEntry(f,entry);
+    totPagar+=r.aPagar; totFgts+=r.fgts; totAdt+=r.totalAdt;
+    if(entry.pago) totPago+=r.aPagar;
+  });
+  const totPend=totPagar-totPago;
+
+  let h=filtros;
+  h+=`<div class="emp-banner">📋 <strong style="color:var(--green)">${esc(ea.nome)}</strong>
+    <span style="color:var(--gray-500)">· Folha de ${MESES[mes-1]}/${ano}</span>
+    <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="tab(2)">👤 Funcionários</button></div>`;
+
+  h+=`<div class="sum4">
+    <div class="scard"><div class="slbl">Total a Pagar</div><div class="sval">${brl(totPagar)}</div><div class="ssub">${comFolha.length} folha${comFolha.length!==1?'s':''} rodada${comFolha.length!==1?'s':''}</div></div>
+    <div class="scard"><div class="slbl">Já Pago</div><div class="sval g">${brl(totPago)}</div><div class="ssub">${comFolha.filter(f=>getMesFunc(ea.id,f.id).pago).length} pago${comFolha.filter(f=>getMesFunc(ea.id,f.id).pago).length!==1?'s':''}</div></div>
+    <div class="scard"><div class="slbl">Pendente</div><div class="sval ${totPend>0?'a':''}">${brl(totPend)}</div><div class="ssub">Adiantamentos: ${brl(totAdt)}</div></div>
+    <div class="scard"><div class="slbl">FGTS Estimado</div><div class="sval p">${brl(totFgts)}</div><div class="ssub">Custo do empregador</div></div>
+  </div>`;
+
+  if(!funcs.length){
+    h+=`<div class="card"><div class="card-bd"><div class="empty"><div class="empty-i">👤</div>
+      <p>Nenhum funcionário cadastrado.</p>
+      <button class="btn btn-primary" onclick="tab(2)">+ Cadastrar funcionário</button></div></div></div>`;
+  } else {
+    h+=`<div class="card"><div class="card-hd"><div class="card-ti">📋 Detalhamento — ${MESES[mes-1]}/${ano}</div></div><div class="card-bd">`;
+    funcs.forEach(f=>{
+      const entry=getMesFunc(ea.id,f.id);
+      const temFolha=entry.folhaRodada;
+      const r=temFolha?calcEntry(f,entry):null;
+      h+=`<div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--gray-100)">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <span style="font-size:18px">👤</span>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:700">${esc(f.nome)} ${f.funcao?`<span class="badge b-blue">${esc(f.funcao)}</span>`:''}
+              ${temFolha&&entry.pago?'<span class="badge b-green">✅ Pago</span>':''}
+              ${!temFolha?'<span class="badge b-gray">Folha não rodada</span>':''}
+            </div>
+            <div style="font-size:12px;color:var(--gray-400)">${tipoL(f.tipoSalario)} · ${brl(f.salarioBase)}</div>
+          </div>
+          ${temFolha?`<div style="text-align:right"><div style="font-size:16px;font-weight:700;color:var(--primary)">${brl(r.aPagar)}</div><div style="font-size:11px;color:var(--gray-400)">a pagar</div></div>`:''}
+        </div>
+        ${temFolha?`<div class="calc-wrap">${tabelaCalc(r,f,entry)}</div>`:'<p style="font-size:12px;color:var(--gray-400);padding-left:28px">Folha não rodada — acesse a aba Funcionários para processar.</p>'}
+      </div>`;
+    });
+    if(comFolha.length){
+      h+=`<hr>
+        <div class="lf"><span style="color:var(--gray-500)">Total a pagar — ${comFolha.length} folha${comFolha.length!==1?'s':''}</span><span class="lf-t">${brl(totPagar)}</span></div>
+        ${totAdt>0?`<div class="lf"><span class="ta">Adiantamentos descontados</span><span class="ta">−${brl(totAdt)}</span></div>`:''}
+        ${totPago>0?`<div class="lf"><span class="tg">Já pago</span><span class="tg">${brl(totPago)}</span></div>`:''}
+        ${totPend>0?`<div class="lf"><span class="ta">Pendente</span><span class="ta">${brl(totPend)}</span></div>`:''}
+        <div class="lf" style="margin-top:4px"><span class="tp" style="font-size:12px">FGTS (custo empresa)</span><span class="tp" style="font-size:12px">${brl(totFgts)}</span></div>`;
+    }
+    h+=`</div></div>`;
+  }
+  h+=`<p class="aviso">Sem desconto de INSS, IRRF ou outros impostos · FGTS exibido como custo estimado do empregador</p>`;
+  document.getElementById('p3').innerHTML=h;
+}
+
+// ══════════════════════════════════════════
+// TABELA DE CÁLCULO
+// ══════════════════════════════════════════
+function tabelaCalc(r,f,entry){
+  const isMens=f.tipoSalario==='mensalista'||!f.tipoSalario;
+  const dim=diasNoMes(mes,ano); const dt=num(entry.diasTrab||0);
+  return `<table class="ctab">
+    <tr class="csec"><td colspan="2">📅 Competência ${MESES[mes-1]}/${ano}</td></tr>
+    <tr><td>${isMens
+      ? r.prop
+        ? `Salário proporcional <span class="cbadge">${r.dt}/${dim} dias</span>`
+        : `Salário mensal <span class="cbadge">${dim} dias</span>`
+      : `Pagamento (${r.dt} ${f.tipoSalario==='horista'?'horas':'dias'} × ${brl(f.salarioBase)})`
+    }</td><td>${brl(r.salProp)}</td></tr>
+    ${r.he50v>0?`<tr><td>H.E. 50% (${entry.he50}h × ${brl(r.vh)} × 1,5)</td><td>${brl(r.he50v)}</td></tr>`:''}
+    ${r.he100v>0?`<tr><td>H.E. 100% (${entry.he100}h × ${brl(r.vh)} × 2,0)</td><td>${brl(r.he100v)}</td></tr>`:''}
+    ${r.dsr>0?`<tr><td>DSR ${entry.dsrManual?'(informado)':'(sobre H.E.)'}</td><td>${brl(r.dsr)}</td></tr>`:''}
+    <tr class="csub"><td>Bruto do mês</td><td>${brl(r.bruto)}</td></tr>
+    ${r.totalAdt>0?`<tr class="cdesc"><td>(−) Adiantamentos pagos</td><td>−${brl(r.totalAdt)}</td></tr>`:''}
+    <tr class="ctotal"><td>✅ Total a pagar</td><td>${brl(r.aPagar)}</td></tr>
+    ${f.dataAdmissao?`
+    <tr class="csec"><td colspan="2">📊 Provisões (referência)</td></tr>
+    <tr class="cprov"><td>13º proporcional <span class="cbadge a">${r.av13}/12 avos</span></td><td>${brl(r.dec13)}</td></tr>
+    <tr class="cprov"><td>Férias + 1/3 <span class="cbadge a">${r.avF}/12 avos</span></td><td>${brl(r.ferTotal)}</td></tr>`:''}
+    <tr class="cfgts"><td>FGTS 8% <span class="cbadge p">custo empresa</span></td><td>${brl(r.fgts)}</td></tr>
+  </table>`;
+}
+
+function tipoL(t){ return t==='diarista'?'Diarista':t==='horista'?'Horista':'Mensalista'; }
+function oMes(v){ mes=Number(v); funcExp=null; adtFId=null; folhaFId=null; if(tabAt===2)rFunc(); else rFolha(); }
+function oAno(v){ ano=Number(v); funcExp=null; adtFId=null; folhaFId=null; if(tabAt===2)rFunc(); else rFolha(); }
+
+// ══════════════════════════════════════════
+// RESCISÃO
+// ══════════════════════════════════════════
+function rescForm(f,eid,resc){
+  const dataHoje=new Date().toISOString().slice(0,10);
+  const motivo=resc?.motivo||'Dispensa sem justa causa';
+  const isSemJusta=motivo==='Dispensa sem justa causa';
+  const isComJusta=motivo==='Dispensa com justa causa';
+  const isDemissao=motivo==='Pedido de demissão';
+  const isAcordo  =motivo==='Acordo entre partes';
+  const isTermino =motivo==='Término de contrato';
+  const temAviso  =isSemJusta||isAcordo||isTermino;
+  const temFgts   =isSemJusta||isAcordo||isTermino;
+  const diasAv    =f.dataAdmissao?calcDiasAviso(f.dataAdmissao,resc?.dataRescisao||dataHoje):30;
+  return `<div class="fbox" style="border-color:#fca5a5;background:var(--red-light)">
+    <div class="ftitle" style="color:var(--red)">🚪 Rescisão de Contrato — ${esc(f.nome)}</div>
+    <div class="fg2">
+      <div class="ff"><label>Data da Rescisão *</label>
+        <input type="date" id="rData" value="${resc?.dataRescisao||dataHoje}" oninput="onRescChange('${f.id}','${eid}')" /></div>
+      <div class="ff"><label>Motivo</label>
+        <select id="rMotivo" onchange="onRescChange('${f.id}','${eid}')">
+          <option value="Dispensa sem justa causa" ${isSemJusta?'selected':''}>Dispensa sem justa causa</option>
+          <option value="Dispensa com justa causa" ${isComJusta?'selected':''}>Dispensa com justa causa</option>
+          <option value="Pedido de demissão"       ${isDemissao?'selected':''}>Pedido de demissão</option>
+          <option value="Acordo entre partes"      ${isAcordo?'selected':''}  >Acordo (art. 484-A CLT)</option>
+          <option value="Término de contrato"      ${isTermino?'selected':''} >Término de contrato</option>
+        </select></div>
+    </div>
+
+    <div id="rAvisoWrap" style="${temAviso?'':'display:none'}">
+      <div class="fg2" style="margin-bottom:0">
+        <div class="ff"><label id="rAvisoLbl">${isAcordo?'Aviso prévio (50% — art. 484-A)':'Aviso prévio'}</label>
+          <select id="rAviso" onchange="onRescChange('${f.id}','${eid}')">
+            <option value="ind"    ${(!resc||resc.aviso==='ind')?'selected':''} >Indenizado pelo empregador</option>
+            <option value="trab"   ${resc?.aviso==='trab'?'selected':''}        >Trabalhado pelo funcionário</option>
+            <option value="nenhum" ${resc?.aviso==='nenhum'?'selected':''}      >Dispensado (sem pagamento)</option>
+          </select></div>
+        <div class="ff">
+          <label>Dias de aviso — Lei 12.506/2011</label>
+          <input type="number" id="rAvisoDias" value="${resc?.diasAviso||diasAv}" readonly
+            style="background:var(--gray-100);color:var(--primary);font-weight:700" />
+        </div>
+      </div>
+    </div>
+
+    <div id="rDemWrap" style="${isDemissao?'':'display:none'}">
+      <div class="fg1" style="margin-bottom:0">
+        <div class="ff"><label>Aviso prévio — pedido de demissão</label>
+          <select id="rDemAviso" onchange="onRescChange('${f.id}','${eid}')">
+            <option value="trab" ${(!resc||resc.aviso==='trab')?'selected':''}>Trabalhará os 30 dias (sem desconto)</option>
+            <option value="desc" ${resc?.aviso==='desc'?'selected':''}        >Não trabalhará — descontar do acerto</option>
+            <option value="disp" ${resc?.aviso==='disp'?'selected':''}        >Empregador dispensou o cumprimento</option>
+          </select></div>
+      </div>
+    </div>
+
+    <div class="fg2" style="margin-top:10px;margin-bottom:0">
+      <div class="ff"><label>Férias vencidas não gozadas <span style="font-size:10px;color:var(--gray-400)">(+ 1/3 incluso)</span></label>
+        <select id="rFerVenc" onchange="onRescChange('${f.id}','${eid}')">
+          <option value="0" ${(resc?.ferVencNum||0)===0?'selected':''}>Nenhuma</option>
+          <option value="1" ${(resc?.ferVencNum||0)===1?'selected':''}>1 período (30 dias)</option>
+          <option value="2" ${(resc?.ferVencNum||0)===2?'selected':''}>2 períodos (60 dias)</option>
+          <option value="3" ${(resc?.ferVencNum||0)===3?'selected':''}>3 períodos (90 dias)</option>
+        </select></div>
+      <div class="ff" id="rFgtsWrap" style="${temFgts?'':'display:none'}">
+        <label>Saldo FGTS acumulado (R$) <span style="font-size:10px;color:var(--gray-400)">para calcular multa</span></label>
+        <input type="number" id="rFgtsSaldo" min="0" step="0.01" placeholder="0,00"
+          value="${resc?.fgtsSaldoVal||''}" oninput="onRescChange('${f.id}','${eid}')" />
+      </div>
+    </div>
+
+    <div id="pvRescBox" style="margin:12px 0;"></div>
+    <div class="fa">
+      <button class="btn btn-ghost btn-sm" onclick="cResc()">✕ Cancelar</button>
+      <button class="btn btn-sm" style="background:var(--red);color:#fff" onclick="sResc('${f.id}','${eid}')">💾 Confirmar Rescisão</button>
+    </div></div>`;
+}
+function onRescChange(fid,eid){
+  const motivo=gv('rMotivo');
+  const isSemJusta=motivo==='Dispensa sem justa causa';
+  const isComJusta=motivo==='Dispensa com justa causa';
+  const isDemissao=motivo==='Pedido de demissão';
+  const isAcordo  =motivo==='Acordo entre partes';
+  const isTermino =motivo==='Término de contrato';
+  const temAviso  =isSemJusta||isAcordo||isTermino;
+  const temFgts   =isSemJusta||isAcordo||isTermino;
+  const show=(id,v)=>{const el=document.getElementById(id);if(el)el.style.display=v?'':'none';};
+  show('rAvisoWrap',temAviso); show('rDemWrap',isDemissao); show('rFgtsWrap',temFgts);
+  const lbl=document.getElementById('rAvisoLbl');
+  if(lbl) lbl.textContent=isAcordo?'Aviso prévio (50% — art. 484-A)':'Aviso prévio';
+  // Atualiza dias de aviso automaticamente
+  const data=gv('rData'), f=getFuncs(eid).find(x=>x.id===fid);
+  if(data&&f){const el=document.getElementById('rAvisoDias');if(el)el.value=calcDiasAviso(f.dataAdmissao,data);}
+  pvResc(fid,eid);
+}
+function pvResc(fid,eid){
+  const box=document.getElementById('pvRescBox'); if(!box)return;
+  const f=getFuncs(eid).find(x=>x.id===fid); if(!f)return;
+  const data=gv('rData'), motivo=gv('rMotivo'); if(!data||!motivo)return;
+  const isDemissao=motivo==='Pedido de demissão';
+  const isAcordo  =motivo==='Acordo entre partes';
+  const aviso=isDemissao?gv('rDemAviso'):gv('rAviso');
+  const r=calcResc(f,data,motivo,aviso,num(gv('rFerVenc')),num(gv('rFgtsSaldo'))); if(!r)return;
+  let rows=`<tr><td>Saldo de salário <span class="cbadge">${r.diasTrab}/${r.dimResc} dias</span></td><td>${brl(r.saldoSal)}</td></tr>`;
+  if(r.avisoVal>0){
+    const lbl=isAcordo?`Aviso prévio 50% (${r.avisoDias} dias)`:`Aviso prévio indenizado — ${r.diasAviso} dias (Lei 12.506/2011)`;
+    rows+=`<tr><td>${lbl}</td><td>${brl(r.avisoVal)}</td></tr>`;
+    if(r.avisoDias>0) rows+=`<tr style="font-size:11px;color:var(--gray-500)"><td colspan="2" style="padding-left:10px">↳ Estende período de 13º e férias até ${new Date(addDias(data,r.avisoDias)+'T12:00:00').toLocaleDateString('pt-BR')}</td></tr>`;
+  } else if(r.avisoVal<0){
+    rows+=`<tr class="cdesc"><td>(−) Desconto aviso não cumprido (30 dias)</td><td>−${brl(-r.avisoVal)}</td></tr>`;
+  }
+  if(r.dec13>0)   rows+=`<tr><td>13º proporcional <span class="cbadge a">${r.avos13}/12 avos</span></td><td>${brl(r.dec13)}</td></tr>`;
+  if(r.ferProp>0) rows+=`<tr><td>Férias prop. + 1/3 <span class="cbadge a">${r.avosF}/12 avos</span></td><td>${brl(r.ferProp)}</td></tr>`;
+  if(r.ferVenc>0) rows+=`<tr><td>Férias vencidas + 1/3 <span class="cbadge a">${r.ferVencNum} período${r.ferVencNum>1?'s':''}</span></td><td>${brl(r.ferVenc)}</td></tr>`;
+  if(r.multaFgts>0) rows+=`<tr><td>Multa FGTS ${isAcordo?'20%':'40%'} s/ saldo ${brl(r.fgtsSaldoVal)}</td><td>${brl(r.multaFgts)}</td></tr>`;
+  box.innerHTML=`<div class="calc-wrap"><table class="ctab">
+    <tr class="csec"><td colspan="2">📊 Verbas rescisórias — ${esc(motivo)}</td></tr>
+    ${rows}
+    <tr class="ctotal"><td>✅ Total a receber</td><td>${brl(r.total)}</td></tr>
+    <tr class="cfgts"><td>FGTS 8% s/ verbas brutas <span class="cbadge p">custo empregador</span></td><td>${brl(r.fgtsRef)}</td></tr>
+  </table></div>`;
+}
+function aResc(fid,eid){ rescFId=fid; funcExp=fid; adtFId=null; folhaFId=null; ferFId=null; dec13FId=null; rFunc(); setTimeout(()=>{onRescChange(fid,eid);},80); }
+function cResc(){ rescFId=null; rFunc(); }
+function sResc(fid,eid){
+  const f=getFuncs(eid).find(x=>x.id===fid); if(!f)return;
+  const data=gv('rData'); if(!data){alert('Informe a data da rescisão.');return;}
+  const motivo=gv('rMotivo');
+  const isDemissao=motivo==='Pedido de demissão';
+  const aviso=isDemissao?gv('rDemAviso'):gv('rAviso');
+  const r=calcResc(f,data,motivo,aviso,num(gv('rFerVenc')),num(gv('rFgtsSaldo'))); if(!r)return;
+  setRescFunc(eid,{fid,...r,dataRescisao:data,motivo,aviso,pago:false});
+  rescFId=null; rFunc();
+}
+function dResc(fid,eid){
+  if(!confirm('Remover rescisão?'))return;
+  setRescs(eid,getRescs(eid).filter(r=>r.fid!==fid)); rFunc();
+}
+
+function printResc(fid,eid){
+  const ea=getAtiva()||getEmps().find(e=>e.id===eid)||{nome:'—'};
+  const f=getFuncs(eid).find(x=>x.id===fid); if(!f)return;
+  const resc=getRescFunc(eid,fid); if(!resc){alert('Rescisão não encontrada.');return;}
+  const dataAdm=f.dataAdmissao?new Date(f.dataAdmissao+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  const dataResc=new Date(resc.dataRescisao+'T12:00:00').toLocaleDateString('pt-BR');
+  const w=window.open('','_blank','width=750,height=1000');
+  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Rescisão — ${esc(f.nome)}</title>${estiloRecibo()}</head><body>
+    <div class="rec">
+      <button class="no-print" onclick="window.print()" style="position:absolute;top:12px;right:12px;padding:6px 14px;background:#dc2626;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">🖨️ Imprimir</button>
+      <div class="rec-header">
+        <h1>TERMO DE RESCISÃO DE CONTRATO</h1>
+        <h2>${esc(resc.motivo)}</h2>
+        <div class="empresa">${esc(ea.nome)}</div>
+        ${ea.cnpj?`<div class="cnpj">CNPJ: ${esc(ea.cnpj)}</div>`:''}
+        ${ea.responsavel?`<div class="cnpj">Responsável: ${esc(ea.responsavel)}</div>`:''}
+      </div>
+
+      <div class="bloco">
+        <div class="bloco-titulo">Dados do Funcionário</div>
+        <div class="linha"><span class="lbl">Nome</span><span class="val">${esc(f.nome)}</span></div>
+        ${f.funcao?`<div class="linha"><span class="lbl">Função</span><span class="val">${esc(f.funcao)}</span></div>`:''}
+        ${f.dataAdmissao?`<div class="linha"><span class="lbl">Admissão</span><span class="val">${dataAdm}</span></div>`:''}
+        <div class="linha"><span class="lbl">Rescisão</span><span class="val">${dataResc}</span></div>
+        <div class="linha"><span class="lbl">Aviso prévio</span><span class="val">${
+          resc.aviso==='ind'?`Indenizado — ${resc.diasAviso} dias (Lei 12.506/2011)`:
+          resc.aviso==='trab'?`Trabalhado (${resc.diasAviso} dias)`:
+          resc.aviso==='desc'?'Descontado do acerto (não cumprido)':
+          resc.aviso==='disp'?'Dispensado pelo empregador':'Sem aviso prévio'
+        }</span></div>
+        <div class="linha"><span class="lbl">Salário Base</span><span class="val">${brl(f.salarioBase)}</span></div>
+      </div>
+
+      <div class="bloco">
+        <div class="bloco-titulo">Verbas Rescisórias</div>
+        <div class="linha">
+          <span class="lbl">Saldo de salário (${resc.diasTrab}/${resc.dimResc} dias de ${new Date(resc.dataRescisao+'T12:00:00').toLocaleString('pt-BR',{month:'long'})})</span>
+          <span class="val">${brl(resc.saldoSal)}</span>
+        </div>
+        ${resc.avisoVal>0?`
+        <div class="linha">
+          <span class="lbl">Aviso prévio indenizado${resc.isAcordo?' 50%':''} — ${resc.diasAviso} dias (Lei 12.506/2011)${resc.avisoDias>0?' — estende 13º e férias':''}</span>
+          <span class="val">${brl(resc.avisoVal)}</span>
+        </div>`:''}
+        ${resc.avisoVal<0?`
+        <div class="linha">
+          <span class="lbl" style="color:#d97706">(−) Desconto: aviso prévio não cumprido (30 dias)</span>
+          <span class="val" style="color:#d97706">−${brl(-resc.avisoVal)}</span>
+        </div>`:''}
+        ${resc.dec13>0?`
+        <div class="linha">
+          <span class="lbl">13º salário proporcional (${resc.avos13}/12 avos${resc.avisoDias>0?' + aviso':''}) </span>
+          <span class="val">${brl(resc.dec13)}</span>
+        </div>`:''}
+        ${resc.ferProp>0?`
+        <div class="linha">
+          <span class="lbl">Férias proporcionais + 1/3 (${resc.avosF}/12 avos${resc.avisoDias>0?' + aviso':''})</span>
+          <span class="val">${brl(resc.ferProp)}</span>
+        </div>`:''}
+        ${resc.ferVenc>0?`
+        <div class="linha">
+          <span class="lbl">Férias vencidas + 1/3 constitucional (${resc.ferVencNum} período${resc.ferVencNum>1?'s':''} de 30 dias)</span>
+          <span class="val">${brl(resc.ferVenc)}</span>
+        </div>`:''}
+        ${resc.multaFgts>0?`
+        <div class="linha">
+          <span class="lbl">Multa FGTS ${resc.isAcordo?'20% (art. 484-A CLT)':'40% (art. 18 Lei 8.036/90)'} s/ saldo ${brl(resc.fgtsSaldoVal)}</span>
+          <span class="val">${brl(resc.multaFgts)}</span>
+        </div>`:''}
+      </div>
+
+      <div class="total-box">
+        <div class="tot-lbl">Total a Receber</div>
+        <div class="tot-val">${brl(resc.total)}</div>
+        <div class="tot-ext">${valorExtenso(resc.total)}</div>
+      </div>
+
+      <div class="bloco" style="border-color:#7c3aed">
+        <div class="bloco-titulo" style="color:#7c3aed">Referência — Custo do Empregador</div>
+        <div class="linha"><span class="lbl">FGTS 8% sobre verbas brutas rescisórias</span><span class="val">${brl(resc.fgtsRef||0)}</span></div>
+        ${resc.multaFgts>0?`<div class="linha"><span class="lbl">Multa FGTS ${resc.isAcordo?'20%':'40%'} (inclusa no total)</span><span class="val">${brl(resc.multaFgts)}</span></div>`:''}
+      </div>
+
+      <div class="destaque">
+        Declaro ter recebido a importância de <strong>${brl(resc.total)}</strong> (${valorExtenso(resc.total)})
+        referente às verbas rescisórias decorrentes de <strong>${esc(resc.motivo)}</strong>
+        com data de desligamento em <strong>${dataResc}</strong>.
+        ${f.dataAdmissao?`Tempo de serviço: de ${dataAdm} a ${dataResc}.`:''}
+      </div>
+
+      <div class="assinaturas">
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(f.nome)}</div>
+          <div class="cargo-assina">Funcionário${f.funcao?' · '+f.funcao:''}</div>
+        </div>
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(ea.responsavel||ea.nome)}</div>
+          <div class="cargo-assina">Empregador · ${esc(ea.nome)}</div>
+        </div>
+      </div>
+
+      <div class="rodape">
+        Emitido em ${new Date().toLocaleDateString('pt-BR')} · ${esc(ea.nome)} · Sem desconto de INSS/IRRF
+      </div>
+    </div></body></html>`);
+  w.document.close();
+}
+
+// ══════════════════════════════════════════
+// FÉRIAS
+// ══════════════════════════════════════════
+function ferForm(fid,eid){
+  return `<div class="fbox" style="border-color:#86efac;background:var(--green-light)">
+    <div class="ftitle">🌴 Lançar Férias</div>
+    <div class="fg3">
+      <div class="ff"><label>Data Início</label><input type="date" id="ferDi" oninput="calcFerDias('${fid}','${eid}')" /></div>
+      <div class="ff"><label>Data Fim</label><input type="date" id="ferDf" oninput="calcFerDias('${fid}','${eid}')" /></div>
+      <div class="ff"><label>Dias de Férias</label><input type="number" id="ferDias" min="1" max="30" value="30" oninput="pvFer('${fid}','${eid}')" /></div>
+    </div>
+    <div id="pvFerBox" style="margin-bottom:10px;"></div>
+    <div class="fa">
+      <button class="btn btn-ghost btn-sm" onclick="cFer()">✕ Cancelar</button>
+      <button class="btn btn-green btn-sm" onclick="sFer('${fid}','${eid}')">💾 Confirmar Férias</button>
+    </div></div>`;
+}
+function calcFerDias(fid,eid){
+  const di=document.getElementById('ferDi')?.value;
+  const df=document.getElementById('ferDf')?.value;
+  const el=document.getElementById('ferDias');
+  if(di&&df&&el){
+    const diff=Math.round((new Date(df+'T12:00:00')-new Date(di+'T12:00:00'))/(864e5))+1;
+    if(diff>0){el.value=diff;pvFer(fid,eid);}
+  }
+}
+function pvFer(fid,eid){
+  const box=document.getElementById('pvFerBox'); if(!box)return;
+  const f=getFuncs(eid).find(x=>x.id===fid); if(!f)return;
+  const dias=num(gv('ferDias')); if(!dias)return;
+  const r=calcFer(f,dias,gv('ferDi'));
+  box.innerHTML=`<div class="calc-wrap"><table class="ctab">
+    <tr><td>Salário diário (${brl(f.salarioBase)}/${r.dim} dias do mês)</td><td>${brl(r.vd)}</td></tr>
+    <tr><td>Salário férias (${dias} dias)</td><td>${brl(r.vf)}</td></tr>
+    <tr><td>Adicional 1/3</td><td>${brl(r.ad)}</td></tr>
+    <tr class="ctotal"><td>✅ Total férias</td><td>${brl(r.total)}</td></tr>
+  </table></div>`;
+}
+function aFer(fid,eid){ ferFId=fid; funcExp=fid; adtFId=null; folhaFId=null; dec13FId=null; rFunc(); setTimeout(()=>pvFer(fid,eid),80); }
+function cFer(){ ferFId=null; rFunc(); }
+function sFer(fid,eid){
+  const f=getFuncs(eid).find(x=>x.id===fid); if(!f)return;
+  const dias=num(gv('ferDias')); if(!dias){alert('Informe os dias de férias.');return;}
+  const r=calcFer(f,dias,gv('ferDi'));
+  const list=getFers(eid);
+  list.push({id:genId(),fid,dataInicio:gv('ferDi'),dataFim:gv('ferDf'),dias,dim:r.dim,vFerias:r.vf,adicional:r.ad,total:r.total,pago:false});
+  setFers(eid,list); ferFId=null; rFunc();
+}
+function dFer(id,eid){
+  if(!confirm('Remover férias?'))return;
+  setFers(eid,getFers(eid).filter(fe=>fe.id!==id)); rFunc();
+}
+function togFerPago(id,eid){
+  const list=getFers(eid), i=list.findIndex(fe=>fe.id===id); if(i===-1)return;
+  list[i].pago=!list[i].pago; setFers(eid,list); rFunc();
+}
+
+// ══════════════════════════════════════════
+// 13º SALÁRIO
+// ══════════════════════════════════════════
+function dec13Form(f,eid,entry,r13){
+  const parcNum=mes===11?1:2;
+  const novVal=mes===12?getDec13Nov(eid,f.id):0;
+  const parcDef=mes===11?r13.parc1:Math.max(0,r13.v13-novVal);
+  return `<div class="fbox" style="border-color:var(--amber-bd);background:var(--amber-light)">
+    <div class="ftitle">🎄 ${parcNum}ª Parcela 13º Salário — ${ano}</div>
+    <div class="fg3">
+      <div class="ff"><label>13º total (${r13.avos}/12 avos) R$</label>
+        <input type="number" id="d13Tot" value="${r13.v13.toFixed(2)}" readonly style="background:var(--gray-100)" /></div>
+      ${mes===12?`<div class="ff"><label>1ª parcela paga (novembro) R$</label>
+        <input type="number" id="d13Nov" value="${novVal.toFixed(2)}" step="0.01" oninput="pvDec13('${f.id}','${eid}')" /></div>`:''}
+      <div class="ff"><label>Valor ${parcNum}ª parcela (R$)</label>
+        <input type="number" id="d13Val" value="${parcDef.toFixed(2)}" step="0.01" oninput="pvDec13('${f.id}','${eid}')" /></div>
+    </div>
+    <div id="pvDec13Box" style="margin-bottom:10px;"></div>
+    <div class="fa">
+      <button class="btn btn-ghost btn-sm" onclick="cDec13()">✕ Cancelar</button>
+      <button class="btn btn-amber btn-sm" onclick="sDec13('${f.id}','${eid}')">✅ Confirmar 13º</button>
+    </div></div>`;
+}
+function pvDec13(fid,eid){
+  const box=document.getElementById('pvDec13Box'); if(!box)return;
+  const f=getFuncs(eid).find(x=>x.id===fid); if(!f)return;
+  const r13=calc13(f); const val=num(gv('d13Val')); const novVal=mes===12?num(gv('d13Nov')):0;
+  box.innerHTML=`<div class="calc-wrap"><table class="ctab">
+    <tr><td>13º proporcional <span class="cbadge a">${r13.avos}/12 avos</span></td><td>${brl(r13.v13)}</td></tr>
+    ${mes===12&&novVal>0?`<tr class="cdesc"><td>(−) 1ª parcela novembro</td><td>−${brl(novVal)}</td></tr>`:''}
+    <tr class="ctotal"><td>${mes===11?'1ª':'2ª'} parcela</td><td>${brl(val)}</td></tr>
+  </table></div>`;
+}
+function aDec13(fid,eid){ dec13FId=fid; funcExp=fid; adtFId=null; folhaFId=null; ferFId=null; rFunc(); setTimeout(()=>pvDec13(fid,eid),80); }
+function cDec13(){ dec13FId=null; rFunc(); }
+function sDec13(fid,eid){
+  const val=num(gv('d13Val')); if(!val){alert('Informe o valor.');return;}
+  const novVal=mes===12?num(gv('d13Nov')):0;
+  const entry=getMesFunc(eid,fid);
+  entry.dec13={rodada:true,parc:mes===11?1:2,valor:val,valorNov:novVal,pago:false};
+  setMesFunc(eid,entry); dec13FId=null; rFunc();
+}
+function togDec13Pago(fid,eid){
+  const entry=getMesFunc(eid,fid); if(!entry.dec13)return;
+  entry.dec13.pago=!entry.dec13.pago; setMesFunc(eid,entry); rFunc();
+}
+
+// ══════════════════════════════════════════
+// IMPRESSÃO DE RECIBOS
+// ══════════════════════════════════════════
+function valorExtenso(v){
+  // Extenso simplificado para valores até 999.999,99
+  const n=Math.round(v*100);
+  const reais=Math.floor(n/100), cts=n%100;
+  const ext=n=>{ if(n===0)return'zero';
+    const u=['','um','dois','três','quatro','cinco','seis','sete','oito','nove','dez',
+             'onze','doze','treze','quatorze','quinze','dezesseis','dezessete','dezoito','dezenove'];
+    const d=['','','vinte','trinta','quarenta','cinquenta','sessenta','setenta','oitenta','noventa'];
+    const c=['','cem','duzentos','trezentos','quatrocentos','quinhentos','seiscentos','setecentos','oitocentos','novecentos'];
+    if(n<20)return u[n];
+    if(n<100)return d[Math.floor(n/10)]+(n%10?' e '+u[n%10]:'');
+    if(n===100)return'cem';
+    if(n<1000)return c[Math.floor(n/100)]+(n%100?' e '+ext(n%100):'');
+    if(n<1000000){const m=Math.floor(n/1000);return(m===1?'mil':ext(m)+' mil')+(n%1000?' e '+ext(n%1000):'');}
+    return String(n);
+  };
+  let s=ext(reais)+' real'+(reais!==1?'s':'');
+  if(cts>0) s+=' e '+ext(cts)+' centavo'+(cts!==1?'s':'');
+  return s.charAt(0).toUpperCase()+s.slice(1);
+}
+
+function estiloRecibo(){
+  return `<style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Courier New',monospace;background:#fff;color:#000;padding:20px;font-size:13px;line-height:1.6}
+    .rec{max-width:680px;margin:0 auto;border:2px solid #000;padding:24px;position:relative}
+    .rec-header{text-align:center;border-bottom:2px solid #000;padding-bottom:14px;margin-bottom:16px}
+    .rec-header h1{font-size:18px;font-weight:700;letter-spacing:1px}
+    .rec-header h2{font-size:13px;font-weight:400;margin-top:4px}
+    .rec-header .empresa{font-size:15px;font-weight:700;margin-top:8px}
+    .rec-header .cnpj{font-size:11px;color:#444}
+    .bloco{margin-bottom:12px;padding:10px 12px;border:1px solid #ccc;border-radius:4px}
+    .bloco-titulo{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#555;margin-bottom:6px}
+    .linha{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px dotted #ddd}
+    .linha:last-child{border-bottom:none}
+    .linha .lbl{color:#333}
+    .linha .val{font-weight:700;text-align:right}
+    .total-box{border:2px solid #000;padding:10px 12px;margin:14px 0;text-align:center}
+    .total-box .tot-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+    .total-box .tot-val{font-size:22px;font-weight:700;margin:4px 0}
+    .total-box .tot-ext{font-size:12px;font-style:italic;color:#444}
+    .assinaturas{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:28px;padding-top:16px;border-top:1px solid #ccc}
+    .assina{text-align:center}
+    .assina .linha-assina{border-top:1px solid #000;margin-bottom:6px;margin-top:36px}
+    .assina .nome-assina{font-size:12px;font-weight:700}
+    .assina .cargo-assina{font-size:11px;color:#555}
+    .rodape{text-align:center;font-size:10px;color:#888;margin-top:14px;padding-top:10px;border-top:1px solid #ddd}
+    .destaque{background:#f5f5f5;padding:8px 12px;border-left:3px solid #000;margin:8px 0;font-size:12px}
+    .separador{border:none;border-top:1px solid #ccc;margin:10px 0}
+    @media print{
+      body{padding:0}
+      .rec{border:none;padding:10px}
+      .no-print{display:none}
+    }
+  </style>`;
+}
+
+function printAdt(aid, fid, eid){
+  const ea=getAtiva()||getEmps().find(e=>e.id===eid)||{nome:'—',cnpj:'',responsavel:''};
+  const f=getFuncs(eid).find(x=>x.id===fid)||{nome:'—',funcao:'',dataAdmissao:''};
+  const entry=getMesFunc(eid,fid);
+  const a=(entry.adts||[]).find(x=>x.id===aid);
+  if(!a){alert('Adiantamento não encontrado.');return;}
+
+  const dataAdm=f.dataAdmissao?new Date(f.dataAdmissao+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  const dataPag=a.data?new Date(a.data+'T12:00:00').toLocaleDateString('pt-BR'):new Date().toLocaleDateString('pt-BR');
+  const totalAdt=(entry.adts||[]).reduce((s,x)=>s+num(x.valor),0);
+  const outrosAdts=totalAdt-num(a.valor);
+
+  const w=window.open('','_blank','width=750,height=900');
+  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Recibo de Adiantamento — ${f.nome}</title>${estiloRecibo()}</head><body>
+    <div class="rec">
+      <button class="no-print" onclick="window.print()" style="position:absolute;top:12px;right:12px;padding:6px 14px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">🖨️ Imprimir</button>
+      <div class="rec-header">
+        <h1>RECIBO DE ADIANTAMENTO SALARIAL</h1>
+        <div class="empresa">${esc(ea.nome)}</div>
+        ${ea.cnpj?`<div class="cnpj">CNPJ: ${esc(ea.cnpj)}</div>`:''}
+        ${ea.responsavel?`<div class="cnpj">Responsável: ${esc(ea.responsavel)}</div>`:''}
+      </div>
+
+      <div class="bloco">
+        <div class="bloco-titulo">Dados do Funcionário</div>
+        <div class="linha"><span class="lbl">Nome</span><span class="val">${esc(f.nome)}</span></div>
+        ${f.funcao?`<div class="linha"><span class="lbl">Função</span><span class="val">${esc(f.funcao)}</span></div>`:''}
+        ${f.dataAdmissao?`<div class="linha"><span class="lbl">Data de Admissão</span><span class="val">${dataAdm}</span></div>`:''}
+        <div class="linha"><span class="lbl">Tipo</span><span class="val">${tipoL(f.tipoSalario)} · Salário: ${brl(f.salarioBase)}</span></div>
+      </div>
+
+      <div class="bloco">
+        <div class="bloco-titulo">Adiantamento</div>
+        <div class="linha"><span class="lbl">Competência</span><span class="val">${MESES[mes-1]}/${ano}</span></div>
+        <div class="linha"><span class="lbl">Data do Pagamento</span><span class="val">${dataPag}</span></div>
+        ${a.obs?`<div class="linha"><span class="lbl">Descrição</span><span class="val">${esc(a.obs)}</span></div>`:''}
+        ${outrosAdts>0?`<div class="linha"><span class="lbl">Outros adiantamentos no mês</span><span class="val">${brl(outrosAdts)}</span></div>`:''}
+        <div class="linha"><span class="lbl">Total de adiantamentos no mês</span><span class="val">${brl(totalAdt)}</span></div>
+      </div>
+
+      <div class="total-box">
+        <div class="tot-lbl">Valor deste adiantamento</div>
+        <div class="tot-val">${brl(a.valor)}</div>
+        <div class="tot-ext">${valorExtenso(a.valor)}</div>
+      </div>
+
+      <div class="destaque">
+        Declaro ter recebido a importância de <strong>${brl(a.valor)}</strong> (${valorExtenso(a.valor)})
+        a título de adiantamento salarial referente ao mês de <strong>${MESES[mes-1]}/${ano}</strong>.
+        Este valor será descontado do salário líquido no fechamento da folha do mesmo mês.
+      </div>
+
+      <div class="assinaturas">
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(f.nome)}</div>
+          <div class="cargo-assina">Funcionário${f.funcao?' · '+f.funcao:''}</div>
+        </div>
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(ea.responsavel||ea.nome)}</div>
+          <div class="cargo-assina">Empregador · ${esc(ea.nome)}</div>
+        </div>
+      </div>
+
+      <div class="rodape">
+        Emitido em ${new Date().toLocaleDateString('pt-BR')} · ${esc(ea.nome)}
+        · Sem vínculo empregatício formal · Sem desconto de INSS/IRRF
+      </div>
+    </div>
+  </body></html>`);
+  w.document.close();
+}
+
+function printFolha(fid, eid){
+  const ea=getAtiva()||getEmps().find(e=>e.id===eid)||{nome:'—',cnpj:'',responsavel:''};
+  const f=getFuncs(eid).find(x=>x.id===fid);
+  if(!f){alert('Funcionário não encontrado.');return;}
+  const entry=getMesFunc(eid,fid);
+  if(!entry.folhaRodada){alert('A folha ainda não foi rodada.');return;}
+  const r=calcEntry(f,entry);
+
+  const dataAdm=f.dataAdmissao?new Date(f.dataAdmissao+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  const isMens=f.tipoSalario==='mensalista'||!f.tipoSalario;
+  const prop=isMens&&!!entry.mesProporcional;
+  const dimF=diasNoMes(mes,ano);
+  const dt=prop?num(entry.diasTrab||0):dimF;
+
+  const w=window.open('','_blank','width=750,height=1000');
+  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Recibo de Salário — ${f.nome} — ${MESES[mes-1]}/${ano}</title>${estiloRecibo()}</head><body>
+    <div class="rec">
+      <button class="no-print" onclick="window.print()" style="position:absolute;top:12px;right:12px;padding:6px 14px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">🖨️ Imprimir</button>
+      <div class="rec-header">
+        <h1>RECIBO DE PAGAMENTO DE SALÁRIO</h1>
+        <h2>Competência: ${MESES[mes-1].toUpperCase()}/${ano}</h2>
+        <div class="empresa">${esc(ea.nome)}</div>
+        ${ea.cnpj?`<div class="cnpj">CNPJ: ${esc(ea.cnpj)}</div>`:''}
+        ${ea.responsavel?`<div class="cnpj">Responsável: ${esc(ea.responsavel)}</div>`:''}
+      </div>
+
+      <div class="bloco">
+        <div class="bloco-titulo">Dados do Funcionário</div>
+        <div class="linha"><span class="lbl">Nome</span><span class="val">${esc(f.nome)}</span></div>
+        ${f.funcao?`<div class="linha"><span class="lbl">Função</span><span class="val">${esc(f.funcao)}</span></div>`:''}
+        ${f.dataAdmissao?`<div class="linha"><span class="lbl">Data de Admissão</span><span class="val">${dataAdm}</span></div>`:''}
+        <div class="linha"><span class="lbl">Tipo</span><span class="val">${tipoL(f.tipoSalario)}</span></div>
+        <div class="linha"><span class="lbl">Salário Base</span><span class="val">${brl(f.salarioBase)}</span></div>
+      </div>
+
+      <div class="bloco">
+        <div class="bloco-titulo">Demonstrativo — ${MESES[mes-1]}/${ano}</div>
+        <div class="linha">
+          <span class="lbl">${isMens
+            ? prop ? `Salário proporcional (${dt}/${dimF} dias)` : `Salário mensal (${dimF} dias)`
+            : `Pagamento (${dt} ${f.tipoSalario==='horista'?'horas':'dias'})`
+          }</span>
+          <span class="val">${brl(r.salProp)}</span>
+        </div>
+        ${r.he50v>0?`<div class="linha"><span class="lbl">H. Extra 50% — ${entry.he50}h × ${brl(r.vh)} × 1,5</span><span class="val">${brl(r.he50v)}</span></div>`:''}
+        ${r.he100v>0?`<div class="linha"><span class="lbl">H. Extra 100% — ${entry.he100}h × ${brl(r.vh)} × 2,0</span><span class="val">${brl(r.he100v)}</span></div>`:''}
+        ${r.dsr>0?`<div class="linha"><span class="lbl">DSR ${entry.dsrManual?'(informado)':'(calculado sobre H.E.)'}</span><span class="val">${brl(r.dsr)}</span></div>`:''}
+        <div class="linha" style="font-weight:700;background:#f5f5f5;padding:4px 0">
+          <span class="lbl">Salário Bruto</span><span class="val">${brl(r.bruto)}</span>
+        </div>
+      </div>
+
+      ${r.totalAdt>0?`<div class="bloco" style="border-color:#d97706">
+        <div class="bloco-titulo" style="color:#d97706">Adiantamentos a Descontar</div>
+        ${(entry.adts||[]).map(a=>`<div class="linha">
+          <span class="lbl">${a.data?new Date(a.data+'T12:00:00').toLocaleDateString('pt-BR'):''} ${a.obs?'· '+esc(a.obs):''}</span>
+          <span class="val" style="color:#d97706">− ${brl(a.valor)}</span>
+        </div>`).join('')}
+        <div class="linha" style="font-weight:700"><span class="lbl">Total descontado</span><span class="val" style="color:#d97706">− ${brl(r.totalAdt)}</span></div>
+      </div>`:''}
+
+      <div class="total-box">
+        <div class="tot-lbl">Total Líquido a Pagar</div>
+        <div class="tot-val">${brl(r.aPagar)}</div>
+        <div class="tot-ext">${valorExtenso(r.aPagar)}</div>
+      </div>
+
+      ${f.dataAdmissao||true?`<div class="bloco" style="border-color:#7c3aed">
+        <div class="bloco-titulo" style="color:#7c3aed">Provisões e Custo do Empregador (referência)</div>
+        ${f.dataAdmissao?`<div class="linha"><span class="lbl">13º proporcional (${r.av13}/12 avos)</span><span class="val">${brl(r.dec13)}</span></div>`:''}
+        ${f.dataAdmissao?`<div class="linha"><span class="lbl">Férias + 1/3 (${r.avF}/12 avos)</span><span class="val">${brl(r.ferTotal)}</span></div>`:''}
+        <div class="linha"><span class="lbl">FGTS 8% (custo empresa)</span><span class="val">${brl(r.fgts)}</span></div>
+      </div>`:''}
+
+      <div class="destaque">
+        Declaro ter recebido a importância líquida de <strong>${brl(r.aPagar)}</strong>
+        (${valorExtenso(r.aPagar)}) referente ao salário do mês de <strong>${MESES[mes-1]}/${ano}</strong>.
+        ${r.totalAdt>0?`Já haviam sido pagos adiantamentos no valor de ${brl(r.totalAdt)}.`:''}
+      </div>
+
+      ${entry.observacao?`<div class="destaque" style="border-left-color:#6b7280;font-size:11px">Obs.: ${esc(entry.observacao)}</div>`:''}
+
+      <div class="assinaturas">
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(f.nome)}</div>
+          <div class="cargo-assina">Funcionário${f.funcao?' · '+f.funcao:''}</div>
+        </div>
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(ea.responsavel||ea.nome)}</div>
+          <div class="cargo-assina">Empregador · ${esc(ea.nome)}</div>
+        </div>
+      </div>
+
+      <div class="rodape">
+        Emitido em ${new Date().toLocaleDateString('pt-BR')} · ${esc(ea.nome)}
+        · Sem vínculo empregatício formal · Valores brutos sem desconto de INSS/IRRF
+      </div>
+    </div>
+  </body></html>`);
+  w.document.close();
+}
+
+function printFer(feid,fid,eid){
+  const ea=getAtiva()||getEmps().find(e=>e.id===eid)||{nome:'—'};
+  const f=getFuncs(eid).find(x=>x.id===fid)||{nome:'—'};
+  const fe=getFers(eid).find(x=>x.id===feid); if(!fe){alert('Férias não encontradas.');return;}
+  const di=fe.dataInicio?new Date(fe.dataInicio+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  const df=fe.dataFim?new Date(fe.dataFim+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  const dataAdm=f.dataAdmissao?new Date(f.dataAdmissao+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  const w=window.open('','_blank','width=750,height=900');
+  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Recibo de Férias — ${esc(f.nome)}</title>${estiloRecibo()}</head><body>
+    <div class="rec">
+      <button class="no-print" onclick="window.print()" style="position:absolute;top:12px;right:12px;padding:6px 14px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">🖨️ Imprimir</button>
+      <div class="rec-header">
+        <h1>RECIBO DE PAGAMENTO DE FÉRIAS</h1>
+        <div class="empresa">${esc(ea.nome)}</div>
+        ${ea.cnpj?`<div class="cnpj">CNPJ: ${esc(ea.cnpj)}</div>`:''}
+        ${ea.responsavel?`<div class="cnpj">Responsável: ${esc(ea.responsavel)}</div>`:''}
+      </div>
+      <div class="bloco">
+        <div class="bloco-titulo">Dados do Funcionário</div>
+        <div class="linha"><span class="lbl">Nome</span><span class="val">${esc(f.nome)}</span></div>
+        ${f.funcao?`<div class="linha"><span class="lbl">Função</span><span class="val">${esc(f.funcao)}</span></div>`:''}
+        ${f.dataAdmissao?`<div class="linha"><span class="lbl">Admissão</span><span class="val">${dataAdm}</span></div>`:''}
+        <div class="linha"><span class="lbl">Salário Base</span><span class="val">${brl(f.salarioBase)}</span></div>
+      </div>
+      <div class="bloco">
+        <div class="bloco-titulo">Período de Férias</div>
+        <div class="linha"><span class="lbl">Início</span><span class="val">${di}</span></div>
+        <div class="linha"><span class="lbl">Fim</span><span class="val">${df}</span></div>
+        <div class="linha"><span class="lbl">Duração</span><span class="val">${fe.dias} dias</span></div>
+      </div>
+      <div class="bloco">
+        <div class="bloco-titulo">Demonstrativo</div>
+        <div class="linha"><span class="lbl">Salário diário (${brl(f.salarioBase)}/${fe.dim||30} dias do mês)</span><span class="val">${brl(num(f.salarioBase)/(fe.dim||30))}</span></div>
+        <div class="linha"><span class="lbl">Salário férias (${fe.dias} dias)</span><span class="val">${brl(fe.vFerias)}</span></div>
+        <div class="linha"><span class="lbl">Adicional 1/3 constitucional</span><span class="val">${brl(fe.adicional)}</span></div>
+      </div>
+      <div class="total-box">
+        <div class="tot-lbl">Total de Férias</div>
+        <div class="tot-val">${brl(fe.total)}</div>
+        <div class="tot-ext">${valorExtenso(fe.total)}</div>
+      </div>
+      <div class="destaque">
+        Declaro ter recebido <strong>${brl(fe.total)}</strong> (${valorExtenso(fe.total)})
+        referente a ${fe.dias} dias de férias no período de ${di} a ${df}.
+      </div>
+      <div class="assinaturas">
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(f.nome)}</div>
+          <div class="cargo-assina">Funcionário${f.funcao?' · '+f.funcao:''}</div>
+        </div>
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(ea.responsavel||ea.nome)}</div>
+          <div class="cargo-assina">Empregador · ${esc(ea.nome)}</div>
+        </div>
+      </div>
+      <div class="rodape">Emitido em ${new Date().toLocaleDateString('pt-BR')} · Sem desconto de INSS/IRRF</div>
+    </div></body></html>`);
+  w.document.close();
+}
+
+function printDec13(fid,eid){
+  const ea=getAtiva()||getEmps().find(e=>e.id===eid)||{nome:'—'};
+  const f=getFuncs(eid).find(x=>x.id===fid); if(!f)return;
+  const entry=getMesFunc(eid,fid);
+  if(!entry.dec13?.rodada){alert('13º não processado.');return;}
+  const r13=calc13(f);
+  const parcNum=entry.dec13.parc, parcLabel=parcNum===1?'1ª Parcela (50%)':'2ª Parcela (Saldo Final)';
+  const dataAdm=f.dataAdmissao?new Date(f.dataAdmissao+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  const w=window.open('','_blank','width=750,height=900');
+  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Recibo 13º — ${esc(f.nome)} — ${ano}</title>${estiloRecibo()}</head><body>
+    <div class="rec">
+      <button class="no-print" onclick="window.print()" style="position:absolute;top:12px;right:12px;padding:6px 14px;background:#d97706;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">🖨️ Imprimir</button>
+      <div class="rec-header">
+        <h1>RECIBO DE 13º SALÁRIO</h1>
+        <h2>${parcLabel} — Ano ${ano}</h2>
+        <div class="empresa">${esc(ea.nome)}</div>
+        ${ea.cnpj?`<div class="cnpj">CNPJ: ${esc(ea.cnpj)}</div>`:''}
+        ${ea.responsavel?`<div class="cnpj">Responsável: ${esc(ea.responsavel)}</div>`:''}
+      </div>
+      <div class="bloco">
+        <div class="bloco-titulo">Dados do Funcionário</div>
+        <div class="linha"><span class="lbl">Nome</span><span class="val">${esc(f.nome)}</span></div>
+        ${f.funcao?`<div class="linha"><span class="lbl">Função</span><span class="val">${esc(f.funcao)}</span></div>`:''}
+        ${f.dataAdmissao?`<div class="linha"><span class="lbl">Admissão</span><span class="val">${dataAdm}</span></div>`:''}
+        <div class="linha"><span class="lbl">Salário Base</span><span class="val">${brl(f.salarioBase)}</span></div>
+      </div>
+      <div class="bloco">
+        <div class="bloco-titulo">Demonstrativo</div>
+        <div class="linha"><span class="lbl">13º proporcional (${r13.avos}/12 avos)</span><span class="val">${brl(r13.v13)}</span></div>
+        ${parcNum===2&&entry.dec13.valorNov>0?`<div class="linha"><span class="lbl" style="color:#d97706">(−) 1ª parcela — novembro</span><span class="val" style="color:#d97706">−${brl(entry.dec13.valorNov)}</span></div>`:''}
+      </div>
+      <div class="total-box">
+        <div class="tot-lbl">${parcLabel}</div>
+        <div class="tot-val">${brl(entry.dec13.valor)}</div>
+        <div class="tot-ext">${valorExtenso(entry.dec13.valor)}</div>
+      </div>
+      <div class="destaque">
+        Declaro ter recebido <strong>${brl(entry.dec13.valor)}</strong> (${valorExtenso(entry.dec13.valor)})
+        referente à ${parcLabel} do 13º salário do ano de ${ano}.
+      </div>
+      <div class="assinaturas">
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(f.nome)}</div>
+          <div class="cargo-assina">Funcionário${f.funcao?' · '+f.funcao:''}</div>
+        </div>
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(ea.responsavel||ea.nome)}</div>
+          <div class="cargo-assina">Empregador · ${esc(ea.nome)}</div>
+        </div>
+      </div>
+      <div class="rodape">Emitido em ${new Date().toLocaleDateString('pt-BR')} · Sem desconto de INSS/IRRF</div>
+    </div></body></html>`);
+  w.document.close();
+}
+
+function printTodosAdts(fid,eid){
+  const ea=getAtiva()||getEmps().find(e=>e.id===eid)||{nome:'—'};
+  const f=getFuncs(eid).find(x=>x.id===fid); if(!f)return;
+  const entry=getMesFunc(eid,fid);
+  const adts=entry.adts||[];
+  if(!adts.length){alert('Nenhum adiantamento lançado.');return;}
+  let pgs='';
+  adts.forEach((a,idx)=>{
+    const dataPag=a.data?new Date(a.data+'T12:00:00').toLocaleDateString('pt-BR'):new Date().toLocaleDateString('pt-BR');
+    pgs+=`<div class="rec" style="${idx>0?'page-break-before:always;margin-top:20px':''}">
+      <div class="rec-header">
+        <h1>RECIBO DE ADIANTAMENTO SALARIAL</h1>
+        <h2>Competência: ${MESES[mes-1].toUpperCase()}/${ano}</h2>
+        <div class="empresa">${esc(ea.nome)}</div>
+        ${ea.cnpj?`<div class="cnpj">CNPJ: ${esc(ea.cnpj)}</div>`:''}
+      </div>
+      <div class="bloco">
+        <div class="bloco-titulo">Funcionário</div>
+        <div class="linha"><span class="lbl">Nome</span><span class="val">${esc(f.nome)}</span></div>
+        ${f.funcao?`<div class="linha"><span class="lbl">Função</span><span class="val">${esc(f.funcao)}</span></div>`:''}
+      </div>
+      <div class="bloco">
+        <div class="bloco-titulo">Adiantamento ${idx+1} de ${adts.length}</div>
+        <div class="linha"><span class="lbl">Data</span><span class="val">${dataPag}</span></div>
+        ${a.obs?`<div class="linha"><span class="lbl">Descrição</span><span class="val">${esc(a.obs)}</span></div>`:''}
+      </div>
+      <div class="total-box">
+        <div class="tot-lbl">Valor deste adiantamento</div>
+        <div class="tot-val">${brl(a.valor)}</div>
+        <div class="tot-ext">${valorExtenso(a.valor)}</div>
+      </div>
+      <div class="destaque">
+        Declaro ter recebido <strong>${brl(a.valor)}</strong> (${valorExtenso(a.valor)}) a título de adiantamento
+        referente ao mês de <strong>${MESES[mes-1]}/${ano}</strong>. Valor a descontar na folha mensal.
+      </div>
+      <div class="assinaturas">
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(f.nome)}</div>
+          <div class="cargo-assina">Funcionário${f.funcao?' · '+f.funcao:''}</div>
+        </div>
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(ea.responsavel||ea.nome)}</div>
+          <div class="cargo-assina">Empregador · ${esc(ea.nome)}</div>
+        </div>
+      </div>
+      <div class="rodape">Emitido em ${new Date().toLocaleDateString('pt-BR')} · Sem desconto de INSS/IRRF</div>
+    </div>`;
+  });
+  const w=window.open('','_blank','width=800,height=1000');
+  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Adiantamentos — ${esc(f.nome)} — ${MESES[mes-1]}/${ano}</title>${estiloRecibo()}</head><body>
+    <button class="no-print" onclick="window.print()" style="position:fixed;top:12px;right:12px;padding:8px 18px;background:#d97706;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:700;z-index:999">🖨️ Imprimir Todos</button>
+    ${pgs}</body></html>`);
+  w.document.close();
+}
+
+function printTodosAdtsGeral(){
+  const ea=getAtiva(); if(!ea){alert('Nenhuma empresa ativa.');return;}
+  const eid=ea.id;
+  const funcs=getFuncs(eid);
+  // Coleta todos os funcionários com adiantamentos no mês
+  const comAdt=funcs.filter(f=>{const e=getMesFunc(eid,f.id);return e.adts&&e.adts.length>0;});
+  if(!comAdt.length){alert('Nenhum adiantamento lançado neste mês.');return;}
+  let pgs='', pgIdx=0;
+  comAdt.forEach(f=>{
+    const entry=getMesFunc(eid,f.id);
+    (entry.adts||[]).forEach(a=>{
+      const dataPag=a.data?new Date(a.data+'T12:00:00').toLocaleDateString('pt-BR'):new Date().toLocaleDateString('pt-BR');
+      const totalAdt=(entry.adts||[]).reduce((s,x)=>s+num(x.valor),0);
+      pgs+=`<div class="rec" style="${pgIdx>0?'page-break-before:always;margin-top:20px':''}">
+        <div class="rec-header">
+          <h1>RECIBO DE ADIANTAMENTO SALARIAL</h1>
+          <h2>Competência: ${MESES[mes-1].toUpperCase()}/${ano}</h2>
+          <div class="empresa">${esc(ea.nome)}</div>
+          ${ea.cnpj?`<div class="cnpj">CNPJ: ${esc(ea.cnpj)}</div>`:''}
+          ${ea.responsavel?`<div class="cnpj">Responsável: ${esc(ea.responsavel)}</div>`:''}
+        </div>
+        <div class="bloco">
+          <div class="bloco-titulo">Dados do Funcionário</div>
+          <div class="linha"><span class="lbl">Nome</span><span class="val">${esc(f.nome)}</span></div>
+          ${f.funcao?`<div class="linha"><span class="lbl">Função</span><span class="val">${esc(f.funcao)}</span></div>`:''}
+          <div class="linha"><span class="lbl">Salário Base</span><span class="val">${brl(f.salarioBase)}</span></div>
+        </div>
+        <div class="bloco">
+          <div class="bloco-titulo">Adiantamento</div>
+          <div class="linha"><span class="lbl">Data do Pagamento</span><span class="val">${dataPag}</span></div>
+          ${a.obs?`<div class="linha"><span class="lbl">Descrição</span><span class="val">${esc(a.obs)}</span></div>`:''}
+          ${entry.adts.length>1?`<div class="linha"><span class="lbl">Total adiantamentos no mês</span><span class="val">${brl(totalAdt)}</span></div>`:''}
+        </div>
+        <div class="total-box">
+          <div class="tot-lbl">Valor deste adiantamento</div>
+          <div class="tot-val">${brl(a.valor)}</div>
+          <div class="tot-ext">${valorExtenso(a.valor)}</div>
+        </div>
+        <div class="destaque">
+          Declaro ter recebido <strong>${brl(a.valor)}</strong> (${valorExtenso(a.valor)}) a título de
+          adiantamento salarial referente ao mês de <strong>${MESES[mes-1]}/${ano}</strong>.
+          Este valor será descontado no fechamento da folha mensal.
+        </div>
+        <div class="assinaturas">
+          <div class="assina"><div class="linha-assina"></div>
+            <div class="nome-assina">${esc(f.nome)}</div>
+            <div class="cargo-assina">Funcionário${f.funcao?' · '+f.funcao:''}</div>
+          </div>
+          <div class="assina"><div class="linha-assina"></div>
+            <div class="nome-assina">${esc(ea.responsavel||ea.nome)}</div>
+            <div class="cargo-assina">Empregador · ${esc(ea.nome)}</div>
+          </div>
+        </div>
+        <div class="rodape">Emitido em ${new Date().toLocaleDateString('pt-BR')} · Sem desconto de INSS/IRRF · ${esc(ea.nome)}</div>
+      </div>`;
+      pgIdx++;
+    });
+  });
+  const w=window.open('','_blank','width=800,height=1100');
+  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Todos Adiantamentos — ${MESES[mes-1]}/${ano} — ${esc(ea.nome)}</title>${estiloRecibo()}</head><body>
+    <button class="no-print" onclick="window.print()" style="position:fixed;top:12px;right:12px;padding:8px 18px;background:#d97706;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:700;z-index:999">🖨️ Imprimir Todos</button>
+    ${pgs}</body></html>`);
+  w.document.close();
+}
+
+function printTodos(){
+  const ea=getAtiva(); if(!ea){alert('Nenhuma empresa ativa.');return;}
+  const eid=ea.id;
+  const funcs=getFuncs(eid);
+  const comFolha=funcs.filter(f=>getMesFunc(eid,f.id).folhaRodada);
+  if(!comFolha.length){alert('Nenhuma folha rodada para imprimir neste mês.');return;}
+  let pgs='';
+  comFolha.forEach((f,idx)=>{
+    const entry=getMesFunc(eid,f.id);
+    const r=calcEntry(f,entry);
+    const isMens=f.tipoSalario==='mensalista'||!f.tipoSalario;
+    const prop=isMens&&!!entry.mesProporcional;
+    const dimT=diasNoMes(mes,ano);
+    const dt=prop?num(entry.diasTrab||0):isMens?dimT:num(entry.diasTrab||0);
+    pgs+=`<div class="rec" style="${idx>0?'page-break-before:always;margin-top:20px':''}">
+      <div class="rec-header">
+        <h1>RECIBO DE PAGAMENTO DE SALÁRIO</h1>
+        <h2>Competência: ${MESES[mes-1].toUpperCase()}/${ano}</h2>
+        <div class="empresa">${esc(ea.nome)}</div>
+        ${ea.cnpj?`<div class="cnpj">CNPJ: ${esc(ea.cnpj)}</div>`:''}
+        ${ea.responsavel?`<div class="cnpj">Responsável: ${esc(ea.responsavel)}</div>`:''}
+      </div>
+      <div class="bloco">
+        <div class="bloco-titulo">Funcionário</div>
+        <div class="linha"><span class="lbl">Nome</span><span class="val">${esc(f.nome)}</span></div>
+        ${f.funcao?`<div class="linha"><span class="lbl">Função</span><span class="val">${esc(f.funcao)}</span></div>`:''}
+        <div class="linha"><span class="lbl">Tipo</span><span class="val">${tipoL(f.tipoSalario)} · ${brl(f.salarioBase)}</span></div>
+      </div>
+      <div class="bloco">
+        <div class="bloco-titulo">Demonstrativo — ${MESES[mes-1]}/${ano}</div>
+        <div class="linha"><span class="lbl">${isMens
+          ? prop ? `Salário proporcional (${dt}/${dimT} dias)` : `Salário mensal (${dimT} dias)`
+          : `Pagamento (${dt} ${f.tipoSalario==='horista'?'horas':'dias'})`
+        }</span><span class="val">${brl(r.salProp)}</span></div>
+        ${r.he50v>0?`<div class="linha"><span class="lbl">H.Extra 50% (${entry.he50}h × 1,5)</span><span class="val">${brl(r.he50v)}</span></div>`:''}
+        ${r.he100v>0?`<div class="linha"><span class="lbl">H.Extra 100% (${entry.he100}h × 2,0)</span><span class="val">${brl(r.he100v)}</span></div>`:''}
+        ${r.dsr>0?`<div class="linha"><span class="lbl">DSR</span><span class="val">${brl(r.dsr)}</span></div>`:''}
+        <div class="linha" style="font-weight:700;background:#f5f5f5"><span class="lbl">Salário Bruto</span><span class="val">${brl(r.bruto)}</span></div>
+        ${r.totalAdt>0?`<div class="linha"><span class="lbl" style="color:#d97706">(−) Adiantamentos</span><span class="val" style="color:#d97706">−${brl(r.totalAdt)}</span></div>`:''}
+      </div>
+      <div class="total-box">
+        <div class="tot-lbl">Total Líquido a Pagar</div>
+        <div class="tot-val">${brl(r.aPagar)}</div>
+        <div class="tot-ext">${valorExtenso(r.aPagar)}</div>
+      </div>
+      <div class="destaque">
+        Declaro ter recebido <strong>${brl(r.aPagar)}</strong> (${valorExtenso(r.aPagar)})
+        referente ao salário de <strong>${MESES[mes-1]}/${ano}</strong>.
+        ${r.totalAdt>0?`Adiantamentos de ${brl(r.totalAdt)} já foram pagos anteriormente.`:''}
+      </div>
+      <div class="assinaturas">
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(f.nome)}</div>
+          <div class="cargo-assina">Funcionário${f.funcao?' · '+f.funcao:''}</div>
+        </div>
+        <div class="assina"><div class="linha-assina"></div>
+          <div class="nome-assina">${esc(ea.responsavel||ea.nome)}</div>
+          <div class="cargo-assina">Empregador · ${esc(ea.nome)}</div>
+        </div>
+      </div>
+      <div class="rodape">Emitido em ${new Date().toLocaleDateString('pt-BR')} · Sem desconto de INSS/IRRF · ${esc(ea.nome)}</div>
+    </div>`;
+  });
+  const w=window.open('','_blank','width=800,height=1100');
+  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Folha Completa — ${MESES[mes-1]}/${ano} — ${esc(ea.nome)}</title>${estiloRecibo()}</head><body>
+    <button class="no-print" onclick="window.print()" style="position:fixed;top:12px;right:12px;padding:8px 18px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:700;z-index:999">🖨️ Imprimir Todos</button>
+    ${pgs}</body></html>`);
+  w.document.close();
+}
+
+// ══════════════════════════════════════════
+// ABA 4 — USUÁRIOS (apenas admin)
+// ══════════════════════════════════════════
+function rUsuarios(){
+  if(!ses||!ses.isAdmin){document.getElementById('p4').innerHTML='<div class="empty"><p>Acesso restrito.</p></div>';return;}
+  const users=getUsers();
+  let h=`<div class="card"><div class="card-hd">
+    <div class="card-ti">👥 Gerenciamento de Usuários</div>
+  </div><div class="card-bd">`;
+  // User list
+  h+=`<div class="emp-list" style="margin-bottom:20px">`;
+  users.forEach(u=>{
+    const isSilas=u.id==='silas';
+    h+=`<div class="emp-row${u.ativo?'':' ' }">
+      <span style="font-size:22px">${u.isAdmin?'👑':'👤'}</span>
+      <div class="emp-info">
+        <div class="emp-nome">${esc(u.nome)}
+          ${u.isAdmin?'<span class="badge b-purple">Admin</span>':''}
+          ${!u.ativo?'<span class="badge b-gray">Inativo</span>':'<span class="badge b-green">Ativo</span>'}
+        </div>
+        <div class="emp-det">ID: <strong>${esc(u.id)}</strong></div>
+      </div>
+      <div class="emp-acts">
+        ${!isSilas?`<button class="btn btn-outline btn-sm" onclick="toggleAtivo('${esc(u.id)}')">${u.ativo?'🔒 Desativar':'🔓 Ativar'}</button>`:''}
+        <button class="btn btn-ghost btn-sm" onclick="editUser('${esc(u.id)}')">✏️ Editar senha</button>
+      </div>
+    </div>`;
+  });
+  h+=`</div>`;
+  // New user form
+  h+=`<div class="fbox"><div class="ftitle">➕ Novo Usuário</div>
+    <div class="fg3">
+      <div class="ff"><label>Nome *</label><input type="text" id="nuNome" placeholder="Nome de exibição" /></div>
+      <div class="ff"><label>ID de login *</label><input type="text" id="nuId" placeholder="sem espaços, ex: joao" /></div>
+      <div class="ff"><label>Senha *</label><input type="password" id="nuSenha" placeholder="Senha inicial" /></div>
+    </div>
+    <div class="fg1" style="margin-bottom:0">
+      <div class="ff" style="flex-direction:row;align-items:center;gap:8px">
+        <input type="checkbox" id="nuAtivo" checked style="width:16px;height:16px" />
+        <label style="text-transform:none;font-size:13px;font-weight:600;color:var(--gray-700)">Usuário ativo</label>
+      </div>
+    </div>
+    <div class="fa">
+      <button class="btn btn-primary btn-sm" onclick="salvarNovoUser()">💾 Criar Usuário</button>
+    </div></div>`;
+
+  // Edit modal inline (if editing)
+  h+=`<div id="editUserBox"></div>`;
+  h+=`</div></div>`;
+  document.getElementById('p4').innerHTML=h;
+}
+
+function toggleAtivo(uid){
+  const users=getUsers();
+  const i=users.findIndex(u=>u.id===uid); if(i===-1)return;
+  if(users[i].id==='silas'){alert('Não é possível desativar o admin principal.');return;}
+  users[i].ativo=!users[i].ativo;
+  setUsers(users); rUsuarios();
+}
+
+function editUser(uid){
+  const users=getUsers();
+  const u=users.find(x=>x.id===uid); if(!u)return;
+  const box=document.getElementById('editUserBox');
+  if(!box)return;
+  box.innerHTML=`<div class="fbox" style="border-color:var(--primary);background:var(--primary-light)">
+    <div class="ftitle">✏️ Editar senha — ${esc(u.nome)}</div>
+    <div class="fg2">
+      <div class="ff"><label>Nova senha</label><input type="password" id="euSenha" placeholder="Nova senha" /></div>
+    </div>
+    <div class="fa">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('editUserBox').innerHTML=''">✕ Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="salvarEditUser('${esc(uid)}')">💾 Salvar</button>
+    </div></div>`;
+}
+
+function salvarEditUser(uid){
+  const senha=document.getElementById('euSenha')?.value||'';
+  if(!senha){alert('Informe a nova senha.');return;}
+  const users=getUsers();
+  const i=users.findIndex(u=>u.id===uid); if(i===-1)return;
+  users[i].senha=senha;
+  setUsers(users);
+  alert('Senha atualizada!');
+  rUsuarios();
+}
+
+function salvarNovoUser(){
+  const nome=(document.getElementById('nuNome')?.value||'').trim();
+  const uid=(document.getElementById('nuId')?.value||'').trim().toLowerCase().replace(/\s+/g,'');
+  const senha=document.getElementById('nuSenha')?.value||'';
+  const ativo=document.getElementById('nuAtivo')?.checked!==false;
+  if(!nome||!uid||!senha){alert('Preencha todos os campos obrigatórios.');return;}
+  const users=getUsers();
+  if(users.find(u=>u.id===uid)){alert('ID de usuário já existe. Escolha outro.');return;}
+  users.push({id:uid,nome,senha,isAdmin:false,ativo});
+  setUsers(users);
+  rUsuarios();
+}
+
+// ══════════════════════════════════════════
+// BACKUP — EXPORTAR / IMPORTAR
+// ══════════════════════════════════════════
+function exportarDados(){
+  const emps=getEmps();
+  const pref=up();
+  const backup={versao:2,exportadoEm:new Date().toISOString(),usuario:ses?.uid||'',empresas:[]};
+  emps.forEach(emp=>{
+    const entry={...emp,funcionarios:[],meses:{},ferias:{},rescisoes:{}};
+    const funcs=getFuncs(emp.id);
+    entry.funcionarios=funcs;
+    // todos os meses de todos os anos (varredura de 2020 a ano+2)
+    for(let a=2020;a<=ano+2;a++){
+      for(let m=1;m<=12;m++){
+        const k=`fp_m_${emp.id}_${a}_${String(m).padStart(2,'0')}${pref}`;
+        const v=ls.g(k);
+        if(v&&v.length) entry.meses[k]=v;
+      }
+    }
+    const fer=getFers(emp.id);
+    if(fer&&fer.length) entry.ferias=fer;
+    const resc=getRescs(emp.id);
+    if(resc&&resc.length) entry.rescisoes=resc;
+    // 13º novembro (use scoped key)
+    const novKey=`fp_m_${emp.id}_${ano}_11${pref}`;
+    const nov=ls.g(novKey);
+    if(nov&&nov.length) entry.meses[novKey]=nov;
+    backup.empresas.push(entry);
+  });
+  const json=JSON.stringify(backup,null,2);
+  const blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const dt=new Date().toISOString().slice(0,10);
+  a.href=url; a.download=`folha-backup-${dt}.json`; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importarDados(){
+  const inp=document.createElement('input');
+  inp.type='file'; inp.accept='.json,application/json';
+  inp.onchange=e=>{
+    const file=e.target.files[0];
+    if(!file) return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const backup=JSON.parse(ev.target.result);
+        if(!backup.versao||!Array.isArray(backup.empresas)) throw new Error('Arquivo inválido');
+        const pref=up();
+        const modo=confirm(
+          `Backup de ${new Date(backup.exportadoEm).toLocaleString('pt-BR')}\n`+
+          `${backup.empresas.length} empresa(s) encontrada(s).\n\n`+
+          `Clique OK para MESCLAR com os dados atuais.\n`+
+          `Clique Cancelar para SUBSTITUIR (apaga dados do usuário atual).`
+        );
+        if(!modo){
+          // substituir — limpar dados do usuário atual
+          Object.keys(localStorage).filter(k=>k.includes(pref)).forEach(k=>localStorage.removeItem(k));
+        }
+        backup.empresas.forEach(emp=>{
+          const {funcionarios,meses,ferias,rescisoes,...empData}=emp;
+          // mesclar empresas
+          const existentes=getEmps();
+          if(!existentes.find(e=>e.id===empData.id)){
+            setEmps([...existentes,empData]);
+          }
+          if(funcionarios) setFuncs(empData.id,funcionarios);
+          if(meses) Object.entries(meses).forEach(([k,v])=>{
+            // Re-key: strip any existing user prefix and apply current user's prefix
+            const stripped=k.replace(/_u[^_]+$/,'');
+            ls.s(stripped+pref,v);
+          });
+          if(ferias&&ferias.length) setFers(empData.id,ferias);
+          if(rescisoes&&rescisoes.length) setRescs(empData.id,rescisoes);
+        });
+        alert('✅ Dados importados com sucesso!');
+        rHeader(); rEmp(); tab(1);
+      }catch(err){
+        alert('❌ Erro ao importar: '+err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+initApp();
+</script>
+</body>
+</html>

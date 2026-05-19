@@ -22,6 +22,7 @@ import XmlImport from "./pages/XmlImport";
 import ConsultorIA from "./pages/ConsultorIA";
 import MapaTransicao from "./pages/MapaTransicao";
 import KitPrompts from "./pages/KitPrompts";
+import FolhaPagamento from "./pages/FolhaPagamento";
 import NotFound from "./pages/not-found";
 
 export default function App() {
@@ -52,6 +53,7 @@ export default function App() {
                   <Route path="/consultor" component={ConsultorIA} />
                   <Route path="/mapa" component={MapaTransicao} />
                   <Route path="/kit" component={KitPrompts} />
+                  <Route path="/folha" component={FolhaPagamento} />
                   <Route component={NotFound} />
                 </Switch>
               </Layout>
