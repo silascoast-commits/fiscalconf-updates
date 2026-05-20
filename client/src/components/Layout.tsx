@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useTheme } from "./ThemeProvider";
 import { useCliente } from "@/contexts/ClienteContext";
-import { Moon, Sun, FileText, Database, History, TrendingDown, Calculator, Rss, Scale, LayoutDashboard, CalendarDays, ArrowLeftRight, Users, Building2, ChevronDown, X, FileCode2, MoreHorizontal, BotMessageSquare, MapPin, BookOpen } from "lucide-react";
+import { Moon, Sun, FileText, Database, History, TrendingDown, Calculator, Rss, Scale, LayoutDashboard, CalendarDays, ArrowLeftRight, Users, Building2, ChevronDown, X, FileCode2, MoreHorizontal, BotMessageSquare, MapPin, BookOpen, SearchCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState, useRef, useEffect } from "react";
@@ -12,6 +12,7 @@ const navMain = [
   { href: "/clientes",   label: "Clientes",     icon: Users },
   { href: "/consultor",  label: "Consultor IA", icon: BotMessageSquare },
   { href: "/xml",        label: "XML NF-e",     icon: FileCode2 },
+  { href: "/analista",   label: "Analista",     icon: SearchCode },
   { href: "/consulta",   label: "Consultar",    icon: FileText },
   { href: "/apuracao",   label: "Apuração",     icon: Calculator },
 ];
@@ -260,6 +261,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       ? "border border-primary/30 text-primary hover:bg-primary/10 hover:text-primary"
                       : href === "/consultor"
                       ? "border border-purple-400/40 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                      : href === "/analista"
+                      ? "border border-teal-400/40 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20"
                       : ""
                   }`}
                   data-testid={`nav-${label.toLowerCase().replace(/ /g,"-")}`}

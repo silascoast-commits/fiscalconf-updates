@@ -73,6 +73,26 @@ OBRIGAÇÕES ACESSÓRIAS 2026:
 - DANF: recomenda-se informar nos dados adicionais (boa prática, não obrigatório por hora)
 - Escrituração contábil (SPED): aguardar regulamentação
 
+NBS (NOMENCLATURA BRASILEIRA DE SERVIÇOS):
+- Substitui os códigos variáveis das NFS-e municipais — padronização nacional (o "RG do serviço")
+- Correlação com LC 116/2003 via Anexo VIII (subitens 1.01 a 17.x → código NBS 1.xx.xx.xx)
+- Estrutura: 1.CC.SS.DD (capítulo.classe.subclasse.detalhe)
+- Para NFS-e: combinar NBS + cIndOp + cClassTrib — os três campos são obrigatórios
+- Vigência: 01/01/2026 para NFS-e padrão nacional
+- Simples Nacional e prefeituras: adesão gradual — aguardar IN regulamentadora
+- Consulta de homologação: consumo.tributos.gov.br
+- Suporte: atendimento.nfs-e@rfb.gov.br
+- Comitê Gestor do IBS define alíquotas municipais/estaduais — ainda em organização
+
+cIndOp (INDICADOR DE OPERAÇÃO) — CAMPO NOVO:
+- Distingue operações ONEROSAS (pagas) de NÃO ONEROSAS (bonificações, brindes, amostras)
+- cIndOp = 1 → Operação onerosa: venda paga pelo destinatário → GERA crédito de IBS/CBS (B2B)
+- cIndOp = 0 → Operação não onerosa: bonificação, brinde, amostra, doação → NÃO gera crédito
+- CFOP 5910 (bonificação), 5911 (amostra): usar cIndOp = 0
+- CFOP 5102, 6102, 7102 (vendas): usar cIndOp = 1
+- Combinação incorreta = crédito indevido para o destinatário → risco de autuação
+- Campo obrigatório no XML desde 01/01/2026
+
 IMPOSTO SELETIVO (IS):
 - "Imposto do pecado" — bens e serviços prejudiciais à saúde/meio ambiente
 - Cigarros, bebidas alcoólicas, veículos poluentes, etc.
@@ -142,6 +162,16 @@ const PROMPTS_RAPIDOS = [
       "Checklist de adequação para emissão de NF-e em 2026",
       "IBS/CBS soma ao valor da nota fiscal em 2026?",
       "Como preparar os sistemas ERP para 2026?",
+    ]
+  },
+  {
+    categoria: "NBS & cIndOp",
+    cor: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300",
+    itens: [
+      "O que é a NBS e como substituirá o código de serviço municipal?",
+      "Como usar o cIndOp para bonificações e brindes?",
+      "Qual NBS usar para serviços de TI/software?",
+      "Como combinar NBS + cIndOp + cClassTrib na NFS-e?",
     ]
   },
 ];
@@ -410,6 +440,84 @@ O IBS e CBS adotam **não-cumulatividade plena** — muito mais ampla que o regi
 Os XMLs de 2026, mesmo sem recolhimento, precisam ter CST/cClassTrib corretos. Esses dados serão a base para os créditos de **2027 em diante**. Um fornecedor com classificação errada em 2026 pode comprometer créditos futuros.
 
 **Próximo passo sugerido:** implemente controle de XMLs de entrada para verificar a qualidade das classificações dos fornecedores desde jan/2026.`;
+  }
+
+  // ── NBS ───────────────────────────────────────────────────────────────────
+  if (p.includes("nbs") || p.includes("nomenclatura brasileira de serviço") || p.includes("código de serviço") || p.includes("nfs-e") || p.includes("código municipal")) {
+    return `## NBS — Nomenclatura Brasileira de Serviços
+
+### O que é a NBS:
+A NBS é o novo padrão nacional de classificação de serviços, criada pela Reforma Tributária para substituir os códigos variáveis das NFS-e municipais. Funciona como o **"RG do serviço"** — um único código válido em todo o Brasil.
+
+### Estrutura do código NBS:
+\`\`\`
+1.CC.SS.DD
+│  │   │  └─ Detalhe/variante
+│  │   └──── Subclasse
+│  └──────── Classe
+└─────────── Capítulo (sempre 1 para serviços)
+\`\`\`
+Exemplos:
+| NBS | Serviço |
+|---|---|
+| **1.05.01.10** | Consultas médicas |
+| **1.06.01.10** | Ensino fundamental e médio |
+| **1.09.01.10** | Desenvolvimento de software |
+| **1.10.01.20** | Contabilidade e auditoria |
+| **1.07.01.10** | Transporte coletivo urbano |
+
+### Correlação com LC 116/2003:
+O **Anexo VIII** da Instrução Normativa RFB correlaciona cada subitem da lista LC 116/2003 ao respectivo código NBS. Exemplo: subitem 4.01 (consultas médicas) → NBS 1.05.01.10.
+
+### Como usar na NFS-e:
+A NFS-e de 2026 exige **três campos combinados**:
+1. **NBS** — identifica o serviço
+2. **cIndOp** — identifica se a operação é onerosa (1) ou não onerosa (0)
+3. **cClassTrib** — define a tributação de IBS/CBS
+
+### Prazo e adesão:
+- NFS-e padrão nacional: 01/01/2026
+- Prefeituras: adesão gradual ao layout nacional
+- Simples Nacional: inclusão prevista em 2027
+- Homologação: **consumo.tributos.gov.br**
+- Suporte: **atendimento.nfs-e@rfb.gov.br**
+
+**Próximo passo sugerido:** acesse a tabela de correlação Anexo VIII para mapear os serviços prestados pelos seus clientes e identificar os códigos NBS corretos antes do início de 2026.`;
+  }
+
+  // ── cIndOp ────────────────────────────────────────────────────────────────
+  if (p.includes("cindop") || p.includes("ind op") || p.includes("indicador de operação") || p.includes("bonificação") || p.includes("brinde") || p.includes("amostra") || p.includes("não onerosa") || p.includes("nao onerosa")) {
+    return `## cIndOp — Indicador de Operação
+
+### O que é:
+O **cIndOp** é um novo campo introduzido pela LC 214/2025 e NT NF-e 1.33 que **distingue operações onerosas (com pagamento) de não onerosas (sem pagamento)**.
+
+### Valores possíveis:
+
+| cIndOp | Tipo | Descrição | Gera Crédito? |
+|---|---|---|---|
+| **1** | Onerosa | Destinatário paga pelo bem/serviço | **Sim** (B2B) |
+| **0** | Não onerosa | Bonificação, brinde, amostra, doação | **Não** |
+
+### Quando usar cIndOp = 0:
+- CFOP **5910** — Bonificação em mercadoria
+- CFOP **5911** — Amostra grátis
+- Brindes ao cliente
+- Doações sem contraprestação
+
+### Quando usar cIndOp = 1:
+- CFOP **5102, 5101** — Venda de mercadoria
+- CFOP **6102, 6108** — Venda outro estado
+- CFOP **7102** — Exportação
+- Qualquer venda com contraprestação financeira
+
+### Por que isso importa:
+A operação **não onerosa (cIndOp = 0) NÃO gera crédito de IBS/CBS** para o destinatário. Se o fornecedor classificar erroneamente uma bonificação como onerosa, o destinatário pode apropriar crédito indevido — criando passivo fiscal para ambas as partes.
+
+### Atenção com bonificações condicionais:
+Bonificações vinculadas a metas de compra (ex: "compre 10, ganhe 1") podem ter tratamento diferenciado. Verificar se o regulamento as enquadra como onerosas ou não onerosas — aguardar regulamentação específica.
+
+**Próximo passo sugerido:** revise com seus clientes a política de bonificações e confirme se os sistemas estão configurados para preencher cIndOp = 0 nas notas de bonificação/brinde.`;
   }
 
   // ── Nota técnica / NT 1.33 ────────────────────────────────────────────────
