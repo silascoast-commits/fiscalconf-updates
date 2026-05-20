@@ -9,7 +9,21 @@ import {
   Search, Copy, CheckCircle2, AlertTriangle, Info,
   ExternalLink, Hash, Tag, ArrowRightLeft, BookOpen, Layers, FileSearch,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+
+const PORTAL_OFICIAL = "https://consumo.tributos.gov.br";
+
+function BotaoPortalOficial({ label = "Consultar tabela completa no portal oficial" }: { label?: string }) {
+  return (
+    <a href={PORTAL_OFICIAL} target="_blank" rel="noopener noreferrer">
+      <Button variant="outline" size="sm" className="gap-2 text-xs border-teal-400/50 text-teal-700 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20">
+        <ExternalLink className="h-3.5 w-3.5" />
+        {label}
+      </Button>
+    </a>
+  );
+}
 
 // ─── CST IBS/CBS ──────────────────────────────────────────────────────────────
 
@@ -368,10 +382,13 @@ export default function AnalisteFiscal() {
               <Info className="h-4 w-4 shrink-0 mt-0.5 text-blue-500" />
               <span>
                 <strong>Como usar o CST:</strong> sempre em conjunto com o <strong>cClassTrib</strong> (6 dígitos). Os 3 primeiros dígitos do cClassTrib derivam do CST.
-                Não faça de-para direto do CST do PIS/COFINS — as tributações podem divergir. Tabela completa: <strong>consumo.tributos.gov.br</strong>.
+                Não faça de-para direto do CST do PIS/COFINS — as tributações podem divergir.
               </span>
             </CardContent>
           </Card>
+          <div className="flex justify-end">
+            <BotaoPortalOficial label="Tabela completa no portal oficial (consumo.tributos.gov.br)" />
+          </div>
         </TabsContent>
 
         {/* ── cClassTrib ──────────────────────────────────────────────────────── */}
@@ -423,9 +440,12 @@ export default function AnalisteFiscal() {
               </tbody>
             </table>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-2 text-center">
-            Tabela parcial de referência — lista completa disponível no Anexo VIII da IN (correlação LC 116/2003 → NBS/cClassTrib) em <strong>consumo.tributos.gov.br</strong>.
-          </p>
+          <div className="flex items-center justify-between mt-2 flex-wrap gap-2">
+            <p className="text-[10px] text-muted-foreground">
+              Tabela parcial — lista completa no Anexo VIII da IN RFB (correlação LC 116/2003 → NBS/cClassTrib).
+            </p>
+            <BotaoPortalOficial />
+          </div>
         </TabsContent>
 
         {/* ── cIndOp ──────────────────────────────────────────────────────────── */}
@@ -591,9 +611,12 @@ export default function AnalisteFiscal() {
               </tbody>
             </table>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-2 text-center">
-            Lista parcial de referência — tabela completa no Anexo VIII da IN RFB. Suporte: <strong>atendimento.nfs-e@rfb.gov.br</strong>
-          </p>
+          <div className="flex items-center justify-between mt-2 flex-wrap gap-2">
+            <p className="text-[10px] text-muted-foreground">
+              Lista parcial — tabela completa no Anexo VIII da IN RFB. Suporte: <strong>atendimento.nfs-e@rfb.gov.br</strong>
+            </p>
+            <BotaoPortalOficial label="Consultar NBS no portal oficial" />
+          </div>
         </TabsContent>
       </Tabs>
 
@@ -605,7 +628,10 @@ export default function AnalisteFiscal() {
               <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold">Homologação</p>
-                <p className="text-muted-foreground">Ambiente de testes: <strong>consumo.tributos.gov.br</strong></p>
+                <a href={PORTAL_OFICIAL} target="_blank" rel="noopener noreferrer"
+                  className="text-teal-600 dark:text-teal-400 hover:underline font-medium flex items-center gap-1">
+                  consumo.tributos.gov.br <ExternalLink className="h-3 w-3" />
+                </a>
               </div>
             </div>
             <div className="flex items-start gap-2">
