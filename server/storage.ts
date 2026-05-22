@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import Database from "better-sqlite3";
-import { ncms, consultas, clientes, configsCliente, anotacoesCliente, pgdasImportacoes, xmlImportacoes, type Ncm, type InsertNcm, type Consulta, type InsertConsulta, type Cliente, type InsertCliente, type ConfigCliente, type InsertConfigCliente, type AnotacaoCliente, type InsertAnotacao, type PgdasImportacao, type InsertPgdas, type XmlImportacao, type InsertXmlImportacao } from "@shared/schema";
+import { ncms, consultas, clientes, configsCliente, anotacoesCliente, pgdasImportacoes, xmlImportacoes, cobrancas, type Ncm, type InsertNcm, type Consulta, type InsertConsulta, type Cliente, type InsertCliente, type ConfigCliente, type InsertConfigCliente, type AnotacaoCliente, type InsertAnotacao, type PgdasImportacao, type InsertPgdas, type XmlImportacao, type InsertXmlImportacao, type Cobranca, type InsertCobranca } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 
 const sqlite = new Database("./data.db");
@@ -132,6 +132,18 @@ try { sqlite.exec(`CREATE TABLE IF NOT EXISTS pgdas_importacoes (
   importado_em TEXT NOT NULL
 )`); } catch { /* já existe */ }
 
+try { sqlite.exec(`CREATE TABLE IF NOT EXISTS cobrancas (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  cliente_id INTEGER NOT NULL,
+  valor REAL NOT NULL,
+  mes_referencia INTEGER NOT NULL,
+  ano_referencia INTEGER NOT NULL,
+  vencimento TEXT,
+  descricao TEXT NOT NULL,
+  status TEXT DEFAULT 'pendente',
+  criado_em TEXT NOT NULL
+)`); } catch { /* já existe */ }
+
 // Migrar colunas novas sem quebrar banco existente
 for (const col of ["c_benef TEXT", "c_est TEXT"]) {
   try { sqlite.exec(`ALTER TABLE ncms ADD COLUMN ${col}`); } catch { /* já existe */ }
@@ -153,6 +165,7 @@ for (const col of [
   "cfop_padrao TEXT",
   "observacoes TEXT",
   "ativo INTEGER DEFAULT 1",
+  "honorario REAL",
 ]) {
   try { sqlite.exec(`ALTER TABLE clientes ADD COLUMN ${col}`); } catch { /* já existe */ }
 }
@@ -193,6 +206,13 @@ export interface IStorage {
   createPgdas(p: InsertPgdas): PgdasImportacao;
   deletePgdas(id: number): void;
   updatePgdasPago(id: number, pago: number): void;
+
+  // Cobranças
+  getCobrancas(filters?: { clienteId?: number; mes?: number; ano?: number }): Cobranca[];
+  getCobrancaById(id: number): Cobranca | undefined;
+  createCobranca(c: InsertCobranca): Cobranca;
+  updateCobranca(id: number, data: Partial<InsertCobranca>): Cobranca | undefined;
+  deleteCobranca(id: number): void;
 
   // XML NF-e
   getXmlImportacoes(clienteId?: number): XmlImportacao[];
@@ -307,6 +327,33 @@ export class SqliteStorage implements IStorage {
 
   updatePgdasPago(id: number, pago: number): void {
     db.update(pgdasImportacoes).set({ pago }).where(eq(pgdasImportacoes.id, id)).run();
+  }
+
+  // ─── Cobranças ───────────────────────────────────────────────────────────────
+  getCobrancas(filters?: { clienteId?: number; mes?: number; ano?: number }): Cobranca[] {
+    const all = db.select().from(cobrancas).all();
+    return all.filter(c => {
+      if (filters?.clienteId !== undefined && c.clienteId !== filters.clienteId) return false;
+      if (filters?.mes !== undefined && c.mesReferencia !== filters.mes) return false;
+      if (filters?.ano !== undefined && c.anoReferencia !== filters.ano) return false;
+      return true;
+    }).sort((a, b) => b.id - a.id);
+  }
+
+  getCobrancaById(id: number): Cobranca | undefined {
+    return db.select().from(cobrancas).where(eq(cobrancas.id, id)).get();
+  }
+
+  createCobranca(c: InsertCobranca): Cobranca {
+    return db.insert(cobrancas).values(c).returning().get();
+  }
+
+  updateCobranca(id: number, data: Partial<InsertCobranca>): Cobranca | undefined {
+    return db.update(cobrancas).set(data).where(eq(cobrancas.id, id)).returning().get();
+  }
+
+  deleteCobranca(id: number): void {
+    db.delete(cobrancas).where(eq(cobrancas.id, id)).run();
   }
 
   // ─── XML NF-e ────────────────────────────────────────────────────────────────

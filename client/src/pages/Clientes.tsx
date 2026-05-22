@@ -59,6 +59,7 @@ type Cliente = {
   email?: string;
   telefone?: string;
   faturamentoMeses?: string; // JSON string: { jan, fev, ..., dez }
+  honorario?: number;        // honorário mensal para cobranças
   ncmPrincipal?: string;
   cfopPadrao?: string;
   observacoes?: string;
@@ -788,6 +789,7 @@ type FormState = {
   responsavel: string;
   email: string;
   telefone: string;
+  honorario: string;
   ncmPrincipal: string;
   cfopPadrao: string;
   observacoes: string;
@@ -805,6 +807,7 @@ function buildInitialForm(c?: Cliente | null): FormState {
     responsavel: c?.responsavel ?? "",
     email: c?.email ?? "",
     telefone: c?.telefone ?? "",
+    honorario: c?.honorario ? String(c.honorario) : "",
     ncmPrincipal: c?.ncmPrincipal ?? "",
     cfopPadrao: c?.cfopPadrao ?? "",
     observacoes: c?.observacoes ?? "",
@@ -849,6 +852,7 @@ function ClienteForm({
       responsavel: form.responsavel || undefined,
       email: form.email || undefined,
       telefone: form.telefone || undefined,
+      honorario: form.honorario ? parseFloat(form.honorario.replace(",", ".")) : undefined,
       ncmPrincipal: form.ncmPrincipal || undefined,
       cfopPadrao: form.cfopPadrao || undefined,
       observacoes: form.observacoes || undefined,
@@ -1114,6 +1118,15 @@ function ClienteForm({
               placeholder="Nome do sócio/responsável"
               value={form.responsavel}
               onChange={e => set("responsavel", e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Honorário Mensal (R$)</Label>
+            <Input
+              type="text"
+              placeholder="Ex: 350,00"
+              value={form.honorario}
+              onChange={e => set("honorario", e.target.value)}
             />
           </div>
         </div>

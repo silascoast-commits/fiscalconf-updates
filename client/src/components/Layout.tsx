@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useTheme } from "./ThemeProvider";
 import { useCliente } from "@/contexts/ClienteContext";
-import { Moon, Sun, FileText, Database, History, TrendingDown, Calculator, Rss, Scale, LayoutDashboard, CalendarDays, ArrowLeftRight, Users, Building2, ChevronDown, X, FileCode2, MoreHorizontal, BotMessageSquare, MapPin, BookOpen } from "lucide-react";
+import { Moon, Sun, FileText, Database, History, TrendingDown, Calculator, Rss, Scale, LayoutDashboard, CalendarDays, ArrowLeftRight, Users, Building2, ChevronDown, X, FileCode2, MoreHorizontal, BotMessageSquare, MapPin, BookOpen, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState, useRef, useEffect } from "react";
@@ -10,6 +10,7 @@ import { useState, useRef, useEffect } from "react";
 const navMain = [
   { href: "/",           label: "Dashboard",    icon: LayoutDashboard },
   { href: "/clientes",   label: "Clientes",     icon: Users },
+  { href: "/cobrancas",  label: "Cobranças",    icon: Receipt },
   { href: "/consultor",  label: "Consultor IA", icon: BotMessageSquare },
   { href: "/xml",        label: "XML NF-e",     icon: FileCode2 },
   { href: "/consulta",   label: "Consultar",    icon: FileText },

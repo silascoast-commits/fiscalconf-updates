@@ -9,6 +9,44 @@ import fs from "fs";
 import path from "path";
 import multer from "multer";
 import { parseStringPromise } from "xml2js";
+import QRCode from "qrcode";
+
+// ─── PIX PAYLOAD ─────────────────────────────────────────────────────────────
+
+function pixCrc16(payload: string): string {
+  let crc = 0xFFFF;
+  for (let i = 0; i < payload.length; i++) {
+    crc ^= payload.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
+    }
+    crc &= 0xFFFF;
+  }
+  return crc.toString(16).toUpperCase().padStart(4, "0");
+}
+
+function emv(id: string, value: string): string {
+  return `${id}${String(value.length).padStart(2, "0")}${value}`;
+}
+
+function buildPixPayload(valor: number, txId = "cobranca"): string {
+  const merchantAccount = emv("00", "br.gov.bcb.pix") + emv("01", "30016838000134");
+  const f26 = emv("26", merchantAccount);
+  const f52 = emv("52", "0000");
+  const f53 = emv("53", "986");
+  const amountStr = valor.toFixed(2);
+  const f54 = emv("54", amountStr);
+  const f58 = emv("58", "BR");
+  const f59 = emv("59", "SC Contabilidade");
+  const f60 = emv("60", "Santo Andre");
+  const safeId = txId.replace(/[^a-zA-Z0-9]/g, "").substring(0, 25) || "cobranca";
+  const f62 = emv("62", emv("05", safeId));
+  const base = `${emv("00", "01")}${f26}${f52}${f53}${f54}${f58}${f59}${f60}${f62}6304`;
+  return base + pixCrc16(base);
+}
+
+const MESES_NOME = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+                    "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
 // Extrai texto de PDF usando pdfjs-dist (legacy/Node.js)
 async function extractPdfText(buf: Buffer): Promise<string> {
@@ -621,7 +659,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // POST /api/clientes/:id/pgdas — importação do extrato PGDAS-D (PDF)
   app.post("/api/clientes/:id/pgdas", upload.single("pdf"), async (req, res) => {
     try {
-      const clienteId = parseInt(req.params.id);
+      const clienteId = parseInt(req.params.id as string);
       if (isNaN(clienteId)) return res.status(400).json({ error: "ID inválido" });
       if (!req.file) return res.status(400).json({ error: "Nenhum arquivo enviado" });
 
@@ -855,6 +893,260 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.get("/api/xml-dashboard", (req, res) => {
     const clienteId = req.query.clienteId ? parseInt(req.query.clienteId as string) : undefined;
     res.json(storage.getXmlDashboard(clienteId));
+  });
+
+  // ─── COBRANÇAS ────────────────────────────────────────────────────────────────
+
+  // GET /api/cobrancas
+  app.get("/api/cobrancas", (req, res) => {
+    const clienteId = req.query.clienteId ? parseInt(req.query.clienteId as string) : undefined;
+    const mes = req.query.mes ? parseInt(req.query.mes as string) : undefined;
+    const ano = req.query.ano ? parseInt(req.query.ano as string) : undefined;
+    const list = storage.getCobrancas({ clienteId, mes, ano });
+    // Enriquecer com dados do cliente
+    const enriched = list.map(c => {
+      const cli = storage.getClienteById(c.clienteId);
+      return { ...c, cliente: cli ? { razaoSocial: cli.razaoSocial, nomeFantasia: cli.nomeFantasia, cnpj: cli.cnpj, email: cli.email } : null };
+    });
+    res.json(enriched);
+  });
+
+  // POST /api/cobrancas — individual
+  app.post("/api/cobrancas", (req, res) => {
+    const { clienteId, valor, mesReferencia, anoReferencia, vencimento, descricao } = req.body;
+    if (!clienteId || !valor || !mesReferencia || !anoReferencia || !descricao) {
+      return res.status(400).json({ error: "Campos obrigatórios: clienteId, valor, mesReferencia, anoReferencia, descricao" });
+    }
+    const cli = storage.getClienteById(parseInt(clienteId));
+    if (!cli) return res.status(404).json({ error: "Cliente não encontrado" });
+    const cob = storage.createCobranca({
+      clienteId: parseInt(clienteId),
+      valor: parseFloat(valor),
+      mesReferencia: parseInt(mesReferencia),
+      anoReferencia: parseInt(anoReferencia),
+      vencimento: vencimento || null,
+      descricao,
+      status: "pendente",
+      criadoEm: new Date().toISOString(),
+    });
+    res.status(201).json(cob);
+  });
+
+  // POST /api/cobrancas/lote — gera para todos (ou lista) de clientes
+  app.post("/api/cobrancas/lote", (req, res) => {
+    const { mesReferencia, anoReferencia, vencimento, descricao, clienteIds } = req.body;
+    if (!mesReferencia || !anoReferencia || !descricao) {
+      return res.status(400).json({ error: "Campos obrigatórios: mesReferencia, anoReferencia, descricao" });
+    }
+    const clientes = clienteIds?.length
+      ? (clienteIds as number[]).map(id => storage.getClienteById(id)).filter(Boolean)
+      : storage.getClientes().filter(c => c.ativo !== 0);
+
+    const criados: any[] = [];
+    const erros: any[] = [];
+    const now = new Date().toISOString();
+
+    for (const cli of clientes as any[]) {
+      if (!cli.honorario || cli.honorario <= 0) {
+        erros.push({ clienteId: cli.id, razaoSocial: cli.razaoSocial, erro: "Honorário não cadastrado" });
+        continue;
+      }
+      try {
+        const cob = storage.createCobranca({
+          clienteId: cli.id,
+          valor: cli.honorario,
+          mesReferencia: parseInt(mesReferencia),
+          anoReferencia: parseInt(anoReferencia),
+          vencimento: vencimento || null,
+          descricao,
+          status: "pendente",
+          criadoEm: now,
+        });
+        criados.push({ ...cob, cliente: { razaoSocial: cli.razaoSocial, cnpj: cli.cnpj } });
+      } catch (err: any) {
+        erros.push({ clienteId: cli.id, razaoSocial: cli.razaoSocial, erro: err.message });
+      }
+    }
+    res.json({ criados: criados.length, erros, cobrancas: criados });
+  });
+
+  // PATCH /api/cobrancas/:id — atualiza status ou campos
+  app.patch("/api/cobrancas/:id", (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: "ID inválido" });
+    const updated = storage.updateCobranca(id, req.body);
+    if (!updated) return res.status(404).json({ error: "Cobrança não encontrada" });
+    res.json(updated);
+  });
+
+  // DELETE /api/cobrancas/:id
+  app.delete("/api/cobrancas/:id", (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: "ID inválido" });
+    storage.deleteCobranca(id);
+    res.json({ ok: true });
+  });
+
+  // GET /api/cobrancas/:id/carta — gera HTML da carta de cobrança
+  app.get("/api/cobrancas/:id/carta", async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).send("ID inválido");
+    const cob = storage.getCobrancaById(id);
+    if (!cob) return res.status(404).send("Cobrança não encontrada");
+    const cli = storage.getClienteById(cob.clienteId);
+    if (!cli) return res.status(404).send("Cliente não encontrado");
+
+    const pixPayload = buildPixPayload(cob.valor, `COB${cob.id}`);
+    const qrDataUrl = await QRCode.toDataURL(pixPayload, { width: 220, margin: 1, color: { dark: "#000000", light: "#ffffff" } });
+
+    const mesNome = MESES_NOME[(cob.mesReferencia - 1)] || "";
+    const valorFmt = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cob.valor);
+    const cnpjFmt = (cnpj: string) => {
+      const d = cnpj.replace(/\D/g, "");
+      return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8,12)}-${d.slice(12)}`;
+    };
+    const dataHoje = new Date().toLocaleDateString("pt-BR");
+
+    const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Carta de Cobrança — ${cli.razaoSocial}</title>
+<style>
+  @page { size: A4; margin: 20mm 20mm 20mm 20mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; background: #fff; font-size: 13px; line-height: 1.6; }
+  .page { max-width: 680px; margin: 0 auto; padding: 40px 0; }
+  /* Header */
+  .header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 20px; border-bottom: 3px solid #e91e8c; margin-bottom: 28px; }
+  .brand-name { font-size: 26px; font-weight: 700; color: #e91e8c; letter-spacing: -0.5px; }
+  .brand-sub { font-size: 11px; color: #666; margin-top: 2px; }
+  .doc-info { text-align: right; }
+  .doc-titulo { font-size: 18px; font-weight: 700; color: #333; text-transform: uppercase; letter-spacing: 1px; }
+  .doc-num { font-size: 11px; color: #888; margin-top: 4px; }
+  /* Seções */
+  .section { margin-bottom: 24px; }
+  .section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .info-item label { display: block; font-size: 10px; color: #888; text-transform: uppercase; }
+  .info-item span { font-size: 13px; font-weight: 600; color: #111; }
+  /* Descrição */
+  .desc-box { background: #f9f9f9; border-left: 4px solid #e91e8c; padding: 14px 16px; border-radius: 4px; font-size: 13px; color: #333; }
+  /* Valor */
+  .valor-box { display: flex; justify-content: space-between; align-items: center; background: #fff5fb; border: 2px solid #e91e8c; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px; }
+  .valor-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+  .valor-num { font-size: 28px; font-weight: 700; color: #e91e8c; }
+  .venc-text { font-size: 12px; color: #555; }
+  /* PIX */
+  .pix-section { display: flex; align-items: flex-start; gap: 24px; background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 20px; }
+  .pix-qr img { width: 200px; height: 200px; border: 1px solid #ddd; border-radius: 4px; }
+  .pix-info h3 { font-size: 16px; font-weight: 700; color: #111; margin-bottom: 8px; }
+  .pix-info p { font-size: 12px; color: #555; margin-bottom: 6px; }
+  .pix-key-box { background: #fff; border: 1px dashed #ccc; border-radius: 4px; padding: 8px 10px; font-size: 11px; color: #333; word-break: break-all; margin-top: 10px; }
+  .pix-key-label { font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 3px; }
+  /* Footer */
+  .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #eee; text-align: center; font-size: 11px; color: #aaa; }
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .no-print { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <div class="brand-name">SC Contabilidade</div>
+      <div class="brand-sub">CNPJ: 30.016.838/0001-34 · Santo André – SP</div>
+    </div>
+    <div class="doc-info">
+      <div class="doc-titulo">Carta de Cobrança</div>
+      <div class="doc-num">Ref. ${mesNome}/${cob.anoReferencia} · Emitida em ${dataHoje}</div>
+    </div>
+  </div>
+
+  <!-- Cliente -->
+  <div class="section">
+    <div class="section-title">Dados do Cliente</div>
+    <div class="info-grid">
+      <div class="info-item" style="grid-column: span 2">
+        <label>Razão Social</label>
+        <span>${cli.razaoSocial}</span>
+      </div>
+      <div class="info-item">
+        <label>CNPJ</label>
+        <span>${cnpjFmt(cli.cnpj)}</span>
+      </div>
+      ${cli.email ? `<div class="info-item"><label>E-mail</label><span>${cli.email}</span></div>` : ""}
+    </div>
+  </div>
+
+  <!-- Período -->
+  <div class="section">
+    <div class="section-title">Período de Referência</div>
+    <div class="info-grid">
+      <div class="info-item">
+        <label>Competência</label>
+        <span>${mesNome} / ${cob.anoReferencia}</span>
+      </div>
+      ${cob.vencimento ? `<div class="info-item"><label>Vencimento</label><span>${cob.vencimento}</span></div>` : ""}
+    </div>
+  </div>
+
+  <!-- Descrição -->
+  <div class="section">
+    <div class="section-title">Descrição dos Serviços</div>
+    <div class="desc-box">${cob.descricao.replace(/\n/g, "<br>")}</div>
+  </div>
+
+  <!-- Valor -->
+  <div class="valor-box">
+    <div>
+      <div class="valor-label">Valor Total</div>
+      ${cob.vencimento ? `<div class="venc-text">Vencimento: ${cob.vencimento}</div>` : ""}
+    </div>
+    <div class="valor-num">${valorFmt}</div>
+  </div>
+
+  <!-- PIX -->
+  <div class="section">
+    <div class="section-title">Pagamento via PIX</div>
+    <div class="pix-section">
+      <div class="pix-qr">
+        <img src="${qrDataUrl}" alt="QR Code PIX" />
+      </div>
+      <div class="pix-info">
+        <h3>Pague com PIX</h3>
+        <p>Escaneie o QR Code ao lado com seu aplicativo de banco ou copie a chave PIX abaixo.</p>
+        <p>O pagamento é identificado automaticamente — não é necessário enviar comprovante.</p>
+        <div class="pix-key-box">
+          <div class="pix-key-label">Chave PIX (CNPJ)</div>
+          30.016.838/0001-34
+        </div>
+        <div class="pix-key-box" style="margin-top:6px">
+          <div class="pix-key-label">Valor</div>
+          ${valorFmt}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Botão imprimir (oculto na impressão) -->
+  <div class="no-print" style="text-align:center;margin-top:28px">
+    <button onclick="window.print()" style="background:#e91e8c;color:#fff;border:none;padding:12px 32px;font-size:14px;border-radius:6px;cursor:pointer;font-weight:600">
+      Imprimir / Salvar PDF
+    </button>
+  </div>
+
+  <div class="footer">SC Contabilidade · Santo André – SP · CNPJ 30.016.838/0001-34</div>
+</div>
+</body>
+</html>`;
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(html);
   });
 
   return httpServer;

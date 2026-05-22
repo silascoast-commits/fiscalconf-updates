@@ -59,6 +59,7 @@ export const clientes = sqliteTable("clientes", {
   ncmPrincipal: text("ncm_principal"),
   cfopPadrao: text("cfop_padrao"),
   observacoes: text("observacoes"),
+  honorario: real("honorario"),       // honorário mensal (R$)
   ativo: integer("ativo").default(1), // 1=ativo, 0=inativo
   criadoEm: text("criado_em").notNull(),
   atualizadoEm: text("atualizado_em").notNull(),
@@ -125,6 +126,23 @@ export const pgdasImportacoes = sqliteTable("pgdas_importacoes", {
 export const insertPgdasSchema = createInsertSchema(pgdasImportacoes).omit({ id: true });
 export type PgdasImportacao = typeof pgdasImportacoes.$inferSelect;
 export type InsertPgdas = z.infer<typeof insertPgdasSchema>;
+
+// ─── Cobranças mensais ────────────────────────────────────────────────────────
+export const cobrancas = sqliteTable("cobrancas", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  clienteId: integer("cliente_id").notNull(),
+  valor: real("valor").notNull(),
+  mesReferencia: integer("mes_referencia").notNull(), // 1–12
+  anoReferencia: integer("ano_referencia").notNull(),
+  vencimento: text("vencimento"),                    // "DD/MM/AAAA"
+  descricao: text("descricao").notNull(),
+  status: text("status").default("pendente"),        // "pendente" | "pago" | "cancelado"
+  criadoEm: text("criado_em").notNull(),
+});
+
+export const insertCobrancaSchema = createInsertSchema(cobrancas).omit({ id: true });
+export type Cobranca = typeof cobrancas.$inferSelect;
+export type InsertCobranca = z.infer<typeof insertCobrancaSchema>;
 
 // ─── Importações XML NF-e / NFS-e ────────────────────────────────────────────
 export const xmlImportacoes = sqliteTable("xml_importacoes", {
