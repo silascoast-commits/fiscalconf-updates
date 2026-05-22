@@ -1116,11 +1116,11 @@ async function enviarEmailJS() {
     if (!window.emailjs) {
       await new Promise((res,rej)=>{
         const s = document.createElement('script');
-        s.src='https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js';
+        s.src='https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
         s.onload=res; s.onerror=rej;
         document.head.appendChild(s);
       });
-      window.emailjs.init(cfg.pubkey);
+      window.emailjs.init({ publicKey: cfg.pubkey });
     }
     const cob = cobAtual;
     const cli = getClientes().find(c=>c.id===cob?.clienteId);
@@ -1179,11 +1179,11 @@ async function testarEmail() {
     if (!window.emailjs) {
       await new Promise((res,rej)=>{
         const s=document.createElement('script');
-        s.src='https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js';
+        s.src='https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
         s.onload=res; s.onerror=rej;
         document.head.appendChild(s);
       });
-      window.emailjs.init(cfg.pubkey);
+      window.emailjs.init({ publicKey: cfg.pubkey });
     }
     await window.emailjs.send(cfg.serviceId, cfg.templateId, {
       to_email:'teste@exemplo.com', to_name:'Teste',
