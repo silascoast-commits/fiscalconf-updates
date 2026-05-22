@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema Reforma Tributária — Brasil EC 132/2023</title>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg2: #1a1d27;
+  --bg3: #222637;
+  --border: #2e3350;
+  --accent: #3b82f6;
+  --accent2: #6366f1;
+  --green: #10b981;
+  --red: #ef4444;
+  --yellow: #f59e0b;
+  --purple: #8b5cf6;
+  --cyan: #06b6d4;
+  --text: #e2e8f0;
+  --text2: #94a3b8;
+  --text3: #64748b;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; min-height: 100vh; }
+a { color: var(--accent); text-decoration: none; }
+
+/* LAYOUT */
+.app { display: flex; flex-direction: column; min-height: 100vh; }
+header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; gap: 16px; height: 56px; position: sticky; top: 0; z-index: 100; }
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; color: var(--text); }
+.logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.badge { background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; letter-spacing: .5px; }
+nav { display: flex; gap: 2px; margin-left: auto; }
+nav button { background: none; border: none; color: var(--text2); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all .15s; white-space: nowrap; }
+nav button:hover { background: var(--bg3); color: var(--text); }
+nav button.active { background: var(--accent); color: #fff; }
+
+main { flex: 1; padding: 24px; max-width: 1400px; width: 100%; margin: 0 auto; }
+
+/* TABS */
+.tab { display: none; }
+.tab.active { display: block; }
+
+/* CARDS */
+.grid { display: grid; gap: 16px; }
+.g2 { grid-template-columns: repeat(2, 1fr); }
+.g3 { grid-template-columns: repeat(3, 1fr); }
+.g4 { grid-template-columns: repeat(4, 1fr); }
+.g12 { grid-template-columns: 1fr 2fr; }
+.g21 { grid-template-columns: 2fr 1fr; }
+@media (max-width: 900px) { .g2,.g3,.g4,.g12,.g21 { grid-template-columns: 1fr; } }
+
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+.card-title { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; }
+.card-value { font-size: 28px; font-weight: 700; }
+.card-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
+
+/* METRIC CARDS */
+.metric { border-left: 3px solid; }
+.metric.blue { border-color: var(--accent); }
+.metric.green { border-color: var(--green); }
+.metric.yellow { border-color: var(--yellow); }
+.metric.red { border-color: var(--red); }
+.metric.purple { border-color: var(--purple); }
+.metric.cyan { border-color: var(--cyan); }
+
+/* SECTION HEADERS */
+.section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.section-header h2 { font-size: 20px; font-weight: 700; }
+.section-header p { color: var(--text2); font-size: 13px; margin-top: 2px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* FORMS */
+.form-group { margin-bottom: 16px; }
+label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .4px; }
+input[type=number], input[type=text], select {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+  padding: 10px 12px; border-radius: 8px; font-size: 14px; outline: none; transition: border .15s;
+}
+input:focus, select:focus { border-color: var(--accent); }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #2563eb; }
+.btn-green { background: var(--green); color: #fff; }
+.btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+/* TABLES */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th { background: var(--bg3); color: var(--text2); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text); font-size: 13px; }
+tr:hover td { background: rgba(59,130,246,.05); }
+tr:last-child td { border-bottom: none; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.tag-green { background: rgba(16,185,129,.15); color: var(--green); }
+.tag-red { background: rgba(239,68,68,.15); color: var(--red); }
+.tag-blue { background: rgba(59,130,246,.15); color: var(--accent); }
+.tag-yellow { background: rgba(245,158,11,.15); color: var(--yellow); }
+.tag-purple { background: rgba(139,92,246,.15); color: var(--purple); }
+.tag-gray { background: rgba(100,116,139,.15); color: var(--text2); }
+
+/* TIMELINE */
+.timeline { position: relative; padding-left: 24px; }
+.timeline::before { content: ''; position: absolute; left: 7px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+.tl-item { position: relative; padding-bottom: 24px; }
+.tl-item::before { content: ''; position: absolute; left: -20px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg2); }
+.tl-item.done::before { background: var(--green); }
+.tl-item.active-year::before { background: var(--yellow); box-shadow: 0 0 0 3px rgba(245,158,11,.3); }
+.tl-year { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+.tl-title { font-weight: 600; margin-bottom: 4px; }
+.tl-desc { font-size: 12px; color: var(--text2); line-height: 1.5; }
+
+/* PROGRESS BAR */
+.progress { background: var(--bg3); border-radius: 99px; height: 8px; overflow: hidden; margin: 8px 0; }
+.progress-bar { height: 100%; border-radius: 99px; transition: width .5s; }
+.bar-blue { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+.bar-green { background: var(--green); }
+.bar-yellow { background: var(--yellow); }
+.bar-red { background: var(--red); }
+
+/* RESULTS BOX */
+.result-box { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 16px; }
+.result-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.result-row:last-child { border-bottom: none; }
+.result-row.total { font-weight: 700; font-size: 15px; margin-top: 4px; }
+.result-label { color: var(--text2); }
+.result-value { font-weight: 600; }
+.result-value.positive { color: var(--green); }
+.result-value.negative { color: var(--red); }
+.result-value.neutral { color: var(--accent); }
+
+/* ALERTS */
+.alert { padding: 12px 16px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; border-left: 3px solid; }
+.alert-info { background: rgba(59,130,246,.1); border-color: var(--accent); color: #93c5fd; }
+.alert-warn { background: rgba(245,158,11,.1); border-color: var(--yellow); color: #fcd34d; }
+.alert-green { background: rgba(16,185,129,.1); border-color: var(--green); color: #6ee7b7; }
+.alert-red { background: rgba(239,68,68,.1); border-color: var(--red); color: #fca5a5; }
+
+/* COMPARISON BAR */
+.compare-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.compare-label { width: 160px; font-size: 12px; color: var(--text2); flex-shrink: 0; }
+.compare-bars { flex: 1; }
+.cbar { height: 20px; border-radius: 4px; display: flex; align-items: center; padding: 0 8px; font-size: 11px; font-weight: 700; color: #fff; margin-bottom: 4px; min-width: 30px; transition: width .5s; }
+
+/* CHARTS (pure CSS) */
+.donut-wrap { display: flex; align-items: center; gap: 20px; }
+.legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* TABS INSIDE */
+.inner-tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+.inner-tab { background: none; border: none; color: var(--text2); padding: 10px 16px; cursor: pointer; font-size: 13px; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; }
+.inner-tab:hover { color: var(--text); }
+.inner-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.inner-panel { display: none; }
+.inner-panel.active { display: block; }
+
+/* TOOLTIP */
+.tip { position: relative; display: inline-block; }
+.tip .tiptext { visibility: hidden; background: #1e293b; color: var(--text); text-align: center; padding: 6px 10px; border-radius: 6px; position: absolute; z-index: 1; bottom: 125%; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 12px; border: 1px solid var(--border); }
+.tip:hover .tiptext { visibility: visible; }
+
+/* PRINT */
+@media print { nav, .btn { display: none; } body { background: #fff; color: #000; } .card { border: 1px solid #ccc; } }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* HIGHLIGHT */
+.hl { color: var(--accent); font-weight: 700; }
+.hl-green { color: var(--green); font-weight: 700; }
+.hl-red { color: var(--red); font-weight: 700; }
+.hl-yellow { color: var(--yellow); font-weight: 700; }
+
+.flex { display: flex; }
+.gap8 { gap: 8px; }
+.gap12 { gap: 12px; }
+.gap16 { gap: 16px; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.flex-wrap { flex-wrap: wrap; }
+.mt8 { margin-top: 8px; }
+.mt12 { margin-top: 12px; }
+.mt16 { margin-top: 16px; }
+.mt20 { margin-top: 20px; }
+.mb8 { margin-bottom: 8px; }
+.mb12 { margin-bottom: 12px; }
+.mb16 { margin-bottom: 16px; }
+.text-sm { font-size: 12px; }
+.text-xs { font-size: 11px; }
+.text-muted { color: var(--text2); }
+.text-right { text-align: right; }
+.w100 { width: 100%; }
+.bold { font-weight: 700; }
+.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚖️</div>
+    <div>
+      <div>ReformaTrib <span class="badge">EC 132/2023</span></div>
+    </div>
+  </div>
+  <nav>
+    <button class="active" onclick="showTab('visao')">Visão Geral</button>
+    <button onclick="showTab('calculadora')">Calculadora CBS/IBS</button>
+    <button onclick="showTab('regimes')">Regimes Tributários</button>
+    <button onclick="showTab('transicao')">Transição 2026–2033</button>
+    <button onclick="showTab('simples')">Simples Nacional</button>
+    <button onclick="showTab('seletivo')">Imposto Seletivo</button>
+    <button onclick="showTab('cashback')">Cashback Social</button>
+    <button onclick="showTab('relatorio')">Relatório</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ============================================================ TAB: VISÃO GERAL -->
+<div id="tab-visao" class="tab active">
+  <div class="section-header">
+    <div>
+      <h2>Reforma Tributária — EC 132/2023</h2>
+      <p>Sistema de gestão e simulação da nova estrutura tributária brasileira</p>
+    </div>
+  </div>
+
+  <div class="alert alert-info">
+    <strong>Emenda Constitucional 132/2023</strong> — Promulgada em 20/12/2023. Substitui PIS, COFINS, IPI, ICMS e ISS por CBS, IBS e IS. Implantação progressiva de 2026 a 2033.
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="grid g4 mb16">
+    <div class="card metric blue">
+      <div class="card-title">Alíquota Referência Total</div>
+      <div class="card-value hl">26,5%</div>
+      <div class="card-sub">CBS 8,8% + IBS 17,7% (estimativa)</div>
+    </div>
+    <div class="card metric green">
+      <div class="card-title">Tributos Extintos</div>
+      <div class="card-value hl-green">5</div>
+      <div class="card-sub">PIS · COFINS · IPI · ICMS · ISS</div>
+    </div>
+    <div class="card metric yellow">
+      <div class="card-title">Período de Transição</div>
+      <div class="card-value hl-yellow">8 anos</div>
+      <div class="card-sub">2026 → 2033 implantação gradual</div>
+    </div>
+    <div class="card metric purple">
+      <div class="card-title">Novos Tributos</div>
+      <div class="card-value" style="color:var(--purple)">3</div>
+      <div class="card-sub">CBS · IBS · IS (Imposto Seletivo)</div>
+    </div>
+  </div>
+
+  <div class="grid g12">
+    <!-- TIMELINE -->
+    <div class="card">
+      <div class="card-title">Linha do Tempo da Reforma</div>
+      <div class="timeline mt8">
+        <div class="tl-item done">
+          <div class="tl-year">DEZ/2023</div>
+          <div class="tl-title">Promulgação da EC 132/2023</div>
+          <div class="tl-desc">Aprovação do texto constitucional da reforma. Extinção futura de 5 tributos e criação do IVA Dual (CBS + IBS) e IS.</div>
+        </div>
+        <div class="tl-item done">
+          <div class="tl-year">2024–2025</div>
+          <div class="tl-title">Regulamentação (LC 214/2025)</div>
+          <div class="tl-desc">Lei Complementar regulamentando CBS, IBS e IS. Definição de alíquotas, regimes, isenções e cashback social.</div>
+        </div>
+        <div class="tl-item active-year">
+          <div class="tl-year">2026 ★ ANO TESTE</div>
+          <div class="tl-title">Início da cobrança CBS e IBS (Teste)</div>
+          <div class="tl-desc">CBS: 0,9% — IBS: 0,1% (teste). PIS/COFINS mantidos. Empresas poderão compensar CBS/IBS com PIS/COFINS.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-year">2027</div>
+          <div class="tl-title">Substituição do PIS/COFINS pela CBS</div>
+          <div class="tl-desc">PIS e COFINS extintos. CBS começa com alíquota plena. IPI reduzido (exceto ZFM). IBS ainda em 0,1%.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-year">2029–2032</div>
+          <div class="tl-title">Substituição gradual ICMS/ISS pelo IBS</div>
+          <div class="tl-desc">ICMS e ISS reduzidos 10%/ano. IBS aumentado progressivamente. Período crítico de dupla incidência parcial.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-year">2033</div>
+          <div class="tl-title">Implantação Plena</div>
+          <div class="tl-desc">ICMS, ISS e IPI extintos definitivamente. CBS + IBS + IS em plena vigência com alíquotas definitivas.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ESTRUTURA -->
+    <div>
+      <div class="card mb16">
+        <div class="card-title">Nova Estrutura Tributária</div>
+        <div class="mt8">
+          <div class="result-row">
+            <span><strong style="color:var(--accent)">CBS</strong> — Contribuição sobre Bens e Serviços</span>
+            <span class="tag tag-blue">Federal</span>
+          </div>
+          <div class="result-row">
+            <span><strong style="color:var(--green)">IBS</strong> — Imposto sobre Bens e Serviços</span>
+            <span class="tag tag-green">Est. + Mun.</span>
+          </div>
+          <div class="result-row">
+            <span><strong style="color:var(--red)">IS</strong> — Imposto Seletivo</span>
+            <span class="tag tag-red">Federal</span>
+          </div>
+        </div>
+        <div class="alert alert-info mt12">
+          CBS e IBS formam o <strong>IVA Dual</strong> — não cumulativo com crédito integral em toda cadeia produtiva.
+        </div>
+      </div>
+
+      <div class="card mb16">
+        <div class="card-title">Categorias de Alíquota</div>
+        <table>
+          <tr><th>Categoria</th><th>Redução</th><th>Estimativa</th></tr>
+          <tr><td>Alíquota Padrão</td><td>—</td><td class="hl">26,5%</td></tr>
+          <tr><td>Reduzida (60%)</td><td>-60%</td><td class="hl-yellow">10,6%</td></tr>
+          <tr><td>Cesta Básica Ampliada</td><td>-60%</td><td class="hl-yellow">10,6%</td></tr>
+          <tr><td>Cesta Básica Nacional</td><td>-100%</td><td class="hl-green">0%</td></tr>
+          <tr><td>Medicamentos essenciais</td><td>-100%</td><td class="hl-green">0%</td></tr>
+          <tr><td>Serviços financeiros</td><td>Especial</td><td class="text-muted">A definir</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Setores com Alíquota Reduzida (60%)</div>
+        <div class="flex flex-wrap gap8 mt8">
+          <span class="tag tag-yellow">Saúde</span>
+          <span class="tag tag-yellow">Educação</span>
+          <span class="tag tag-yellow">Transporte Público</span>
+          <span class="tag tag-yellow">Agropecuária</span>
+          <span class="tag tag-yellow">Insumos Agro.</span>
+          <span class="tag tag-yellow">Produções Nacionais</span>
+          <span class="tag tag-yellow">Eventos</span>
+          <span class="tag tag-yellow">Hotelaria</span>
+          <span class="tag tag-yellow">Parques Temáticos</span>
+          <span class="tag tag-yellow">Comunicação Audiov.</span>
+          <span class="tag tag-yellow">Biocombustíveis</span>
+          <span class="tag tag-yellow">Atividade Física</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPARATIVO SISTEMA ATUAL X NOVO -->
+  <div class="card mt16">
+    <div class="card-title">Comparativo: Sistema Atual × Sistema Novo</div>
+    <div class="grid g2 mt12">
+      <div>
+        <div class="mb8 bold" style="color:var(--red)">❌ Sistema Atual (Complexo)</div>
+        <table>
+          <tr><th>Tributo</th><th>Esfera</th><th>Característica</th></tr>
+          <tr><td>PIS</td><td><span class="tag tag-blue">Federal</span></td><td>Cumulativo / Não-cumulativo</td></tr>
+          <tr><td>COFINS</td><td><span class="tag tag-blue">Federal</span></td><td>Cumulativo / Não-cumulativo</td></tr>
+          <tr><td>IPI</td><td><span class="tag tag-blue">Federal</span></td><td>Sobre industrialização</td></tr>
+          <tr><td>ICMS</td><td><span class="tag tag-green">Estadual</span></td><td>27 legislações diferentes</td></tr>
+          <tr><td>ISS</td><td><span class="tag tag-purple">Municipal</span></td><td>5.570 legislações</td></tr>
+          <tr><td>IOF, CIDE...</td><td><span class="tag tag-blue">Federal</span></td><td>Mantidos</td></tr>
+        </table>
+      </div>
+      <div>
+        <div class="mb8 bold" style="color:var(--green)">✅ Sistema Novo (Simplificado)</div>
+        <table>
+          <tr><th>Tributo</th><th>Esfera</th><th>Característica</th></tr>
+          <tr><td><strong>CBS</strong></td><td><span class="tag tag-blue">Federal</span></td><td>IVA federal não-cumulativo</td></tr>
+          <tr><td><strong>IBS</strong></td><td><span class="tag tag-green">Est+Mun</span></td><td>IVA subnacional unificado</td></tr>
+          <tr><td><strong>IS</strong></td><td><span class="tag tag-blue">Federal</span></td><td>Seletivo (prejudiciais à saúde/ambiente)</td></tr>
+          <tr><td>IR, CSLL</td><td><span class="tag tag-blue">Federal</span></td><td>Mantidos (renda)</td></tr>
+          <tr><td>ITBI, IPTU, IPVA</td><td><span class="tag tag-purple">Est+Mun</span></td><td>Mantidos (patrimônio)</td></tr>
+          <tr><td>IOF, II</td><td><span class="tag tag-blue">Federal</span></td><td>Mantidos</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ TAB: CALCULADORA -->
+<div id="tab-calculadora" class="tab">
+  <div class="section-header">
+    <div><h2>Calculadora CBS/IBS</h2><p>Simule a carga tributária na nova sistemática</p></div>
+  </div>
+
+  <div class="grid g21">
+    <div class="card">
+      <div class="inner-tabs">
+        <button class="inner-tab active" onclick="innerTab(this,'calc-venda')">Venda / Serviço</button>
+        <button class="inner-tab" onclick="innerTab(this,'calc-credito')">Crédito Fiscal</button>
+        <button class="inner-tab" onclick="innerTab(this,'calc-cadeia')">Cadeia Produtiva</button>
+      </div>
+
+      <!-- PANEL: VENDA -->
+      <div id="calc-venda" class="inner-panel active">
+        <div class="grid g2">
+          <div class="form-group">
+            <label>Valor da Operação (R$)</label>
+            <input type="number" id="cv_valor" value="100000" oninput="calcVenda()">
+          </div>
+          <div class="form-group">
+            <label>Categoria do Produto/Serviço</label>
+            <select id="cv_cat" onchange="calcVenda()">
+              <option value="padrao">Padrão (100% alíquota)</option>
+              <option value="reduzida">Reduzida 60% (saúde, educação, agro...)</option>
+              <option value="cestab_ampla">Cesta Básica Ampliada (-60%)</option>
+              <option value="cestab_nac">Cesta Básica Nacional (0%)</option>
+              <option value="medicamento">Medicamentos Essenciais (0%)</option>
+              <option value="imune">Imune/Isento (0%)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Ano de Referência</label>
+            <select id="cv_ano" onchange="calcVenda()">
+              <option value="2026">2026 (Teste)</option>
+              <option value="2027">2027</option>
+              <option value="2028">2028</option>
+              <option value="2029">2029</option>
+              <option value="2030">2030</option>
+              <option value="2031">2031</option>
+              <option value="2032">2032</option>
+              <option value="2033" selected>2033 (Pleno)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Regime da Empresa</label>
+            <select id="cv_regime" onchange="calcVenda()">
+              <option value="regular">Regime Regular (Lucro Real/Presumido)</option>
+              <option value="simples">Simples Nacional</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Alíquota CBS (%) — Referência: 8,8%</label>
+          <input type="range" id="cv_cbs" min="0" max="15" step="0.1" value="8.8" oninput="updCBS();calcVenda()">
+          <div class="flex justify-between text-xs text-muted mt8"><span>0%</span><span id="cv_cbs_val">8,80%</span><span>15%</span></div>
+        </div>
+        <div class="form-group">
+          <label>Alíquota IBS (%) — Referência: 17,7%</label>
+          <input type="range" id="cv_ibs" min="0" max="25" step="0.1" value="17.7" oninput="updIBS();calcVenda()">
+          <div class="flex justify-between text-xs text-muted mt8"><span>0%</span><span id="cv_ibs_val">17,70%</span><span>25%</span></div>
+        </div>
+        <div id="cv_result" class="result-box"></div>
+      </div>
+
+      <!-- PANEL: CRÉDITO -->
+      <div id="calc-credito" class="inner-panel">
+        <div class="alert alert-info">No IVA Dual, o crédito é imediato e integral sobre todas as entradas tributadas. Não há restrições por tipo de despesa (exceto uso pessoal).</div>
+        <div class="grid g2">
+          <div class="form-group">
+            <label>Receita Bruta (R$)</label>
+            <input type="number" id="cc_receita" value="500000" oninput="calcCredito()">
+          </div>
+          <div class="form-group">
+            <label>Total de Entradas Tributadas (R$)</label>
+            <input type="number" id="cc_entradas" value="200000" oninput="calcCredito()">
+          </div>
+          <div class="form-group">
+            <label>CBS sobre Entradas (%)</label>
+            <input type="number" id="cc_cbs_ent" value="8.8" step="0.1" oninput="calcCredito()">
+          </div>
+          <div class="form-group">
+            <label>IBS sobre Entradas (%)</label>
+            <input type="number" id="cc_ibs_ent" value="17.7" step="0.1" oninput="calcCredito()">
+          </div>
+          <div class="form-group">
+            <label>CBS sobre Saídas (%)</label>
+            <input type="number" id="cc_cbs_said" value="8.8" step="0.1" oninput="calcCredito()">
+          </div>
+          <div class="form-group">
+            <label>IBS sobre Saídas (%)</label>
+            <input type="number" id="cc_ibs_said" value="17.7" step="0.1" oninput="calcCredito()">
+          </div>
+        </div>
+        <div id="cc_result" class="result-box"></div>
+      </div>
+
+      <!-- PANEL: CADEIA -->
+      <div id="calc-cadeia" class="inner-panel">
+        <div class="alert alert-green">Demonstração do efeito não-cumulativo ao longo de 3 etapas da cadeia produtiva.</div>
+        <div id="cadeia_etapas">
+          <div class="card mb12" style="background:var(--bg3)">
+            <div class="bold mb8">Etapa 1 — Produtor Rural / Indústria Primária</div>
+            <div class="grid g2">
+              <div class="form-group"><label>Valor de Venda (R$)</label><input type="number" class="cadeia-v" id="ce1_v" value="50000" oninput="calcCadeia()"></div>
+              <div class="form-group"><label>Compras tributadas (R$)</label><input type="number" class="cadeia-c" id="ce1_c" value="0" oninput="calcCadeia()"></div>
+            </div>
+          </div>
+          <div class="card mb12" style="background:var(--bg3)">
+            <div class="bold mb8">Etapa 2 — Indústria / Atacado</div>
+            <div class="grid g2">
+              <div class="form-group"><label>Valor de Venda (R$)</label><input type="number" class="cadeia-v" id="ce2_v" value="120000" oninput="calcCadeia()"></div>
+              <div class="form-group"><label>Compras (preenche auto da etapa 1)</label><input type="number" class="cadeia-c" id="ce2_c" value="50000" oninput="calcCadeia()"></div>
+            </div>
+          </div>
+          <div class="card mb12" style="background:var(--bg3)">
+            <div class="bold mb8">Etapa 3 — Varejo / Consumidor Final</div>
+            <div class="grid g2">
+              <div class="form-group"><label>Valor de Venda (R$)</label><input type="number" class="cadeia-v" id="ce3_v" value="200000" oninput="calcCadeia()"></div>
+              <div class="form-group"><label>Compras (preenche auto da etapa 2)</label><input type="number" class="cadeia-c" id="ce3_c" value="120000" oninput="calcCadeia()"></div>
+            </div>
+          </div>
+        </div>
+        <div id="cadeia_result" class="result-box"></div>
+      </div>
+    </div>
+
+    <!-- SIDE INFO -->
+    <div>
+      <div class="card mb16">
+        <div class="card-title">Alíquotas por Ano de Transição</div>
+        <table>
+          <tr><th>Ano</th><th>CBS</th><th>IBS</th><th>ICMS/ISS</th></tr>
+          <tr><td>2026</td><td>0,9%</td><td>0,1%</td><td>100%</td></tr>
+          <tr><td>2027</td><td>plena</td><td>0,1%</td><td>100%</td></tr>
+          <tr><td>2028</td><td>plena</td><td>0,1%</td><td>100%</td></tr>
+          <tr><td>2029</td><td>plena</td><td>~4,4%</td><td>90%</td></tr>
+          <tr><td>2030</td><td>plena</td><td>~8,8%</td><td>80%</td></tr>
+          <tr><td>2031</td><td>plena</td><td>~13,2%</td><td>60%</td></tr>
+          <tr><td>2032</td><td>plena</td><td>~17,0%</td><td>40%</td></tr>
+          <tr><td><strong>2033</strong></td><td><strong>8,8%</strong></td><td><strong>17,7%</strong></td><td><strong>0%</strong></td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title">Princípios do IVA Dual</div>
+        <div class="timeline mt8">
+          <div class="tl-item"><div class="tl-title">Não-Cumulatividade Plena</div><div class="tl-desc">Crédito integral em todas as etapas, sem restrições por tipo de gasto empresarial.</div></div>
+          <div class="tl-item"><div class="tl-title">Destino</div><div class="tl-desc">Tributação no estado/município de destino da mercadoria ou serviço (elimina guerra fiscal).</div></div>
+          <div class="tl-item"><div class="tl-title">Devolução em 60 dias</div><div class="tl-desc">Créditos acumulados devolvidos em até 60 dias. Exportações: crédito imediato.</div></div>
+          <div class="tl-item"><div class="tl-title">Uniformidade</div><div class="tl-desc">Uma única legislação nacional para CBS e IBS — fim das 27 leis de ICMS e 5.570 leis de ISS.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ TAB: REGIMES -->
+<div id="tab-regimes" class="tab">
+  <div class="section-header">
+    <div><h2>Comparativo de Regimes Tributários</h2><p>Lucro Real · Lucro Presumido · Simples Nacional × Nova Sistemática</p></div>
+  </div>
+
+  <div class="card mb16">
+    <div class="card-title">Dados da Empresa</div>
+    <div class="grid g4">
+      <div class="form-group"><label>Faturamento Anual (R$)</label><input type="number" id="rg_fat" value="2400000" oninput="calcRegimes()"></div>
+      <div class="form-group"><label>Custo das Mercadorias/Serviços (R$)</label><input type="number" id="rg_cmc" value="1200000" oninput="calcRegimes()"></div>
+      <div class="form-group"><label>Despesas Operacionais (R$)</label><input type="number" id="rg_desp" value="400000" oninput="calcRegimes()"></div>
+      <div class="form-group"><label>Setor de Atividade</label>
+        <select id="rg_setor" onchange="calcRegimes()">
+          <option value="comercio">Comércio</option>
+          <option value="industria">Indústria</option>
+          <option value="servicos">Serviços</option>
+          <option value="saude">Saúde / Educação</option>
+          <option value="agro">Agropecuária</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="calcRegimes()">Simular Regimes</button>
+  </div>
+
+  <div id="regimes_result"></div>
+
+  <div class="card mt16">
+    <div class="card-title">Comparativo Detalhado — Carga Tributária Total</div>
+    <div id="regimes_chart" class="mt12"></div>
+  </div>
+</div>
+
+<!-- ============================================================ TAB: TRANSIÇÃO -->
+<div id="tab-transicao" class="tab">
+  <div class="section-header">
+    <div><h2>Período de Transição 2026–2033</h2><p>Simulação ano a ano da carga tributária durante a migração</p></div>
+  </div>
+
+  <div class="card mb16">
+    <div class="grid g3">
+      <div class="form-group"><label>Faturamento Mensal (R$)</label><input type="number" id="tr_fat" value="500000" oninput="calcTransicao()"></div>
+      <div class="form-group"><label>Compras Mensais Tributadas (R$)</label><input type="number" id="tr_comp" value="200000" oninput="calcTransicao()"></div>
+      <div class="form-group"><label>Categoria</label>
+        <select id="tr_cat" onchange="calcTransicao()">
+          <option value="padrao">Padrão</option>
+          <option value="reduzida">Reduzida 60%</option>
+          <option value="zero">Alíquota Zero</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb16">
+    <div class="card-title">Evolução Anual da Carga Tributária</div>
+    <div id="tr_table" class="table-wrap mt12"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Gráfico de Transição (Barras)</div>
+    <div id="tr_chart" class="mt12"></div>
+  </div>
+</div>
+
+<!-- ============================================================ TAB: SIMPLES NACIONAL -->
+<div id="tab-simples" class="tab">
+  <div class="section-header">
+    <div><h2>Simples Nacional na Reforma</h2><p>Impactos e opções para ME, EPP e MEI</p></div>
+  </div>
+
+  <div class="alert alert-warn">
+    Empresas do Simples Nacional podem <strong>optar</strong> por recolher CBS e IBS dentro do Simples ou separadamente pela sistemática regular. A opção é anual e irretratável no exercício.
+  </div>
+
+  <div class="grid g2 mb16">
+    <div class="card">
+      <div class="card-title">Simulador Simples Nacional</div>
+      <div class="form-group"><label>Faturamento Bruto 12 meses (R$)</label><input type="number" id="sn_fat" value="360000" oninput="calcSimples()"></div>
+      <div class="form-group"><label>Atividade</label>
+        <select id="sn_ativ" onchange="calcSimples()">
+          <option value="A1">Anexo I — Comércio</option>
+          <option value="B1">Anexo II — Indústria</option>
+          <option value="C1">Anexo III — Serviços (locação, creches...)</option>
+          <option value="D1">Anexo IV — Serviços (construção, vigilância...)</option>
+          <option value="E1">Anexo V — Serviços (TI, publicidade, eng...)</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Receita do Mês a Calcular (R$)</label><input type="number" id="sn_rec" value="30000" oninput="calcSimples()"></div>
+      <div id="sn_result" class="result-box"></div>
+    </div>
+
+    <div>
+      <div class="card mb16">
+        <div class="card-title">Crédito para Compradores de Empresas do Simples</div>
+        <div class="alert alert-info">Quem compra de empresas do Simples Nacional terá direito a crédito de CBS e IBS proporcional, calculado sobre 20% da alíquota de referência.</div>
+        <div class="form-group mt12"><label>Valor da Compra de Empresa Simples (R$)</label><input type="number" id="cr_simples" value="50000" oninput="calcCreditoSimples()"></div>
+        <div id="cr_simples_result" class="result-box"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Limites do Simples Nacional</div>
+        <table>
+          <tr><th>Porte</th><th>Faturamento Máx./Ano</th><th>Status</th></tr>
+          <tr><td>MEI</td><td>R$ 81.000</td><td><span class="tag tag-green">Mantido</span></td></tr>
+          <tr><td>ME (Microempresa)</td><td>R$ 360.000</td><td><span class="tag tag-green">Mantido</span></td></tr>
+          <tr><td>EPP</td><td>R$ 4.800.000</td><td><span class="tag tag-green">Mantido</span></td></tr>
+        </table>
+        <div class="alert alert-green mt12">Simples Nacional é constitucionalmente garantido e continuará após a reforma, com adaptações para CBS e IBS.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Tabelas do Simples Nacional (Alíquotas Efetivas)</div>
+    <div class="inner-tabs">
+      <button class="inner-tab active" onclick="innerTab(this,'sn-anexo1')">Anexo I (Comércio)</button>
+      <button class="inner-tab" onclick="innerTab(this,'sn-anexo2')">Anexo II (Indústria)</button>
+      <button class="inner-tab" onclick="innerTab(this,'sn-anexo3')">Anexo III (Serv.)</button>
+      <button class="inner-tab" onclick="innerTab(this,'sn-anexo4')">Anexo IV (Serv.)</button>
+      <button class="inner-tab" onclick="innerTab(this,'sn-anexo5')">Anexo V (Serv.)</button>
+    </div>
+    <div id="sn-anexo1" class="inner-panel active" data-anexo="1"></div>
+    <div id="sn-anexo2" class="inner-panel" data-anexo="2"></div>
+    <div id="sn-anexo3" class="inner-panel" data-anexo="3"></div>
+    <div id="sn-anexo4" class="inner-panel" data-anexo="4"></div>
+    <div id="sn-anexo5" class="inner-panel" data-anexo="5"></div>
+  </div>
+</div>
+
+<!-- ============================================================ TAB: SELETIVO -->
+<div id="tab-seletivo" class="tab">
+  <div class="section-header">
+    <div><h2>Imposto Seletivo (IS)</h2><p>Tributação de bens e serviços prejudiciais à saúde ou ao meio ambiente</p></div>
+  </div>
+
+  <div class="alert alert-warn">
+    O IS <strong>não gera crédito</strong> para nenhum contribuinte da cadeia — é um custo definitivo. Incide sobre a produção, extração, comercialização ou importação de bens específicos.
+  </div>
+
+  <div class="grid g21">
+    <div class="card">
+      <div class="card-title">Calculadora do Imposto Seletivo</div>
+      <div class="form-group mt12"><label>Produto / Categoria</label>
+        <select id="is_prod" onchange="calcIS()">
+          <option value="tabaco">Tabaco e Derivados</option>
+          <option value="bebida_alc">Bebidas Alcoólicas</option>
+          <option value="bebida_ac">Bebidas Açucaradas (não-alcoólicas)</option>
+          <option value="veiculo_comb">Veículos a Combustão (novos)</option>
+          <option value="embarcacao">Embarcações / Aeronaves de lazer</option>
+          <option value="armas">Armas e Munições</option>
+          <option value="minerio">Extração de Minerais</option>
+          <option value="agrotox">Agrotóxicos (>LMR)</option>
+          <option value="joias">Joias, Perfumes, Cosméticos de Luxo</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Base de Cálculo (R$)</label><input type="number" id="is_base" value="100000" oninput="calcIS()"></div>
+      <div class="form-group"><label>Quantidade (unidades/litros/kg)</label><input type="number" id="is_qtd" value="1000" oninput="calcIS()"></div>
+      <div id="is_result" class="result-box mt12"></div>
+
+      <div class="card mt16" style="background:var(--bg3)">
+        <div class="card-title">Impacto no Preço Final ao Consumidor</div>
+        <div id="is_preco" class="mt8"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card mb16">
+        <div class="card-title">Alíquotas do IS por Categoria</div>
+        <table>
+          <tr><th>Produto</th><th>Alíquota IS</th><th>Obs.</th></tr>
+          <tr><td>Tabaco e derivados</td><td class="hl-red">~150%</td><td>Ad valorem sobre preço mínimo</td></tr>
+          <tr><td>Bebidas alcoólicas</td><td class="hl-red">~20–35%</td><td>Por volume/teor</td></tr>
+          <tr><td>Bebidas açucaradas</td><td class="hl-yellow">~20%</td><td>Não-alcoólicas</td></tr>
+          <tr><td>Veículos a combustão</td><td class="hl-yellow">~1–7%</td><td>Escalonado por emissão CO²</td></tr>
+          <tr><td>Embarcações/aeronaves lazer</td><td class="hl-yellow">~10–25%</td><td>Extrafiscal</td></tr>
+          <tr><td>Armas e munições</td><td class="hl-red">~25%</td><td>Uso civil</td></tr>
+          <tr><td>Extração mineral</td><td class="hl-yellow">~1%</td><td>Sobre valor extraído</td></tr>
+          <tr><td>Agrotóxicos</td><td class="hl-yellow">~1–5%</td><td>Acima do LMR</td></tr>
+          <tr><td>Joias/luxo</td><td class="hl-yellow">~10%</td><td>Seletivo extrafiscal</td></tr>
+        </table>
+        <div class="alert alert-info mt12">Alíquotas definitivas serão estabelecidas em Lei Complementar. Os valores acima são estimativas baseadas nas discussões legislativas.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">IS × Exportações</div>
+        <div class="result-row"><span>Exportação de bens</span><span class="tag tag-green">Imune ao IS</span></div>
+        <div class="result-row"><span>Matéria-prima para exportação</span><span class="tag tag-green">Crédito IS proporcional</span></div>
+        <div class="result-row"><span>Zona Franca de Manaus</span><span class="tag tag-yellow">Tratamento especial</span></div>
+        <div class="result-row"><span>Remissão por biodiversidade</span><span class="tag tag-blue">Desconto progressivo</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ TAB: CASHBACK -->
+<div id="tab-cashback" class="tab">
+  <div class="section-header">
+    <div><h2>Cashback Social</h2><p>Devolução de CBS e IBS para famílias de baixa renda</p></div>
+  </div>
+
+  <div class="alert alert-green">
+    A reforma prevê devolução de parte dos tributos pagos por famílias inscritas no <strong>CadÚnico</strong> (Cadastro Único). O mecanismo é automático via CPF na nota fiscal.</div>
+
+  <div class="grid g12">
+    <div class="card">
+      <div class="card-title">Simulador de Cashback</div>
+      <div class="form-group mt12"><label>Renda Familiar Mensal (R$)</label><input type="number" id="cb_renda" value="800" oninput="calcCashback()"></div>
+      <div class="form-group"><label>Número de Pessoas na Família</label><input type="number" id="cb_pessoas" value="3" min="1" max="10" oninput="calcCashback()"></div>
+      <div class="form-group"><label>Gasto Mensal com Alimentação (R$)</label><input type="number" id="cb_alim" value="600" oninput="calcCashback()"></div>
+      <div class="form-group"><label>Gasto Mensal com Energia Elétrica (R$)</label><input type="number" id="cb_energia" value="120" oninput="calcCashback()"></div>
+      <div class="form-group"><label>Gasto Mensal com Gás de Cozinha (R$)</label><input type="number" id="cb_gas" value="80" oninput="calcCashback()"></div>
+      <div class="form-group"><label>Outros Gastos com Nota Fiscal (R$)</label><input type="number" id="cb_outros" value="200" oninput="calcCashback()"></div>
+      <div id="cb_result" class="result-box mt12"></div>
+    </div>
+
+    <div>
+      <div class="card mb16">
+        <div class="card-title">Regras do Cashback</div>
+        <div class="timeline mt8">
+          <div class="tl-item">
+            <div class="tl-title">Elegibilidade</div>
+            <div class="tl-desc">Inscritos no CadÚnico com renda per capita até ½ salário mínimo.</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-title">Percentual de Devolução</div>
+            <div class="tl-desc">100% do CBS e IBS sobre a cesta básica. Percentual sobre energia, gás e outros definido em Lei Complementar.</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-title">Identificação</div>
+            <div class="tl-desc">CPF na nota fiscal é obrigatório. Sistema automático da Receita Federal e CNIS.</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-title">Pagamento</div>
+            <div class="tl-desc">Depósito mensal via conta bancária, Pix ou crédito em cartão do benefício.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Itens com Cashback Integral (100%)</div>
+        <div class="flex flex-wrap gap8 mt8">
+          <span class="tag tag-green">Carnes e peixes</span>
+          <span class="tag tag-green">Frutas e verduras</span>
+          <span class="tag tag-green">Leite e derivados</span>
+          <span class="tag tag-green">Ovos</span>
+          <span class="tag tag-green">Cereais e grãos</span>
+          <span class="tag tag-green">Óleo de cozinha</span>
+          <span class="tag tag-green">Manteiga/margarina</span>
+          <span class="tag tag-green">Açúcar e mel</span>
+          <span class="tag tag-green">Farinha de mandioca</span>
+          <span class="tag tag-green">Massas e pão</span>
+          <span class="tag tag-green">Energia Elétrica</span>
+          <span class="tag tag-green">Gás de cozinha (GLP)</span>
+          <span class="tag tag-green">Água e saneamento</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ TAB: RELATÓRIO -->
+<div id="tab-relatorio" class="tab">
+  <div class="section-header">
+    <div><h2>Relatório Consolidado</h2><p>Visão executiva da reforma tributária aplicada ao seu cenário</p></div>
+  </div>
+  <div class="card mb16">
+    <div class="card-title">Dados da Empresa para Relatório</div>
+    <div class="grid g3">
+      <div class="form-group"><label>Nome da Empresa</label><input type="text" id="rel_nome" value="Empresa Exemplo Ltda" oninput="gerarRelatorio()"></div>
+      <div class="form-group"><label>CNPJ</label><input type="text" id="rel_cnpj" value="00.000.000/0001-00" oninput="gerarRelatorio()"></div>
+      <div class="form-group"><label>Regime Atual</label>
+        <select id="rel_regime" onchange="gerarRelatorio()">
+          <option>Lucro Real</option>
+          <option>Lucro Presumido</option>
+          <option>Simples Nacional</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Faturamento Anual (R$)</label><input type="number" id="rel_fat" value="3600000" oninput="gerarRelatorio()"></div>
+      <div class="form-group"><label>Setor</label>
+        <select id="rel_setor" onchange="gerarRelatorio()">
+          <option>Comércio</option>
+          <option>Indústria</option>
+          <option>Serviços</option>
+          <option>Saúde / Educação</option>
+          <option>Agropecuária</option>
+          <option>Tecnologia</option>
+        </select>
+      </div>
+      <div class="form-group"><label>UF</label>
+        <select id="rel_uf" onchange="gerarRelatorio()">
+          <option>SP</option><option>RJ</option><option>MG</option><option>RS</option><option>PR</option>
+          <option>SC</option><option>BA</option><option>GO</option><option>PE</option><option>CE</option>
+          <option>Outro</option>
+        </select>
+      </div>
+    </div>
+    <div class="flex gap8">
+      <button class="btn btn-primary" onclick="gerarRelatorio()">Gerar Relatório</button>
+      <button class="btn btn-secondary" onclick="window.print()">Imprimir</button>
+    </div>
+  </div>
+  <div id="rel_output"></div>
+</div>
+
+</main>
+</div>
+
+<script>
+// ============================================================
+// UTILS
+// ============================================================
+const fmt = (n) => 'R$ ' + Number(n).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+const pct = (n) => Number(n).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}) + '%';
+const fmtN = (n) => Number(n).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+function showTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function innerTab(btn, id) {
+  const parent = btn.closest('.card, .tab');
+  parent.querySelectorAll('.inner-tab').forEach(b => b.classList.remove('active'));
+  parent.querySelectorAll('.inner-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  const panel = document.getElementById(id);
+  if (panel) panel.classList.add('active');
+}
+
+// ============================================================
+// ALÍQUOTAS E FATORES
+// ============================================================
+const ALIQ = {
+  CBS_PLENA: 8.8,
+  IBS_PLENA: 17.7,
+  TOTAL_PLENA: 26.5
+};
+
+const CAT_FACTOR = {
+  padrao: 1.0,
+  reduzida: 0.4,
+  cestab_ampla: 0.4,
+  cestab_nac: 0.0,
+  medicamento: 0.0,
+  imune: 0.0
+};
+
+const TRANS = {
+  2026: { cbs: 0.9,  ibs: 0.1,   icms: 1.0  },
+  2027: { cbs: 8.8,  ibs: 0.1,   icms: 1.0  },
+  2028: { cbs: 8.8,  ibs: 0.1,   icms: 1.0  },
+  2029: { cbs: 8.8,  ibs: 4.4,   icms: 0.9  },
+  2030: { cbs: 8.8,  ibs: 8.8,   icms: 0.8  },
+  2031: { cbs: 8.8,  ibs: 13.2,  icms: 0.6  },
+  2032: { cbs: 8.8,  ibs: 17.0,  icms: 0.4  },
+  2033: { cbs: 8.8,  ibs: 17.7,  icms: 0.0  }
+};
+
+// ============================================================
+// CALCULADORA VENDA
+// ============================================================
+function updCBS() { document.getElementById('cv_cbs_val').textContent = parseFloat(document.getElementById('cv_cbs').value).toFixed(2).replace('.',',') + '%'; }
+function updIBS() { document.getElementById('cv_ibs_val').textContent = parseFloat(document.getElementById('cv_ibs').value).toFixed(2).replace('.',',') + '%'; }
+
+function calcVenda() {
+  const valor   = parseFloat(document.getElementById('cv_valor').value) || 0;
+  const cat     = document.getElementById('cv_cat').value;
+  const ano     = parseInt(document.getElementById('cv_ano').value);
+  const regime  = document.getElementById('cv_regime').value;
+  let cbs_rate  = parseFloat(document.getElementById('cv_cbs').value);
+  let ibs_rate  = parseFloat(document.getElementById('cv_ibs').value);
+
+  // Transição
+  const tr = TRANS[ano] || TRANS[2033];
+  if (ano === 2026) { cbs_rate = Math.min(cbs_rate, 0.9); ibs_rate = 0.1; }
+  else if (ano <= 2028) { ibs_rate = 0.1; }
+  else { ibs_rate = tr.ibs; }
+
+  // Fator categoria
+  const fator = CAT_FACTOR[cat] ?? 1;
+  const cbs_ef = cbs_rate * fator;
+  const ibs_ef = ibs_rate * fator;
+
+  // Simples: CBS/IBS embutidos diferente
+  let obs = '';
+  if (regime === 'simples') {
+    obs = '<div class="alert alert-warn mt8">Simples Nacional: CBS e IBS são recolhidos dentro do DAS com alíquota específica do anexo. As alíquotas acima são apenas para referência de crédito ao adquirente.</div>';
+  }
+
+  const cbs_val  = valor * cbs_ef / 100;
+  const ibs_val  = valor * ibs_ef / 100;
+  const total    = cbs_val + ibs_val;
+  const liquido  = valor - total;
+
+  document.getElementById('cv_result').innerHTML = `
+    <div class="result-row"><span class="result-label">Valor da Operação</span><span class="result-value">${fmt(valor)}</span></div>
+    <div class="result-row"><span class="result-label">Fator categoria (${cat})</span><span class="result-value">${pct(fator*100)}</span></div>
+    <div class="result-row"><span class="result-label">CBS efetiva (${pct(cbs_ef)})</span><span class="result-value negative">${fmt(cbs_val)}</span></div>
+    <div class="result-row"><span class="result-label">IBS efetiva (${pct(ibs_ef)})</span><span class="result-value negative">${fmt(ibs_val)}</span></div>
+    <div class="result-row total"><span class="result-label">Total CBS + IBS (${pct(cbs_ef+ibs_ef)})</span><span class="result-value negative">${fmt(total)}</span></div>
+    <div class="result-row total"><span class="result-label">Valor Líquido ao Produtor</span><span class="result-value positive">${fmt(liquido)}</span></div>
+    <div class="result-row"><span class="result-label">Crédito gerado para o adquirente</span><span class="result-value neutral">${fmt(total)}</span></div>
+    ${obs}
+  `;
+}
+
+// ============================================================
+// CALCULADORA CRÉDITO
+// ============================================================
+function calcCredito() {
+  const receita  = parseFloat(document.getElementById('cc_receita').value) || 0;
+  const entradas = parseFloat(document.getElementById('cc_entradas').value) || 0;
+  const cbs_ent  = parseFloat(document.getElementById('cc_cbs_ent').value) || 0;
+  const ibs_ent  = parseFloat(document.getElementById('cc_ibs_ent').value) || 0;
+  const cbs_said = parseFloat(document.getElementById('cc_cbs_said').value) || 0;
+  const ibs_said = parseFloat(document.getElementById('cc_ibs_said').value) || 0;
+
+  const cbs_debito   = receita * cbs_said / 100;
+  const ibs_debito   = receita * ibs_said / 100;
+  const cbs_credito  = entradas * cbs_ent / 100;
+  const ibs_credito  = entradas * ibs_ent / 100;
+  const cbs_pagar    = Math.max(0, cbs_debito - cbs_credito);
+  const ibs_pagar    = Math.max(0, ibs_debito - ibs_credito);
+  const cbs_saldo    = Math.min(0, cbs_debito - cbs_credito);
+  const ibs_saldo    = Math.min(0, ibs_debito - ibs_credito);
+
+  document.getElementById('cc_result').innerHTML = `
+    <div class="result-row"><span class="result-label">CBS — Débito sobre saídas</span><span class="result-value">${fmt(cbs_debito)}</span></div>
+    <div class="result-row"><span class="result-label">CBS — Crédito sobre entradas</span><span class="result-value positive">${fmt(cbs_credito)}</span></div>
+    <div class="result-row"><span class="result-label">CBS a Recolher</span><span class="result-value negative">${fmt(cbs_pagar)}</span></div>
+    ${cbs_saldo < 0 ? `<div class="result-row"><span class="result-label">Saldo CBS a recuperar (60 dias)</span><span class="result-value positive">${fmt(-cbs_saldo)}</span></div>` : ''}
+    <hr class="divider">
+    <div class="result-row"><span class="result-label">IBS — Débito sobre saídas</span><span class="result-value">${fmt(ibs_debito)}</span></div>
+    <div class="result-row"><span class="result-label">IBS — Crédito sobre entradas</span><span class="result-value positive">${fmt(ibs_credito)}</span></div>
+    <div class="result-row"><span class="result-label">IBS a Recolher</span><span class="result-value negative">${fmt(ibs_pagar)}</span></div>
+    ${ibs_saldo < 0 ? `<div class="result-row"><span class="result-label">Saldo IBS a recuperar (60 dias)</span><span class="result-value positive">${fmt(-ibs_saldo)}</span></div>` : ''}
+    <hr class="divider">
+    <div class="result-row total"><span class="result-label">Total a Recolher (CBS + IBS)</span><span class="result-value negative">${fmt(cbs_pagar + ibs_pagar)}</span></div>
+    <div class="result-row total"><span class="result-label">Carga Efetiva sobre Receita</span><span class="result-value">${pct((cbs_pagar+ibs_pagar)/receita*100)}</span></div>
+  `;
+}
+
+// ============================================================
+// CADEIA PRODUTIVA
+// ============================================================
+function calcCadeia() {
+  const CBS = 8.8, IBS = 17.7, TOTAL = CBS + IBS;
+  const etapas = [
+    { v: parseFloat(document.getElementById('ce1_v').value)||0, c: parseFloat(document.getElementById('ce1_c').value)||0, nome: 'Produtor Rural / Indústria Primária' },
+    { v: parseFloat(document.getElementById('ce2_v').value)||0, c: parseFloat(document.getElementById('ce2_c').value)||0, nome: 'Indústria / Atacado' },
+    { v: parseFloat(document.getElementById('ce3_v').value)||0, c: parseFloat(document.getElementById('ce3_c').value)||0, nome: 'Varejo / Consumidor Final' },
+  ];
+
+  let html = `<div class="table-wrap"><table>
+    <tr><th>Etapa</th><th>Venda</th><th>CBS+IBS Débito</th><th>Crédito (compras)</th><th>CBS+IBS Líquido</th><th>Carga Efetiva</th></tr>`;
+  let totalTributo = 0;
+  etapas.forEach((e, i) => {
+    const debito  = e.v * TOTAL / 100;
+    const credito = e.c * TOTAL / 100;
+    const liquido = Math.max(0, debito - credito);
+    totalTributo += liquido;
+    html += `<tr><td>${e.nome}</td><td>${fmt(e.v)}</td><td class="hl-red">${fmt(debito)}</td><td class="hl-green">${fmt(credito)}</td><td class="hl">${fmt(liquido)}</td><td>${pct(liquido/e.v*100)}</td></tr>`;
+  });
+  const vFinal = etapas[2].v;
+  html += `<tr style="font-weight:700;background:var(--bg3)"><td>TOTAL</td><td>${fmt(vFinal)}</td><td></td><td></td><td class="hl-red">${fmt(totalTributo)}</td><td class="hl">${pct(totalTributo/vFinal*100)}</td></tr>`;
+  html += '</table></div>';
+  html += `<div class="alert alert-green mt12">No sistema cumulativo antigo, cada etapa pagava sobre o total sem deduzir o que já foi pago antes. No IVA Dual, o tributo total ao final é equivalente a aplicar a alíquota uma única vez sobre o preço final: ${fmt(vFinal * TOTAL / 100)} (${pct(TOTAL)}).</div>`;
+  document.getElementById('cadeia_result').innerHTML = html;
+}
+
+// ============================================================
+// REGIMES
+// ============================================================
+const MARGENS_PRESUMIDO = { comercio:8, industria:8, servicos:32, saude:32, agro:8 };
+const ICMS_MEDIO        = { comercio:18, industria:12, servicos:5,  saude:5,  agro:12 };
+const ISS_MEDIO         = { comercio:0,  industria:0,  servicos:5,  saude:5,  agro:0 };
+const PIS_COFINS_NC     = 9.25;
+const PIS_COFINS_C      = 3.65;
+const IPI_MEDIO         = { comercio:0, industria:10, servicos:0, saude:0, agro:0 };
+const CAT_IVA           = { comercio:'padrao', industria:'padrao', servicos:'padrao', saude:'reduzida', agro:'reduzida' };
+
+function calcRegimes() {
+  const fat   = parseFloat(document.getElementById('rg_fat').value) || 0;
+  const cmc   = parseFloat(document.getElementById('rg_cmc').value) || 0;
+  const desp  = parseFloat(document.getElementById('rg_desp').value) || 0;
+  const setor = document.getElementById('rg_setor').value;
+
+  const lucro_bruto = fat - cmc;
+  const lucro_op    = lucro_bruto - desp;
+
+  // --- SISTEMA ATUAL ---
+  // Lucro Real
+  const pis_cofins_lr  = fat * PIS_COFINS_NC / 100;
+  const credito_pis    = cmc * PIS_COFINS_NC / 100;
+  const pis_liq        = Math.max(0, pis_cofins_lr - credito_pis);
+  const icms_lr        = fat * (ICMS_MEDIO[setor]||12) / 100;
+  const icms_cred_lr   = cmc * (ICMS_MEDIO[setor]||12) / 100;
+  const icms_liq_lr    = Math.max(0, icms_lr - icms_cred_lr);
+  const iss_lr         = fat * (ISS_MEDIO[setor]||0) / 100;
+  const ipi_lr         = fat * (IPI_MEDIO[setor]||0) / 100;
+  const csll_lr        = Math.max(0, lucro_op) * 0.09;
+  const irpj_lr        = Math.max(0, lucro_op) * 0.15 + Math.max(0, lucro_op - 240000) * 0.10;
+  const total_lr_atual = pis_liq + icms_liq_lr + iss_lr + ipi_lr + csll_lr + irpj_lr;
+
+  // Lucro Presumido
+  const pis_lp         = fat * PIS_COFINS_C / 100;
+  const icms_lp        = fat * (ICMS_MEDIO[setor]||12) / 100;
+  const icms_cred_lp   = cmc * (ICMS_MEDIO[setor]||12) * 0.6 / 100;
+  const icms_liq_lp    = Math.max(0, icms_lp - icms_cred_lp);
+  const iss_lp         = fat * (ISS_MEDIO[setor]||0) / 100;
+  const base_pres      = fat * (MARGENS_PRESUMIDO[setor]||8) / 100;
+  const csll_lp        = base_pres * 0.09;
+  const irpj_lp        = base_pres * 0.15;
+  const total_lp_atual = pis_lp + icms_liq_lp + iss_lp + csll_lp + irpj_lp;
+
+  // --- SISTEMA NOVO (2033) ---
+  const fator      = CAT_FACTOR[CAT_IVA[setor]] ?? 1;
+  const cbs_novo   = fat * ALIQ.CBS_PLENA * fator / 100;
+  const ibs_novo   = fat * ALIQ.IBS_PLENA * fator / 100;
+  const cred_cbs   = cmc * ALIQ.CBS_PLENA * fator / 100;
+  const cred_ibs   = cmc * ALIQ.IBS_PLENA * fator / 100;
+  const cbs_pagar  = Math.max(0, cbs_novo - cred_cbs);
+  const ibs_pagar  = Math.max(0, ibs_novo - cred_ibs);
+  const csll_novo  = csll_lr;
+  const irpj_novo  = irpj_lr;
+  const total_novo = cbs_pagar + ibs_pagar + csll_novo + irpj_novo;
+
+  const var_lr     = ((total_novo - total_lr_atual) / total_lr_atual * 100);
+  const var_lp     = ((total_novo - total_lp_atual) / total_lp_atual * 100);
+
+  document.getElementById('regimes_result').innerHTML = `
+    <div class="grid g3">
+      <div class="card">
+        <div class="card-title">Lucro Real — Sistema Atual</div>
+        <div class="result-row"><span class="result-label">PIS/COFINS (líquido)</span><span class="result-value negative">${fmt(pis_liq)}</span></div>
+        <div class="result-row"><span class="result-label">ICMS (líquido)</span><span class="result-value negative">${fmt(icms_liq_lr)}</span></div>
+        <div class="result-row"><span class="result-label">ISS</span><span class="result-value negative">${fmt(iss_lr)}</span></div>
+        <div class="result-row"><span class="result-label">IPI</span><span class="result-value negative">${fmt(ipi_lr)}</span></div>
+        <div class="result-row"><span class="result-label">CSLL</span><span class="result-value negative">${fmt(csll_lr)}</span></div>
+        <div class="result-row"><span class="result-label">IRPJ</span><span class="result-value negative">${fmt(irpj_lr)}</span></div>
+        <div class="result-row total"><span class="result-label">TOTAL</span><span class="result-value negative">${fmt(total_lr_atual)}</span></div>
+        <div class="result-row"><span class="result-label">% da Receita</span><span class="result-value">${pct(total_lr_atual/fat*100)}</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Lucro Presumido — Sistema Atual</div>
+        <div class="result-row"><span class="result-label">PIS/COFINS cumulativo</span><span class="result-value negative">${fmt(pis_lp)}</span></div>
+        <div class="result-row"><span class="result-label">ICMS (líquido)</span><span class="result-value negative">${fmt(icms_liq_lp)}</span></div>
+        <div class="result-row"><span class="result-label">ISS</span><span class="result-value negative">${fmt(iss_lp)}</span></div>
+        <div class="result-row"><span class="result-label">IPI</span><span class="result-value negative">${fmt(0)}</span></div>
+        <div class="result-row"><span class="result-label">CSLL (presumido)</span><span class="result-value negative">${fmt(csll_lp)}</span></div>
+        <div class="result-row"><span class="result-label">IRPJ (presumido)</span><span class="result-value negative">${fmt(irpj_lp)}</span></div>
+        <div class="result-row total"><span class="result-label">TOTAL</span><span class="result-value negative">${fmt(total_lp_atual)}</span></div>
+        <div class="result-row"><span class="result-label">% da Receita</span><span class="result-value">${pct(total_lp_atual/fat*100)}</span></div>
+      </div>
+      <div class="card" style="border-color:var(--accent)">
+        <div class="card-title" style="color:var(--accent)">Sistema Novo 2033 (CBS+IBS+IRPJ+CSLL)</div>
+        <div class="result-row"><span class="result-label">CBS débito</span><span class="result-value">${fmt(cbs_novo)}</span></div>
+        <div class="result-row"><span class="result-label">CBS crédito</span><span class="result-value positive">${fmt(cred_cbs)}</span></div>
+        <div class="result-row"><span class="result-label">CBS a Recolher</span><span class="result-value negative">${fmt(cbs_pagar)}</span></div>
+        <div class="result-row"><span class="result-label">IBS a Recolher</span><span class="result-value negative">${fmt(ibs_pagar)}</span></div>
+        <div class="result-row"><span class="result-label">CSLL</span><span class="result-value negative">${fmt(csll_novo)}</span></div>
+        <div class="result-row"><span class="result-label">IRPJ</span><span class="result-value negative">${fmt(irpj_novo)}</span></div>
+        <div class="result-row total"><span class="result-label">TOTAL</span><span class="result-value negative">${fmt(total_novo)}</span></div>
+        <div class="result-row"><span class="result-label">% da Receita</span><span class="result-value">${pct(total_novo/fat*100)}</span></div>
+        <div class="result-row"><span class="result-label">vs. Lucro Real</span><span class="result-value ${var_lr<0?'positive':'negative'}">${var_lr.toFixed(1)}%</span></div>
+        <div class="result-row"><span class="result-label">vs. Lucro Presumido</span><span class="result-value ${var_lp<0?'positive':'negative'}">${var_lp.toFixed(1)}%</span></div>
+      </div>
+    </div>
+  `;
+
+  const max = Math.max(total_lr_atual, total_lp_atual, total_novo);
+  document.getElementById('regimes_chart').innerHTML = `
+    <div class="compare-row"><div class="compare-label">Lucro Real (atual)</div><div class="compare-bars"><div class="cbar bar-red" style="width:${total_lr_atual/max*100}%">${pct(total_lr_atual/fat*100)}</div></div></div>
+    <div class="compare-row"><div class="compare-label">Lucro Presumido (atual)</div><div class="compare-bars"><div class="cbar bar-yellow" style="width:${total_lp_atual/max*100}%">${pct(total_lp_atual/fat*100)}</div></div></div>
+    <div class="compare-row"><div class="compare-label">Sistema Novo 2033</div><div class="compare-bars"><div class="cbar bar-blue" style="width:${total_novo/max*100}%">${pct(total_novo/fat*100)}</div></div></div>
+  `;
+}
+
+// ============================================================
+// TRANSIÇÃO
+// ============================================================
+function calcTransicao() {
+  const fat   = parseFloat(document.getElementById('tr_fat').value) || 0;
+  const comp  = parseFloat(document.getElementById('tr_comp').value) || 0;
+  const cat   = document.getElementById('tr_cat').value;
+  const fator = cat === 'reduzida' ? 0.4 : cat === 'zero' ? 0 : 1;
+
+  // Sistema atual referência (Lucro Real)
+  const pisc_at  = fat * 9.25 / 100 - comp * 9.25 / 100;
+  const icms_at  = fat * 0.18 - comp * 0.18;
+  const total_at = Math.max(0, pisc_at) + Math.max(0, icms_at);
+
+  let html = `<table>
+    <tr><th>Ano</th><th>CBS %</th><th>IBS %</th><th>CBS (R$)</th><th>IBS (R$)</th><th>ICMS/ISS Residual</th><th>Total Novo</th><th>Carga %</th><th>Variação vs Atual</th></tr>`;
+
+  let chartData = [];
+  for (let ano = 2026; ano <= 2033; ano++) {
+    const tr = TRANS[ano];
+    const cbs = fat * tr.cbs * fator / 100 - comp * tr.cbs * fator / 100;
+    const ibs = fat * tr.ibs * fator / 100 - comp * tr.ibs * fator / 100;
+    const icms_res = icms_at * tr.icms;
+    const pisc_res = ano < 2027 ? Math.max(0, pisc_at) : 0;
+    const total    = Math.max(0,cbs) + Math.max(0,ibs) + icms_res + pisc_res;
+    const cargas   = total / fat * 100;
+    const var_pct  = ((total - total_at) / total_at * 100);
+    const isAtual  = ano === 2026 || ano === 2027;
+    chartData.push({ ano, total, fat });
+    html += `<tr ${ano===2026?'style="background:rgba(245,158,11,.08)"':''} ${ano===2033?'style="background:rgba(59,130,246,.08)"':''}>
+      <td><strong>${ano}</strong>${ano===2026?' ★':''}</td>
+      <td>${pct(tr.cbs * fator)}</td>
+      <td>${pct(tr.ibs * fator)}</td>
+      <td class="hl-red">${fmt(Math.max(0,cbs))}</td>
+      <td class="hl-red">${fmt(Math.max(0,ibs))}</td>
+      <td class="text-muted">${fmt(icms_res + pisc_res)}</td>
+      <td class="bold">${fmt(total)}</td>
+      <td>${pct(cargas)}</td>
+      <td class="${var_pct<0?'hl-green':'hl-red'}">${var_pct>0?'+':''}${var_pct.toFixed(1)}%</td>
+    </tr>`;
+  }
+  html += '</table>';
+  document.getElementById('tr_table').innerHTML = html;
+
+  const maxT = Math.max(...chartData.map(d => d.total));
+  let chart = '';
+  chartData.forEach(d => {
+    const w = d.total / maxT * 100;
+    chart += `<div class="compare-row">
+      <div class="compare-label">${d.ano}</div>
+      <div class="compare-bars">
+        <div class="cbar" style="width:${w}%;background:${d.ano===2033?'var(--accent)':d.ano===2026?'var(--yellow)':'var(--accent2)'}">
+          ${fmt(d.total)}
+        </div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('tr_chart').innerHTML = chart;
+}
+
+// ============================================================
+// SIMPLES NACIONAL
+// ============================================================
+const SN_ANEXOS = {
+  A1: { nome:'Anexo I — Comércio', faixas:[
+    { ate:180000,   aliq:4.0,  ded:0       },
+    { ate:360000,   aliq:7.3,  ded:5940    },
+    { ate:720000,   aliq:9.5,  ded:13860   },
+    { ate:1800000,  aliq:10.7, ded:22500   },
+    { ate:3600000,  aliq:14.3, ded:87300   },
+    { ate:4800000,  aliq:19.0, ded:378000  },
+  ]},
+  B1: { nome:'Anexo II — Indústria', faixas:[
+    { ate:180000,   aliq:4.5,  ded:0       },
+    { ate:360000,   aliq:7.8,  ded:5940    },
+    { ate:720000,   aliq:10.0, ded:13860   },
+    { ate:1800000,  aliq:11.2, ded:22500   },
+    { ate:3600000,  aliq:14.7, ded:85500   },
+    { ate:4800000,  aliq:30.0, ded:720000  },
+  ]},
+  C1: { nome:'Anexo III — Serviços', faixas:[
+    { ate:180000,   aliq:6.0,  ded:0       },
+    { ate:360000,   aliq:11.2, ded:9360    },
+    { ate:720000,   aliq:13.5, ded:17640   },
+    { ate:1800000,  aliq:16.0, ded:35640   },
+    { ate:3600000,  aliq:21.0, ded:125640  },
+    { ate:4800000,  aliq:33.0, ded:648000  },
+  ]},
+  D1: { nome:'Anexo IV — Serviços (constr., vigilância)', faixas:[
+    { ate:180000,   aliq:4.5,  ded:0       },
+    { ate:360000,   aliq:9.0,  ded:8100    },
+    { ate:720000,   aliq:10.2, ded:12420   },
+    { ate:1800000,  aliq:14.0, ded:39780   },
+    { ate:3600000,  aliq:22.0, ded:183780  },
+    { ate:4800000,  aliq:33.0, ded:828000  },
+  ]},
+  E1: { nome:'Anexo V — Serviços (TI, publicidade, eng.)', faixas:[
+    { ate:180000,   aliq:15.5, ded:0       },
+    { ate:360000,   aliq:18.0, ded:4500    },
+    { ate:720000,   aliq:19.5, ded:9900    },
+    { ate:1800000,  aliq:20.5, ded:17100   },
+    { ate:3600000,  aliq:23.0, ded:62100   },
+    { ate:4800000,  aliq:30.5, ded:540000  },
+  ]}
+};
+
+function getAliqSimples(rbr12, faixas) {
+  for (let f of faixas) {
+    if (rbr12 <= f.ate) {
+      return { aliq: f.aliq, ded: f.ded };
+    }
+  }
+  return { aliq: faixas[faixas.length-1].aliq, ded: faixas[faixas.length-1].ded };
+}
+
+function calcSimples() {
+  const fat12 = parseFloat(document.getElementById('sn_fat').value) || 0;
+  const rec   = parseFloat(document.getElementById('sn_rec').value) || 0;
+  const ativ  = document.getElementById('sn_ativ').value;
+  const anexo = SN_ANEXOS[ativ];
+  const { aliq, ded } = getAliqSimples(fat12, anexo.faixas);
+  const aliq_ef = Math.max(0, (fat12 * aliq / 100 - ded) / fat12 * 100);
+  const das     = rec * aliq_ef / 100;
+
+  document.getElementById('sn_result').innerHTML = `
+    <div class="result-row"><span class="result-label">Faturamento 12 meses</span><span class="result-value">${fmt(fat12)}</span></div>
+    <div class="result-row"><span class="result-label">Alíquota Nominal</span><span class="result-value">${pct(aliq)}</span></div>
+    <div class="result-row"><span class="result-label">Dedução</span><span class="result-value positive">${fmt(ded)}</span></div>
+    <div class="result-row"><span class="result-label">Alíquota Efetiva</span><span class="result-value hl">${pct(aliq_ef)}</span></div>
+    <div class="result-row"><span class="result-label">Receita do Mês</span><span class="result-value">${fmt(rec)}</span></div>
+    <div class="result-row total"><span class="result-label">DAS a Recolher</span><span class="result-value negative">${fmt(das)}</span></div>
+    <div class="alert alert-info mt8">No regime novo, o Simples pode optar por incluir CBS e IBS no DAS. O crédito gerado para adquirentes será de 20% da alíquota de referência (${pct(ALIQ.TOTAL_PLENA * 0.2)}).</div>
+  `;
+}
+
+function calcCreditoSimples() {
+  const val = parseFloat(document.getElementById('cr_simples').value) || 0;
+  const cred_cbs = val * ALIQ.CBS_PLENA * 0.2 / 100;
+  const cred_ibs = val * ALIQ.IBS_PLENA * 0.2 / 100;
+  document.getElementById('cr_simples_result').innerHTML = `
+    <div class="result-row"><span class="result-label">Valor da Compra</span><span class="result-value">${fmt(val)}</span></div>
+    <div class="result-row"><span class="result-label">Crédito CBS (20% de ${pct(ALIQ.CBS_PLENA)})</span><span class="result-value positive">${fmt(cred_cbs)}</span></div>
+    <div class="result-row"><span class="result-label">Crédito IBS (20% de ${pct(ALIQ.IBS_PLENA)})</span><span class="result-value positive">${fmt(cred_ibs)}</span></div>
+    <div class="result-row total"><span class="result-label">Crédito Total</span><span class="result-value positive">${fmt(cred_cbs+cred_ibs)}</span></div>
+  `;
+}
+
+function renderAnexos() {
+  Object.entries(SN_ANEXOS).forEach(([key, anexo], idx) => {
+    const panelId = ['sn-anexo1','sn-anexo2','sn-anexo3','sn-anexo4','sn-anexo5'][idx];
+    const el = document.getElementById(panelId);
+    if (!el) return;
+    let html = `<div class="table-wrap"><table><tr><th>Faixa Receita 12m</th><th>Alíquota Nominal</th><th>Dedução (R$)</th><th>Alíquota Efetiva (inicio)</th></tr>`;
+    let prev = 0;
+    anexo.faixas.forEach(f => {
+      const aliq_ef = Math.max(0, (f.ate * f.aliq / 100 - f.ded) / f.ate * 100);
+      html += `<tr><td>${fmt(prev+1)} a ${fmt(f.ate)}</td><td>${pct(f.aliq)}</td><td>${fmt(f.ded)}</td><td>${pct(aliq_ef)}</td></tr>`;
+      prev = f.ate;
+    });
+    html += '</table></div>';
+    el.innerHTML = html;
+  });
+}
+
+// ============================================================
+// IMPOSTO SELETIVO
+// ============================================================
+const IS_RATES = {
+  tabaco:      { nome:'Tabaco e Derivados',             aliq:1.50, descr:'~150% do preço mínimo de referência. Alíquota aqui em % do valor de venda.' },
+  bebida_alc:  { nome:'Bebidas Alcoólicas',             aliq:0.27, descr:'~27% média sobre valor' },
+  bebida_ac:   { nome:'Bebidas Açucaradas',             aliq:0.20, descr:'~20% sobre valor' },
+  veiculo_comb:{ nome:'Veículos a Combustão',           aliq:0.04, descr:'~4% média (escalonado por emissão CO²)' },
+  embarcacao:  { nome:'Embarcações / Aeronaves Lazer',  aliq:0.15, descr:'~15% sobre valor' },
+  armas:       { nome:'Armas e Munições',               aliq:0.25, descr:'~25% sobre valor' },
+  minerio:     { nome:'Extração de Minerais',           aliq:0.01, descr:'~1% sobre valor extraído' },
+  agrotox:     { nome:'Agrotóxicos (>LMR)',             aliq:0.03, descr:'~3% sobre valor' },
+  joias:       { nome:'Joias, Perfumes, Cosméticos Luxo',aliq:0.10, descr:'~10% sobre valor' },
+};
+
+function calcIS() {
+  const prod   = document.getElementById('is_prod').value;
+  const base   = parseFloat(document.getElementById('is_base').value) || 0;
+  const qtd    = parseFloat(document.getElementById('is_qtd').value) || 0;
+  const rate   = IS_RATES[prod];
+  const is_val = base * rate.aliq;
+  const por_un = qtd > 0 ? is_val / qtd : 0;
+  const total_paga = base + is_val;
+  const aliq_pct   = rate.aliq * 100;
+
+  document.getElementById('is_result').innerHTML = `
+    <div class="result-row"><span class="result-label">Produto</span><span class="result-value">${rate.nome}</span></div>
+    <div class="result-row"><span class="result-label">Base de Cálculo</span><span class="result-value">${fmt(base)}</span></div>
+    <div class="result-row"><span class="result-label">Alíquota IS</span><span class="result-value">${pct(aliq_pct)}</span></div>
+    <div class="result-row total"><span class="result-label">IS a Recolher</span><span class="result-value negative">${fmt(is_val)}</span></div>
+    <div class="result-row"><span class="result-label">IS por Unidade</span><span class="result-value">${fmt(por_un)}</span></div>
+    <div class="result-row"><span class="result-label">Total (base + IS)</span><span class="result-value">${fmt(total_paga)}</span></div>
+    <div class="alert alert-warn mt8">${rate.descr}</div>
+    <div class="alert alert-red mt8"><strong>Atenção:</strong> O IS NÃO gera crédito de CBS/IBS para nenhuma etapa da cadeia. É custo definitivo.</div>
+  `;
+
+  const cbs_val = base * ALIQ.CBS_PLENA / 100;
+  const ibs_val = base * ALIQ.IBS_PLENA / 100;
+  const total_f = base + is_val + cbs_val + ibs_val;
+  document.getElementById('is_preco').innerHTML = `
+    <div class="result-row"><span class="result-label">Base (custo/preço fábrica)</span><span class="result-value">${fmt(base)}</span></div>
+    <div class="result-row"><span class="result-label">+ IS (${pct(aliq_pct)})</span><span class="result-value negative">${fmt(is_val)}</span></div>
+    <div class="result-row"><span class="result-label">+ CBS (${pct(ALIQ.CBS_PLENA)})</span><span class="result-value negative">${fmt(cbs_val)}</span></div>
+    <div class="result-row"><span class="result-label">+ IBS (${pct(ALIQ.IBS_PLENA)})</span><span class="result-value negative">${fmt(ibs_val)}</span></div>
+    <div class="result-row total"><span class="result-label">Preço Total ao Consumidor</span><span class="result-value hl">${fmt(total_f)}</span></div>
+    <div class="result-row"><span class="result-label">Carga total sobre o produto</span><span class="result-value hl-red">${pct((is_val+cbs_val+ibs_val)/base*100)}</span></div>
+  `;
+}
+
+// ============================================================
+// CASHBACK
+// ============================================================
+function calcCashback() {
+  const renda   = parseFloat(document.getElementById('cb_renda').value) || 0;
+  const pessoas = parseInt(document.getElementById('cb_pessoas').value) || 1;
+  const alim    = parseFloat(document.getElementById('cb_alim').value) || 0;
+  const energia = parseFloat(document.getElementById('cb_energia').value) || 0;
+  const gas     = parseFloat(document.getElementById('cb_gas').value) || 0;
+  const outros  = parseFloat(document.getElementById('cb_outros').value) || 0;
+
+  const renda_pc    = renda / pessoas;
+  const sm          = 1518; // Salário mínimo 2025
+  const elegivel    = renda_pc <= sm / 2;
+
+  const CBS_R  = ALIQ.CBS_PLENA / 100;
+  const IBS_R  = ALIQ.IBS_PLENA / 100;
+  const TOTAL_R = CBS_R + IBS_R;
+
+  // Cesta básica: 0% de CBS/IBS mas cashback sobre itens alimentares
+  const cb_alim    = alim * TOTAL_R;  // 100% do tributo pago em alimentos
+  const cb_energia = energia * TOTAL_R * 0.5; // 50% estimado
+  const cb_gas     = gas * TOTAL_R;   // 100%
+  const cb_outros  = outros * TOTAL_R * 0.2; // 20% estimado
+  const cb_total   = elegivel ? (cb_alim + cb_energia + cb_gas + cb_outros) : 0;
+
+  document.getElementById('cb_result').innerHTML = `
+    <div class="result-row"><span class="result-label">Renda per capita mensal</span><span class="result-value">${fmt(renda_pc)}</span></div>
+    <div class="result-row"><span class="result-label">Limite (½ salário mínimo)</span><span class="result-value">${fmt(sm/2)}</span></div>
+    <div class="result-row"><span class="result-label">Elegível ao Cashback</span><span class="result-value ${elegivel?'positive':'negative'}">${elegivel?'✅ Sim':'❌ Não'}</span></div>
+    ${elegivel ? `
+    <hr class="divider">
+    <div class="result-row"><span class="result-label">Cashback Alimentação</span><span class="result-value positive">${fmt(cb_alim)}</span></div>
+    <div class="result-row"><span class="result-label">Cashback Energia Elétrica</span><span class="result-value positive">${fmt(cb_energia)}</span></div>
+    <div class="result-row"><span class="result-label">Cashback Gás GLP</span><span class="result-value positive">${fmt(cb_gas)}</span></div>
+    <div class="result-row"><span class="result-label">Cashback Outros</span><span class="result-value positive">${fmt(cb_outros)}</span></div>
+    <div class="result-row total"><span class="result-label">Cashback Total Estimado/mês</span><span class="result-value positive">${fmt(cb_total)}</span></div>
+    <div class="result-row"><span class="result-label">Cashback Total Estimado/ano</span><span class="result-value positive">${fmt(cb_total*12)}</span></div>
+    <div class="alert alert-green mt8">Equivale a ${pct(cb_total/renda*100)} da renda familiar mensal em devolução.</div>
+    ` : `<div class="alert alert-warn mt8">Para ter direito ao cashback, a renda per capita deve ser inferior a ${fmt(sm/2)}/mês. Inscrição no CadÚnico é obrigatória.</div>`}
+  `;
+}
+
+// ============================================================
+// RELATÓRIO
+// ============================================================
+function gerarRelatorio() {
+  const nome   = document.getElementById('rel_nome').value;
+  const cnpj   = document.getElementById('rel_cnpj').value;
+  const regime = document.getElementById('rel_regime').value;
+  const fat    = parseFloat(document.getElementById('rel_fat').value) || 0;
+  const setor  = document.getElementById('rel_setor').value;
+  const uf     = document.getElementById('rel_uf').value;
+
+  const fator  = setor === 'Saúde / Educação' || setor === 'Agropecuária' ? 0.4 : 1.0;
+  const cbs_r  = ALIQ.CBS_PLENA * fator;
+  const ibs_r  = ALIQ.IBS_PLENA * fator;
+  const total_novo_aliq = cbs_r + ibs_r;
+
+  // Estimativa sistema atual (simplificada)
+  const pis_c  = regime === 'Lucro Presumido' ? fat * 3.65 / 100 : fat * 9.25 / 100;
+  const icms_a = fat * 0.15;
+  const tot_at = pis_c + icms_a;
+  const tot_nw = fat * total_novo_aliq / 100;
+  const delta  = tot_nw - tot_at;
+  const delta_p = delta / tot_at * 100;
+
+  const now = new Date().toLocaleDateString('pt-BR');
+
+  document.getElementById('rel_output').innerHTML = `
+    <div class="card" style="border-color:var(--accent)">
+      <div class="flex justify-between items-center mb16">
+        <div>
+          <div style="font-size:18px;font-weight:700">Relatório de Impacto — Reforma Tributária EC 132/2023</div>
+          <div class="text-muted text-sm">Emitido em ${now}</div>
+        </div>
+        <div class="text-right">
+          <div class="bold">${nome}</div>
+          <div class="text-muted text-sm">CNPJ: ${cnpj} | UF: ${uf}</div>
+          <div class="text-sm"><span class="tag tag-blue">${regime}</span> <span class="tag tag-purple">${setor}</span></div>
+        </div>
+      </div>
+      <hr class="divider">
+
+      <div class="grid g4 mb16">
+        <div class="card metric blue"><div class="card-title">Faturamento Anual</div><div class="card-value text-sm">${fmt(fat)}</div></div>
+        <div class="card metric yellow"><div class="card-title">Alíquota CBS+IBS</div><div class="card-value text-sm">${pct(total_novo_aliq)}</div></div>
+        <div class="card metric ${delta<0?'green':'red'}"><div class="card-title">Impacto Estimado</div><div class="card-value text-sm ${delta<0?'hl-green':'hl-red'}">${delta<0?'Economia':'Aumento'}</div></div>
+        <div class="card metric purple"><div class="card-title">Variação %</div><div class="card-value text-sm ${delta_p<0?'hl-green':'hl-red'}">${delta_p>0?'+':''}${delta_p.toFixed(1)}%</div></div>
+      </div>
+
+      <div class="grid g2 mb16">
+        <div>
+          <div class="card-title">Sistema Atual (estimativa)</div>
+          <div class="result-box">
+            <div class="result-row"><span class="result-label">PIS/COFINS</span><span class="result-value negative">${fmt(pis_c)}</span></div>
+            <div class="result-row"><span class="result-label">ICMS/ISS (estimado)</span><span class="result-value negative">${fmt(icms_a)}</span></div>
+            <div class="result-row total"><span class="result-label">Total Indiretos</span><span class="result-value negative">${fmt(tot_at)}</span></div>
+            <div class="result-row"><span class="result-label">% Receita</span><span class="result-value">${pct(tot_at/fat*100)}</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="card-title">Sistema Novo — 2033 (estimativa)</div>
+          <div class="result-box">
+            <div class="result-row"><span class="result-label">CBS (${pct(cbs_r)})</span><span class="result-value negative">${fmt(fat*cbs_r/100)}</span></div>
+            <div class="result-row"><span class="result-label">IBS (${pct(ibs_r)})</span><span class="result-value negative">${fmt(fat*ibs_r/100)}</span></div>
+            <div class="result-row total"><span class="result-label">Total CBS+IBS</span><span class="result-value negative">${fmt(tot_nw)}</span></div>
+            <div class="result-row"><span class="result-label">% Receita</span><span class="result-value">${pct(tot_nw/fat*100)}</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-title mb8">Cronograma de Ação Recomendado</div>
+      <div class="timeline">
+        <div class="tl-item done"><div class="tl-year">Imediato</div><div class="tl-title">Mapeamento de operações</div><div class="tl-desc">Classifique todas as operações por categoria de alíquota CBS/IBS. Identifique produtos com IS.</div></div>
+        <div class="tl-item done"><div class="tl-year">2025</div><div class="tl-title">Adequação de sistemas</div><div class="tl-desc">Adapte ERP e NF-e para os novos campos de CBS e IBS. Treine equipe fiscal.</div></div>
+        <div class="tl-item active-year"><div class="tl-year">2026</div><div class="tl-title">Ano Teste — Monitorar</div><div class="tl-desc">CBS 0,9% + IBS 0,1%. Monitorar créditos e compensações. Avaliar opção pelo Simples (se aplicável).</div></div>
+        <div class="tl-item"><div class="tl-year">2027</div><div class="tl-title">CBS Plena</div><div class="tl-desc">PIS/COFINS extintos. CBS com alíquota plena. Revisar precificação de produtos e serviços.</div></div>
+        <div class="tl-item"><div class="tl-year">2029–2032</div><div class="tl-title">Transição ICMS/ISS</div><div class="tl-desc">Período crítico. Gestão simultânea dos regimes antigo e novo. Atenção ao crédito de transição.</div></div>
+        <div class="tl-item"><div class="tl-year">2033</div><div class="tl-title">Implantação Plena</div><div class="tl-desc">Operação 100% no novo regime. Revisão final de contratos, preços e estrutura societária.</div></div>
+      </div>
+
+      <hr class="divider">
+      <div class="alert alert-warn">
+        <strong>Disclaimer:</strong> Este relatório é gerado com base em estimativas e projeções. As alíquotas definitivas de CBS e IBS serão estabelecidas por Lei Complementar. Consulte seu contador ou advogado tributarista para decisões específicas.
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// INICIALIZAÇÃO
+// ============================================================
+window.addEventListener('DOMContentLoaded', () => {
+  updCBS(); updIBS();
+  calcVenda();
+  calcCredito();
+  calcCadeia();
+  calcRegimes();
+  calcTransicao();
+  calcSimples();
+  calcCreditoSimples();
+  calcIS();
+  calcCashback();
+  gerarRelatorio();
+  renderAnexos();
+});
+</script>
+</body>
+</html>
