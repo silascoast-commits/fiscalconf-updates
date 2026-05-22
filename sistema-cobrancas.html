@@ -4,237 +4,169 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SC Contabilidade — Sistema de Cobranças</title>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
   :root {
-    --pink: #e91e8c;
-    --pink-light: #fdf0f8;
-    --pink-border: #f9c6e3;
-    --gray-50: #f9fafb;
-    --gray-100: #f3f4f6;
-    --gray-200: #e5e7eb;
-    --gray-400: #9ca3af;
-    --gray-600: #4b5563;
-    --gray-800: #1f2937;
-    --green: #059669;
-    --green-light: #ecfdf5;
-    --yellow: #d97706;
-    --yellow-light: #fffbeb;
-    --red: #dc2626;
-    --red-light: #fef2f2;
-    --blue: #2563eb;
-    --radius: 8px;
-    --shadow: 0 1px 3px rgba(0,0,0,.10), 0 1px 2px rgba(0,0,0,.06);
-    --shadow-lg: 0 10px 15px rgba(0,0,0,.10), 0 4px 6px rgba(0,0,0,.05);
+    --pink:#e91e8c;--pink-light:#fdf0f8;--pink-border:#f9c6e3;
+    --gray-50:#f9fafb;--gray-100:#f3f4f6;--gray-200:#e5e7eb;
+    --gray-400:#9ca3af;--gray-600:#4b5563;--gray-800:#1f2937;
+    --green:#059669;--green-light:#ecfdf5;
+    --yellow:#d97706;--yellow-light:#fffbeb;
+    --red:#dc2626;--red-light:#fef2f2;--blue:#2563eb;
+    --radius:8px;--shadow:0 1px 3px rgba(0,0,0,.10);
+    --shadow-lg:0 10px 15px rgba(0,0,0,.10),0 4px 6px rgba(0,0,0,.05);
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--gray-50); color: var(--gray-800); font-size: 14px; line-height: 1.5; }
-
-  /* ── Nav ── */
-  nav { background: #fff; border-bottom: 1px solid var(--gray-200); position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); }
-  .nav-inner { max-width: 1100px; margin: 0 auto; padding: 0 16px; height: 56px; display: flex; align-items: center; gap: 8px; }
-  .nav-brand { font-weight: 700; color: var(--pink); font-size: 18px; margin-right: 12px; white-space: nowrap; }
-  .nav-btn { padding: 6px 14px; border-radius: 20px; border: none; background: transparent; cursor: pointer; font-size: 13px; color: var(--gray-600); transition: all .15s; }
-  .nav-btn:hover { background: var(--gray-100); }
-  .nav-btn.active { background: var(--pink-light); color: var(--pink); font-weight: 600; }
-
-  /* ── Layout ── */
-  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
-  .page { display: none; }
-  .page.active { display: block; }
-
-  /* ── Cards ── */
-  .card { background: #fff; border-radius: var(--radius); border: 1px solid var(--gray-200); box-shadow: var(--shadow); }
-  .card-body { padding: 20px; }
-
-  /* ── Typography ── */
-  h1 { font-size: 22px; font-weight: 700; color: var(--gray-800); }
-  h2 { font-size: 16px; font-weight: 600; color: var(--gray-800); }
-  .subtitle { color: var(--gray-400); font-size: 13px; margin-top: 2px; }
-  .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--gray-400); margin-bottom: 10px; }
-
-  /* ── Buttons ── */
-  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius); border: none; cursor: pointer; font-size: 13px; font-weight: 500; transition: all .15s; }
-  .btn-primary { background: var(--pink); color: #fff; }
-  .btn-primary:hover { background: #c7176e; }
-  .btn-outline { background: #fff; color: var(--gray-700); border: 1px solid var(--gray-200); }
-  .btn-outline:hover { background: var(--gray-50); }
-  .btn-ghost { background: transparent; color: var(--gray-600); }
-  .btn-ghost:hover { background: var(--gray-100); }
-  .btn-danger { background: #fff; color: var(--red); border: 1px solid var(--gray-200); }
-  .btn-danger:hover { background: var(--red-light); }
-  .btn-sm { padding: 5px 10px; font-size: 12px; }
-  .btn:disabled { opacity: .5; cursor: not-allowed; }
-
-  /* ── Inputs ── */
-  .form-group { margin-bottom: 14px; }
-  .form-row { display: grid; gap: 12px; }
-  .form-row-2 { grid-template-columns: 1fr 1fr; }
-  .form-row-3 { grid-template-columns: 1fr 1fr 1fr; }
-  label { display: block; font-size: 12px; font-weight: 600; color: var(--gray-600); margin-bottom: 5px; }
-  input, select, textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--gray-200); border-radius: var(--radius); font-size: 13px; color: var(--gray-800); outline: none; transition: border-color .15s; background: #fff; }
-  input:focus, select:focus, textarea:focus { border-color: var(--pink); box-shadow: 0 0 0 3px rgba(233,30,140,.08); }
-  textarea { resize: vertical; min-height: 80px; }
-  .input-group { display: flex; gap: 8px; }
-  .input-group input { flex: 1; }
-
-  /* ── Badges ── */
-  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-  .badge-green { background: var(--green-light); color: var(--green); }
-  .badge-yellow { background: var(--yellow-light); color: var(--yellow); }
-  .badge-red { background: var(--red-light); color: var(--red); }
-  .badge-blue { background: #eff6ff; color: var(--blue); }
-  .badge-gray { background: var(--gray-100); color: var(--gray-600); }
-  .badge-pink { background: var(--pink-light); color: var(--pink); }
-
-  /* ── Table ── */
-  table { width: 100%; border-collapse: collapse; }
-  th { text-align: left; padding: 10px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--gray-400); border-bottom: 1px solid var(--gray-200); }
-  td { padding: 12px; border-bottom: 1px solid var(--gray-100); font-size: 13px; vertical-align: middle; }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: var(--gray-50); }
-
-  /* ── Modal ── */
-  .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
-  .modal-backdrop.open { display: flex; }
-  .modal { background: #fff; border-radius: 12px; box-shadow: var(--shadow-lg); width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
-  .modal-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--gray-100); display: flex; align-items: center; justify-content: space-between; }
-  .modal-title { font-size: 16px; font-weight: 700; }
-  .modal-body { padding: 20px 24px; }
-  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--gray-100); display: flex; justify-content: flex-end; gap: 8px; }
-  .modal-close { background: none; border: none; cursor: pointer; color: var(--gray-400); font-size: 20px; line-height: 1; padding: 4px; }
-
-  /* ── Dashboard ── */
-  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
-  .stat-card { background: #fff; border-radius: var(--radius); border: 1px solid var(--gray-200); padding: 20px; text-align: center; }
-  .stat-num { font-size: 28px; font-weight: 700; color: var(--pink); }
-  .stat-label { font-size: 12px; color: var(--gray-400); margin-top: 4px; }
-
-  /* ── Alerts ── */
-  .alert { padding: 12px 16px; border-radius: var(--radius); font-size: 13px; margin-bottom: 12px; }
-  .alert-yellow { background: var(--yellow-light); border: 1px solid #fde68a; color: #92400e; }
-  .alert-green { background: var(--green-light); border: 1px solid #6ee7b7; color: #064e3b; }
-  .alert-red { background: var(--red-light); border: 1px solid #fca5a5; color: #7f1d1d; }
-
-  /* ── Filtros ── */
-  .filtros { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
-  .filtro-btn { padding: 5px 14px; border-radius: 20px; border: 1px solid var(--gray-200); background: #fff; font-size: 12px; cursor: pointer; transition: all .15s; }
-  .filtro-btn.active { background: var(--pink); color: #fff; border-color: var(--pink); }
-
-  /* ── Separador ── */
-  hr { border: none; border-top: 1px solid var(--gray-200); margin: 16px 0; }
-
-  /* ── Page header ── */
-  .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; gap: 16px; }
-  .page-header-btns { display: flex; gap: 8px; flex-shrink: 0; }
-
-  /* ── Status click badge ── */
-  .status-btn { cursor: pointer; border: none; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-
-  /* ── Empty state ── */
-  .empty { text-align: center; padding: 60px 20px; color: var(--gray-400); }
-  .empty-icon { font-size: 48px; margin-bottom: 12px; }
-  .empty h3 { color: var(--gray-600); font-size: 15px; margin-bottom: 6px; }
-
-  /* ── Toast ── */
-  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--gray-800); color: #fff; padding: 12px 20px; border-radius: var(--radius); font-size: 13px; transform: translateY(80px); opacity: 0; transition: all .25s; z-index: 999; max-width: 320px; }
-  #toast.show { transform: translateY(0); opacity: 1; }
-
-  /* ── Carta impressão ── */
-  @media print {
-    nav, .no-print { display: none !important; }
-    body { background: #fff; }
-    .carta-page { padding: 0; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--gray-50);color:var(--gray-800);font-size:14px;line-height:1.5}
+  /* Nav */
+  nav{background:#fff;border-bottom:1px solid var(--gray-200);position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
+  .nav-inner{max-width:1100px;margin:0 auto;padding:0 16px;height:56px;display:flex;align-items:center;gap:8px}
+  .nav-brand{font-weight:700;color:var(--pink);font-size:18px;margin-right:12px;white-space:nowrap}
+  .nav-btn{padding:6px 14px;border-radius:20px;border:none;background:transparent;cursor:pointer;font-size:13px;color:var(--gray-600);transition:all .15s}
+  .nav-btn:hover{background:var(--gray-100)}
+  .nav-btn.active{background:var(--pink-light);color:var(--pink);font-weight:600}
+  /* Layout */
+  main{max-width:1100px;margin:0 auto;padding:24px 16px}
+  .page{display:none}.page.active{display:block}
+  /* Cards */
+  .card{background:#fff;border-radius:var(--radius);border:1px solid var(--gray-200);box-shadow:var(--shadow)}
+  .card-body{padding:20px}
+  /* Type */
+  h1{font-size:22px;font-weight:700}
+  .subtitle{color:var(--gray-400);font-size:13px;margin-top:2px}
+  .section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--gray-400);margin-bottom:10px}
+  /* Buttons */
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);border:none;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s}
+  .btn-primary{background:var(--pink);color:#fff}.btn-primary:hover{background:#c7176e}
+  .btn-outline{background:#fff;color:var(--gray-600);border:1px solid var(--gray-200)}.btn-outline:hover{background:var(--gray-50)}
+  .btn-ghost{background:transparent;color:var(--gray-600)}.btn-ghost:hover{background:var(--gray-100)}
+  .btn-danger{background:#fff;color:var(--red);border:1px solid var(--gray-200)}.btn-danger:hover{background:var(--red-light)}
+  .btn-email{background:#1d4ed8;color:#fff}.btn-email:hover{background:#1e40af}
+  .btn-green{background:var(--green);color:#fff}.btn-green:hover{opacity:.9}
+  .btn-sm{padding:5px 10px;font-size:12px}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  /* Inputs */
+  .form-group{margin-bottom:14px}
+  .form-row{display:grid;gap:12px}
+  .form-row-2{grid-template-columns:1fr 1fr}
+  .form-row-3{grid-template-columns:1fr 1fr 1fr}
+  label{display:block;font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:5px}
+  input,select,textarea{width:100%;padding:8px 12px;border:1px solid var(--gray-200);border-radius:var(--radius);font-size:13px;color:var(--gray-800);outline:none;transition:border-color .15s;background:#fff}
+  input:focus,select:focus,textarea:focus{border-color:var(--pink);box-shadow:0 0 0 3px rgba(233,30,140,.08)}
+  textarea{resize:vertical;min-height:80px}
+  .input-group{display:flex;gap:8px}.input-group input{flex:1}
+  /* Badges */
+  .badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+  .badge-green{background:var(--green-light);color:var(--green)}
+  .badge-yellow{background:var(--yellow-light);color:var(--yellow)}
+  .badge-red{background:var(--red-light);color:var(--red)}
+  .badge-blue{background:#eff6ff;color:var(--blue)}
+  .badge-gray{background:var(--gray-100);color:var(--gray-600)}
+  /* Table */
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-400);border-bottom:1px solid var(--gray-200)}
+  td{padding:12px;border-bottom:1px solid var(--gray-100);font-size:13px;vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:var(--gray-50)}
+  /* Modal */
+  .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:16px}
+  .modal-backdrop.open{display:flex}
+  .modal{background:#fff;border-radius:12px;box-shadow:var(--shadow-lg);width:100%;max-width:560px;max-height:90vh;overflow-y:auto}
+  .modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;justify-content:space-between}
+  .modal-title{font-size:16px;font-weight:700}
+  .modal-body{padding:20px 24px}
+  .modal-footer{padding:16px 24px;border-top:1px solid var(--gray-100);display:flex;justify-content:flex-end;gap:8px}
+  .modal-close{background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:20px;line-height:1;padding:4px}
+  /* Dashboard stats */
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px}
+  .stat-card{background:#fff;border-radius:var(--radius);border:1px solid var(--gray-200);padding:20px;text-align:center}
+  .stat-num{font-size:28px;font-weight:700;color:var(--pink)}
+  .stat-label{font-size:12px;color:var(--gray-400);margin-top:4px}
+  /* Alert */
+  .alert{padding:12px 16px;border-radius:var(--radius);font-size:13px;margin-bottom:12px}
+  .alert-yellow{background:var(--yellow-light);border:1px solid #fde68a;color:#92400e}
+  .alert-blue{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
+  /* Filtros */
+  .filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:0}
+  .filtro-btn{padding:5px 14px;border-radius:20px;border:1px solid var(--gray-200);background:#fff;font-size:12px;cursor:pointer;transition:all .15s}
+  .filtro-btn.active{background:var(--pink);color:#fff;border-color:var(--pink)}
+  /* Page header */
+  .page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:16px}
+  .page-header-btns{display:flex;gap:8px;flex-shrink:0}
+  /* Status */
+  .status-btn{cursor:pointer;border:none;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+  /* Empty */
+  .empty{text-align:center;padding:60px 20px;color:var(--gray-400)}
+  .empty-icon{font-size:48px;margin-bottom:12px}
+  .empty h3{color:var(--gray-600);font-size:15px;margin-bottom:6px}
+  /* Toast */
+  #toast{position:fixed;bottom:24px;right:24px;background:var(--gray-800);color:#fff;padding:12px 20px;border-radius:var(--radius);font-size:13px;transform:translateY(80px);opacity:0;transition:all .25s;z-index:999;max-width:320px}
+  #toast.show{transform:translateY(0);opacity:1}
+  /* Carta */
+  .carta-wrap{font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#1a1a1a;line-height:1.6;padding:32px}
+  /* Configurações */
+  .config-box{background:var(--pink-light);border:1px solid var(--pink-border);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+  /* Responsivo */
+  @media(max-width:640px){
+    .form-row-2,.form-row-3{grid-template-columns:1fr}
+    .page-header{flex-direction:column}
+    .nav-btn{padding:5px 8px;font-size:12px}
+    .cob-acoes{flex-wrap:wrap}
   }
-
-  /* ── Responsivo ── */
-  @media (max-width: 640px) {
-    .form-row-2, .form-row-3 { grid-template-columns: 1fr; }
-    .page-header { flex-direction: column; }
-    .nav-inner { gap: 4px; }
-    .nav-brand { font-size: 14px; }
-    .nav-btn { padding: 5px 8px; font-size: 12px; }
-  }
+  @media print{nav,.no-print{display:none!important}body{background:#fff}}
 </style>
 </head>
 <body>
 
-<!-- Nav -->
 <nav>
   <div class="nav-inner">
     <span class="nav-brand">SC Contabilidade</span>
     <button class="nav-btn active" onclick="showPage('dashboard')">Dashboard</button>
     <button class="nav-btn" onclick="showPage('clientes')">Clientes</button>
     <button class="nav-btn" onclick="showPage('cobrancas')">Cobranças</button>
+    <button class="nav-btn" onclick="showPage('config')">⚙ E-mail</button>
   </div>
 </nav>
 
 <main>
 
-<!-- ══════════════════════════════════════════════
-     DASHBOARD
-══════════════════════════════════════════════ -->
+<!-- ═══════════════════ DASHBOARD ═══════════════════ -->
 <div id="page-dashboard" class="page active">
   <div class="page-header">
-    <div>
-      <h1>Dashboard</h1>
-      <p class="subtitle">Visão geral do escritório</p>
-    </div>
+    <div><h1>Dashboard</h1><p class="subtitle">Visão geral do escritório</p></div>
   </div>
   <div class="stat-grid" id="dash-stats"></div>
-  <div class="card">
-    <div class="card-body">
-      <p class="section-label">Cobranças Pendentes</p>
-      <div id="dash-pendentes"></div>
-    </div>
-  </div>
+  <div class="card"><div class="card-body">
+    <p class="section-label">Cobranças Pendentes</p>
+    <div id="dash-pendentes"></div>
+  </div></div>
 </div>
 
-<!-- ══════════════════════════════════════════════
-     CLIENTES
-══════════════════════════════════════════════ -->
+<!-- ═══════════════════ CLIENTES ═══════════════════ -->
 <div id="page-clientes" class="page">
   <div class="page-header">
-    <div>
-      <h1>Clientes</h1>
-      <p class="subtitle">Cadastro de clientes do escritório</p>
-    </div>
+    <div><h1>Clientes</h1><p class="subtitle">Cadastro de clientes do escritório</p></div>
     <div class="page-header-btns">
+      <button class="btn btn-outline" onclick="abrirImportacaoCsv()">📊 Importar CSV</button>
       <button class="btn btn-primary" onclick="abrirModalCliente()">+ Novo Cliente</button>
     </div>
   </div>
-
-  <!-- Busca -->
-  <div class="card" style="margin-bottom:16px">
-    <div class="card-body" style="padding:12px">
-      <input type="text" id="busca-cliente" placeholder="Buscar por nome ou CNPJ..." oninput="renderClientes()">
-    </div>
-  </div>
-
-  <div class="card">
-    <div id="lista-clientes"></div>
-  </div>
+  <div class="card" style="margin-bottom:16px"><div class="card-body" style="padding:12px">
+    <input type="text" id="busca-cliente" placeholder="Buscar por nome ou CNPJ..." oninput="renderClientes()">
+  </div></div>
+  <div class="card"><div id="lista-clientes"></div></div>
 </div>
 
-<!-- ══════════════════════════════════════════════
-     COBRANÇAS
-══════════════════════════════════════════════ -->
+<!-- ═══════════════════ COBRANÇAS ═══════════════════ -->
 <div id="page-cobrancas" class="page">
   <div class="page-header">
-    <div>
-      <h1>Cobranças</h1>
-      <p class="subtitle">Honorários mensais — carta de cobrança com PIX</p>
-    </div>
+    <div><h1>Cobranças</h1><p class="subtitle">Honorários mensais — carta de cobrança com PIX</p></div>
     <div class="page-header-btns">
       <button class="btn btn-outline" onclick="abrirModalLote()">Gerar Lote</button>
       <button class="btn btn-primary" onclick="abrirModalCobranca()">+ Nova Cobrança</button>
     </div>
   </div>
-
-  <!-- Filtros -->
   <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:flex-end">
-    <div>
-      <label>Mês</label>
+    <div><label>Mês</label>
       <select id="filtro-mes" onchange="renderCobrancas()" style="width:140px">
         <option value="">Todos</option>
         <option value="1">Janeiro</option><option value="2">Fevereiro</option>
@@ -245,31 +177,94 @@
         <option value="11">Novembro</option><option value="12">Dezembro</option>
       </select>
     </div>
-    <div>
-      <label>Ano</label>
-      <input type="number" id="filtro-ano" value="" placeholder="Todos" oninput="renderCobrancas()" style="width:90px">
+    <div><label>Ano</label>
+      <input type="number" id="filtro-ano" placeholder="Todos" oninput="renderCobrancas()" style="width:90px">
     </div>
-    <div class="filtros" id="filtros-status" style="margin-bottom:0">
-      <button class="filtro-btn active" data-status="" onclick="setFiltroStatus(this,'')">Todos</button>
-      <button class="filtro-btn" data-status="pendente" onclick="setFiltroStatus(this,'pendente')">Pendentes</button>
-      <button class="filtro-btn" data-status="pago" onclick="setFiltroStatus(this,'pago')">Pagos</button>
-      <button class="filtro-btn" data-status="cancelado" onclick="setFiltroStatus(this,'cancelado')">Cancelados</button>
+    <div class="filtros" id="filtros-status">
+      <button class="filtro-btn active" onclick="setFiltroStatus(this,'')">Todos</button>
+      <button class="filtro-btn" onclick="setFiltroStatus(this,'pendente')">Pendentes</button>
+      <button class="filtro-btn" onclick="setFiltroStatus(this,'pago')">Pagos</button>
+      <button class="filtro-btn" onclick="setFiltroStatus(this,'cancelado')">Cancelados</button>
     </div>
   </div>
-
-  <!-- Resumo -->
   <div id="resumo-cobrancas" style="margin-bottom:16px"></div>
+  <div class="card"><div id="lista-cobrancas"></div></div>
+</div>
 
-  <div class="card">
-    <div id="lista-cobrancas"></div>
+<!-- ═══════════════════ CONFIG E-MAIL ═══════════════════ -->
+<div id="page-config" class="page">
+  <div class="page-header">
+    <div><h1>Configurações de E-mail</h1><p class="subtitle">Configure o envio automático via EmailJS</p></div>
   </div>
+
+  <div class="alert alert-blue" style="margin-bottom:20px">
+    <b>📧 Como funciona:</b> O EmailJS permite enviar e-mails direto do navegador, sem servidor. É gratuito até 200 e-mails/mês.<br>
+    <b>Passos:</b> 1) Crie conta em <b>emailjs.com</b> &nbsp;·&nbsp; 2) Conecte seu Gmail &nbsp;·&nbsp; 3) Crie um template &nbsp;·&nbsp; 4) Cole as chaves abaixo.
+  </div>
+
+  <div class="card"><div class="card-body">
+    <h2 style="margin-bottom:16px">Credenciais EmailJS</h2>
+    <div class="form-row form-row-2">
+      <div class="form-group">
+        <label>Public Key (User ID)</label>
+        <input type="text" id="cfg-pubkey" placeholder="Ex: user_AbCdEfGhIjKlMn">
+      </div>
+      <div class="form-group">
+        <label>Service ID</label>
+        <input type="text" id="cfg-service" placeholder="Ex: service_xxxxxxx">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Template ID</label>
+      <input type="text" id="cfg-template" placeholder="Ex: template_xxxxxxx">
+    </div>
+
+    <div class="config-box" style="margin-top:8px">
+      <b>📋 Variáveis do Template no EmailJS:</b><br>
+      Ao criar o template no emailjs.com, use estas variáveis:<br>
+      <code style="font-size:12px;line-height:2">
+        To Email: <b>{{to_email}}</b> &nbsp;·&nbsp;
+        To Name: <b>{{to_name}}</b><br>
+        Subject: <b>{{subject}}</b><br>
+        Body/Message: <b>{{message}}</b> (marque como HTML)<br>
+        QR Code: <b>{{qr_url}}</b> — use como src de &lt;img&gt;
+      </code>
+    </div>
+
+    <div class="form-group" style="margin-top:16px">
+      <label>Assinatura do E-mail (rodapé)</label>
+      <textarea id="cfg-assinatura" rows="3" placeholder="SC Contabilidade&#10;CNPJ: 30.016.838/0001-34&#10;Tel: (11) 99999-9999"></textarea>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-primary" onclick="salvarConfig()">Salvar Configurações</button>
+      <button class="btn btn-outline" onclick="testarEmail()">Enviar E-mail de Teste</button>
+    </div>
+    <div id="cfg-status" style="margin-top:12px;font-size:13px"></div>
+  </div></div>
+
+  <div class="card" style="margin-top:20px"><div class="card-body">
+    <h2 style="margin-bottom:12px">Alternativa sem configuração: Gmail / Outlook</h2>
+    <p style="font-size:13px;color:var(--gray-600);margin-bottom:12px">Se preferir não configurar o EmailJS, o botão <b>"Enviar por E-mail"</b> em cada cobrança abre automaticamente o seu programa de e-mail (Gmail, Outlook, etc.) com a mensagem já preenchida — você só clica em Enviar.</p>
+    <div class="alert alert-yellow">⚠ Para anexar a carta em PDF: clique em <b>"Ver Carta"</b> → <b>"Imprimir"</b> → escolha <b>"Salvar como PDF"</b> → anexe no e-mail.</div>
+  </div></div>
+
+  <div class="card" style="margin-top:20px"><div class="card-body">
+    <h2 style="margin-bottom:4px">💾 Backup do Sistema</h2>
+    <p style="font-size:13px;color:var(--gray-600);margin-bottom:16px">Exporte todos os dados (clientes, cobranças e configurações) para um arquivo JSON. Guarde-o em local seguro para restaurar em caso de necessidade.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-green" onclick="exportarBackup()">⬇ Exportar Backup</button>
+      <button class="btn btn-outline" onclick="abrirImportacaoBackup()">⬆ Restaurar Backup</button>
+    </div>
+    <p style="font-size:11px;color:var(--gray-400);margin-top:10px">O arquivo exportado contém todos os dados do localStorage deste navegador.</p>
+  </div></div>
 </div>
 
 </main>
 
-<!-- ══════════════════════════════════════════════
-     MODAL CLIENTE
-══════════════════════════════════════════════ -->
+<!-- ═══════════════════ MODAIS ═══════════════════ -->
+
+<!-- Modal Cliente -->
 <div class="modal-backdrop" id="modal-cliente">
   <div class="modal" style="max-width:600px">
     <div class="modal-header">
@@ -278,27 +273,18 @@
     </div>
     <div class="modal-body">
       <input type="hidden" id="cli-id">
-
       <div class="form-group">
         <label>CNPJ *</label>
         <div class="input-group">
           <input type="text" id="cli-cnpj" placeholder="00.000.000/0000-00" maxlength="18" oninput="formatarCnpjInput(this)">
-          <button class="btn btn-outline" onclick="buscarCnpj()" id="btn-buscar-cnpj">Buscar na Receita</button>
+          <button class="btn btn-outline" onclick="buscarCnpj()" id="btn-buscar-cnpj">Buscar Receita</button>
         </div>
         <div id="cnpj-status" style="margin-top:6px;font-size:12px"></div>
       </div>
-
       <div class="form-row form-row-2">
-        <div class="form-group">
-          <label>Razão Social *</label>
-          <input type="text" id="cli-razao" placeholder="Preenchido automaticamente">
-        </div>
-        <div class="form-group">
-          <label>Nome Fantasia</label>
-          <input type="text" id="cli-fantasia" placeholder="Preenchido automaticamente">
-        </div>
+        <div class="form-group"><label>Razão Social *</label><input type="text" id="cli-razao" placeholder="Preenchido automaticamente"></div>
+        <div class="form-group"><label>Nome Fantasia</label><input type="text" id="cli-fantasia"></div>
       </div>
-
       <div class="form-row form-row-3">
         <div class="form-group">
           <label>Regime *</label>
@@ -317,31 +303,14 @@
             <option value="V">Anexo V</option>
           </select>
         </div>
-        <div class="form-group">
-          <label>Honorário Mensal (R$)</label>
-          <input type="text" id="cli-honorario" placeholder="Ex: 350,00">
-        </div>
+        <div class="form-group"><label>Honorário Mensal (R$)</label><input type="text" id="cli-honorario" placeholder="350,00"></div>
       </div>
-
       <div class="form-row form-row-3">
-        <div class="form-group">
-          <label>E-mail</label>
-          <input type="email" id="cli-email" placeholder="email@empresa.com">
-        </div>
-        <div class="form-group">
-          <label>Telefone</label>
-          <input type="text" id="cli-telefone" placeholder="(11) 99999-9999">
-        </div>
-        <div class="form-group">
-          <label>Responsável</label>
-          <input type="text" id="cli-responsavel" placeholder="Nome do sócio">
-        </div>
+        <div class="form-group"><label>E-mail</label><input type="email" id="cli-email" placeholder="email@empresa.com"></div>
+        <div class="form-group"><label>Telefone</label><input type="text" id="cli-telefone" placeholder="(11) 99999-9999"></div>
+        <div class="form-group"><label>Responsável</label><input type="text" id="cli-responsavel" placeholder="Nome do sócio"></div>
       </div>
-
-      <div class="form-group">
-        <label>Observações</label>
-        <textarea id="cli-obs" rows="2" placeholder="Informações adicionais..."></textarea>
-      </div>
+      <div class="form-group"><label>Observações</label><textarea id="cli-obs" rows="2"></textarea></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="fecharModal('modal-cliente')">Cancelar</button>
@@ -350,9 +319,7 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════
-     MODAL COBRANÇA INDIVIDUAL
-══════════════════════════════════════════════ -->
+<!-- Modal Nova Cobrança -->
 <div class="modal-backdrop" id="modal-cobranca">
   <div class="modal">
     <div class="modal-header">
@@ -367,8 +334,7 @@
         </select>
       </div>
       <div class="form-row form-row-3">
-        <div class="form-group">
-          <label>Mês *</label>
+        <div class="form-group"><label>Mês *</label>
           <select id="cob-mes">
             <option value="1">Janeiro</option><option value="2">Fevereiro</option>
             <option value="3">Março</option><option value="4">Abril</option>
@@ -378,19 +344,10 @@
             <option value="11">Novembro</option><option value="12">Dezembro</option>
           </select>
         </div>
-        <div class="form-group">
-          <label>Ano *</label>
-          <input type="number" id="cob-ano" value="2026" min="2020" max="2100">
-        </div>
-        <div class="form-group">
-          <label>Valor (R$) *</label>
-          <input type="text" id="cob-valor" placeholder="0,00">
-        </div>
+        <div class="form-group"><label>Ano *</label><input type="number" id="cob-ano" value="2026" min="2020" max="2100"></div>
+        <div class="form-group"><label>Valor (R$) *</label><input type="text" id="cob-valor" placeholder="0,00"></div>
       </div>
-      <div class="form-group">
-        <label>Vencimento</label>
-        <input type="text" id="cob-vencimento" placeholder="Ex: 10/06/2026">
-      </div>
+      <div class="form-group"><label>Vencimento</label><input type="text" id="cob-vencimento" placeholder="Ex: 10/06/2026"></div>
       <div class="form-group">
         <label>Descrição dos serviços *</label>
         <textarea id="cob-descricao" rows="4" placeholder="Ex: Honorários contábeis referentes a maio/2026 — escrituração fiscal, folha de pagamento e obrigações acessórias."></textarea>
@@ -403,9 +360,7 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════
-     MODAL LOTE
-══════════════════════════════════════════════ -->
+<!-- Modal Lote -->
 <div class="modal-backdrop" id="modal-lote">
   <div class="modal" style="max-width:580px">
     <div class="modal-header">
@@ -414,8 +369,7 @@
     </div>
     <div class="modal-body">
       <div class="form-row form-row-3">
-        <div class="form-group">
-          <label>Mês *</label>
+        <div class="form-group"><label>Mês *</label>
           <select id="lote-mes">
             <option value="1">Janeiro</option><option value="2">Fevereiro</option>
             <option value="3">Março</option><option value="4">Abril</option>
@@ -425,14 +379,8 @@
             <option value="11">Novembro</option><option value="12">Dezembro</option>
           </select>
         </div>
-        <div class="form-group">
-          <label>Ano *</label>
-          <input type="number" id="lote-ano" value="2026" min="2020">
-        </div>
-        <div class="form-group">
-          <label>Vencimento</label>
-          <input type="text" id="lote-vencimento" placeholder="Ex: 10/06/2026">
-        </div>
+        <div class="form-group"><label>Ano *</label><input type="number" id="lote-ano" value="2026" min="2020"></div>
+        <div class="form-group"><label>Vencimento</label><input type="text" id="lote-vencimento" placeholder="Ex: 10/06/2026"></div>
       </div>
       <div class="form-group">
         <label>Descrição dos serviços *</label>
@@ -451,79 +399,165 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════
-     MODAL CARTA (PREVIEW)
-══════════════════════════════════════════════ -->
+<!-- Modal Carta -->
 <div class="modal-backdrop" id="modal-carta">
-  <div class="modal" style="max-width:700px">
-    <div class="modal-header">
+  <div class="modal" style="max-width:720px">
+    <div class="modal-header no-print">
       <span class="modal-title">Carta de Cobrança</span>
       <button class="modal-close" onclick="fecharModal('modal-carta')">✕</button>
     </div>
-    <div class="modal-body" id="carta-preview" style="padding:0"></div>
+    <div id="carta-preview"></div>
     <div class="modal-footer no-print">
       <button class="btn btn-outline" onclick="fecharModal('modal-carta')">Fechar</button>
-      <button class="btn btn-primary" onclick="imprimirCarta()">🖨 Imprimir / Salvar PDF</button>
+      <button class="btn btn-outline" onclick="imprimirCarta()">🖨 Imprimir / PDF</button>
+      <button class="btn btn-email" onclick="abrirEmailModal()">✉ Enviar por E-mail</button>
     </div>
   </div>
 </div>
 
-<!-- Toast -->
+<!-- Modal E-mail -->
+<div class="modal-backdrop" id="modal-email">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-header">
+      <span class="modal-title">✉ Enviar por E-mail</span>
+      <button class="modal-close" onclick="fecharModal('modal-email')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Para (e-mail do cliente)</label>
+        <input type="email" id="email-para" placeholder="cliente@empresa.com.br">
+      </div>
+      <div class="form-group">
+        <label>Assunto</label>
+        <input type="text" id="email-assunto">
+      </div>
+      <div class="form-group">
+        <label>Mensagem</label>
+        <textarea id="email-mensagem" rows="7"></textarea>
+      </div>
+      <div id="email-status"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="fecharModal('modal-email')">Cancelar</button>
+      <button class="btn btn-outline" onclick="enviarMailto()" title="Abre seu programa de e-mail">📨 Abrir no e-mail</button>
+      <button class="btn btn-email" onclick="enviarEmailJS()" id="btn-enviar-ejs">✉ Enviar automático</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Importar CSV -->
+<div class="modal-backdrop" id="modal-csv">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <span class="modal-title">📊 Importar Clientes via Planilha (CSV)</span>
+      <button class="modal-close" onclick="fecharModal('modal-csv')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-blue" style="margin-bottom:14px">
+        <b>Formato esperado:</b> arquivo CSV com cabeçalho. Coluna <b>cnpj</b> é obrigatória.<br>
+        Colunas opcionais: <code>razao_social · nome_fantasia · email · telefone · honorario · regime</code><br>
+        Separador: vírgula ou ponto-e-vírgula. Encoding: UTF-8.
+      </div>
+      <div class="form-group">
+        <label>Selecione o arquivo .csv</label>
+        <input type="file" id="csv-file" accept=".csv,.txt" onchange="processarArquivoCsv(this)" style="padding:6px">
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:12px">
+        <input type="checkbox" id="csv-buscar-receita" style="width:auto" checked>
+        <span style="font-size:13px">Buscar dados automaticamente na Receita Federal (BrasilAPI) para CNPJs sem razão social</span>
+      </label>
+      <div id="csv-status"></div>
+      <div id="csv-preview"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="fecharModal('modal-csv')">Cancelar</button>
+      <button class="btn btn-primary" id="btn-confirmar-csv" disabled onclick="confirmarImportacaoCsv()">Importar Clientes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Restaurar Backup -->
+<div class="modal-backdrop" id="modal-backup">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <span class="modal-title">⬆ Restaurar Backup</span>
+      <button class="modal-close" onclick="fecharModal('modal-backup')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-yellow" style="margin-bottom:14px">
+        ⚠ <b>Atenção:</b> Restaurar um backup substituirá TODOS os dados atuais (clientes, cobranças e configurações). Esta ação não pode ser desfeita.
+      </div>
+      <div class="form-group">
+        <label>Selecione o arquivo de backup (.json)</label>
+        <input type="file" id="bkp-file" accept=".json" onchange="processarBackup(this)" style="padding:6px">
+      </div>
+      <div id="bkp-status"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="fecharModal('modal-backup')">Cancelar</button>
+      <button class="btn btn-danger" id="btn-restaurar-bkp" disabled>Restaurar Dados</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
-<!-- ══════════════════════════════════════════════
-     SCRIPT PRINCIPAL
-══════════════════════════════════════════════ -->
 <script>
-// ── Storage ────────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+// STORAGE
+// ══════════════════════════════════════════════════════════
+const getClientes  = () => JSON.parse(localStorage.getItem('sc_clientes')  || '[]');
+const setClientes  = d  => localStorage.setItem('sc_clientes',  JSON.stringify(d));
+const getCobrancas = () => JSON.parse(localStorage.getItem('sc_cobrancas') || '[]');
+const setCobrancas = d  => localStorage.setItem('sc_cobrancas', JSON.stringify(d));
+const getConfig    = () => JSON.parse(localStorage.getItem('sc_config')    || '{}');
+const setConfig    = d  => localStorage.setItem('sc_config',    JSON.stringify(d));
+const nextId = arr => arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1;
 
-function getClientes() { return JSON.parse(localStorage.getItem('sc_clientes') || '[]'); }
-function setClientes(d) { localStorage.setItem('sc_clientes', JSON.stringify(d)); }
-function getCobrancas() { return JSON.parse(localStorage.getItem('sc_cobrancas') || '[]'); }
-function setCobrancas(d) { localStorage.setItem('sc_cobrancas', JSON.stringify(d)); }
-function nextId(arr) { return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1; }
-
-// ── State ──────────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
 let filtroStatus = '';
-let cartaAtual = null; // HTML string da carta aberta
+let cobAtual = null;  // cobrança aberta na carta
 
-// ── Navegação ─────────────────────────────────────────────────────────────────
-
+// ══════════════════════════════════════════════════════════
+// NAVEGAÇÃO
+// ══════════════════════════════════════════════════════════
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  document.querySelectorAll('.nav-btn').forEach(b => {
-    if (b.textContent.trim().toLowerCase().includes(name === 'dashboard' ? 'dashboard' : name === 'clientes' ? 'clientes' : 'cobran')) {
-      b.classList.add('active');
-    }
-  });
-  if (name === 'dashboard') renderDashboard();
-  if (name === 'clientes') renderClientes();
-  if (name === 'cobrancas') renderCobrancas();
+  const map = { dashboard: 0, clientes: 1, cobrancas: 2, config: 3 };
+  document.querySelectorAll('.nav-btn')[map[name]]?.classList.add('active');
+  if (name === 'dashboard')  renderDashboard();
+  if (name === 'clientes')   renderClientes();
+  if (name === 'cobrancas')  renderCobrancas();
+  if (name === 'config')     carregarConfig();
 }
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
-
+// ══════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════
 function toast(msg, tipo = 'ok') {
   const el = document.getElementById('toast');
   el.textContent = msg;
-  el.style.background = tipo === 'erro' ? '#dc2626' : '#1f2937';
+  el.style.background = tipo === 'erro' ? '#dc2626' : tipo === 'ok2' ? '#059669' : '#1f2937';
   el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 3000);
+  setTimeout(() => el.classList.remove('show'), 3500);
 }
 
-// ── Modais ────────────────────────────────────────────────────────────────────
-
+// ══════════════════════════════════════════════════════════
+// MODAIS
+// ══════════════════════════════════════════════════════════
+function abrirModal(id)  { document.getElementById(id).classList.add('open'); }
 function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-backdrop').forEach(el =>
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); })
+);
 
-// Fecha modal clicando no backdrop
-document.querySelectorAll('.modal-backdrop').forEach(el => {
-  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
-});
-
-// ── Formatação ────────────────────────────────────────────────────────────────
-
+// ══════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════
 function formatCnpj(v) {
   const d = v.replace(/\D/g, '').substring(0, 14);
   if (d.length <= 2) return d;
@@ -533,164 +567,150 @@ function formatCnpj(v) {
   return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8,12)}-${d.slice(12)}`;
 }
 function formatarCnpjInput(el) { el.value = formatCnpj(el.value); }
-
 function formatBRL(v) {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+  return new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(v);
 }
-
 function parseBRL(s) {
   return parseFloat(String(s).replace(/\./g,'').replace(',','.')) || 0;
 }
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+               'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
-const MESES_NOME = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
-                    'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-
-// ── Busca CNPJ (BrasilAPI — CORS aberto) ─────────────────────────────────────
-
+// ══════════════════════════════════════════════════════════
+// BUSCA CNPJ (BrasilAPI)
+// ══════════════════════════════════════════════════════════
 async function buscarCnpj() {
   const cnpjRaw = document.getElementById('cli-cnpj').value.replace(/\D/g,'');
-  const status = document.getElementById('cnpj-status');
+  const status  = document.getElementById('cnpj-status');
   if (cnpjRaw.length !== 14) {
-    status.innerHTML = '<span style="color:var(--red)">Digite o CNPJ completo (14 dígitos).</span>';
+    status.innerHTML = '<span style="color:var(--red)">CNPJ deve ter 14 dígitos.</span>';
     return;
   }
-  status.innerHTML = '<span style="color:var(--gray-400)">Consultando...</span>';
+  status.innerHTML = '<span style="color:var(--gray-400)">⏳ Consultando...</span>';
   document.getElementById('btn-buscar-cnpj').disabled = true;
   try {
     const r = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpjRaw}`);
-    if (!r.ok) throw new Error('não encontrado');
+    if (!r.ok) throw new Error();
     const d = await r.json();
-    document.getElementById('cli-razao').value = d.razao_social || '';
+    document.getElementById('cli-razao').value    = d.razao_social || '';
     document.getElementById('cli-fantasia').value = d.nome_fantasia || '';
-    document.getElementById('cli-email').value = d.email || '';
+    document.getElementById('cli-email').value    = d.email || '';
     document.getElementById('cli-telefone').value = d.ddd_telefone_1 || '';
-    status.innerHTML = `<span style="color:var(--green)">✓ Situação: ${d.descricao_situacao_cadastral || 'Ativa'} · Abertura: ${d.data_inicio_atividade || ''}</span>`;
+    status.innerHTML = `<span style="color:var(--green)">✓ ${d.descricao_situacao_cadastral||'Ativa'} · Abertura: ${d.data_inicio_atividade||''}</span>`;
     toast('Dados preenchidos automaticamente!');
   } catch {
-    status.innerHTML = '<span style="color:var(--red)">CNPJ não encontrado ou serviço indisponível. Preencha manualmente.</span>';
+    status.innerHTML = '<span style="color:var(--red)">Não encontrado ou serviço indisponível. Preencha manualmente.</span>';
   } finally {
     document.getElementById('btn-buscar-cnpj').disabled = false;
   }
 }
 
 function toggleAnexo() {
-  const regime = document.getElementById('cli-regime').value;
-  document.getElementById('grupo-anexo').style.display = regime === 'simples' ? '' : 'none';
+  document.getElementById('grupo-anexo').style.display =
+    document.getElementById('cli-regime').value === 'simples' ? '' : 'none';
 }
 
-// ── CLIENTES ──────────────────────────────────────────────────────────────────
-
+// ══════════════════════════════════════════════════════════
+// CLIENTES
+// ══════════════════════════════════════════════════════════
 function abrirModalCliente(id = null) {
   document.getElementById('modal-cliente-titulo').textContent = id ? 'Editar Cliente' : 'Novo Cliente';
   document.getElementById('cli-id').value = id || '';
   document.getElementById('cnpj-status').innerHTML = '';
-
   const cli = id ? getClientes().find(c => c.id === id) : null;
-  document.getElementById('cli-cnpj').value = cli ? formatCnpj(cli.cnpj) : '';
-  document.getElementById('cli-razao').value = cli?.razaoSocial || '';
-  document.getElementById('cli-fantasia').value = cli?.nomeFantasia || '';
-  document.getElementById('cli-regime').value = cli?.regime || 'simples';
-  document.getElementById('cli-anexo').value = cli?.anexo || '';
-  document.getElementById('cli-honorario').value = cli?.honorario ? String(cli.honorario).replace('.',',') : '';
-  document.getElementById('cli-email').value = cli?.email || '';
-  document.getElementById('cli-telefone').value = cli?.telefone || '';
+  document.getElementById('cli-cnpj').value       = cli ? formatCnpj(cli.cnpj) : '';
+  document.getElementById('cli-razao').value       = cli?.razaoSocial || '';
+  document.getElementById('cli-fantasia').value    = cli?.nomeFantasia || '';
+  document.getElementById('cli-regime').value      = cli?.regime || 'simples';
+  document.getElementById('cli-anexo').value       = cli?.anexo || '';
+  document.getElementById('cli-honorario').value   = cli?.honorario ? String(cli.honorario).replace('.',',') : '';
+  document.getElementById('cli-email').value       = cli?.email || '';
+  document.getElementById('cli-telefone').value    = cli?.telefone || '';
   document.getElementById('cli-responsavel').value = cli?.responsavel || '';
-  document.getElementById('cli-obs').value = cli?.observacoes || '';
-
+  document.getElementById('cli-obs').value         = cli?.observacoes || '';
+  document.getElementById('cli-cnpj').disabled         = !!id;
+  document.getElementById('btn-buscar-cnpj').disabled  = !!id;
   toggleAnexo();
-  document.getElementById('cli-cnpj').disabled = !!id;
-  document.getElementById('btn-buscar-cnpj').disabled = !!id;
-  document.getElementById('modal-cliente').classList.add('open');
+  abrirModal('modal-cliente');
 }
 
 function salvarCliente() {
-  const razao = document.getElementById('cli-razao').value.trim();
+  const razao   = document.getElementById('cli-razao').value.trim();
   const cnpjRaw = document.getElementById('cli-cnpj').value.replace(/\D/g,'');
-  if (cnpjRaw.length !== 14) { toast('CNPJ inválido', 'erro'); return; }
-  if (!razao) { toast('Razão social obrigatória', 'erro'); return; }
-
-  const id = document.getElementById('cli-id').value;
+  if (cnpjRaw.length !== 14) { toast('CNPJ inválido','erro'); return; }
+  if (!razao)                 { toast('Razão social obrigatória','erro'); return; }
+  const id       = document.getElementById('cli-id').value;
   const clientes = getClientes();
-
   const obj = {
     id: id ? parseInt(id) : nextId(clientes),
-    cnpj: cnpjRaw,
-    razaoSocial: razao,
+    cnpj: cnpjRaw, razaoSocial: razao,
     nomeFantasia: document.getElementById('cli-fantasia').value.trim() || null,
     regime: document.getElementById('cli-regime').value,
-    anexo: document.getElementById('cli-anexo').value || null,
+    anexo:  document.getElementById('cli-anexo').value || null,
     honorario: parseBRL(document.getElementById('cli-honorario').value) || null,
-    email: document.getElementById('cli-email').value.trim() || null,
-    telefone: document.getElementById('cli-telefone').value.trim() || null,
+    email:       document.getElementById('cli-email').value.trim() || null,
+    telefone:    document.getElementById('cli-telefone').value.trim() || null,
     responsavel: document.getElementById('cli-responsavel').value.trim() || null,
     observacoes: document.getElementById('cli-obs').value.trim() || null,
     ativo: 1,
     criadoEm: id ? clientes.find(c=>c.id===parseInt(id))?.criadoEm : new Date().toISOString(),
   };
-
   if (id) {
     const idx = clientes.findIndex(c => c.id === parseInt(id));
     clientes[idx] = obj;
   } else {
-    if (clientes.find(c => c.cnpj === cnpjRaw)) { toast('CNPJ já cadastrado', 'erro'); return; }
+    if (clientes.find(c => c.cnpj === cnpjRaw)) { toast('CNPJ já cadastrado','erro'); return; }
     clientes.push(obj);
   }
-
   setClientes(clientes);
   fecharModal('modal-cliente');
   renderClientes();
-  toast(id ? 'Cliente atualizado!' : 'Cliente cadastrado!');
+  renderDashboard();
+  toast(id ? 'Cliente atualizado!' : 'Cliente cadastrado!', 'ok2');
 }
 
 function excluirCliente(id) {
-  if (!confirm('Deseja excluir este cliente?')) return;
+  if (!confirm('Excluir este cliente?')) return;
   setClientes(getClientes().filter(c => c.id !== id));
-  renderClientes();
-  renderDashboard();
+  renderClientes(); renderDashboard();
   toast('Cliente removido');
 }
 
 function renderClientes() {
-  const busca = (document.getElementById('busca-cliente')?.value || '').toLowerCase();
-  const lista = getClientes().filter(c => {
-    if (!busca) return true;
-    return c.razaoSocial.toLowerCase().includes(busca) ||
-           (c.nomeFantasia||'').toLowerCase().includes(busca) ||
-           c.cnpj.includes(busca.replace(/\D/g,''));
-  });
-
+  const busca = (document.getElementById('busca-cliente')?.value||'').toLowerCase();
+  const lista = getClientes().filter(c => !busca ||
+    c.razaoSocial.toLowerCase().includes(busca) ||
+    (c.nomeFantasia||'').toLowerCase().includes(busca) ||
+    c.cnpj.includes(busca.replace(/\D/g,''))
+  );
   const el = document.getElementById('lista-clientes');
   if (!lista.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">🏢</div><h3>${busca ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}</h3><p>${busca ? 'Tente outra busca' : 'Clique em "Novo Cliente" para começar'}</p></div>`;
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🏢</div>
+      <h3>${busca?'Nenhum cliente encontrado':'Nenhum cliente cadastrado'}</h3>
+      <p>${busca?'Tente outra busca':'Clique em "Novo Cliente" para começar'}</p></div>`;
     return;
   }
-
-  const regimeBadge = { simples: 'badge-green', presumido: 'badge-blue', real: 'badge-pink' };
-  const regimeLabel = { simples: 'Simples Nacional', presumido: 'Lucro Presumido', real: 'Lucro Real' };
-
-  el.innerHTML = `<table>
-    <thead><tr>
-      <th>Razão Social</th><th>CNPJ</th><th>Regime</th><th>Honorário</th><th>E-mail</th><th>Ações</th>
-    </tr></thead>
-    <tbody>${lista.map(c => `
-    <tr>
-      <td><b>${c.nomeFantasia || c.razaoSocial}</b>${c.nomeFantasia ? `<br><span style="font-size:11px;color:var(--gray-400)">${c.razaoSocial}</span>`:''}</td>
-      <td style="font-family:monospace;font-size:12px">${formatCnpj(c.cnpj)}</td>
-      <td><span class="badge ${regimeBadge[c.regime]||'badge-gray'}">${regimeLabel[c.regime]||c.regime}${c.anexo?' · Anx '+c.anexo:''}</span></td>
-      <td>${c.honorario ? `<b>${formatBRL(c.honorario)}</b>` : '<span style="color:var(--gray-400)">—</span>'}</td>
-      <td style="font-size:12px">${c.email||'—'}</td>
-      <td>
-        <button class="btn btn-sm btn-outline" onclick="abrirModalCliente(${c.id})">Editar</button>
-        <button class="btn btn-sm btn-danger" onclick="excluirCliente(${c.id})">Excluir</button>
-      </td>
-    </tr>`).join('')}
-    </tbody>
-  </table>
+  const rb = { simples:'badge-green', presumido:'badge-blue', real:'badge-gray' };
+  const rl = { simples:'Simples Nacional', presumido:'Lucro Presumido', real:'Lucro Real' };
+  el.innerHTML = `<table><thead><tr>
+    <th>Razão Social</th><th>CNPJ</th><th>Regime</th><th>Honorário</th><th>E-mail</th><th>Ações</th>
+  </tr></thead><tbody>${lista.map(c=>`<tr>
+    <td><b>${c.nomeFantasia||c.razaoSocial}</b>${c.nomeFantasia?`<br><span style="font-size:11px;color:var(--gray-400)">${c.razaoSocial}</span>`:''}</td>
+    <td style="font-family:monospace;font-size:12px">${formatCnpj(c.cnpj)}</td>
+    <td><span class="badge ${rb[c.regime]||'badge-gray'}">${rl[c.regime]||c.regime}${c.anexo?' · Anx '+c.anexo:''}</span></td>
+    <td>${c.honorario?`<b>${formatBRL(c.honorario)}</b>`:'<span style="color:var(--gray-400)">—</span>'}</td>
+    <td style="font-size:12px">${c.email?`<a href="mailto:${c.email}" style="color:var(--blue)">${c.email}</a>`:'—'}</td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-sm btn-outline" onclick="abrirModalCliente(${c.id})">Editar</button>
+      <button class="btn btn-sm btn-danger" onclick="excluirCliente(${c.id})">Excluir</button>
+    </td>
+  </tr>`).join('')}</tbody></table>
   <div style="padding:10px 12px;font-size:12px;color:var(--gray-400);border-top:1px solid var(--gray-100)">${lista.length} cliente(s)</div>`;
 }
 
-// ── COBRANÇAS ─────────────────────────────────────────────────────────────────
-
+// ══════════════════════════════════════════════════════════
+// COBRANÇAS
+// ══════════════════════════════════════════════════════════
 function setFiltroStatus(btn, status) {
   filtroStatus = status;
   document.querySelectorAll('#filtros-status .filtro-btn').forEach(b => b.classList.remove('active'));
@@ -702,379 +722,689 @@ function abrirModalCobranca() {
   const clientes = getClientes().filter(c => c.ativo !== 0);
   const sel = document.getElementById('cob-cliente');
   sel.innerHTML = '<option value="">— Selecione —</option>' +
-    clientes.map(c => `<option value="${c.id}">${c.nomeFantasia||c.razaoSocial}${c.honorario?' ('+formatBRL(c.honorario)+')':''}</option>`).join('');
-
+    clientes.map(c=>`<option value="${c.id}">${c.nomeFantasia||c.razaoSocial}${c.honorario?' ('+formatBRL(c.honorario)+')':''}</option>`).join('');
   const now = new Date();
-  document.getElementById('cob-mes').value = now.getMonth() + 1;
+  document.getElementById('cob-mes').value = now.getMonth()+1;
   document.getElementById('cob-ano').value = now.getFullYear();
   document.getElementById('cob-valor').value = '';
   document.getElementById('cob-vencimento').value = '';
-  document.getElementById('cob-descricao').value = '';
-  document.getElementById('modal-cobranca').classList.add('open');
+  document.getElementById('cob-descricao').value  = '';
+  abrirModal('modal-cobranca');
 }
 
 function preencherHonorario() {
-  const id = parseInt(document.getElementById('cob-cliente').value);
-  if (!id) return;
+  const id  = parseInt(document.getElementById('cob-cliente').value);
   const cli = getClientes().find(c => c.id === id);
   if (cli?.honorario) document.getElementById('cob-valor').value = String(cli.honorario).replace('.',',');
 }
 
 function salvarCobranca() {
   const clienteId = parseInt(document.getElementById('cob-cliente').value);
-  const valor = parseBRL(document.getElementById('cob-valor').value);
-  const mes = parseInt(document.getElementById('cob-mes').value);
-  const ano = parseInt(document.getElementById('cob-ano').value);
+  const valor     = parseBRL(document.getElementById('cob-valor').value);
+  const mes       = parseInt(document.getElementById('cob-mes').value);
+  const ano       = parseInt(document.getElementById('cob-ano').value);
   const descricao = document.getElementById('cob-descricao').value.trim();
-  const vencimento = document.getElementById('cob-vencimento').value.trim();
-
-  if (!clienteId) { toast('Selecione o cliente', 'erro'); return; }
-  if (!valor || valor <= 0) { toast('Informe o valor', 'erro'); return; }
-  if (!descricao) { toast('Informe a descrição', 'erro'); return; }
-
-  const cobrancas = getCobrancas();
-  cobrancas.unshift({
-    id: nextId(cobrancas),
-    clienteId, valor, mesReferencia: mes, anoReferencia: ano,
-    vencimento: vencimento || null, descricao, status: 'pendente',
-    criadoEm: new Date().toISOString()
-  });
-  setCobrancas(cobrancas);
+  const vencimento= document.getElementById('cob-vencimento').value.trim();
+  if (!clienteId)        { toast('Selecione o cliente','erro'); return; }
+  if (!valor||valor<=0)  { toast('Informe o valor','erro'); return; }
+  if (!descricao)        { toast('Informe a descrição','erro'); return; }
+  const lista = getCobrancas();
+  const nova = { id:nextId(lista), clienteId, valor, mesReferencia:mes, anoReferencia:ano,
+    vencimento:vencimento||null, descricao, status:'pendente', criadoEm:new Date().toISOString() };
+  lista.unshift(nova);
+  setCobrancas(lista);
   fecharModal('modal-cobranca');
-  renderCobrancas();
-  renderDashboard();
-  toast('Cobrança criada!');
+  renderCobrancas(); renderDashboard();
+  toast('Cobrança criada!', 'ok2');
 }
 
 function abrirModalLote() {
   const clientes = getClientes().filter(c => c.ativo !== 0);
   const now = new Date();
-  document.getElementById('lote-mes').value = now.getMonth() + 1;
+  document.getElementById('lote-mes').value = now.getMonth()+1;
   document.getElementById('lote-ano').value = now.getFullYear();
   document.getElementById('lote-vencimento').value = '';
-  document.getElementById('lote-descricao').value = '';
-
+  document.getElementById('lote-descricao').value  = '';
   const comHon = clientes.filter(c => c.honorario && c.honorario > 0);
   const semHon = clientes.filter(c => !c.honorario);
-
   document.getElementById('lote-aviso').innerHTML = semHon.length ?
     `<div class="alert alert-yellow">⚠ ${semHon.length} cliente(s) sem honorário serão ignorados: ${semHon.map(c=>c.razaoSocial).join(', ')}</div>` : '';
-
   document.getElementById('lote-clientes-lista').innerHTML = comHon.length ?
-    comHon.map(c => `
-      <label style="display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--gray-100)">
-        <input type="checkbox" value="${c.id}" checked style="width:auto">
-        <span style="flex:1">${c.nomeFantasia||c.razaoSocial}</span>
-        <b style="color:var(--green)">${formatBRL(c.honorario)}</b>
-      </label>`).join('') :
+    comHon.map(c=>`<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--gray-100)">
+      <input type="checkbox" value="${c.id}" checked style="width:auto">
+      <span style="flex:1">${c.nomeFantasia||c.razaoSocial}</span>
+      <b style="color:var(--green)">${formatBRL(c.honorario)}</b>
+    </label>`).join('') :
     '<div style="padding:20px;text-align:center;color:var(--gray-400)">Nenhum cliente com honorário cadastrado</div>';
-
-  document.getElementById('modal-lote').classList.add('open');
+  abrirModal('modal-lote');
 }
 
 function gerarLote() {
-  const mes = parseInt(document.getElementById('lote-mes').value);
-  const ano = parseInt(document.getElementById('lote-ano').value);
+  const mes       = parseInt(document.getElementById('lote-mes').value);
+  const ano       = parseInt(document.getElementById('lote-ano').value);
   const descricao = document.getElementById('lote-descricao').value.trim();
-  const vencimento = document.getElementById('lote-vencimento').value.trim();
-
-  if (!descricao) { toast('Informe a descrição', 'erro'); return; }
-
-  const selecionados = [...document.querySelectorAll('#lote-clientes-lista input:checked')]
-    .map(el => parseInt(el.value));
-
-  if (!selecionados.length) { toast('Selecione ao menos um cliente', 'erro'); return; }
-
+  const vencimento= document.getElementById('lote-vencimento').value.trim();
+  if (!descricao) { toast('Informe a descrição','erro'); return; }
+  const selecionados = [...document.querySelectorAll('#lote-clientes-lista input:checked')].map(el=>parseInt(el.value));
+  if (!selecionados.length) { toast('Selecione ao menos um cliente','erro'); return; }
   const clientes = getClientes();
-  const cobrancas = getCobrancas();
+  const lista    = getCobrancas();
   let criados = 0;
-
   selecionados.forEach(cid => {
-    const cli = clientes.find(c => c.id === cid);
-    if (!cli || !cli.honorario) return;
-    cobrancas.unshift({
-      id: nextId(cobrancas),
-      clienteId: cid, valor: cli.honorario, mesReferencia: mes, anoReferencia: ano,
-      vencimento: vencimento || null, descricao, status: 'pendente',
-      criadoEm: new Date().toISOString()
-    });
+    const cli = clientes.find(c=>c.id===cid);
+    if (!cli?.honorario) return;
+    lista.unshift({ id:nextId(lista), clienteId:cid, valor:cli.honorario, mesReferencia:mes, anoReferencia:ano,
+      vencimento:vencimento||null, descricao, status:'pendente', criadoEm:new Date().toISOString() });
     criados++;
   });
-
-  setCobrancas(cobrancas);
+  setCobrancas(lista);
   fecharModal('modal-lote');
-  renderCobrancas();
-  renderDashboard();
-  toast(`${criados} cobrança(s) gerada(s)!`);
+  renderCobrancas(); renderDashboard();
+  toast(`${criados} cobrança(s) gerada(s)!`, 'ok2');
 }
 
 function alternarStatus(id) {
-  const cobrancas = getCobrancas();
-  const idx = cobrancas.findIndex(c => c.id === id);
-  if (idx === -1) return;
-  const ciclo = { pendente: 'pago', pago: 'cancelado', cancelado: 'pendente' };
-  cobrancas[idx].status = ciclo[cobrancas[idx].status] || 'pendente';
-  setCobrancas(cobrancas);
-  renderCobrancas();
-  renderDashboard();
+  const lista = getCobrancas();
+  const idx   = lista.findIndex(c=>c.id===id);
+  if (idx===-1) return;
+  const ciclo = { pendente:'pago', pago:'cancelado', cancelado:'pendente' };
+  lista[idx].status = ciclo[lista[idx].status]||'pendente';
+  setCobrancas(lista);
+  renderCobrancas(); renderDashboard();
 }
 
 function excluirCobranca(id) {
   if (!confirm('Excluir esta cobrança?')) return;
-  setCobrancas(getCobrancas().filter(c => c.id !== id));
-  renderCobrancas();
-  renderDashboard();
+  setCobrancas(getCobrancas().filter(c=>c.id!==id));
+  renderCobrancas(); renderDashboard();
   toast('Cobrança removida');
 }
 
 function renderCobrancas() {
   const mesFiltro = document.getElementById('filtro-mes')?.value;
   const anoFiltro = document.getElementById('filtro-ano')?.value;
-
   let lista = getCobrancas();
-  if (mesFiltro) lista = lista.filter(c => c.mesReferencia === parseInt(mesFiltro));
-  if (anoFiltro) lista = lista.filter(c => c.anoReferencia === parseInt(anoFiltro));
-  if (filtroStatus) lista = lista.filter(c => c.status === filtroStatus);
-
+  if (mesFiltro) lista = lista.filter(c=>c.mesReferencia===parseInt(mesFiltro));
+  if (anoFiltro) lista = lista.filter(c=>c.anoReferencia===parseInt(anoFiltro));
+  if (filtroStatus) lista = lista.filter(c=>c.status===filtroStatus);
   // Resumo
-  const total = lista.reduce((s,c)=>s+c.valor,0);
+  const total    = lista.reduce((s,c)=>s+c.valor,0);
   const pendente = lista.filter(c=>c.status==='pendente').reduce((s,c)=>s+c.valor,0);
-  const pago = lista.filter(c=>c.status==='pago').reduce((s,c)=>s+c.valor,0);
+  const pago     = lista.filter(c=>c.status==='pago').reduce((s,c)=>s+c.valor,0);
   const resumoEl = document.getElementById('resumo-cobrancas');
-  if (lista.length) {
-    resumoEl.innerHTML = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:4px">
+  resumoEl.innerHTML = lista.length ? `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
       ${[['Total no período',total,'var(--gray-800)'],['Pendente',pendente,'var(--yellow)'],['Recebido',pago,'var(--green)']].map(([l,v,c])=>`
       <div class="card"><div class="card-body" style="padding:12px;text-align:center">
         <div style="font-size:11px;color:var(--gray-400)">${l}</div>
         <div style="font-size:18px;font-weight:700;color:${c}">${formatBRL(v)}</div>
       </div></div>`).join('')}
-    </div>`;
-  } else {
-    resumoEl.innerHTML = '';
-  }
-
+    </div>` : '';
   const el = document.getElementById('lista-cobrancas');
   const clientes = getClientes();
-
   if (!lista.length) {
     el.innerHTML = `<div class="empty"><div class="empty-icon">🧾</div><h3>Nenhuma cobrança</h3><p>Crie uma cobrança individual ou use "Gerar Lote"</p></div>`;
     return;
   }
-
   const stCfg = {
-    pendente: { label:'Pendente', bg:'var(--yellow-light)', color:'var(--yellow)' },
-    pago:     { label:'Pago',     bg:'var(--green-light)', color:'var(--green)' },
-    cancelado:{ label:'Cancelado',bg:'var(--red-light)',   color:'var(--red)' },
+    pendente:{ label:'Pendente', bg:'var(--yellow-light)', color:'#92400e' },
+    pago:    { label:'Pago',     bg:'var(--green-light)', color:'#064e3b' },
+    cancelado:{ label:'Cancelado',bg:'var(--red-light)', color:'#7f1d1d' },
   };
-
-  el.innerHTML = lista.map(cob => {
-    const cli = clientes.find(c => c.id === cob.clienteId);
-    const nomeCliente = cli?.nomeFantasia || cli?.razaoSocial || `Cliente #${cob.clienteId}`;
-    const st = stCfg[cob.status] || stCfg.pendente;
-    return `<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--gray-100)">
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:14px">${nomeCliente}</div>
-        <div style="font-size:12px;color:var(--gray-400)">${MESES_NOME[cob.mesReferencia-1]}/${cob.anoReferencia} · ${cob.descricao.length>60?cob.descricao.substring(0,60)+'...':cob.descricao}</div>
+  el.innerHTML = lista.map(cob=>{
+    const cli = clientes.find(c=>c.id===cob.clienteId);
+    const nome = cli?.nomeFantasia||cli?.razaoSocial||`Cliente #${cob.clienteId}`;
+    const st   = stCfg[cob.status]||stCfg.pendente;
+    const desc = cob.descricao.length>65 ? cob.descricao.substring(0,65)+'…' : cob.descricao;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--gray-100);flex-wrap:wrap">
+      <div style="flex:1;min-width:180px">
+        <div style="font-weight:600;font-size:14px">${nome}</div>
+        <div style="font-size:12px;color:var(--gray-400)">${MESES[cob.mesReferencia-1]}/${cob.anoReferencia} · ${desc}</div>
         ${cob.vencimento?`<div style="font-size:11px;color:var(--gray-400)">Vence: ${cob.vencimento}</div>`:''}
       </div>
-      <div style="font-weight:700;font-size:16px;flex-shrink:0">${formatBRL(cob.valor)}</div>
-      <button class="status-btn" onclick="alternarStatus(${cob.id})" style="background:${st.bg};color:${st.color};flex-shrink:0">${st.label}</button>
+      <b style="font-size:15px;flex-shrink:0">${formatBRL(cob.valor)}</b>
+      <button class="status-btn" onclick="alternarStatus(${cob.id})" style="background:${st.bg};color:${st.color}">${st.label}</button>
       <button class="btn btn-sm btn-outline" onclick="verCarta(${cob.id})">📄 Carta</button>
+      <button class="btn btn-sm btn-email" onclick="abrirEmailDireto(${cob.id})">✉ E-mail</button>
       <button class="btn btn-sm btn-danger" onclick="excluirCobranca(${cob.id})">Excluir</button>
     </div>`;
   }).join('') + `<div style="padding:10px 16px;font-size:12px;color:var(--gray-400)">${lista.length} cobrança(s)</div>`;
 }
 
-// ── DASHBOARD ─────────────────────────────────────────────────────────────────
-
+// ══════════════════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════════════════
 function renderDashboard() {
-  const clientes = getClientes();
+  const clientes  = getClientes();
   const cobrancas = getCobrancas();
   const pendentes = cobrancas.filter(c=>c.status==='pendente');
-  const totalPendente = pendentes.reduce((s,c)=>s+c.valor,0);
-  const totalPago = cobrancas.filter(c=>c.status==='pago').reduce((s,c)=>s+c.valor,0);
-
+  const totPend   = pendentes.reduce((s,c)=>s+c.valor,0);
+  const totPago   = cobrancas.filter(c=>c.status==='pago').reduce((s,c)=>s+c.valor,0);
   document.getElementById('dash-stats').innerHTML = [
-    ['Clientes', clientes.length, '#2563eb'],
-    ['Cobranças', cobrancas.length, '#7c3aed'],
-    ['Pendente', formatBRL(totalPendente), '#d97706'],
-    ['Recebido', formatBRL(totalPago), '#059669'],
-  ].map(([l,v,c])=>`
-    <div class="stat-card">
-      <div class="stat-num" style="color:${c}">${v}</div>
-      <div class="stat-label">${l}</div>
-    </div>`).join('');
-
+    ['Clientes',clientes.length,'#2563eb'],
+    ['Cobranças',cobrancas.length,'#7c3aed'],
+    ['Pendente',formatBRL(totPend),'#d97706'],
+    ['Recebido',formatBRL(totPago),'#059669'],
+  ].map(([l,v,c])=>`<div class="stat-card"><div class="stat-num" style="color:${c}">${v}</div><div class="stat-label">${l}</div></div>`).join('');
   const clMap = {};
-  clientes.forEach(c => clMap[c.id] = c);
-
+  clientes.forEach(c=>clMap[c.id]=c);
   const el = document.getElementById('dash-pendentes');
-  if (!pendentes.length) {
-    el.innerHTML = '<p style="color:var(--gray-400);font-size:13px;padding:12px 0">Nenhuma cobrança pendente.</p>';
-    return;
-  }
-  el.innerHTML = pendentes.slice(0,10).map(cob => {
+  if (!pendentes.length) { el.innerHTML='<p style="color:var(--gray-400);font-size:13px;padding:12px 0">Nenhuma cobrança pendente.</p>'; return; }
+  el.innerHTML = pendentes.slice(0,10).map(cob=>{
     const cli = clMap[cob.clienteId];
     return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--gray-100)">
       <div style="flex:1;font-size:13px"><b>${cli?.nomeFantasia||cli?.razaoSocial||'—'}</b>
-      <span style="color:var(--gray-400);margin-left:8px">${MESES_NOME[cob.mesReferencia-1]}/${cob.anoReferencia}</span></div>
+      <span style="color:var(--gray-400);margin-left:8px">${MESES[cob.mesReferencia-1]}/${cob.anoReferencia}</span></div>
       <b style="color:var(--yellow)">${formatBRL(cob.valor)}</b>
       <button class="btn btn-sm btn-outline" onclick="verCarta(${cob.id})">📄 Carta</button>
+      <button class="btn btn-sm btn-email" onclick="abrirEmailDireto(${cob.id})">✉ E-mail</button>
     </div>`;
   }).join('');
 }
 
-// ── PIX PAYLOAD ───────────────────────────────────────────────────────────────
-
+// ══════════════════════════════════════════════════════════
+// PIX PAYLOAD (CRC16 EMV)
+// ══════════════════════════════════════════════════════════
 function pixCrc16(payload) {
   let crc = 0xFFFF;
-  for (let i = 0; i < payload.length; i++) {
+  for (let i=0; i<payload.length; i++) {
     crc ^= payload.charCodeAt(i) << 8;
-    for (let j = 0; j < 8; j++) {
-      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
-    }
+    for (let j=0; j<8; j++) crc = (crc&0x8000) ? ((crc<<1)^0x1021) : (crc<<1);
     crc &= 0xFFFF;
   }
-  return crc.toString(16).toUpperCase().padStart(4, '0');
+  return crc.toString(16).toUpperCase().padStart(4,'0');
 }
-
-function emv(id, value) {
-  return `${id}${String(value.length).padStart(2,'0')}${value}`;
-}
-
-function buildPixPayload(valor, txId = 'cobranca') {
-  const merchantAccount = emv('00','br.gov.bcb.pix') + emv('01','30016838000134');
-  const f26 = emv('26', merchantAccount);
-  const f52 = emv('52','0000');
-  const f53 = emv('53','986');
-  const amStr = valor.toFixed(2);
-  const f54 = emv('54', amStr);
-  const f58 = emv('58','BR');
-  const f59 = emv('59','SC Contabilidade');
-  const f60 = emv('60','Santo Andre');
-  const safeId = txId.replace(/[^a-zA-Z0-9]/g,'').substring(0,25) || 'cobranca';
-  const f62 = emv('62', emv('05', safeId));
-  const base = `${emv('00','01')}${f26}${f52}${f53}${f54}${f58}${f59}${f60}${f62}6304`;
+function emv(id, v) { return `${id}${String(v.length).padStart(2,'0')}${v}`; }
+function buildPixPayload(valor, txId='cobranca') {
+  const ma  = emv('00','br.gov.bcb.pix') + emv('01','30016838000134');
+  const f26 = emv('26',ma);
+  const f54 = emv('54',valor.toFixed(2));
+  const f62 = emv('62', emv('05',(txId.replace(/\W/g,'').substring(0,25)||'cobranca')));
+  const base = `${emv('00','01')}${f26}${emv('52','0000')}${emv('53','986')}${f54}${emv('58','BR')}${emv('59','SC Contabilidade')}${emv('60','Santo Andre')}${f62}6304`;
   return base + pixCrc16(base);
 }
 
-// ── CARTA DE COBRANÇA ─────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+// CARTA
+// ══════════════════════════════════════════════════════════
+function verCarta(id) {
+  const cob = getCobrancas().find(c=>c.id===id);
+  if (!cob) { toast('Cobrança não encontrada','erro'); return; }
+  const cli = getClientes().find(c=>c.id===cob.clienteId);
+  if (!cli) { toast('Cliente não encontrado','erro'); return; }
+  cobAtual = cob;
 
-async function verCarta(id) {
-  const cob = getCobrancas().find(c => c.id === id);
-  if (!cob) { toast('Cobrança não encontrada', 'erro'); return; }
-  const cli = getClientes().find(c => c.id === cob.clienteId);
-  if (!cli) { toast('Cliente não encontrado', 'erro'); return; }
-
-  const pixPayload = buildPixPayload(cob.valor, `COB${cob.id}`);
-
-  // Gera QR Code como data URL
-  const qrDataUrl = await new Promise((resolve, reject) => {
-    QRCode.toDataURL(pixPayload, { width: 220, margin: 1 }, (err, url) => {
-      if (err) reject(err); else resolve(url);
-    });
-  });
-
-  const mesNome = MESES_NOME[cob.mesReferencia - 1] || '';
+  const pixPayload  = buildPixPayload(cob.valor, `COB${cob.id}`);
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=10&data=${encodeURIComponent(pixPayload)}`;
+  const mesNome  = MESES[cob.mesReferencia-1]||'';
   const valorFmt = formatBRL(cob.valor);
   const dataHoje = new Date().toLocaleDateString('pt-BR');
-  const cnpjFmt = formatCnpj(cli.cnpj);
+  const cnpjFmt  = formatCnpj(cli.cnpj);
 
-  const html = `
-  <div style="padding:32px;font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;line-height:1.6">
+  const html = `<div class="carta-wrap">
     <!-- Header -->
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:20px;border-bottom:3px solid #e91e8c;margin-bottom:28px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:20px;border-bottom:3px solid #e91e8c;margin-bottom:24px">
       <div>
         <div style="font-size:24px;font-weight:700;color:#e91e8c">SC Contabilidade</div>
         <div style="font-size:11px;color:#666;margin-top:2px">CNPJ: 30.016.838/0001-34 · Santo André – SP</div>
       </div>
       <div style="text-align:right">
-        <div style="font-size:18px;font-weight:700;color:#333;text-transform:uppercase;letter-spacing:1px">Carta de Cobrança</div>
-        <div style="font-size:11px;color:#888;margin-top:4px">Ref. ${mesNome}/${cob.anoReferencia} · Emitida em ${dataHoje}</div>
+        <div style="font-size:16px;font-weight:700;color:#333;text-transform:uppercase;letter-spacing:1px">Carta de Cobrança</div>
+        <div style="font-size:11px;color:#888;margin-top:4px">Ref. ${mesNome}/${cob.anoReferencia} · ${dataHoje}</div>
       </div>
     </div>
-
     <!-- Cliente -->
-    <div style="margin-bottom:20px">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:4px">Dados do Cliente</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div style="grid-column:span 2"><div style="font-size:10px;color:#888;text-transform:uppercase">Razão Social</div><div style="font-size:15px;font-weight:600">${cli.razaoSocial}</div></div>
+    <div style="margin-bottom:18px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;border-bottom:1px solid #eee;padding-bottom:4px;margin-bottom:8px">Dados do Cliente</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="grid-column:span 2"><div style="font-size:10px;color:#888;text-transform:uppercase">Razão Social</div><div style="font-size:15px;font-weight:700">${cli.razaoSocial}</div></div>
         <div><div style="font-size:10px;color:#888;text-transform:uppercase">CNPJ</div><div style="font-weight:600">${cnpjFmt}</div></div>
         ${cli.email?`<div><div style="font-size:10px;color:#888;text-transform:uppercase">E-mail</div><div style="font-weight:600">${cli.email}</div></div>`:''}
       </div>
     </div>
-
     <!-- Período -->
-    <div style="margin-bottom:20px">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:4px">Período de Referência</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div style="margin-bottom:18px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;border-bottom:1px solid #eee;padding-bottom:4px;margin-bottom:8px">Período de Referência</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div><div style="font-size:10px;color:#888;text-transform:uppercase">Competência</div><div style="font-weight:600">${mesNome} / ${cob.anoReferencia}</div></div>
-        ${cob.vencimento?`<div><div style="font-size:10px;color:#888;text-transform:uppercase">Vencimento</div><div style="font-weight:600">${cob.vencimento}</div></div>`:''}
+        ${cob.vencimento?`<div><div style="font-size:10px;color:#888;text-transform:uppercase">Vencimento</div><div style="font-weight:600;color:#dc2626">${cob.vencimento}</div></div>`:''}
       </div>
     </div>
-
     <!-- Descrição -->
-    <div style="margin-bottom:20px">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:4px">Descrição dos Serviços</div>
-      <div style="background:#f9f9f9;border-left:4px solid #e91e8c;padding:14px 16px;border-radius:4px">${cob.descricao.replace(/\n/g,'<br>')}</div>
+    <div style="margin-bottom:18px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;border-bottom:1px solid #eee;padding-bottom:4px;margin-bottom:8px">Descrição dos Serviços</div>
+      <div style="background:#f9f9f9;border-left:4px solid #e91e8c;padding:12px 16px;border-radius:4px;white-space:pre-wrap">${cob.descricao}</div>
     </div>
-
     <!-- Valor -->
-    <div style="display:flex;justify-content:space-between;align-items:center;background:#fff5fb;border:2px solid #e91e8c;border-radius:8px;padding:16px 20px;margin-bottom:24px">
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#fff5fb;border:2px solid #e91e8c;border-radius:8px;padding:14px 20px;margin-bottom:22px">
       <div>
         <div style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:.5px">Valor Total</div>
-        ${cob.vencimento?`<div style="font-size:12px;color:#555;margin-top:4px">Vencimento: ${cob.vencimento}</div>`:''}
+        ${cob.vencimento?`<div style="font-size:12px;color:#555;margin-top:4px">Vencimento: <b>${cob.vencimento}</b></div>`:''}
       </div>
       <div style="font-size:28px;font-weight:700;color:#e91e8c">${valorFmt}</div>
     </div>
-
     <!-- PIX -->
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:4px">Pagamento via PIX</div>
-    <div style="display:flex;align-items:flex-start;gap:24px;background:#fafafa;border:1px solid #eee;border-radius:8px;padding:20px">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;border-bottom:1px solid #eee;padding-bottom:4px;margin-bottom:12px">Pagamento via PIX</div>
+    <div style="display:flex;align-items:flex-start;gap:24px;background:#fafafa;border:1px solid #eee;border-radius:8px;padding:18px">
       <div style="flex-shrink:0">
-        <img src="${qrDataUrl}" style="width:200px;height:200px;border:1px solid #ddd;border-radius:4px;display:block" alt="QR Code PIX">
+        <img src="${qrUrl}" width="200" height="200" style="border:1px solid #ddd;border-radius:4px;display:block" alt="QR Code PIX"
+             onerror="this.outerHTML='<div style=\\'width:200px;height:200px;background:#f3f4f6;border-radius:4px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;color:#888;padding:16px\\'>QR Code PIX<br>(requer internet)</div>'">
       </div>
       <div>
-        <div style="font-size:16px;font-weight:700;margin-bottom:8px">Pague com PIX</div>
-        <p style="font-size:12px;color:#555;margin-bottom:6px">Escaneie o QR Code ao lado com o aplicativo do seu banco.</p>
-        <p style="font-size:12px;color:#555;margin-bottom:12px">O pagamento é identificado automaticamente — não é necessário enviar comprovante.</p>
-        <div style="background:#fff;border:1px dashed #ccc;border-radius:4px;padding:8px 10px;font-size:11px;color:#333">
-          <div style="font-size:10px;color:#888;text-transform:uppercase;margin-bottom:3px">Chave PIX (CNPJ)</div>
-          30.016.838/0001-34
+        <div style="font-size:15px;font-weight:700;margin-bottom:8px">Pague com PIX</div>
+        <p style="font-size:12px;color:#555;margin-bottom:10px">Escaneie o QR Code com o aplicativo do seu banco.<br>Pagamento identificado automaticamente.</p>
+        <div style="background:#fff;border:1px dashed #ccc;border-radius:4px;padding:8px 10px;font-size:11px;margin-bottom:6px">
+          <div style="font-size:10px;color:#888;text-transform:uppercase;margin-bottom:2px">Chave PIX (CNPJ)</div>
+          <b>30.016.838/0001-34</b>
         </div>
-        <div style="background:#fff;border:1px dashed #ccc;border-radius:4px;padding:8px 10px;font-size:11px;color:#333;margin-top:6px">
-          <div style="font-size:10px;color:#888;text-transform:uppercase;margin-bottom:3px">Favorecido</div>
-          SC Contabilidade
+        <div style="background:#fff;border:1px dashed #ccc;border-radius:4px;padding:8px 10px;font-size:11px;margin-bottom:6px">
+          <div style="font-size:10px;color:#888;text-transform:uppercase;margin-bottom:2px">Favorecido</div>
+          <b>SC Contabilidade</b>
         </div>
-        <div style="background:#fff5fb;border:1px solid #e91e8c;border-radius:4px;padding:8px 10px;margin-top:6px;font-size:13px;font-weight:700;color:#e91e8c">
+        <div style="background:#fff5fb;border:2px solid #e91e8c;border-radius:4px;padding:8px 10px;font-size:14px;font-weight:700;color:#e91e8c">
           Valor: ${valorFmt}
         </div>
       </div>
     </div>
-
-    <div style="margin-top:32px;padding-top:16px;border-top:1px solid #eee;text-align:center;font-size:11px;color:#aaa">
+    <div style="margin-top:28px;padding-top:14px;border-top:1px solid #eee;text-align:center;font-size:11px;color:#aaa">
       SC Contabilidade · Santo André – SP · CNPJ 30.016.838/0001-34
     </div>
   </div>`;
 
-  cartaAtual = html;
   document.getElementById('carta-preview').innerHTML = html;
-  document.getElementById('modal-carta').classList.add('open');
+  // Pré-preenche e-mail para o botão "Enviar por E-mail"
+  preencherEmailModal(cob, cli);
+  abrirModal('modal-carta');
 }
 
 function imprimirCarta() {
-  if (!cartaAtual) return;
-  const janela = window.open('', '_blank');
+  const conteudo = document.getElementById('carta-preview').innerHTML;
+  const janela = window.open('','_blank','width=850,height=1100');
   janela.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
-  <title>Carta de Cobrança — SC Contabilidade</title>
-  <style>@page{size:A4;margin:20mm}body{font-family:Arial,sans-serif;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}</style>
-  </head><body>${cartaAtual}
-  <script>window.onload=()=>{window.print();}<\/script></body></html>`);
+    <title>Carta de Cobrança — SC Contabilidade</title>
+    <style>@page{size:A4;margin:15mm}body{font-family:Arial,sans-serif;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}.carta-wrap{font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;line-height:1.6;padding:32px}</style>
+    </head><body>${conteudo}<script>window.onload=()=>window.print();<\/script></body></html>`);
   janela.document.close();
 }
 
-// ── Init ───────────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+// E-MAIL
+// ══════════════════════════════════════════════════════════
+function montarMensagemEmail(cob, cli) {
+  const mesNome  = MESES[cob.mesReferencia-1]||'';
+  const valorFmt = formatBRL(cob.valor);
+  const cfg      = getConfig();
+  const assinatura = cfg.assinatura || 'SC Contabilidade\nCNPJ: 30.016.838/0001-34\nSanto André – SP';
+  return `Prezado(a) ${cli.razaoSocial},
 
+Segue a cobrança referente aos serviços contábeis de ${mesNome}/${cob.anoReferencia}.
+
+─────────────────────────────
+SERVIÇOS PRESTADOS
+─────────────────────────────
+${cob.descricao}
+
+─────────────────────────────
+VALOR: ${valorFmt}${cob.vencimento?'\nVENCIMENTO: '+cob.vencimento:''}
+─────────────────────────────
+
+PAGAMENTO VIA PIX:
+Chave: 30.016.838/0001-34 (CNPJ)
+Favorecido: SC Contabilidade
+Valor: ${valorFmt}
+
+Em caso de dúvidas, entre em contato.
+
+Atenciosamente,
+${assinatura}`;
+}
+
+function preencherEmailModal(cob, cli) {
+  const mesNome = MESES[cob.mesReferencia-1]||'';
+  document.getElementById('email-para').value     = cli?.email || '';
+  document.getElementById('email-assunto').value  = `Honorários Contábeis — ${mesNome}/${cob.anoReferencia} — SC Contabilidade`;
+  document.getElementById('email-mensagem').value = montarMensagemEmail(cob, cli);
+  document.getElementById('email-status').innerHTML = '';
+}
+
+function abrirEmailModal() {
+  if (!cobAtual) return;
+  const cli = getClientes().find(c=>c.id===cobAtual.clienteId);
+  preencherEmailModal(cobAtual, cli);
+  fecharModal('modal-carta');
+  abrirModal('modal-email');
+}
+
+function abrirEmailDireto(id) {
+  const cob = getCobrancas().find(c=>c.id===id);
+  if (!cob) return;
+  cobAtual = cob;
+  const cli = getClientes().find(c=>c.id===cob.clienteId);
+  preencherEmailModal(cob, cli);
+  abrirModal('modal-email');
+}
+
+function enviarMailto() {
+  const para     = document.getElementById('email-para').value.trim();
+  const assunto  = document.getElementById('email-assunto').value.trim();
+  const mensagem = document.getElementById('email-mensagem').value.trim();
+  if (!para) { toast('Informe o e-mail do cliente','erro'); return; }
+  const link = `mailto:${encodeURIComponent(para)}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(mensagem)}`;
+  window.location.href = link;
+  document.getElementById('email-status').innerHTML =
+    '<div style="color:var(--green);font-size:12px;margin-top:8px">✓ Abrindo seu programa de e-mail... <br>Lembre de anexar a carta em PDF (clique em "Ver Carta" → Imprimir → Salvar PDF).</div>';
+}
+
+async function enviarEmailJS() {
+  const cfg = getConfig();
+  if (!cfg.pubkey || !cfg.serviceId || !cfg.templateId) {
+    document.getElementById('email-status').innerHTML =
+      '<div class="alert alert-yellow">⚠ EmailJS não configurado. Vá em <b>⚙ E-mail</b> para configurar, ou use "Abrir no e-mail".</div>';
+    return;
+  }
+  const para     = document.getElementById('email-para').value.trim();
+  const assunto  = document.getElementById('email-assunto').value.trim();
+  const mensagem = document.getElementById('email-mensagem').value.trim();
+  if (!para) { toast('Informe o e-mail do cliente','erro'); return; }
+
+  const btn = document.getElementById('btn-enviar-ejs');
+  btn.disabled = true; btn.textContent = 'Enviando…';
+  document.getElementById('email-status').innerHTML = '<span style="color:var(--gray-400);font-size:12px">Enviando…</span>';
+
+  try {
+    // Carrega EmailJS dinamicamente se necessário
+    if (!window.emailjs) {
+      await new Promise((res,rej)=>{
+        const s = document.createElement('script');
+        s.src='https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js';
+        s.onload=res; s.onerror=rej;
+        document.head.appendChild(s);
+      });
+      window.emailjs.init(cfg.pubkey);
+    }
+    const cob = cobAtual;
+    const cli = getClientes().find(c=>c.id===cob?.clienteId);
+    const pixPayload = cob ? buildPixPayload(cob.valor,`COB${cob.id}`) : '';
+    const qrUrl = pixPayload ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=10&data=${encodeURIComponent(pixPayload)}` : '';
+    await window.emailjs.send(cfg.serviceId, cfg.templateId, {
+      to_email: para,
+      to_name:  cli?.razaoSocial || para,
+      subject:  assunto,
+      message:  mensagem,
+      qr_url:   qrUrl,
+    });
+    document.getElementById('email-status').innerHTML =
+      '<div style="color:var(--green);font-size:13px;font-weight:600">✓ E-mail enviado com sucesso!</div>';
+    toast('E-mail enviado!', 'ok2');
+    setTimeout(()=>fecharModal('modal-email'), 2000);
+  } catch(err) {
+    document.getElementById('email-status').innerHTML =
+      `<div class="alert alert-yellow">Erro ao enviar: ${err?.text||err?.message||'Verifique as configurações do EmailJS.'}</div>`;
+  } finally {
+    btn.disabled=false; btn.textContent='✉ Enviar automático';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// CONFIGURAÇÕES
+// ══════════════════════════════════════════════════════════
+function carregarConfig() {
+  const cfg = getConfig();
+  document.getElementById('cfg-pubkey').value     = cfg.pubkey     || '';
+  document.getElementById('cfg-service').value    = cfg.serviceId  || '';
+  document.getElementById('cfg-template').value   = cfg.templateId || '';
+  document.getElementById('cfg-assinatura').value = cfg.assinatura || 'SC Contabilidade\nCNPJ: 30.016.838/0001-34\nSanto André – SP';
+}
+
+function salvarConfig() {
+  setConfig({
+    pubkey:     document.getElementById('cfg-pubkey').value.trim(),
+    serviceId:  document.getElementById('cfg-service').value.trim(),
+    templateId: document.getElementById('cfg-template').value.trim(),
+    assinatura: document.getElementById('cfg-assinatura').value.trim(),
+  });
+  toast('Configurações salvas!', 'ok2');
+  document.getElementById('cfg-status').innerHTML = '<span style="color:var(--green)">✓ Salvo</span>';
+  setTimeout(()=>document.getElementById('cfg-status').innerHTML='', 2000);
+}
+
+async function testarEmail() {
+  const cfg = getConfig();
+  if (!cfg.pubkey||!cfg.serviceId||!cfg.templateId) {
+    document.getElementById('cfg-status').innerHTML='<span style="color:var(--red)">Preencha todas as chaves antes de testar.</span>';
+    return;
+  }
+  document.getElementById('cfg-status').innerHTML='<span style="color:var(--gray-400)">Enviando e-mail de teste…</span>';
+  try {
+    if (!window.emailjs) {
+      await new Promise((res,rej)=>{
+        const s=document.createElement('script');
+        s.src='https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js';
+        s.onload=res; s.onerror=rej;
+        document.head.appendChild(s);
+      });
+      window.emailjs.init(cfg.pubkey);
+    }
+    await window.emailjs.send(cfg.serviceId, cfg.templateId, {
+      to_email:'teste@exemplo.com', to_name:'Teste',
+      subject:'Teste SC Contabilidade', message:'E-mail de teste do sistema de cobranças.', qr_url:'',
+    });
+    document.getElementById('cfg-status').innerHTML='<span style="color:var(--green)">✓ E-mail de teste enviado!</span>';
+  } catch(err) {
+    document.getElementById('cfg-status').innerHTML=`<span style="color:var(--red)">Erro: ${err?.text||err?.message||'Verifique as chaves.'}</span>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// IMPORTAÇÃO CSV
+// ══════════════════════════════════════════════════════════
+let csvLinhas = [];
+
+function abrirImportacaoCsv() {
+  document.getElementById('csv-file').value = '';
+  document.getElementById('csv-preview').innerHTML = '';
+  document.getElementById('csv-status').innerHTML = '';
+  document.getElementById('btn-confirmar-csv').disabled = true;
+  document.getElementById('btn-confirmar-csv').textContent = 'Importar Clientes';
+  csvLinhas = [];
+  abrirModal('modal-csv');
+}
+
+function processarArquivoCsv(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try { parsearCsv(e.target.result); }
+    catch(err) { document.getElementById('csv-status').innerHTML = `<div class="alert alert-yellow">Erro ao ler arquivo: ${err.message}</div>`; }
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+function parsearCsv(texto) {
+  const linhas = texto.split(/\r?\n/).filter(l => l.trim());
+  if (linhas.length < 2) {
+    document.getElementById('csv-status').innerHTML = '<div class="alert alert-yellow">Arquivo inválido. É necessário cabeçalho + ao menos 1 linha de dados.</div>';
+    return;
+  }
+  const sep = linhas[0].includes(';') ? ';' : ',';
+  const cab = linhas[0].split(sep).map(c => c.trim().toLowerCase().replace(/['"]/g,''));
+  const idx = {
+    cnpj:      cab.findIndex(c => c.includes('cnpj')),
+    razao:     cab.findIndex(c => c.includes('razao') || c.includes('razão')),
+    fantasia:  cab.findIndex(c => c.includes('fantasia')),
+    email:     cab.findIndex(c => c.includes('email') || c.includes('e-mail')),
+    telefone:  cab.findIndex(c => c.includes('tel') || c.includes('fone')),
+    honorario: cab.findIndex(c => c.includes('honor')),
+    regime:    cab.findIndex(c => c.includes('regime')),
+  };
+  if (idx.cnpj === -1) {
+    document.getElementById('csv-status').innerHTML = '<div class="alert alert-yellow">Coluna "cnpj" não encontrada no cabeçalho do arquivo.</div>';
+    return;
+  }
+  const col = (cols, i) => i >= 0 ? (cols[i]||'').replace(/^["']|["']$/g,'').trim() : '';
+  const rows = [];
+  for (let i = 1; i < linhas.length; i++) {
+    const cols  = linhas[i].split(sep);
+    const cnpjRaw = col(cols, idx.cnpj).replace(/\D/g,'');
+    if (cnpjRaw.length !== 14) continue;
+    const regTxt = col(cols, idx.regime).toLowerCase();
+    rows.push({
+      cnpj:        cnpjRaw,
+      razaoSocial: col(cols, idx.razao) || '',
+      nomeFantasia:col(cols, idx.fantasia) || '',
+      email:       col(cols, idx.email) || '',
+      telefone:    col(cols, idx.telefone) || '',
+      honorario:   idx.honorario >= 0 ? parseBRL(col(cols, idx.honorario)) || null : null,
+      regime:      regTxt.includes('presumido') ? 'presumido' : regTxt.includes('real') ? 'real' : 'simples',
+    });
+  }
+  csvLinhas = rows;
+  if (!rows.length) {
+    document.getElementById('csv-status').innerHTML = '<div class="alert alert-yellow">Nenhum CNPJ válido encontrado no arquivo.</div>';
+    return;
+  }
+  const existentes = getClientes().map(c => c.cnpj);
+  const novos = rows.filter(r => !existentes.includes(r.cnpj)).length;
+  document.getElementById('csv-status').innerHTML =
+    `<div class="alert alert-blue">${rows.length} CNPJ(s) encontrado(s) · <b>${novos} novo(s)</b> · ${rows.length-novos} já cadastrado(s) (serão ignorados).</div>`;
+  document.getElementById('csv-preview').innerHTML = `
+    <div style="max-height:220px;overflow-y:auto;margin-top:12px;border:1px solid var(--gray-200);border-radius:var(--radius)">
+      <table>
+        <thead><tr><th>CNPJ</th><th>Razão Social</th><th>Honorário</th><th>Situação</th></tr></thead>
+        <tbody id="csv-preview-body">
+          ${rows.map((r,i) => `<tr id="csv-row-${i}">
+            <td style="font-family:monospace;font-size:12px">${formatCnpj(r.cnpj)}</td>
+            <td>${r.razaoSocial || '<span style="color:var(--gray-400)">— buscar da Receita —</span>'}</td>
+            <td>${r.honorario ? formatBRL(r.honorario) : '—'}</td>
+            <td>${existentes.includes(r.cnpj)
+              ? '<span class="badge badge-gray">Já existe</span>'
+              : '<span class="badge badge-blue">Novo</span>'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  document.getElementById('btn-confirmar-csv').disabled = novos === 0;
+}
+
+async function confirmarImportacaoCsv() {
+  const existentes = new Set(getClientes().map(c => c.cnpj));
+  const novos = csvLinhas.filter(r => !existentes.has(r.cnpj));
+  if (!novos.length) { toast('Todos os CNPJs já estão cadastrados.','erro'); return; }
+  const btn = document.getElementById('btn-confirmar-csv');
+  btn.disabled = true;
+  const buscarReceita = document.getElementById('csv-buscar-receita').checked;
+  let importados = 0;
+  for (let i = 0; i < novos.length; i++) {
+    const r   = novos[i];
+    const rowIdx = csvLinhas.indexOf(r);
+    const rowEl  = document.getElementById(`csv-row-${rowIdx}`);
+    if (rowEl) rowEl.querySelector('td:last-child').innerHTML = '<span class="badge badge-yellow">Importando…</span>';
+    const lista = getClientes();
+    const obj = {
+      id: nextId(lista), cnpj: r.cnpj,
+      razaoSocial:  r.razaoSocial  || `CNPJ ${formatCnpj(r.cnpj)}`,
+      nomeFantasia: r.nomeFantasia || null,
+      regime: r.regime, honorario: r.honorario || null,
+      email: r.email || null, telefone: r.telefone || null,
+      responsavel: null, observacoes: null, ativo: 1,
+      criadoEm: new Date().toISOString(),
+    };
+    if (buscarReceita && (!r.razaoSocial)) {
+      try {
+        const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${r.cnpj}`);
+        if (res.ok) {
+          const d = await res.json();
+          obj.razaoSocial  = d.razao_social  || obj.razaoSocial;
+          obj.nomeFantasia = d.nome_fantasia  || obj.nomeFantasia || null;
+          if (!obj.email    && d.email)         obj.email    = d.email;
+          if (!obj.telefone && d.ddd_telefone_1) obj.telefone = d.ddd_telefone_1;
+        }
+      } catch {}
+      if (i < novos.length - 1) await new Promise(r => setTimeout(r, 400));
+    }
+    lista.push(obj);
+    setClientes(lista);
+    importados++;
+    btn.textContent = `Importando… ${importados}/${novos.length}`;
+    if (rowEl) rowEl.querySelector('td:last-child').innerHTML = '<span class="badge badge-green">✓ Importado</span>';
+  }
+  renderClientes(); renderDashboard();
+  toast(`${importados} cliente(s) importado(s)!`, 'ok2');
+  btn.textContent = '✓ Concluído!';
+  setTimeout(() => { fecharModal('modal-csv'); btn.disabled=false; btn.textContent='Importar Clientes'; }, 2000);
+}
+
+// ══════════════════════════════════════════════════════════
+// BACKUP
+// ══════════════════════════════════════════════════════════
+function exportarBackup() {
+  const backup = {
+    version: 1,
+    exportadoEm: new Date().toISOString(),
+    clientes:  getClientes(),
+    cobrancas: getCobrancas(),
+    config:    getConfig(),
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type:'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `sc-contabilidade-backup-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Backup exportado!', 'ok2');
+}
+
+function abrirImportacaoBackup() {
+  document.getElementById('bkp-file').value = '';
+  document.getElementById('bkp-status').innerHTML = '';
+  document.getElementById('btn-restaurar-bkp').disabled = true;
+  abrirModal('modal-backup');
+}
+
+function processarBackup(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const bkp = JSON.parse(e.target.result);
+      if (!Array.isArray(bkp.clientes) || !Array.isArray(bkp.cobrancas)) {
+        document.getElementById('bkp-status').innerHTML = '<div class="alert alert-yellow">Arquivo inválido. Não é um backup deste sistema.</div>';
+        return;
+      }
+      const data = bkp.exportadoEm ? new Date(bkp.exportadoEm).toLocaleString('pt-BR') : 'data desconhecida';
+      document.getElementById('bkp-status').innerHTML = `
+        <div class="alert alert-blue">
+          📦 <b>Backup de ${data}</b><br>
+          ${bkp.clientes.length} cliente(s) · ${bkp.cobrancas.length} cobrança(s)<br><br>
+          <span style="color:var(--red);font-weight:600">⚠ Todos os dados atuais serão substituídos!</span>
+        </div>`;
+      const btn = document.getElementById('btn-restaurar-bkp');
+      btn.disabled = false;
+      btn.onclick = () => restaurarBackup(bkp);
+    } catch(err) {
+      document.getElementById('bkp-status').innerHTML = `<div class="alert alert-yellow">Erro ao ler arquivo: ${err.message}</div>`;
+    }
+  };
+  reader.readAsText(file);
+}
+
+function restaurarBackup(bkp) {
+  const msg = `Restaurar backup?\n\n${bkp.clientes.length} cliente(s) e ${bkp.cobrancas.length} cobrança(s) serão carregados.\n\nTodos os dados ATUAIS serão perdidos. Continuar?`;
+  if (!confirm(msg)) return;
+  setClientes(bkp.clientes  || []);
+  setCobrancas(bkp.cobrancas || []);
+  if (bkp.config) setConfig(bkp.config);
+  fecharModal('modal-backup');
+  renderDashboard(); renderClientes(); renderCobrancas();
+  toast('Backup restaurado com sucesso!', 'ok2');
+}
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
 renderDashboard();
 </script>
 </body>
