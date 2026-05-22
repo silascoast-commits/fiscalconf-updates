@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Receitas Salubre Contabilidade | Silas da Costa</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: #f0f4f8;
+      color: #1e2d40;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #0f2444 0%, #1a5276 100%);
+      color: #fff;
+      padding: 28px 36px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.25);
+    }
+    .header h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -.3px; }
+    .header-sub { opacity: .78; font-size: .88rem; margin-top: 4px; }
+    .header-meta {
+      display: flex; flex-wrap: wrap; gap: 20px;
+      margin-top: 14px; font-size: .82rem; opacity: .9;
+    }
+    .header-meta span { display: flex; align-items: center; gap: 6px; }
+
+    /* ── Layout ── */
+    .container { max-width: 1380px; margin: 0 auto; padding: 28px 32px; }
+
+    /* ── Summary Cards ── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 22px 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.07);
+      border-top: 4px solid;
+      transition: transform .18s, box-shadow .18s;
+      cursor: default;
+    }
+    .card:hover { transform: translateY(-3px); box-shadow: 0 6px 22px rgba(0,0,0,.12); }
+
+    .card.jan  { border-color: #3b82f6; }
+    .card.fev  { border-color: #8b5cf6; }
+    .card.mar  { border-color: #10b981; }
+    .card.abr  { border-color: #f59e0b; }
+    .card.total{
+      border-color: #ef4444;
+      background: linear-gradient(135deg, #fff 0%, #fff4f4 100%);
+    }
+
+    .card-label {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .6px; color: #6b7280; margin-bottom: 8px;
+    }
+    .card-value { font-size: 1.6rem; font-weight: 800; line-height: 1.15; }
+    .card-value.grand { font-size: 1.85rem; color: #dc2626; }
+    .card-sub  { font-size: .75rem; color: #9ca3af; margin-top: 5px; }
+    .card-pill {
+      display: inline-block; background: #f3f4f6; border-radius: 20px;
+      padding: 2px 10px; font-size: .7rem; color: #6b7280; margin-top: 8px;
+    }
+
+    /* ── Charts row ── */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+    .chart-card {
+      background: #fff; border-radius: 14px;
+      padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,.07);
+    }
+    .chart-card h3 {
+      font-size: .95rem; font-weight: 700; color: #374151; margin-bottom: 18px;
+    }
+    .chart-wrap { position: relative; height: 290px; }
+
+    /* ── Timeline mini-chart card ── */
+    .timeline-card {
+      background: #fff; border-radius: 14px;
+      padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,.07);
+      margin-bottom: 24px;
+    }
+    .timeline-card h3 {
+      font-size: .95rem; font-weight: 700; color: #374151; margin-bottom: 18px;
+    }
+    .timeline-wrap { position: relative; height: 200px; }
+
+    /* ── Table card ── */
+    .table-card {
+      background: #fff; border-radius: 14px;
+      padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,.07);
+    }
+    .table-header {
+      display: flex; align-items: center;
+      justify-content: space-between; flex-wrap: wrap;
+      gap: 12px; margin-bottom: 18px;
+    }
+    .table-header h3 { font-size: .95rem; font-weight: 700; color: #374151; }
+
+    .filter-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+    .filter-btn {
+      padding: 5px 14px; border: 1.5px solid #e5e7eb; background: #fff;
+      border-radius: 20px; font-size: .78rem; cursor: pointer;
+      color: #6b7280; font-weight: 600; transition: all .15s;
+    }
+    .filter-btn:hover  { border-color: #3b82f6; color: #3b82f6; }
+    .filter-btn.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+
+    .search-box {
+      padding: 5px 14px; border: 1.5px solid #e5e7eb; border-radius: 20px;
+      font-size: .78rem; outline: none; width: 210px; transition: border-color .15s;
+    }
+    .search-box:focus { border-color: #3b82f6; }
+
+    /* table */
+    table { width: 100%; border-collapse: collapse; font-size: .855rem; }
+    thead th {
+      text-align: left; padding: 10px 14px;
+      font-size: .7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .5px; color: #6b7280; background: #f9fafb;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    thead th.right { text-align: right; }
+    tbody tr { border-bottom: 1px solid #f5f5f5; transition: background .1s; }
+    tbody tr:hover { background: #f0f7ff; }
+    tbody td { padding: 10px 14px; color: #374151; }
+    tbody td.valor {
+      text-align: right; font-weight: 700;
+      color: #059669; font-variant-numeric: tabular-nums;
+    }
+    tbody td.id-cell {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: .73rem; color: #9ca3af;
+    }
+
+    .badge {
+      display: inline-block; padding: 2px 9px;
+      border-radius: 5px; font-size: .68rem; font-weight: 700;
+    }
+    .badge-jan { background: #dbeafe; color: #1d4ed8; }
+    .badge-fev { background: #ede9fe; color: #6d28d9; }
+    .badge-mar { background: #d1fae5; color: #065f46; }
+    .badge-abr { background: #fef3c7; color: #92400e; }
+
+    /* pagination */
+    .pager {
+      display: flex; align-items: center;
+      justify-content: space-between; margin-top: 16px;
+      font-size: .8rem; color: #6b7280;
+    }
+    .pager-btns { display: flex; gap: 4px; }
+    .pager-btn {
+      padding: 4px 11px; border: 1px solid #e5e7eb; background: #fff;
+      border-radius: 5px; cursor: pointer; font-size: .78rem;
+      transition: all .15s;
+    }
+    .pager-btn:hover, .pager-btn.active {
+      background: #3b82f6; border-color: #3b82f6; color: #fff;
+    }
+
+    /* totals footer row */
+    .total-row td {
+      font-weight: 800 !important; background: #f8fafc;
+      border-top: 2px solid #e5e7eb !important; color: #1e2d40 !important;
+    }
+    .total-row .valor { color: #dc2626 !important; }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center; padding: 22px;
+      color: #9ca3af; font-size: .76rem;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .charts-row { grid-template-columns: 1fr; }
+      .container  { padding: 16px; }
+      .cards-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 560px) {
+      .cards-grid { grid-template-columns: 1fr; }
+      .header h1  { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════ HEADER ════════════════ -->
+<div class="header">
+  <h1>💰 Receitas — Salubre Contabilidade</h1>
+  <p class="header-sub">Extrato Mercado Pago · Conta 30046640814 · CPF 332.033.038-17</p>
+  <div class="header-meta">
+    <span>👤 Silas da Costa</span>
+    <span>📅 Janeiro – Abril 2026</span>
+    <span>🏦 Agência 1 · Mercado Pago</span>
+    <span>📄 4 extratos analisados</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ════════════════ CARDS ════════════════ -->
+  <div class="cards-grid">
+    <div class="card jan">
+      <div class="card-label">Janeiro 2026</div>
+      <div class="card-value" id="val-jan">R$ 36.060,00</div>
+      <div class="card-sub">Saldo final da conta: R$ 19.094,66</div>
+      <div class="card-pill">30 transações recebidas</div>
+    </div>
+    <div class="card fev">
+      <div class="card-label">Fevereiro 2026</div>
+      <div class="card-value" id="val-fev">R$ 47.790,00</div>
+      <div class="card-sub">Saldo final da conta: R$ 17.402,41</div>
+      <div class="card-pill">32 transações recebidas</div>
+    </div>
+    <div class="card mar">
+      <div class="card-label">Março 2026</div>
+      <div class="card-value" id="val-mar">R$ 39.400,00</div>
+      <div class="card-sub">Saldo final da conta: R$ 17.052,17</div>
+      <div class="card-pill">25 transações recebidas</div>
+    </div>
+    <div class="card abr">
+      <div class="card-label">Abril 2026</div>
+      <div class="card-value" id="val-abr">R$ 40.910,00</div>
+      <div class="card-sub">Saldo final da conta: R$ 22.670,98</div>
+      <div class="card-pill">31 transações recebidas</div>
+    </div>
+    <div class="card total">
+      <div class="card-label">Total Geral · 4 Meses</div>
+      <div class="card-value grand">R$ 164.160,00</div>
+      <div class="card-sub">Média mensal: R$ 41.040,00</div>
+      <div class="card-pill">118 transações no total</div>
+    </div>
+  </div>
+
+  <!-- ════════════════ CHARTS ════════════════ -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <h3>📊 Receita Mensal — Salubre Contabilidade</h3>
+      <div class="chart-wrap"><canvas id="barChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>🥧 Participação por Mês</h3>
+      <div class="chart-wrap"><canvas id="pieChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Daily timeline chart -->
+  <div class="timeline-card">
+    <h3>📈 Receita Acumulada por Dia (Jan – Abr 2026)</h3>
+    <div class="timeline-wrap"><canvas id="lineChart"></canvas></div>
+  </div>
+
+  <!-- ════════════════ TABLE ════════════════ -->
+  <div class="table-card">
+    <div class="table-header">
+      <h3>📋 Detalhamento — Pix Recebidos da Salubre Contabilidade</h3>
+      <div class="filter-group">
+        <button class="filter-btn active" data-mes="all"  onclick="filterMes(this)">Todos</button>
+        <button class="filter-btn"        data-mes="jan"  onclick="filterMes(this)">Jan</button>
+        <button class="filter-btn"        data-mes="fev"  onclick="filterMes(this)">Fev</button>
+        <button class="filter-btn"        data-mes="mar"  onclick="filterMes(this)">Mar</button>
+        <button class="filter-btn"        data-mes="abr"  onclick="filterMes(this)">Abr</button>
+        <input id="searchBox" class="search-box" type="text"
+               placeholder="🔍 Buscar valor, data ou ID…"
+               oninput="searchTable(this.value)" />
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Mês</th>
+          <th>ID da Operação</th>
+          <th>Origem</th>
+          <th class="right">Valor Recebido</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+
+    <div class="pager">
+      <span id="pageInfo"></span>
+      <div class="pager-btns" id="pagerBtns"></div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<div class="footer">
+  Gerado em maio/2026 &nbsp;·&nbsp; Dados extraídos dos extratos Mercado Pago (conta 30046640814)
+  &nbsp;·&nbsp; Apenas lançamentos de entrada da Salubre Contabilidade são computados como receita
+</div>
+
+<!-- ════════════════ SCRIPT ════════════════ -->
+<script>
+/* ─── DATA ─────────────────────────────────────────────────── */
+const TX = [
+  /* JANEIRO 2026 */
+  {d:"04/01/2026",m:"jan",id:"140013055657",v:1000},
+  {d:"05/01/2026",m:"jan",id:"140127288263",v:1000},
+  {d:"06/01/2026",m:"jan",id:"140868060772",v:1000},
+  {d:"06/01/2026",m:"jan",id:"140917474802",v:1000},
+  {d:"06/01/2026",m:"jan",id:"140922955130",v:750},
+  {d:"07/01/2026",m:"jan",id:"141025882926",v:500},
+  {d:"08/01/2026",m:"jan",id:"140542574831",v:700},
+  {d:"08/01/2026",m:"jan",id:"141209824948",v:500},
+  {d:"09/01/2026",m:"jan",id:"141328377202",v:300},
+  {d:"09/01/2026",m:"jan",id:"140710854237",v:700},
+  {d:"12/01/2026",m:"jan",id:"141055376415",v:700},
+  {d:"13/01/2026",m:"jan",id:"141162684655",v:400},
+  {d:"14/01/2026",m:"jan",id:"141358950009",v:900},
+  {d:"15/01/2026",m:"jan",id:"142212481362",v:400},
+  {d:"16/01/2026",m:"jan",id:"142262887054",v:260},
+  {d:"16/01/2026",m:"jan",id:"141648571127",v:150},
+  {d:"22/01/2026",m:"jan",id:"143103830854",v:2300},
+  {d:"23/01/2026",m:"jan",id:"143238521730",v:1700},
+  {d:"26/01/2026",m:"jan",id:"143577016364",v:2500},
+  {d:"26/01/2026",m:"jan",id:"143613653188",v:7000},
+  {d:"26/01/2026",m:"jan",id:"142951405117",v:600},
+  {d:"27/01/2026",m:"jan",id:"143715343098",v:3000},
+  {d:"27/01/2026",m:"jan",id:"143753494430",v:1550},
+  {d:"28/01/2026",m:"jan",id:"143820287136",v:800},
+  {d:"29/01/2026",m:"jan",id:"143285669487",v:2500},
+  {d:"29/01/2026",m:"jan",id:"143338099445",v:600},
+  {d:"30/01/2026",m:"jan",id:"144077749212",v:1000},
+  {d:"30/01/2026",m:"jan",id:"144086390946",v:1000},
+  {d:"30/01/2026",m:"jan",id:"144140675984",v:850},
+  {d:"30/01/2026",m:"jan",id:"144181740550",v:400},
+  /* FEVEREIRO 2026 */
+  {d:"02/02/2026",m:"fev",id:"143829501577",v:500},
+  {d:"02/02/2026",m:"fev",id:"143839724943",v:500},
+  {d:"02/02/2026",m:"fev",id:"143842107671",v:250},
+  {d:"02/02/2026",m:"fev",id:"143855827403",v:300},
+  {d:"02/02/2026",m:"fev",id:"144542748830",v:3000},
+  {d:"02/02/2026",m:"fev",id:"144551958922",v:480},
+  {d:"03/02/2026",m:"fev",id:"144617327910",v:2000},
+  {d:"03/02/2026",m:"fev",id:"144002179497",v:1000},
+  {d:"04/02/2026",m:"fev",id:"144162112839",v:500},
+  {d:"05/02/2026",m:"fev",id:"144910090762",v:550},
+  {d:"05/02/2026",m:"fev",id:"144964965576",v:500},
+  {d:"05/02/2026",m:"fev",id:"144292929973",v:500},
+  {d:"06/02/2026",m:"fev",id:"145058814960",v:900},
+  {d:"06/02/2026",m:"fev",id:"144409529961",v:600},
+  {d:"07/02/2026",m:"fev",id:"144633811391",v:310},
+  {d:"09/02/2026",m:"fev",id:"145490254744",v:1200},
+  {d:"09/02/2026",m:"fev",id:"145515978870",v:800},
+  {d:"09/02/2026",m:"fev",id:"144854773587",v:300},
+  {d:"10/02/2026",m:"fev",id:"144983300713",v:500},
+  {d:"11/02/2026",m:"fev",id:"145835374486",v:900},
+  {d:"12/02/2026",m:"fev",id:"145322736343",v:650},
+  {d:"13/02/2026",m:"fev",id:"146119876886",v:300},
+  {d:"18/02/2026",m:"fev",id:"146122345321",v:400},
+  {d:"24/02/2026",m:"fev",id:"147597669830",v:950},
+  {d:"24/02/2026",m:"fev",id:"146911886843",v:12000},
+  {d:"25/02/2026",m:"fev",id:"146991901535",v:3500},
+  {d:"25/02/2026",m:"fev",id:"147071773683",v:5500},
+  {d:"26/02/2026",m:"fev",id:"147919945206",v:3000},
+  {d:"26/02/2026",m:"fev",id:"147267545287",v:2500},
+  {d:"27/02/2026",m:"fev",id:"148059784678",v:1100},
+  {d:"27/02/2026",m:"fev",id:"147381978337",v:800},
+  {d:"27/02/2026",m:"fev",id:"147437444949",v:1500},
+  /* MARÇO 2026 */
+  {d:"02/03/2026",m:"mar",id:"148477913028",v:3000},
+  {d:"03/03/2026",m:"mar",id:"147917411773",v:1200},
+  {d:"03/03/2026",m:"mar",id:"148650284150",v:1200},
+  {d:"03/03/2026",m:"mar",id:"148689699536",v:1000},
+  {d:"03/03/2026",m:"mar",id:"148723502226",v:700},
+  {d:"04/03/2026",m:"mar",id:"148850076578",v:1100},
+  {d:"06/03/2026",m:"mar",id:"148377446245",v:400},
+  {d:"06/03/2026",m:"mar",id:"148438361773",v:500},
+  {d:"09/03/2026",m:"mar",id:"149574119840",v:1000},
+  {d:"09/03/2026",m:"mar",id:"149605041086",v:850},
+  {d:"10/03/2026",m:"mar",id:"149754743514",v:750},
+  {d:"10/03/2026",m:"mar",id:"149040482261",v:1200},
+  {d:"10/03/2026",m:"mar",id:"149761171528",v:500},
+  {d:"12/03/2026",m:"mar",id:"150068701252",v:450},
+  {d:"12/03/2026",m:"mar",id:"149361765575",v:600},
+  {d:"13/03/2026",m:"mar",id:"149474800873",v:450},
+  {d:"13/03/2026",m:"mar",id:"150238710974",v:700},
+  {d:"19/03/2026",m:"mar",id:"151111897728",v:1000},
+  {d:"26/03/2026",m:"mar",id:"151238821651",v:8000},
+  {d:"27/03/2026",m:"mar",id:"152114363354",v:9500},
+  {d:"28/03/2026",m:"mar",id:"152346267874",v:1200},
+  {d:"30/03/2026",m:"mar",id:"151793971499",v:1500},
+  {d:"30/03/2026",m:"mar",id:"151811483927",v:400},
+  {d:"31/03/2026",m:"mar",id:"152650128110",v:1600},
+  {d:"31/03/2026",m:"mar",id:"152713595760",v:600},
+  /* ABRIL 2026 */
+  {d:"01/04/2026",m:"abr",id:"152087248697",v:1500},
+  {d:"01/04/2026",m:"abr",id:"152134894559",v:300},
+  {d:"01/04/2026",m:"abr",id:"152156575149",v:550},
+  {d:"01/04/2026",m:"abr",id:"152913837518",v:1500},
+  {d:"02/04/2026",m:"abr",id:"152273163943",v:1100},
+  {d:"02/04/2026",m:"abr",id:"153036615064",v:400},
+  {d:"06/04/2026",m:"abr",id:"152737521473",v:900},
+  {d:"06/04/2026",m:"abr",id:"152775491399",v:1000},
+  {d:"06/04/2026",m:"abr",id:"153550110216",v:500},
+  {d:"07/04/2026",m:"abr",id:"153626838192",v:1100},
+  {d:"07/04/2026",m:"abr",id:"153635392296",v:400},
+  {d:"07/04/2026",m:"abr",id:"152955509773",v:950},
+  {d:"08/04/2026",m:"abr",id:"153792207346",v:500},
+  {d:"09/04/2026",m:"abr",id:"153250219209",v:1300},
+  {d:"09/04/2026",m:"abr",id:"154052948324",v:300},
+  {d:"10/04/2026",m:"abr",id:"154114661502",v:400},
+  {d:"10/04/2026",m:"abr",id:"153460310373",v:600},
+  {d:"13/04/2026",m:"abr",id:"153831360141",v:1000},
+  {d:"13/04/2026",m:"abr",id:"154590687328",v:300},
+  {d:"13/04/2026",m:"abr",id:"154602380124",v:150},
+  {d:"13/04/2026",m:"abr",id:"153861053739",v:500},
+  {d:"14/04/2026",m:"abr",id:"154728667294",v:100},
+  {d:"16/04/2026",m:"abr",id:"155068164950",v:260},
+  {d:"16/04/2026",m:"abr",id:"155092559950",v:400},
+  {d:"17/04/2026",m:"abr",id:"154486109071",v:800},
+  {d:"27/04/2026",m:"abr",id:"155922733295",v:8000},
+  {d:"28/04/2026",m:"abr",id:"156759837746",v:5000},
+  {d:"29/04/2026",m:"abr",id:"156918731804",v:3000},
+  {d:"29/04/2026",m:"abr",id:"156988691664",v:3600},
+  {d:"30/04/2026",m:"abr",id:"156340389057",v:3000},
+  {d:"30/04/2026",m:"abr",id:"157185842686",v:1500},
+];
+
+/* ─── HELPERS ───────────────────────────────────────────────── */
+const brl = v => 'R$ ' + v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const mesLabel = {jan:'Janeiro',fev:'Fevereiro',mar:'Março',abr:'Abril'};
+const mesColors = {jan:'#3b82f6',fev:'#8b5cf6',mar:'#10b981',abr:'#f59e0b'};
+
+/* ─── STATE ─────────────────────────────────────────────────── */
+let filteredTX = [...TX];
+let currentPage  = 1;
+const PER_PAGE   = 20;
+let activeMes    = 'all';
+
+/* ─── TABLE ─────────────────────────────────────────────────── */
+function renderTable(){
+  const start = (currentPage-1)*PER_PAGE;
+  const slice = filteredTX.slice(start, start+PER_PAGE);
+  const total = filteredTX.reduce((s,t)=>s+t.v,0);
+
+  const rows = slice.map(t=>`
+    <tr>
+      <td>${t.d}</td>
+      <td><span class="badge badge-${t.m}">${mesLabel[t.m]}</span></td>
+      <td class="id-cell">${t.id}</td>
+      <td>Salubre Contabilidade</td>
+      <td class="valor">${brl(t.v)}</td>
+    </tr>`).join('');
+
+  // totals footer
+  const foot = `
+    <tr class="total-row">
+      <td colspan="4">Total exibido (${filteredTX.length} transações)</td>
+      <td class="valor">${brl(total)}</td>
+    </tr>`;
+
+  document.getElementById('tableBody').innerHTML = rows + foot;
+
+  const end = Math.min(start+PER_PAGE, filteredTX.length);
+  document.getElementById('pageInfo').textContent =
+    `Exibindo ${start+1}–${end} de ${filteredTX.length} registros`;
+
+  renderPager();
+}
+
+function renderPager(){
+  const pages = Math.ceil(filteredTX.length/PER_PAGE);
+  document.getElementById('pagerBtns').innerHTML =
+    Array.from({length:pages},(_,i)=>
+      `<button class="pager-btn${i+1===currentPage?' active':''}" onclick="goPage(${i+1})">${i+1}</button>`
+    ).join('');
+}
+
+function goPage(n){ currentPage=n; renderTable(); }
+
+function filterMes(btn){
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  activeMes = btn.dataset.mes;
+  applyFilters();
+}
+
+function searchTable(q){
+  applyFilters(q);
+}
+
+function applyFilters(q = document.getElementById('searchBox').value){
+  const lq = q.toLowerCase();
+  filteredTX = TX.filter(t=>{
+    const monthOk = activeMes==='all' || t.m===activeMes;
+    const searchOk = !lq ||
+      t.id.includes(lq) ||
+      t.d.includes(lq) ||
+      String(t.v).includes(lq) ||
+      brl(t.v).toLowerCase().includes(lq);
+    return monthOk && searchOk;
+  });
+  currentPage=1;
+  renderTable();
+}
+
+/* ─── CHARTS ────────────────────────────────────────────────── */
+const totals = {
+  jan: TX.filter(t=>t.m==='jan').reduce((s,t)=>s+t.v,0),
+  fev: TX.filter(t=>t.m==='fev').reduce((s,t)=>s+t.v,0),
+  mar: TX.filter(t=>t.m==='mar').reduce((s,t)=>s+t.v,0),
+  abr: TX.filter(t=>t.m==='abr').reduce((s,t)=>s+t.v,0),
+};
+const grand = totals.jan+totals.fev+totals.mar+totals.abr;
+
+/* Bar chart */
+new Chart(document.getElementById('barChart'),{
+  type:'bar',
+  data:{
+    labels:['Janeiro 2026','Fevereiro 2026','Março 2026','Abril 2026'],
+    datasets:[{
+      label:'Receita (R$)',
+      data:[totals.jan,totals.fev,totals.mar,totals.abr],
+      backgroundColor:['#3b82f699','#8b5cf699','#10b98199','#f59e0b99'],
+      borderColor:['#3b82f6','#8b5cf6','#10b981','#f59e0b'],
+      borderWidth:2,
+      borderRadius:8,
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:c=>' '+brl(c.raw)}}
+    },
+    scales:{
+      y:{
+        beginAtZero:true,
+        ticks:{callback:v=>'R$ '+(v/1000).toFixed(0)+'k'},
+        grid:{color:'#f3f4f6'}
+      },
+      x:{grid:{display:false}}
+    }
+  }
+});
+
+/* Donut chart */
+new Chart(document.getElementById('pieChart'),{
+  type:'doughnut',
+  data:{
+    labels:['Janeiro','Fevereiro','Março','Abril'],
+    datasets:[{
+      data:[totals.jan,totals.fev,totals.mar,totals.abr],
+      backgroundColor:['#3b82f6','#8b5cf6','#10b981','#f59e0b'],
+      borderWidth:3, borderColor:'#fff',
+      hoverBorderWidth:4,
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{position:'bottom',labels:{font:{size:11},padding:14}},
+      tooltip:{callbacks:{
+        label:c=>' '+brl(c.raw)+' ('+((c.raw/grand)*100).toFixed(1)+'%)'
+      }}
+    },
+    cutout:'58%'
+  }
+});
+
+/* Cumulative line chart */
+(function(){
+  // build daily cumulative series
+  const sorted = [...TX].sort((a,b)=>{
+    const p = s=>{ const[d,m,y]=s.split('/'); return +new Date(y,m-1,d); };
+    return p(a.d)-p(b.d);
+  });
+  const labels=[], data=[];
+  let acc=0;
+  const byDay={};
+  sorted.forEach(t=>{
+    byDay[t.d]=(byDay[t.d]||0)+t.v;
+  });
+  Object.entries(byDay).forEach(([d,v])=>{
+    acc+=v; labels.push(d); data.push(acc);
+  });
+
+  new Chart(document.getElementById('lineChart'),{
+    type:'line',
+    data:{
+      labels,
+      datasets:[{
+        label:'Receita acumulada',
+        data,
+        borderColor:'#3b82f6',
+        backgroundColor:'rgba(59,130,246,.08)',
+        borderWidth:2,
+        pointRadius:2,
+        pointHoverRadius:5,
+        tension:.35,
+        fill:true,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:c=>' '+brl(c.raw)}}
+      },
+      scales:{
+        y:{
+          beginAtZero:true,
+          ticks:{callback:v=>'R$ '+(v/1000).toFixed(0)+'k'},
+          grid:{color:'#f3f4f6'}
+        },
+        x:{
+          ticks:{maxTicksLimit:12, maxRotation:30},
+          grid:{display:false}
+        }
+      }
+    }
+  });
+})();
+
+/* ─── INIT ──────────────────────────────────────────────────── */
+renderTable();
+</script>
+</body>
+</html>
