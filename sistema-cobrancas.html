@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SC Contabilidade — Sistema de Cobranças</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<style>
+  :root {
+    --pink: #e91e8c;
+    --pink-light: #fdf0f8;
+    --pink-border: #f9c6e3;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-400: #9ca3af;
+    --gray-600: #4b5563;
+    --gray-800: #1f2937;
+    --green: #059669;
+    --green-light: #ecfdf5;
+    --yellow: #d97706;
+    --yellow-light: #fffbeb;
+    --red: #dc2626;
+    --red-light: #fef2f2;
+    --blue: #2563eb;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,.10), 0 1px 2px rgba(0,0,0,.06);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,.10), 0 4px 6px rgba(0,0,0,.05);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--gray-50); color: var(--gray-800); font-size: 14px; line-height: 1.5; }
+
+  /* ── Nav ── */
+  nav { background: #fff; border-bottom: 1px solid var(--gray-200); position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); }
+  .nav-inner { max-width: 1100px; margin: 0 auto; padding: 0 16px; height: 56px; display: flex; align-items: center; gap: 8px; }
+  .nav-brand { font-weight: 700; color: var(--pink); font-size: 18px; margin-right: 12px; white-space: nowrap; }
+  .nav-btn { padding: 6px 14px; border-radius: 20px; border: none; background: transparent; cursor: pointer; font-size: 13px; color: var(--gray-600); transition: all .15s; }
+  .nav-btn:hover { background: var(--gray-100); }
+  .nav-btn.active { background: var(--pink-light); color: var(--pink); font-weight: 600; }
+
+  /* ── Layout ── */
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── Cards ── */
+  .card { background: #fff; border-radius: var(--radius); border: 1px solid var(--gray-200); box-shadow: var(--shadow); }
+  .card-body { padding: 20px; }
+
+  /* ── Typography ── */
+  h1 { font-size: 22px; font-weight: 700; color: var(--gray-800); }
+  h2 { font-size: 16px; font-weight: 600; color: var(--gray-800); }
+  .subtitle { color: var(--gray-400); font-size: 13px; margin-top: 2px; }
+  .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--gray-400); margin-bottom: 10px; }
+
+  /* ── Buttons ── */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius); border: none; cursor: pointer; font-size: 13px; font-weight: 500; transition: all .15s; }
+  .btn-primary { background: var(--pink); color: #fff; }
+  .btn-primary:hover { background: #c7176e; }
+  .btn-outline { background: #fff; color: var(--gray-700); border: 1px solid var(--gray-200); }
+  .btn-outline:hover { background: var(--gray-50); }
+  .btn-ghost { background: transparent; color: var(--gray-600); }
+  .btn-ghost:hover { background: var(--gray-100); }
+  .btn-danger { background: #fff; color: var(--red); border: 1px solid var(--gray-200); }
+  .btn-danger:hover { background: var(--red-light); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* ── Inputs ── */
+  .form-group { margin-bottom: 14px; }
+  .form-row { display: grid; gap: 12px; }
+  .form-row-2 { grid-template-columns: 1fr 1fr; }
+  .form-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+  label { display: block; font-size: 12px; font-weight: 600; color: var(--gray-600); margin-bottom: 5px; }
+  input, select, textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--gray-200); border-radius: var(--radius); font-size: 13px; color: var(--gray-800); outline: none; transition: border-color .15s; background: #fff; }
+  input:focus, select:focus, textarea:focus { border-color: var(--pink); box-shadow: 0 0 0 3px rgba(233,30,140,.08); }
+  textarea { resize: vertical; min-height: 80px; }
+  .input-group { display: flex; gap: 8px; }
+  .input-group input { flex: 1; }
+
+  /* ── Badges ── */
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-yellow { background: var(--yellow-light); color: var(--yellow); }
+  .badge-red { background: var(--red-light); color: var(--red); }
+  .badge-blue { background: #eff6ff; color: var(--blue); }
+  .badge-gray { background: var(--gray-100); color: var(--gray-600); }
+  .badge-pink { background: var(--pink-light); color: var(--pink); }
+
+  /* ── Table ── */
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 10px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--gray-400); border-bottom: 1px solid var(--gray-200); }
+  td { padding: 12px; border-bottom: 1px solid var(--gray-100); font-size: 13px; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--gray-50); }
+
+  /* ── Modal ── */
+  .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
+  .modal-backdrop.open { display: flex; }
+  .modal { background: #fff; border-radius: 12px; box-shadow: var(--shadow-lg); width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
+  .modal-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--gray-100); display: flex; align-items: center; justify-content: space-between; }
+  .modal-title { font-size: 16px; font-weight: 700; }
+  .modal-body { padding: 20px 24px; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--gray-100); display: flex; justify-content: flex-end; gap: 8px; }
+  .modal-close { background: none; border: none; cursor: pointer; color: var(--gray-400); font-size: 20px; line-height: 1; padding: 4px; }
+
+  /* ── Dashboard ── */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: #fff; border-radius: var(--radius); border: 1px solid var(--gray-200); padding: 20px; text-align: center; }
+  .stat-num { font-size: 28px; font-weight: 700; color: var(--pink); }
+  .stat-label { font-size: 12px; color: var(--gray-400); margin-top: 4px; }
+
+  /* ── Alerts ── */
+  .alert { padding: 12px 16px; border-radius: var(--radius); font-size: 13px; margin-bottom: 12px; }
+  .alert-yellow { background: var(--yellow-light); border: 1px solid #fde68a; color: #92400e; }
+  .alert-green { background: var(--green-light); border: 1px solid #6ee7b7; color: #064e3b; }
+  .alert-red { background: var(--red-light); border: 1px solid #fca5a5; color: #7f1d1d; }
+
+  /* ── Filtros ── */
+  .filtros { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filtro-btn { padding: 5px 14px; border-radius: 20px; border: 1px solid var(--gray-200); background: #fff; font-size: 12px; cursor: pointer; transition: all .15s; }
+  .filtro-btn.active { background: var(--pink); color: #fff; border-color: var(--pink); }
+
+  /* ── Separador ── */
+  hr { border: none; border-top: 1px solid var(--gray-200); margin: 16px 0; }
+
+  /* ── Page header ── */
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; gap: 16px; }
+  .page-header-btns { display: flex; gap: 8px; flex-shrink: 0; }
+
+  /* ── Status click badge ── */
+  .status-btn { cursor: pointer; border: none; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+
+  /* ── Empty state ── */
+  .empty { text-align: center; padding: 60px 20px; color: var(--gray-400); }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty h3 { color: var(--gray-600); font-size: 15px; margin-bottom: 6px; }
+
+  /* ── Toast ── */
+  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--gray-800); color: #fff; padding: 12px 20px; border-radius: var(--radius); font-size: 13px; transform: translateY(80px); opacity: 0; transition: all .25s; z-index: 999; max-width: 320px; }
+  #toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ── Carta impressão ── */
+  @media print {
+    nav, .no-print { display: none !important; }
+    body { background: #fff; }
+    .carta-page { padding: 0; }
+  }
+
+  /* ── Responsivo ── */
+  @media (max-width: 640px) {
+    .form-row-2, .form-row-3 { grid-template-columns: 1fr; }
+    .page-header { flex-direction: column; }
+    .nav-inner { gap: 4px; }
+    .nav-brand { font-size: 14px; }
+    .nav-btn { padding: 5px 8px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="nav-inner">
+    <span class="nav-brand">SC Contabilidade</span>
+    <button class="nav-btn active" onclick="showPage('dashboard')">Dashboard</button>
+    <button class="nav-btn" onclick="showPage('clientes')">Clientes</button>
+    <button class="nav-btn" onclick="showPage('cobrancas')">Cobranças</button>
+  </div>
+</nav>
+
+<main>
+
+<!-- ══════════════════════════════════════════════
+     DASHBOARD
+══════════════════════════════════════════════ -->
+<div id="page-dashboard" class="page active">
+  <div class="page-header">
+    <div>
+      <h1>Dashboard</h1>
+      <p class="subtitle">Visão geral do escritório</p>
+    </div>
+  </div>
+  <div class="stat-grid" id="dash-stats"></div>
+  <div class="card">
+    <div class="card-body">
+      <p class="section-label">Cobranças Pendentes</p>
+      <div id="dash-pendentes"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     CLIENTES
+══════════════════════════════════════════════ -->
+<div id="page-clientes" class="page">
+  <div class="page-header">
+    <div>
+      <h1>Clientes</h1>
+      <p class="subtitle">Cadastro de clientes do escritório</p>
+    </div>
+    <div class="page-header-btns">
+      <button class="btn btn-primary" onclick="abrirModalCliente()">+ Novo Cliente</button>
+    </div>
+  </div>
+
+  <!-- Busca -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-body" style="padding:12px">
+      <input type="text" id="busca-cliente" placeholder="Buscar por nome ou CNPJ..." oninput="renderClientes()">
+    </div>
+  </div>
+
+  <div class="card">
+    <div id="lista-clientes"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     COBRANÇAS
+══════════════════════════════════════════════ -->
+<div id="page-cobrancas" class="page">
+  <div class="page-header">
+    <div>
+      <h1>Cobranças</h1>
+      <p class="subtitle">Honorários mensais — carta de cobrança com PIX</p>
+    </div>
+    <div class="page-header-btns">
+      <button class="btn btn-outline" onclick="abrirModalLote()">Gerar Lote</button>
+      <button class="btn btn-primary" onclick="abrirModalCobranca()">+ Nova Cobrança</button>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:flex-end">
+    <div>
+      <label>Mês</label>
+      <select id="filtro-mes" onchange="renderCobrancas()" style="width:140px">
+        <option value="">Todos</option>
+        <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+        <option value="3">Março</option><option value="4">Abril</option>
+        <option value="5">Maio</option><option value="6">Junho</option>
+        <option value="7">Julho</option><option value="8">Agosto</option>
+        <option value="9">Setembro</option><option value="10">Outubro</option>
+        <option value="11">Novembro</option><option value="12">Dezembro</option>
+      </select>
+    </div>
+    <div>
+      <label>Ano</label>
+      <input type="number" id="filtro-ano" value="" placeholder="Todos" oninput="renderCobrancas()" style="width:90px">
+    </div>
+    <div class="filtros" id="filtros-status" style="margin-bottom:0">
+      <button class="filtro-btn active" data-status="" onclick="setFiltroStatus(this,'')">Todos</button>
+      <button class="filtro-btn" data-status="pendente" onclick="setFiltroStatus(this,'pendente')">Pendentes</button>
+      <button class="filtro-btn" data-status="pago" onclick="setFiltroStatus(this,'pago')">Pagos</button>
+      <button class="filtro-btn" data-status="cancelado" onclick="setFiltroStatus(this,'cancelado')">Cancelados</button>
+    </div>
+  </div>
+
+  <!-- Resumo -->
+  <div id="resumo-cobrancas" style="margin-bottom:16px"></div>
+
+  <div class="card">
+    <div id="lista-cobrancas"></div>
+  </div>
+</div>
+
+</main>
+
+<!-- ══════════════════════════════════════════════
+     MODAL CLIENTE
+══════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-cliente">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-cliente-titulo">Novo Cliente</span>
+      <button class="modal-close" onclick="fecharModal('modal-cliente')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="cli-id">
+
+      <div class="form-group">
+        <label>CNPJ *</label>
+        <div class="input-group">
+          <input type="text" id="cli-cnpj" placeholder="00.000.000/0000-00" maxlength="18" oninput="formatarCnpjInput(this)">
+          <button class="btn btn-outline" onclick="buscarCnpj()" id="btn-buscar-cnpj">Buscar na Receita</button>
+        </div>
+        <div id="cnpj-status" style="margin-top:6px;font-size:12px"></div>
+      </div>
+
+      <div class="form-row form-row-2">
+        <div class="form-group">
+          <label>Razão Social *</label>
+          <input type="text" id="cli-razao" placeholder="Preenchido automaticamente">
+        </div>
+        <div class="form-group">
+          <label>Nome Fantasia</label>
+          <input type="text" id="cli-fantasia" placeholder="Preenchido automaticamente">
+        </div>
+      </div>
+
+      <div class="form-row form-row-3">
+        <div class="form-group">
+          <label>Regime *</label>
+          <select id="cli-regime" onchange="toggleAnexo()">
+            <option value="simples">Simples Nacional</option>
+            <option value="presumido">Lucro Presumido</option>
+            <option value="real">Lucro Real</option>
+          </select>
+        </div>
+        <div class="form-group" id="grupo-anexo">
+          <label>Anexo</label>
+          <select id="cli-anexo">
+            <option value="">— Selecione —</option>
+            <option value="I">Anexo I</option><option value="II">Anexo II</option>
+            <option value="III">Anexo III</option><option value="IV">Anexo IV</option>
+            <option value="V">Anexo V</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Honorário Mensal (R$)</label>
+          <input type="text" id="cli-honorario" placeholder="Ex: 350,00">
+        </div>
+      </div>
+
+      <div class="form-row form-row-3">
+        <div class="form-group">
+          <label>E-mail</label>
+          <input type="email" id="cli-email" placeholder="email@empresa.com">
+        </div>
+        <div class="form-group">
+          <label>Telefone</label>
+          <input type="text" id="cli-telefone" placeholder="(11) 99999-9999">
+        </div>
+        <div class="form-group">
+          <label>Responsável</label>
+          <input type="text" id="cli-responsavel" placeholder="Nome do sócio">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Observações</label>
+        <textarea id="cli-obs" rows="2" placeholder="Informações adicionais..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="fecharModal('modal-cliente')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarCliente()">Salvar Cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL COBRANÇA INDIVIDUAL
+══════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-cobranca">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Nova Cobrança</span>
+      <button class="modal-close" onclick="fecharModal('modal-cobranca')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Cliente *</label>
+        <select id="cob-cliente" onchange="preencherHonorario()">
+          <option value="">— Selecione —</option>
+        </select>
+      </div>
+      <div class="form-row form-row-3">
+        <div class="form-group">
+          <label>Mês *</label>
+          <select id="cob-mes">
+            <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+            <option value="3">Março</option><option value="4">Abril</option>
+            <option value="5">Maio</option><option value="6">Junho</option>
+            <option value="7">Julho</option><option value="8">Agosto</option>
+            <option value="9">Setembro</option><option value="10">Outubro</option>
+            <option value="11">Novembro</option><option value="12">Dezembro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Ano *</label>
+          <input type="number" id="cob-ano" value="2026" min="2020" max="2100">
+        </div>
+        <div class="form-group">
+          <label>Valor (R$) *</label>
+          <input type="text" id="cob-valor" placeholder="0,00">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Vencimento</label>
+        <input type="text" id="cob-vencimento" placeholder="Ex: 10/06/2026">
+      </div>
+      <div class="form-group">
+        <label>Descrição dos serviços *</label>
+        <textarea id="cob-descricao" rows="4" placeholder="Ex: Honorários contábeis referentes a maio/2026 — escrituração fiscal, folha de pagamento e obrigações acessórias."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="fecharModal('modal-cobranca')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarCobranca()">Criar Cobrança</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL LOTE
+══════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-lote">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-header">
+      <span class="modal-title">Gerar Cobranças em Lote</span>
+      <button class="modal-close" onclick="fecharModal('modal-lote')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row form-row-3">
+        <div class="form-group">
+          <label>Mês *</label>
+          <select id="lote-mes">
+            <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+            <option value="3">Março</option><option value="4">Abril</option>
+            <option value="5">Maio</option><option value="6">Junho</option>
+            <option value="7">Julho</option><option value="8">Agosto</option>
+            <option value="9">Setembro</option><option value="10">Outubro</option>
+            <option value="11">Novembro</option><option value="12">Dezembro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Ano *</label>
+          <input type="number" id="lote-ano" value="2026" min="2020">
+        </div>
+        <div class="form-group">
+          <label>Vencimento</label>
+          <input type="text" id="lote-vencimento" placeholder="Ex: 10/06/2026">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Descrição dos serviços *</label>
+        <textarea id="lote-descricao" rows="3" placeholder="Ex: Honorários contábeis — escrituração, obrigações acessórias e assessoria tributária."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Clientes</label>
+        <div id="lote-clientes-lista" style="border:1px solid var(--gray-200);border-radius:var(--radius);max-height:200px;overflow-y:auto"></div>
+      </div>
+      <div id="lote-aviso"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="fecharModal('modal-lote')">Cancelar</button>
+      <button class="btn btn-primary" onclick="gerarLote()">Gerar Cobranças</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL CARTA (PREVIEW)
+══════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-carta">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-header">
+      <span class="modal-title">Carta de Cobrança</span>
+      <button class="modal-close" onclick="fecharModal('modal-carta')">✕</button>
+    </div>
+    <div class="modal-body" id="carta-preview" style="padding:0"></div>
+    <div class="modal-footer no-print">
+      <button class="btn btn-outline" onclick="fecharModal('modal-carta')">Fechar</button>
+      <button class="btn btn-primary" onclick="imprimirCarta()">🖨 Imprimir / Salvar PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- ══════════════════════════════════════════════
+     SCRIPT PRINCIPAL
+══════════════════════════════════════════════ -->
+<script>
+// ── Storage ────────────────────────────────────────────────────────────────────
+
+function getClientes() { return JSON.parse(localStorage.getItem('sc_clientes') || '[]'); }
+function setClientes(d) { localStorage.setItem('sc_clientes', JSON.stringify(d)); }
+function getCobrancas() { return JSON.parse(localStorage.getItem('sc_cobrancas') || '[]'); }
+function setCobrancas(d) { localStorage.setItem('sc_cobrancas', JSON.stringify(d)); }
+function nextId(arr) { return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1; }
+
+// ── State ──────────────────────────────────────────────────────────────────────
+let filtroStatus = '';
+let cartaAtual = null; // HTML string da carta aberta
+
+// ── Navegação ─────────────────────────────────────────────────────────────────
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    if (b.textContent.trim().toLowerCase().includes(name === 'dashboard' ? 'dashboard' : name === 'clientes' ? 'clientes' : 'cobran')) {
+      b.classList.add('active');
+    }
+  });
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'clientes') renderClientes();
+  if (name === 'cobrancas') renderCobrancas();
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+
+function toast(msg, tipo = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = tipo === 'erro' ? '#dc2626' : '#1f2937';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ── Modais ────────────────────────────────────────────────────────────────────
+
+function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// Fecha modal clicando no backdrop
+document.querySelectorAll('.modal-backdrop').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+// ── Formatação ────────────────────────────────────────────────────────────────
+
+function formatCnpj(v) {
+  const d = v.replace(/\D/g, '').substring(0, 14);
+  if (d.length <= 2) return d;
+  if (d.length <= 5) return `${d.slice(0,2)}.${d.slice(2)}`;
+  if (d.length <= 8) return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5)}`;
+  if (d.length <= 12) return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8)}`;
+  return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8,12)}-${d.slice(12)}`;
+}
+function formatarCnpjInput(el) { el.value = formatCnpj(el.value); }
+
+function formatBRL(v) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+}
+
+function parseBRL(s) {
+  return parseFloat(String(s).replace(/\./g,'').replace(',','.')) || 0;
+}
+
+const MESES_NOME = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                    'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+// ── Busca CNPJ (BrasilAPI — CORS aberto) ─────────────────────────────────────
+
+async function buscarCnpj() {
+  const cnpjRaw = document.getElementById('cli-cnpj').value.replace(/\D/g,'');
+  const status = document.getElementById('cnpj-status');
+  if (cnpjRaw.length !== 14) {
+    status.innerHTML = '<span style="color:var(--red)">Digite o CNPJ completo (14 dígitos).</span>';
+    return;
+  }
+  status.innerHTML = '<span style="color:var(--gray-400)">Consultando...</span>';
+  document.getElementById('btn-buscar-cnpj').disabled = true;
+  try {
+    const r = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpjRaw}`);
+    if (!r.ok) throw new Error('não encontrado');
+    const d = await r.json();
+    document.getElementById('cli-razao').value = d.razao_social || '';
+    document.getElementById('cli-fantasia').value = d.nome_fantasia || '';
+    document.getElementById('cli-email').value = d.email || '';
+    document.getElementById('cli-telefone').value = d.ddd_telefone_1 || '';
+    status.innerHTML = `<span style="color:var(--green)">✓ Situação: ${d.descricao_situacao_cadastral || 'Ativa'} · Abertura: ${d.data_inicio_atividade || ''}</span>`;
+    toast('Dados preenchidos automaticamente!');
+  } catch {
+    status.innerHTML = '<span style="color:var(--red)">CNPJ não encontrado ou serviço indisponível. Preencha manualmente.</span>';
+  } finally {
+    document.getElementById('btn-buscar-cnpj').disabled = false;
+  }
+}
+
+function toggleAnexo() {
+  const regime = document.getElementById('cli-regime').value;
+  document.getElementById('grupo-anexo').style.display = regime === 'simples' ? '' : 'none';
+}
+
+// ── CLIENTES ──────────────────────────────────────────────────────────────────
+
+function abrirModalCliente(id = null) {
+  document.getElementById('modal-cliente-titulo').textContent = id ? 'Editar Cliente' : 'Novo Cliente';
+  document.getElementById('cli-id').value = id || '';
+  document.getElementById('cnpj-status').innerHTML = '';
+
+  const cli = id ? getClientes().find(c => c.id === id) : null;
+  document.getElementById('cli-cnpj').value = cli ? formatCnpj(cli.cnpj) : '';
+  document.getElementById('cli-razao').value = cli?.razaoSocial || '';
+  document.getElementById('cli-fantasia').value = cli?.nomeFantasia || '';
+  document.getElementById('cli-regime').value = cli?.regime || 'simples';
+  document.getElementById('cli-anexo').value = cli?.anexo || '';
+  document.getElementById('cli-honorario').value = cli?.honorario ? String(cli.honorario).replace('.',',') : '';
+  document.getElementById('cli-email').value = cli?.email || '';
+  document.getElementById('cli-telefone').value = cli?.telefone || '';
+  document.getElementById('cli-responsavel').value = cli?.responsavel || '';
+  document.getElementById('cli-obs').value = cli?.observacoes || '';
+
+  toggleAnexo();
+  document.getElementById('cli-cnpj').disabled = !!id;
+  document.getElementById('btn-buscar-cnpj').disabled = !!id;
+  document.getElementById('modal-cliente').classList.add('open');
+}
+
+function salvarCliente() {
+  const razao = document.getElementById('cli-razao').value.trim();
+  const cnpjRaw = document.getElementById('cli-cnpj').value.replace(/\D/g,'');
+  if (cnpjRaw.length !== 14) { toast('CNPJ inválido', 'erro'); return; }
+  if (!razao) { toast('Razão social obrigatória', 'erro'); return; }
+
+  const id = document.getElementById('cli-id').value;
+  const clientes = getClientes();
+
+  const obj = {
+    id: id ? parseInt(id) : nextId(clientes),
+    cnpj: cnpjRaw,
+    razaoSocial: razao,
+    nomeFantasia: document.getElementById('cli-fantasia').value.trim() || null,
+    regime: document.getElementById('cli-regime').value,
+    anexo: document.getElementById('cli-anexo').value || null,
+    honorario: parseBRL(document.getElementById('cli-honorario').value) || null,
+    email: document.getElementById('cli-email').value.trim() || null,
+    telefone: document.getElementById('cli-telefone').value.trim() || null,
+    responsavel: document.getElementById('cli-responsavel').value.trim() || null,
+    observacoes: document.getElementById('cli-obs').value.trim() || null,
+    ativo: 1,
+    criadoEm: id ? clientes.find(c=>c.id===parseInt(id))?.criadoEm : new Date().toISOString(),
+  };
+
+  if (id) {
+    const idx = clientes.findIndex(c => c.id === parseInt(id));
+    clientes[idx] = obj;
+  } else {
+    if (clientes.find(c => c.cnpj === cnpjRaw)) { toast('CNPJ já cadastrado', 'erro'); return; }
+    clientes.push(obj);
+  }
+
+  setClientes(clientes);
+  fecharModal('modal-cliente');
+  renderClientes();
+  toast(id ? 'Cliente atualizado!' : 'Cliente cadastrado!');
+}
+
+function excluirCliente(id) {
+  if (!confirm('Deseja excluir este cliente?')) return;
+  setClientes(getClientes().filter(c => c.id !== id));
+  renderClientes();
+  renderDashboard();
+  toast('Cliente removido');
+}
+
+function renderClientes() {
+  const busca = (document.getElementById('busca-cliente')?.value || '').toLowerCase();
+  const lista = getClientes().filter(c => {
+    if (!busca) return true;
+    return c.razaoSocial.toLowerCase().includes(busca) ||
+           (c.nomeFantasia||'').toLowerCase().includes(busca) ||
+           c.cnpj.includes(busca.replace(/\D/g,''));
+  });
+
+  const el = document.getElementById('lista-clientes');
+  if (!lista.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🏢</div><h3>${busca ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}</h3><p>${busca ? 'Tente outra busca' : 'Clique em "Novo Cliente" para começar'}</p></div>`;
+    return;
+  }
+
+  const regimeBadge = { simples: 'badge-green', presumido: 'badge-blue', real: 'badge-pink' };
+  const regimeLabel = { simples: 'Simples Nacional', presumido: 'Lucro Presumido', real: 'Lucro Real' };
+
+  el.innerHTML = `<table>
+    <thead><tr>
+      <th>Razão Social</th><th>CNPJ</th><th>Regime</th><th>Honorário</th><th>E-mail</th><th>Ações</th>
+    </tr></thead>
+    <tbody>${lista.map(c => `
+    <tr>
+      <td><b>${c.nomeFantasia || c.razaoSocial}</b>${c.nomeFantasia ? `<br><span style="font-size:11px;color:var(--gray-400)">${c.razaoSocial}</span>`:''}</td>
+      <td style="font-family:monospace;font-size:12px">${formatCnpj(c.cnpj)}</td>
+      <td><span class="badge ${regimeBadge[c.regime]||'badge-gray'}">${regimeLabel[c.regime]||c.regime}${c.anexo?' · Anx '+c.anexo:''}</span></td>
+      <td>${c.honorario ? `<b>${formatBRL(c.honorario)}</b>` : '<span style="color:var(--gray-400)">—</span>'}</td>
+      <td style="font-size:12px">${c.email||'—'}</td>
+      <td>
+        <button class="btn btn-sm btn-outline" onclick="abrirModalCliente(${c.id})">Editar</button>
+        <button class="btn btn-sm btn-danger" onclick="excluirCliente(${c.id})">Excluir</button>
+      </td>
+    </tr>`).join('')}
+    </tbody>
+  </table>
+  <div style="padding:10px 12px;font-size:12px;color:var(--gray-400);border-top:1px solid var(--gray-100)">${lista.length} cliente(s)</div>`;
+}
+
+// ── COBRANÇAS ─────────────────────────────────────────────────────────────────
+
+function setFiltroStatus(btn, status) {
+  filtroStatus = status;
+  document.querySelectorAll('#filtros-status .filtro-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCobrancas();
+}
+
+function abrirModalCobranca() {
+  const clientes = getClientes().filter(c => c.ativo !== 0);
+  const sel = document.getElementById('cob-cliente');
+  sel.innerHTML = '<option value="">— Selecione —</option>' +
+    clientes.map(c => `<option value="${c.id}">${c.nomeFantasia||c.razaoSocial}${c.honorario?' ('+formatBRL(c.honorario)+')':''}</option>`).join('');
+
+  const now = new Date();
+  document.getElementById('cob-mes').value = now.getMonth() + 1;
+  document.getElementById('cob-ano').value = now.getFullYear();
+  document.getElementById('cob-valor').value = '';
+  document.getElementById('cob-vencimento').value = '';
+  document.getElementById('cob-descricao').value = '';
+  document.getElementById('modal-cobranca').classList.add('open');
+}
+
+function preencherHonorario() {
+  const id = parseInt(document.getElementById('cob-cliente').value);
+  if (!id) return;
+  const cli = getClientes().find(c => c.id === id);
+  if (cli?.honorario) document.getElementById('cob-valor').value = String(cli.honorario).replace('.',',');
+}
+
+function salvarCobranca() {
+  const clienteId = parseInt(document.getElementById('cob-cliente').value);
+  const valor = parseBRL(document.getElementById('cob-valor').value);
+  const mes = parseInt(document.getElementById('cob-mes').value);
+  const ano = parseInt(document.getElementById('cob-ano').value);
+  const descricao = document.getElementById('cob-descricao').value.trim();
+  const vencimento = document.getElementById('cob-vencimento').value.trim();
+
+  if (!clienteId) { toast('Selecione o cliente', 'erro'); return; }
+  if (!valor || valor <= 0) { toast('Informe o valor', 'erro'); return; }
+  if (!descricao) { toast('Informe a descrição', 'erro'); return; }
+
+  const cobrancas = getCobrancas();
+  cobrancas.unshift({
+    id: nextId(cobrancas),
+    clienteId, valor, mesReferencia: mes, anoReferencia: ano,
+    vencimento: vencimento || null, descricao, status: 'pendente',
+    criadoEm: new Date().toISOString()
+  });
+  setCobrancas(cobrancas);
+  fecharModal('modal-cobranca');
+  renderCobrancas();
+  renderDashboard();
+  toast('Cobrança criada!');
+}
+
+function abrirModalLote() {
+  const clientes = getClientes().filter(c => c.ativo !== 0);
+  const now = new Date();
+  document.getElementById('lote-mes').value = now.getMonth() + 1;
+  document.getElementById('lote-ano').value = now.getFullYear();
+  document.getElementById('lote-vencimento').value = '';
+  document.getElementById('lote-descricao').value = '';
+
+  const comHon = clientes.filter(c => c.honorario && c.honorario > 0);
+  const semHon = clientes.filter(c => !c.honorario);
+
+  document.getElementById('lote-aviso').innerHTML = semHon.length ?
+    `<div class="alert alert-yellow">⚠ ${semHon.length} cliente(s) sem honorário serão ignorados: ${semHon.map(c=>c.razaoSocial).join(', ')}</div>` : '';
+
+  document.getElementById('lote-clientes-lista').innerHTML = comHon.length ?
+    comHon.map(c => `
+      <label style="display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--gray-100)">
+        <input type="checkbox" value="${c.id}" checked style="width:auto">
+        <span style="flex:1">${c.nomeFantasia||c.razaoSocial}</span>
+        <b style="color:var(--green)">${formatBRL(c.honorario)}</b>
+      </label>`).join('') :
+    '<div style="padding:20px;text-align:center;color:var(--gray-400)">Nenhum cliente com honorário cadastrado</div>';
+
+  document.getElementById('modal-lote').classList.add('open');
+}
+
+function gerarLote() {
+  const mes = parseInt(document.getElementById('lote-mes').value);
+  const ano = parseInt(document.getElementById('lote-ano').value);
+  const descricao = document.getElementById('lote-descricao').value.trim();
+  const vencimento = document.getElementById('lote-vencimento').value.trim();
+
+  if (!descricao) { toast('Informe a descrição', 'erro'); return; }
+
+  const selecionados = [...document.querySelectorAll('#lote-clientes-lista input:checked')]
+    .map(el => parseInt(el.value));
+
+  if (!selecionados.length) { toast('Selecione ao menos um cliente', 'erro'); return; }
+
+  const clientes = getClientes();
+  const cobrancas = getCobrancas();
+  let criados = 0;
+
+  selecionados.forEach(cid => {
+    const cli = clientes.find(c => c.id === cid);
+    if (!cli || !cli.honorario) return;
+    cobrancas.unshift({
+      id: nextId(cobrancas),
+      clienteId: cid, valor: cli.honorario, mesReferencia: mes, anoReferencia: ano,
+      vencimento: vencimento || null, descricao, status: 'pendente',
+      criadoEm: new Date().toISOString()
+    });
+    criados++;
+  });
+
+  setCobrancas(cobrancas);
+  fecharModal('modal-lote');
+  renderCobrancas();
+  renderDashboard();
+  toast(`${criados} cobrança(s) gerada(s)!`);
+}
+
+function alternarStatus(id) {
+  const cobrancas = getCobrancas();
+  const idx = cobrancas.findIndex(c => c.id === id);
+  if (idx === -1) return;
+  const ciclo = { pendente: 'pago', pago: 'cancelado', cancelado: 'pendente' };
+  cobrancas[idx].status = ciclo[cobrancas[idx].status] || 'pendente';
+  setCobrancas(cobrancas);
+  renderCobrancas();
+  renderDashboard();
+}
+
+function excluirCobranca(id) {
+  if (!confirm('Excluir esta cobrança?')) return;
+  setCobrancas(getCobrancas().filter(c => c.id !== id));
+  renderCobrancas();
+  renderDashboard();
+  toast('Cobrança removida');
+}
+
+function renderCobrancas() {
+  const mesFiltro = document.getElementById('filtro-mes')?.value;
+  const anoFiltro = document.getElementById('filtro-ano')?.value;
+
+  let lista = getCobrancas();
+  if (mesFiltro) lista = lista.filter(c => c.mesReferencia === parseInt(mesFiltro));
+  if (anoFiltro) lista = lista.filter(c => c.anoReferencia === parseInt(anoFiltro));
+  if (filtroStatus) lista = lista.filter(c => c.status === filtroStatus);
+
+  // Resumo
+  const total = lista.reduce((s,c)=>s+c.valor,0);
+  const pendente = lista.filter(c=>c.status==='pendente').reduce((s,c)=>s+c.valor,0);
+  const pago = lista.filter(c=>c.status==='pago').reduce((s,c)=>s+c.valor,0);
+  const resumoEl = document.getElementById('resumo-cobrancas');
+  if (lista.length) {
+    resumoEl.innerHTML = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:4px">
+      ${[['Total no período',total,'var(--gray-800)'],['Pendente',pendente,'var(--yellow)'],['Recebido',pago,'var(--green)']].map(([l,v,c])=>`
+      <div class="card"><div class="card-body" style="padding:12px;text-align:center">
+        <div style="font-size:11px;color:var(--gray-400)">${l}</div>
+        <div style="font-size:18px;font-weight:700;color:${c}">${formatBRL(v)}</div>
+      </div></div>`).join('')}
+    </div>`;
+  } else {
+    resumoEl.innerHTML = '';
+  }
+
+  const el = document.getElementById('lista-cobrancas');
+  const clientes = getClientes();
+
+  if (!lista.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🧾</div><h3>Nenhuma cobrança</h3><p>Crie uma cobrança individual ou use "Gerar Lote"</p></div>`;
+    return;
+  }
+
+  const stCfg = {
+    pendente: { label:'Pendente', bg:'var(--yellow-light)', color:'var(--yellow)' },
+    pago:     { label:'Pago',     bg:'var(--green-light)', color:'var(--green)' },
+    cancelado:{ label:'Cancelado',bg:'var(--red-light)',   color:'var(--red)' },
+  };
+
+  el.innerHTML = lista.map(cob => {
+    const cli = clientes.find(c => c.id === cob.clienteId);
+    const nomeCliente = cli?.nomeFantasia || cli?.razaoSocial || `Cliente #${cob.clienteId}`;
+    const st = stCfg[cob.status] || stCfg.pendente;
+    return `<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--gray-100)">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:14px">${nomeCliente}</div>
+        <div style="font-size:12px;color:var(--gray-400)">${MESES_NOME[cob.mesReferencia-1]}/${cob.anoReferencia} · ${cob.descricao.length>60?cob.descricao.substring(0,60)+'...':cob.descricao}</div>
+        ${cob.vencimento?`<div style="font-size:11px;color:var(--gray-400)">Vence: ${cob.vencimento}</div>`:''}
+      </div>
+      <div style="font-weight:700;font-size:16px;flex-shrink:0">${formatBRL(cob.valor)}</div>
+      <button class="status-btn" onclick="alternarStatus(${cob.id})" style="background:${st.bg};color:${st.color};flex-shrink:0">${st.label}</button>
+      <button class="btn btn-sm btn-outline" onclick="verCarta(${cob.id})">📄 Carta</button>
+      <button class="btn btn-sm btn-danger" onclick="excluirCobranca(${cob.id})">Excluir</button>
+    </div>`;
+  }).join('') + `<div style="padding:10px 16px;font-size:12px;color:var(--gray-400)">${lista.length} cobrança(s)</div>`;
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+
+function renderDashboard() {
+  const clientes = getClientes();
+  const cobrancas = getCobrancas();
+  const pendentes = cobrancas.filter(c=>c.status==='pendente');
+  const totalPendente = pendentes.reduce((s,c)=>s+c.valor,0);
+  const totalPago = cobrancas.filter(c=>c.status==='pago').reduce((s,c)=>s+c.valor,0);
+
+  document.getElementById('dash-stats').innerHTML = [
+    ['Clientes', clientes.length, '#2563eb'],
+    ['Cobranças', cobrancas.length, '#7c3aed'],
+    ['Pendente', formatBRL(totalPendente), '#d97706'],
+    ['Recebido', formatBRL(totalPago), '#059669'],
+  ].map(([l,v,c])=>`
+    <div class="stat-card">
+      <div class="stat-num" style="color:${c}">${v}</div>
+      <div class="stat-label">${l}</div>
+    </div>`).join('');
+
+  const clMap = {};
+  clientes.forEach(c => clMap[c.id] = c);
+
+  const el = document.getElementById('dash-pendentes');
+  if (!pendentes.length) {
+    el.innerHTML = '<p style="color:var(--gray-400);font-size:13px;padding:12px 0">Nenhuma cobrança pendente.</p>';
+    return;
+  }
+  el.innerHTML = pendentes.slice(0,10).map(cob => {
+    const cli = clMap[cob.clienteId];
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--gray-100)">
+      <div style="flex:1;font-size:13px"><b>${cli?.nomeFantasia||cli?.razaoSocial||'—'}</b>
+      <span style="color:var(--gray-400);margin-left:8px">${MESES_NOME[cob.mesReferencia-1]}/${cob.anoReferencia}</span></div>
+      <b style="color:var(--yellow)">${formatBRL(cob.valor)}</b>
+      <button class="btn btn-sm btn-outline" onclick="verCarta(${cob.id})">📄 Carta</button>
+    </div>`;
+  }).join('');
+}
+
+// ── PIX PAYLOAD ───────────────────────────────────────────────────────────────
+
+function pixCrc16(payload) {
+  let crc = 0xFFFF;
+  for (let i = 0; i < payload.length; i++) {
+    crc ^= payload.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
+    }
+    crc &= 0xFFFF;
+  }
+  return crc.toString(16).toUpperCase().padStart(4, '0');
+}
+
+function emv(id, value) {
+  return `${id}${String(value.length).padStart(2,'0')}${value}`;
+}
+
+function buildPixPayload(valor, txId = 'cobranca') {
+  const merchantAccount = emv('00','br.gov.bcb.pix') + emv('01','30016838000134');
+  const f26 = emv('26', merchantAccount);
+  const f52 = emv('52','0000');
+  const f53 = emv('53','986');
+  const amStr = valor.toFixed(2);
+  const f54 = emv('54', amStr);
+  const f58 = emv('58','BR');
+  const f59 = emv('59','SC Contabilidade');
+  const f60 = emv('60','Santo Andre');
+  const safeId = txId.replace(/[^a-zA-Z0-9]/g,'').substring(0,25) || 'cobranca';
+  const f62 = emv('62', emv('05', safeId));
+  const base = `${emv('00','01')}${f26}${f52}${f53}${f54}${f58}${f59}${f60}${f62}6304`;
+  return base + pixCrc16(base);
+}
+
+// ── CARTA DE COBRANÇA ─────────────────────────────────────────────────────────
+
+async function verCarta(id) {
+  const cob = getCobrancas().find(c => c.id === id);
+  if (!cob) { toast('Cobrança não encontrada', 'erro'); return; }
+  const cli = getClientes().find(c => c.id === cob.clienteId);
+  if (!cli) { toast('Cliente não encontrado', 'erro'); return; }
+
+  const pixPayload = buildPixPayload(cob.valor, `COB${cob.id}`);
+
+  // Gera QR Code como data URL
+  const qrDataUrl = await new Promise((resolve, reject) => {
+    QRCode.toDataURL(pixPayload, { width: 220, margin: 1 }, (err, url) => {
+      if (err) reject(err); else resolve(url);
+    });
+  });
+
+  const mesNome = MESES_NOME[cob.mesReferencia - 1] || '';
+  const valorFmt = formatBRL(cob.valor);
+  const dataHoje = new Date().toLocaleDateString('pt-BR');
+  const cnpjFmt = formatCnpj(cli.cnpj);
+
+  const html = `
+  <div style="padding:32px;font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;line-height:1.6">
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:20px;border-bottom:3px solid #e91e8c;margin-bottom:28px">
+      <div>
+        <div style="font-size:24px;font-weight:700;color:#e91e8c">SC Contabilidade</div>
+        <div style="font-size:11px;color:#666;margin-top:2px">CNPJ: 30.016.838/0001-34 · Santo André – SP</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:18px;font-weight:700;color:#333;text-transform:uppercase;letter-spacing:1px">Carta de Cobrança</div>
+        <div style="font-size:11px;color:#888;margin-top:4px">Ref. ${mesNome}/${cob.anoReferencia} · Emitida em ${dataHoje}</div>
+      </div>
+    </div>
+
+    <!-- Cliente -->
+    <div style="margin-bottom:20px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:4px">Dados do Cliente</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="grid-column:span 2"><div style="font-size:10px;color:#888;text-transform:uppercase">Razão Social</div><div style="font-size:15px;font-weight:600">${cli.razaoSocial}</div></div>
+        <div><div style="font-size:10px;color:#888;text-transform:uppercase">CNPJ</div><div style="font-weight:600">${cnpjFmt}</div></div>
+        ${cli.email?`<div><div style="font-size:10px;color:#888;text-transform:uppercase">E-mail</div><div style="font-weight:600">${cli.email}</div></div>`:''}
+      </div>
+    </div>
+
+    <!-- Período -->
+    <div style="margin-bottom:20px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:4px">Período de Referência</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><div style="font-size:10px;color:#888;text-transform:uppercase">Competência</div><div style="font-weight:600">${mesNome} / ${cob.anoReferencia}</div></div>
+        ${cob.vencimento?`<div><div style="font-size:10px;color:#888;text-transform:uppercase">Vencimento</div><div style="font-weight:600">${cob.vencimento}</div></div>`:''}
+      </div>
+    </div>
+
+    <!-- Descrição -->
+    <div style="margin-bottom:20px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:4px">Descrição dos Serviços</div>
+      <div style="background:#f9f9f9;border-left:4px solid #e91e8c;padding:14px 16px;border-radius:4px">${cob.descricao.replace(/\n/g,'<br>')}</div>
+    </div>
+
+    <!-- Valor -->
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#fff5fb;border:2px solid #e91e8c;border-radius:8px;padding:16px 20px;margin-bottom:24px">
+      <div>
+        <div style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:.5px">Valor Total</div>
+        ${cob.vencimento?`<div style="font-size:12px;color:#555;margin-top:4px">Vencimento: ${cob.vencimento}</div>`:''}
+      </div>
+      <div style="font-size:28px;font-weight:700;color:#e91e8c">${valorFmt}</div>
+    </div>
+
+    <!-- PIX -->
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:4px">Pagamento via PIX</div>
+    <div style="display:flex;align-items:flex-start;gap:24px;background:#fafafa;border:1px solid #eee;border-radius:8px;padding:20px">
+      <div style="flex-shrink:0">
+        <img src="${qrDataUrl}" style="width:200px;height:200px;border:1px solid #ddd;border-radius:4px;display:block" alt="QR Code PIX">
+      </div>
+      <div>
+        <div style="font-size:16px;font-weight:700;margin-bottom:8px">Pague com PIX</div>
+        <p style="font-size:12px;color:#555;margin-bottom:6px">Escaneie o QR Code ao lado com o aplicativo do seu banco.</p>
+        <p style="font-size:12px;color:#555;margin-bottom:12px">O pagamento é identificado automaticamente — não é necessário enviar comprovante.</p>
+        <div style="background:#fff;border:1px dashed #ccc;border-radius:4px;padding:8px 10px;font-size:11px;color:#333">
+          <div style="font-size:10px;color:#888;text-transform:uppercase;margin-bottom:3px">Chave PIX (CNPJ)</div>
+          30.016.838/0001-34
+        </div>
+        <div style="background:#fff;border:1px dashed #ccc;border-radius:4px;padding:8px 10px;font-size:11px;color:#333;margin-top:6px">
+          <div style="font-size:10px;color:#888;text-transform:uppercase;margin-bottom:3px">Favorecido</div>
+          SC Contabilidade
+        </div>
+        <div style="background:#fff5fb;border:1px solid #e91e8c;border-radius:4px;padding:8px 10px;margin-top:6px;font-size:13px;font-weight:700;color:#e91e8c">
+          Valor: ${valorFmt}
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:32px;padding-top:16px;border-top:1px solid #eee;text-align:center;font-size:11px;color:#aaa">
+      SC Contabilidade · Santo André – SP · CNPJ 30.016.838/0001-34
+    </div>
+  </div>`;
+
+  cartaAtual = html;
+  document.getElementById('carta-preview').innerHTML = html;
+  document.getElementById('modal-carta').classList.add('open');
+}
+
+function imprimirCarta() {
+  if (!cartaAtual) return;
+  const janela = window.open('', '_blank');
+  janela.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+  <title>Carta de Cobrança — SC Contabilidade</title>
+  <style>@page{size:A4;margin:20mm}body{font-family:Arial,sans-serif;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}</style>
+  </head><body>${cartaAtual}
+  <script>window.onload=()=>{window.print();}<\/script></body></html>`);
+  janela.document.close();
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+
+renderDashboard();
+</script>
+</body>
+</html>
