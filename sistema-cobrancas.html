@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SC Contabilidade — Sistema de Cobranças</title>
+<title>Salubre Contabilidade — Sistema de Cobranças</title>
 <style>
   :root {
-    --pink:#e91e8c;--pink-light:#fdf0f8;--pink-border:#f9c6e3;
+    --pink:#1e8fa8;--pink-light:#e8f5f9;--pink-border:#a8d9e8;
     --gray-50:#f9fafb;--gray-100:#f3f4f6;--gray-200:#e5e7eb;
     --gray-400:#9ca3af;--gray-600:#4b5563;--gray-800:#1f2937;
     --green:#059669;--green-light:#ecfdf5;
@@ -36,7 +36,7 @@
   .section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--gray-400);margin-bottom:10px}
   /* Buttons */
   .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);border:none;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s}
-  .btn-primary{background:var(--pink);color:#fff}.btn-primary:hover{background:#c7176e}
+  .btn-primary{background:var(--pink);color:#fff}.btn-primary:hover{background:#177a90}
   .btn-outline{background:#fff;color:var(--gray-600);border:1px solid var(--gray-200)}.btn-outline:hover{background:var(--gray-50)}
   .btn-ghost{background:transparent;color:var(--gray-600)}.btn-ghost:hover{background:var(--gray-100)}
   .btn-danger{background:#fff;color:var(--red);border:1px solid var(--gray-200)}.btn-danger:hover{background:var(--red-light)}
@@ -51,7 +51,7 @@
   .form-row-3{grid-template-columns:1fr 1fr 1fr}
   label{display:block;font-size:12px;font-weight:600;color:var(--gray-600);margin-bottom:5px}
   input,select,textarea{width:100%;padding:8px 12px;border:1px solid var(--gray-200);border-radius:var(--radius);font-size:13px;color:var(--gray-800);outline:none;transition:border-color .15s;background:#fff}
-  input:focus,select:focus,textarea:focus{border-color:var(--pink);box-shadow:0 0 0 3px rgba(233,30,140,.08)}
+  input:focus,select:focus,textarea:focus{border-color:var(--pink);box-shadow:0 0 0 3px rgba(30,143,168,.10)}
   textarea{resize:vertical;min-height:80px}
   .input-group{display:flex;gap:8px}.input-group input{flex:1}
   /* Badges */
@@ -119,7 +119,7 @@
 
 <nav>
   <div class="nav-inner">
-    <span class="nav-brand">SC Contabilidade</span>
+    <span class="nav-brand">Salubre Contabilidade</span>
     <button class="nav-btn active" onclick="showPage('dashboard')">Dashboard</button>
     <button class="nav-btn" onclick="showPage('clientes')">Clientes</button>
     <button class="nav-btn" onclick="showPage('cobrancas')">Cobranças</button>
@@ -233,7 +233,7 @@
 
     <div class="form-group" style="margin-top:16px">
       <label>Assinatura do E-mail (rodapé)</label>
-      <textarea id="cfg-assinatura" rows="3" placeholder="SC Contabilidade&#10;CNPJ: 30.016.838/0001-34&#10;Tel: (11) 99999-9999"></textarea>
+      <textarea id="cfg-assinatura" rows="3" placeholder="Salubre Contabilidade&#10;CNPJ: 30.016.838/0001-34&#10;Tel: (11) 99999-9999"></textarea>
     </div>
 
     <div style="display:flex;gap:8px;margin-top:8px">
@@ -920,32 +920,25 @@ function buildPixPayload(valor, txId='cobranca') {
   const f26 = emv('26',ma);
   const f54 = emv('54',valor.toFixed(2));
   const f62 = emv('62', emv('05',(txId.replace(/\W/g,'').substring(0,25)||'cobranca')));
-  const base = `${emv('00','01')}${f26}${emv('52','0000')}${emv('53','986')}${f54}${emv('58','BR')}${emv('59','SC Contabilidade')}${emv('60','Santo Andre')}${f62}6304`;
+  const base = `${emv('00','01')}${f26}${emv('52','0000')}${emv('53','986')}${f54}${emv('58','BR')}${emv('59','Salubre Contabilidade')}${emv('60','Santo Andre')}${f62}6304`;
   return base + pixCrc16(base);
 }
 
 // ══════════════════════════════════════════════════════════
 // CARTA
 // ══════════════════════════════════════════════════════════
-function verCarta(id) {
-  const cob = getCobrancas().find(c=>c.id===id);
-  if (!cob) { toast('Cobrança não encontrada','erro'); return; }
-  const cli = getClientes().find(c=>c.id===cob.clienteId);
-  if (!cli) { toast('Cliente não encontrado','erro'); return; }
-  cobAtual = cob;
-
-  const pixPayload  = buildPixPayload(cob.valor, `COB${cob.id}`);
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=10&data=${encodeURIComponent(pixPayload)}`;
-  const mesNome  = MESES[cob.mesReferencia-1]||'';
-  const valorFmt = formatBRL(cob.valor);
-  const dataHoje = new Date().toLocaleDateString('pt-BR');
-  const cnpjFmt  = formatCnpj(cli.cnpj);
-
-  const html = `<div class="carta-wrap">
+function gerarHtmlCarta(cob, cli) {
+  const pixPayload = buildPixPayload(cob.valor, `COB${cob.id}`);
+  const qrUrl      = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=10&data=${encodeURIComponent(pixPayload)}`;
+  const mesNome    = MESES[cob.mesReferencia-1]||'';
+  const valorFmt   = formatBRL(cob.valor);
+  const dataHoje   = new Date().toLocaleDateString('pt-BR');
+  const cnpjFmt    = formatCnpj(cli.cnpj);
+  return `<div class="carta-wrap">
     <!-- Header -->
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:20px;border-bottom:3px solid #e91e8c;margin-bottom:24px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:20px;border-bottom:3px solid #1e8fa8;margin-bottom:24px">
       <div>
-        <div style="font-size:24px;font-weight:700;color:#e91e8c">SC Contabilidade</div>
+        <div style="font-size:24px;font-weight:700;color:#1e8fa8">Salubre Contabilidade</div>
         <div style="font-size:11px;color:#666;margin-top:2px">CNPJ: 30.016.838/0001-34 · Santo André – SP</div>
       </div>
       <div style="text-align:right">
@@ -973,15 +966,15 @@ function verCarta(id) {
     <!-- Descrição -->
     <div style="margin-bottom:18px">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;border-bottom:1px solid #eee;padding-bottom:4px;margin-bottom:8px">Descrição dos Serviços</div>
-      <div style="background:#f9f9f9;border-left:4px solid #e91e8c;padding:12px 16px;border-radius:4px;white-space:pre-wrap">${cob.descricao}</div>
+      <div style="background:#f9f9f9;border-left:4px solid #1e8fa8;padding:12px 16px;border-radius:4px;white-space:pre-wrap">${cob.descricao}</div>
     </div>
     <!-- Valor -->
-    <div style="display:flex;justify-content:space-between;align-items:center;background:#fff5fb;border:2px solid #e91e8c;border-radius:8px;padding:14px 20px;margin-bottom:22px">
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#e8f5f9;border:2px solid #1e8fa8;border-radius:8px;padding:14px 20px;margin-bottom:22px">
       <div>
         <div style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:.5px">Valor Total</div>
         ${cob.vencimento?`<div style="font-size:12px;color:#555;margin-top:4px">Vencimento: <b>${cob.vencimento}</b></div>`:''}
       </div>
-      <div style="font-size:28px;font-weight:700;color:#e91e8c">${valorFmt}</div>
+      <div style="font-size:28px;font-weight:700;color:#1e8fa8">${valorFmt}</div>
     </div>
     <!-- PIX -->
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;border-bottom:1px solid #eee;padding-bottom:4px;margin-bottom:12px">Pagamento via PIX</div>
@@ -999,20 +992,27 @@ function verCarta(id) {
         </div>
         <div style="background:#fff;border:1px dashed #ccc;border-radius:4px;padding:8px 10px;font-size:11px;margin-bottom:6px">
           <div style="font-size:10px;color:#888;text-transform:uppercase;margin-bottom:2px">Favorecido</div>
-          <b>SC Contabilidade</b>
+          <b>Salubre Contabilidade</b>
         </div>
-        <div style="background:#fff5fb;border:2px solid #e91e8c;border-radius:4px;padding:8px 10px;font-size:14px;font-weight:700;color:#e91e8c">
+        <div style="background:#e8f5f9;border:2px solid #1e8fa8;border-radius:4px;padding:8px 10px;font-size:14px;font-weight:700;color:#1e8fa8">
           Valor: ${valorFmt}
         </div>
       </div>
     </div>
     <div style="margin-top:28px;padding-top:14px;border-top:1px solid #eee;text-align:center;font-size:11px;color:#aaa">
-      SC Contabilidade · Santo André – SP · CNPJ 30.016.838/0001-34
+      Salubre Contabilidade · Santo André – SP · CNPJ 30.016.838/0001-34
     </div>
   </div>`;
 
-  document.getElementById('carta-preview').innerHTML = html;
-  // Pré-preenche e-mail para o botão "Enviar por E-mail"
+}
+
+function verCarta(id) {
+  const cob = getCobrancas().find(c=>c.id===id);
+  if (!cob) { toast('Cobrança não encontrada','erro'); return; }
+  const cli = getClientes().find(c=>c.id===cob.clienteId);
+  if (!cli) { toast('Cliente não encontrado','erro'); return; }
+  cobAtual = cob;
+  document.getElementById('carta-preview').innerHTML = gerarHtmlCarta(cob, cli);
   preencherEmailModal(cob, cli);
   abrirModal('modal-carta');
 }
@@ -1021,7 +1021,7 @@ function imprimirCarta() {
   const conteudo = document.getElementById('carta-preview').innerHTML;
   const janela = window.open('','_blank','width=850,height=1100');
   janela.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
-    <title>Carta de Cobrança — SC Contabilidade</title>
+    <title>Carta de Cobrança — Salubre Contabilidade</title>
     <style>@page{size:A4;margin:15mm}body{font-family:Arial,sans-serif;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}.carta-wrap{font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;line-height:1.6;padding:32px}</style>
     </head><body>${conteudo}<script>window.onload=()=>window.print();<\/script></body></html>`);
   janela.document.close();
@@ -1030,40 +1030,12 @@ function imprimirCarta() {
 // ══════════════════════════════════════════════════════════
 // E-MAIL
 // ══════════════════════════════════════════════════════════
-function montarMensagemEmail(cob, cli) {
-  const mesNome  = MESES[cob.mesReferencia-1]||'';
-  const valorFmt = formatBRL(cob.valor);
-  const cfg      = getConfig();
-  const assinatura = cfg.assinatura || 'SC Contabilidade\nCNPJ: 30.016.838/0001-34\nSanto André – SP';
-  return `Prezado(a) ${cli.razaoSocial},
-
-Segue a cobrança referente aos serviços contábeis de ${mesNome}/${cob.anoReferencia}.
-
-─────────────────────────────
-SERVIÇOS PRESTADOS
-─────────────────────────────
-${cob.descricao}
-
-─────────────────────────────
-VALOR: ${valorFmt}${cob.vencimento?'\nVENCIMENTO: '+cob.vencimento:''}
-─────────────────────────────
-
-PAGAMENTO VIA PIX:
-Chave: 30.016.838/0001-34 (CNPJ)
-Favorecido: SC Contabilidade
-Valor: ${valorFmt}
-
-Em caso de dúvidas, entre em contato.
-
-Atenciosamente,
-${assinatura}`;
-}
-
 function preencherEmailModal(cob, cli) {
   const mesNome = MESES[cob.mesReferencia-1]||'';
-  document.getElementById('email-para').value     = cli?.email || '';
-  document.getElementById('email-assunto').value  = `Honorários Contábeis — ${mesNome}/${cob.anoReferencia} — SC Contabilidade`;
-  document.getElementById('email-mensagem').value = montarMensagemEmail(cob, cli);
+  document.getElementById('email-para').value    = cli?.email || '';
+  document.getElementById('email-assunto').value = `Honorários Contábeis — ${mesNome}/${cob.anoReferencia} — Salubre Contabilidade`;
+  document.getElementById('email-mensagem').value =
+    `Prezado(a) ${cli?.razaoSocial||''},\n\nSegue a carta de cobrança referente a ${mesNome}/${cob.anoReferencia} no valor de ${formatBRL(cob.valor)}.\n\nO e-mail automático (botão "Enviar automático") envia a carta completa com layout e QR Code PIX diretamente para o cliente.\n\nAtenciosamente,\nSalubre Contabilidade`;
   document.getElementById('email-status').innerHTML = '';
 }
 
@@ -1124,13 +1096,14 @@ async function enviarEmailJS() {
     }
     const cob = cobAtual;
     const cli = getClientes().find(c=>c.id===cob?.clienteId);
+    const htmlCarta = (cob && cli) ? gerarHtmlCarta(cob, cli) : mensagem;
     const pixPayload = cob ? buildPixPayload(cob.valor,`COB${cob.id}`) : '';
     const qrUrl = pixPayload ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=10&data=${encodeURIComponent(pixPayload)}` : '';
     await window.emailjs.send(cfg.serviceId, cfg.templateId, {
       to_email: para,
       to_name:  cli?.razaoSocial || para,
       subject:  assunto,
-      message:  mensagem,
+      message:  htmlCarta,
       qr_url:   qrUrl,
     });
     document.getElementById('email-status').innerHTML =
@@ -1153,7 +1126,7 @@ function carregarConfig() {
   document.getElementById('cfg-pubkey').value     = cfg.pubkey     || '';
   document.getElementById('cfg-service').value    = cfg.serviceId  || '';
   document.getElementById('cfg-template').value   = cfg.templateId || '';
-  document.getElementById('cfg-assinatura').value = cfg.assinatura || 'SC Contabilidade\nCNPJ: 30.016.838/0001-34\nSanto André – SP';
+  document.getElementById('cfg-assinatura').value = cfg.assinatura || 'Salubre Contabilidade\nCNPJ: 30.016.838/0001-34\nSanto André – SP';
 }
 
 function salvarConfig() {
@@ -1187,7 +1160,7 @@ async function testarEmail() {
     }
     await window.emailjs.send(cfg.serviceId, cfg.templateId, {
       to_email:'teste@exemplo.com', to_name:'Teste',
-      subject:'Teste SC Contabilidade', message:'E-mail de teste do sistema de cobranças.', qr_url:'',
+      subject:'Teste Salubre Contabilidade', message:'E-mail de teste do sistema de cobranças.', qr_url:'',
     });
     document.getElementById('cfg-status').innerHTML='<span style="color:var(--green)">✓ E-mail de teste enviado!</span>';
   } catch(err) {
