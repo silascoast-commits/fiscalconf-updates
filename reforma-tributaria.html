@@ -180,6 +180,17 @@ tbody tr:last-child td{border-bottom:none}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:var(--bg)}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ── CLIENTES ─────────────────────────────────── */
+.cl-card{background:var(--surf);border:1px solid var(--border);border-radius:9px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;transition:border .15s}
+.cl-card:hover{border-color:var(--accent)}
+.cl-card.ativo{border-color:var(--accent);background:rgba(37,99,235,.07)}
+.cl-avatar{width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#fff;flex-shrink:0}
+.cl-info{flex:1;min-width:0}
+.cl-nome{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cl-sub{font-size:11px;color:var(--t2);margin-top:2px}
+.cl-actions{display:flex;gap:6px;flex-shrink:0}
+.ml8{margin-left:8px}
 </style>
 </head>
 <body>
@@ -214,6 +225,10 @@ tbody tr:last-child td{border-bottom:none}
   <div class="nav-item" onclick="nav(this,'irpj')"><span class="nav-icon">💰</span>IRPJ / CSLL</div>
   <div class="nav-item" onclick="nav(this,'simples')"><span class="nav-icon">🔀</span>Simples & Híbrido</div>
 
+  <div class="nav-section">Clientes</div>
+  <div class="nav-item" onclick="nav(this,'clientes')"><span class="nav-icon">👥</span>Gestão de Clientes</div>
+  <div class="nav-item" onclick="nav(this,'pgdas')"><span class="nav-icon">📥</span>Importar PGDAS-D</div>
+
   <div class="nav-section">Escritório</div>
   <div class="nav-item" onclick="nav(this,'relatorio')"><span class="nav-icon">📄</span>Relatório & Parecer</div>
   <div class="nav-item" onclick="nav(this,'glossario')"><span class="nav-icon">📚</span>Glossário & FAQ</div>
@@ -236,6 +251,17 @@ tbody tr:last-child td{border-bottom:none}
   <div class="phase-step"><div class="phase-dot ph-next"></div><span>2029 IBS 10%</span></div>
   <span class="phase-arrow">›</span>
   <div class="phase-step"><div class="phase-dot ph-next"></div><span>2033 Pleno</span></div>
+</div>
+
+<!-- CLIENTE ATIVO BANNER -->
+<div id="cliente-banner" style="display:none;background:rgba(37,99,235,.12);border:1px solid rgba(37,99,235,.3);border-radius:8px;padding:10px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px;flex-wrap:wrap">
+  <span style="font-size:16px">👤</span>
+  <div style="flex:1">
+    <div style="font-weight:700;font-size:13px" id="cb-nome">—</div>
+    <div style="font-size:11px;color:var(--t2)" id="cb-info">—</div>
+  </div>
+  <button class="btn btn-ghost btn-sm" onclick="desativarCliente()">✕ Desativar</button>
+  <button class="btn btn-primary btn-sm" onclick="nav(document.querySelector('[onclick*=relatorio]'),\'relatorio\');gerarRel()">📄 Gerar Relatório</button>
 </div>
 
 <!-- ── DASHBOARD ─────────────────────────────── -->
@@ -1110,6 +1136,125 @@ tbody tr:last-child td{border-bottom:none}
   <div id="prazos_list"></div>
 </div>
 
+<!-- ── GESTÃO DE CLIENTES ─────────────────────── -->
+<div id="p-clientes" class="panel">
+  <div class="sh"><h2>👥 Gestão de Clientes</h2><p>Cadastre clientes por CNPJ com busca automática e ative para simulações</p></div>
+
+  <!-- Cadastro rápido -->
+  <div class="card mb16">
+    <div class="card-title">➕ Novo Cliente</div>
+    <div class="grid g3 mt10">
+      <div class="fg" style="grid-column:1/3">
+        <label>CNPJ</label>
+        <div class="flex gap8">
+          <input type="text" id="cl_cnpj" placeholder="00.000.000/0001-00" maxlength="18" oninput="maskCNPJ(this)" style="flex:1">
+          <button class="btn btn-primary" onclick="buscarCNPJ()" id="cl_btn_buscar">🔍 Buscar</button>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Regime Tributário</label>
+        <select id="cl_regime">
+          <option value="Simples Nacional">Simples Nacional</option>
+          <option value="Lucro Presumido">Lucro Presumido</option>
+          <option value="Lucro Real">Lucro Real</option>
+          <option value="MEI">MEI</option>
+        </select>
+      </div>
+    </div>
+    <div id="cl_dados" style="display:none" class="mt12">
+      <div class="al al-ok mb12" id="cl_status_msg"></div>
+      <div class="grid g3">
+        <div class="fg"><label>Razão Social</label><input type="text" id="cl_nome"></div>
+        <div class="fg"><label>Nome Fantasia</label><input type="text" id="cl_fantasia"></div>
+        <div class="fg"><label>CNAE Principal</label><input type="text" id="cl_cnae"></div>
+        <div class="fg"><label>UF</label><input type="text" id="cl_uf" maxlength="2"></div>
+        <div class="fg"><label>Município</label><input type="text" id="cl_cidade"></div>
+        <div class="fg"><label>Situação</label><input type="text" id="cl_sit" readonly></div>
+        <div class="fg"><label>Faturamento Anual Estimado (R$)</label><input type="number" id="cl_fat" value="0"></div>
+        <div class="fg"><label>Faturamento 12m Simples (R$)</label><input type="number" id="cl_rb12" value="0"></div>
+        <div class="fg"><label>% B2B</label><input type="number" id="cl_b2b" value="50" min="0" max="100"></div>
+      </div>
+      <div class="fg"><label>Observações</label><textarea id="cl_obs" rows="2" placeholder="Notas internas sobre o cliente..."></textarea></div>
+      <div class="flex gap8 mt12">
+        <button class="btn btn-primary" onclick="salvarCliente()">💾 Salvar Cliente</button>
+        <button class="btn btn-ghost" onclick="limparFormCliente()">✕ Limpar</button>
+      </div>
+    </div>
+    <div id="cl_loading" style="display:none" class="al al-info mt12">⏳ Consultando Receita Federal...</div>
+    <div id="cl_erro" style="display:none" class="al al-err mt12"></div>
+  </div>
+
+  <!-- Lista de clientes -->
+  <div class="card">
+    <div class="card-title flex jb ic">
+      <span>📋 Clientes Cadastrados</span>
+      <div class="flex gap8">
+        <input type="text" id="cl_busca" placeholder="Buscar..." oninput="renderClientes()" style="width:180px;padding:5px 10px;font-size:11px">
+        <button class="btn btn-ghost btn-sm" onclick="exportarClientes()">⬇️ Exportar JSON</button>
+        <button class="btn btn-ghost btn-sm" onclick="importarClientesJSON()">⬆️ Importar JSON</button>
+        <input type="file" id="cl_import_file" accept=".json" style="display:none" onchange="lerImportJSON(this)">
+      </div>
+    </div>
+    <div id="cl_lista" class="mt12"></div>
+  </div>
+</div>
+
+<!-- ── IMPORTAR PGDAS-D ───────────────────────── -->
+<div id="p-pgdas" class="panel">
+  <div class="sh"><h2>📥 Importar PGDAS-D</h2><p>Informe os dados do PGDAS-D para calcular o DAS e gerar relatório automático</p></div>
+  <div class="al al-info mb16">Informe os valores diretamente do seu PGDAS-D (Programa Gerador do Documento de Arrecadação do Simples Nacional). Os dados serão usados para calcular o DAS e pré-preencher as simulações do cliente ativo.</div>
+
+  <div class="grid g2 mb14">
+    <div class="card">
+      <div class="card-title">📋 Identificação</div>
+      <div class="fg mt10"><label>Período de Apuração (PA)</label><input type="text" id="pg_pa" placeholder="MM/AAAA" maxlength="7"></div>
+      <div class="fg"><label>CNPJ</label><input type="text" id="pg_cnpj" placeholder="00.000.000/0001-00" maxlength="18" oninput="maskCNPJ(this)"></div>
+      <div class="fg"><label>Razão Social</label><input type="text" id="pg_nome" placeholder="Nome do cliente"></div>
+      <div class="fg"><label>Anexo</label><select id="pg_anexo">
+        <option value="A1">Anexo I — Comércio</option>
+        <option value="B1">Anexo II — Indústria</option>
+        <option value="C1">Anexo III — Serviços</option>
+        <option value="D1">Anexo IV — Serviços (construção…)</option>
+        <option value="E1">Anexo V — Serviços (TI…)</option>
+      </select></div>
+    </div>
+    <div class="card">
+      <div class="card-title">💰 Receitas do Período</div>
+      <div class="fg mt10"><label>Receita Bruta Total do Mês (R$)</label><input type="number" id="pg_rbm" value="0" oninput="calcPGDAS()"></div>
+      <div class="fg"><label>Receita Bruta Acumulada 12m (R$)</label><input type="number" id="pg_rb12" value="0" oninput="calcPGDAS()"></div>
+      <div class="fg"><label>Receita com Substituição Tributária (R$)</label><input type="number" id="pg_rst" value="0" oninput="calcPGDAS()"></div>
+      <div class="fg"><label>Receita Exportação (R$)</label><input type="number" id="pg_exp" value="0" oninput="calcPGDAS()"></div>
+      <div class="fg"><label>Fator R (Folha/Receita) — apenas Anexo V</label><input type="number" id="pg_fr" value="0" step="0.01" min="0" max="1" oninput="calcPGDAS()"></div>
+    </div>
+  </div>
+
+  <div class="card mb14">
+    <div class="card-title">🧮 Cálculo do DAS</div>
+    <div id="pg_res" class="mt10"></div>
+  </div>
+
+  <div class="grid g3 mb14">
+    <div class="card">
+      <div class="card-title">📊 Composição do DAS</div>
+      <div id="pg_comp" class="mt10"></div>
+    </div>
+    <div class="card" style="grid-column:2/4">
+      <div class="card-title">📈 Histórico do Período</div>
+      <div id="pg_hist" class="mt10">
+        <div class="al al-info">Adicione apurações mensais para ver a evolução anual.</div>
+        <div id="pg_hist_tbl" class="mt10"></div>
+        <button class="btn btn-ghost btn-sm mt10" onclick="adicionarHistPGDAS()">➕ Adicionar ao Histórico</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex gap8">
+    <button class="btn btn-primary" onclick="salvarPGDASnoCliente()">💾 Salvar no Cliente Ativo</button>
+    <button class="btn btn-ghost" onclick="exportarPGDAS()">⬇️ Exportar Relatório</button>
+    <button class="btn btn-ghost" onclick="limparPGDAS()">🗑️ Limpar</button>
+  </div>
+</div>
+
 </div><!-- /main -->
 
 <!-- ═══ MODAL CONFIG ══════════════════════════════════════ -->
@@ -1948,6 +2093,362 @@ function loadConfig(){
   } catch(e){}
 }
 
+// ─── CLIENTES ────────────────────────────────────────────────────────────────
+let clienteAtivo = null;
+let pgdasHist = [];
+
+function maskCNPJ(el){
+  let v = el.value.replace(/\D/g,'').slice(0,14);
+  v = v.replace(/^(\d{2})(\d)/,'$1.$2')
+       .replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3')
+       .replace(/\.(\d{3})(\d)/,'.$1/$2')
+       .replace(/(\d{4})(\d)/,'$1-$2');
+  el.value = v;
+}
+
+function cnpjRaw(str){ return str.replace(/\D/g,''); }
+
+async function buscarCNPJ(){
+  const cnpj = cnpjRaw($('cl_cnpj')?.value || '');
+  if(cnpj.length !== 14){ toast('CNPJ inválido — informe 14 dígitos', false); return; }
+  $('cl_loading').style.display = 'block';
+  $('cl_dados').style.display = 'none';
+  $('cl_erro').style.display = 'none';
+  $('cl_btn_buscar').disabled = true;
+  try {
+    const r = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+    if(!r.ok) throw new Error('CNPJ não encontrado');
+    const d = await r.json();
+    $('cl_nome').value = d.razao_social || '';
+    $('cl_fantasia').value = d.nome_fantasia || '';
+    $('cl_cnae').value = d.cnae_fiscal ? d.cnae_fiscal + ' — ' + (d.cnae_fiscal_descricao || '') : '';
+    $('cl_uf').value = d.uf || '';
+    $('cl_cidade').value = d.municipio || '';
+    $('cl_sit').value = d.descricao_situacao_cadastral || '';
+    $('cl_status_msg').textContent = `✅ ${d.razao_social} — CNPJ encontrado na Receita Federal.`;
+    $('cl_dados').style.display = 'block';
+    // Sugerir regime por CNAE
+    const cnae = String(d.cnae_fiscal || '');
+    if(['4711','4712','4713','4721','4722','4729','4731','4732','4741','4742','4744','4754','4755','4763','4771','4772','4773','4781','4782','4789'].some(c => cnae.startsWith(c))){
+      $('cl_regime').value = 'Simples Nacional';
+    }
+  } catch(e){
+    $('cl_erro').textContent = '❌ ' + (e.message || 'Erro ao consultar a Receita Federal. Verifique o CNPJ e tente novamente.');
+    $('cl_erro').style.display = 'block';
+  } finally {
+    $('cl_loading').style.display = 'none';
+    $('cl_btn_buscar').disabled = false;
+  }
+}
+
+function salvarCliente(){
+  const cnpj = cnpjRaw($('cl_cnpj')?.value || '');
+  if(cnpj.length !== 14){ toast('CNPJ inválido', false); return; }
+  const cliente = {
+    cnpj, cnpjFmt: $('cl_cnpj').value,
+    nome: $('cl_nome').value,
+    fantasia: $('cl_fantasia').value,
+    cnae: $('cl_cnae').value,
+    uf: $('cl_uf').value,
+    cidade: $('cl_cidade').value,
+    situacao: $('cl_sit').value,
+    regime: $('cl_regime').value,
+    fat: v('cl_fat'), rb12: v('cl_rb12'), b2b: v('cl_b2b'),
+    obs: $('cl_obs')?.value || '',
+    criadoEm: new Date().toISOString(),
+    simulacoes: [], pgdas: []
+  };
+  const clientes = getClientes();
+  const idx = clientes.findIndex(c => c.cnpj === cnpj);
+  if(idx >= 0){
+    cliente.simulacoes = clientes[idx].simulacoes || [];
+    cliente.pgdas = clientes[idx].pgdas || [];
+    clientes[idx] = cliente;
+    toast('Cliente atualizado!');
+  } else {
+    clientes.push(cliente);
+    toast('Cliente salvo!');
+  }
+  saveClientes(clientes);
+  limparFormCliente();
+  renderClientes();
+}
+
+function limparFormCliente(){
+  ['cl_cnpj','cl_nome','cl_fantasia','cl_cnae','cl_uf','cl_cidade','cl_sit','cl_obs'].forEach(id => { const el = $(id); if(el) el.value = ''; });
+  ['cl_fat','cl_rb12','cl_b2b'].forEach(id => { const el = $(id); if(el) el.value = id==='cl_b2b'?50:0; });
+  $('cl_dados').style.display = 'none';
+  $('cl_erro').style.display = 'none';
+}
+
+function getClientes(){ try { return JSON.parse(localStorage.getItem('rt_clientes')||'[]'); } catch(e){ return []; } }
+function saveClientes(arr){ localStorage.setItem('rt_clientes', JSON.stringify(arr)); }
+
+function renderClientes(){
+  const el = $('cl_lista'); if(!el) return;
+  const q = ($('cl_busca')?.value||'').toLowerCase();
+  let clientes = getClientes().filter(c =>
+    !q || c.nome.toLowerCase().includes(q) || c.cnpjFmt.includes(q) || (c.fantasia||'').toLowerCase().includes(q)
+  );
+  if(!clientes.length){
+    el.innerHTML = '<div class="al al-info">Nenhum cliente cadastrado. Use o formulário acima para adicionar.</div>';
+    return;
+  }
+  el.innerHTML = clientes.map(c => {
+    const ativo = clienteAtivo && clienteAtivo.cnpj === c.cnpj;
+    const inicial = (c.fantasia || c.nome || '?')[0].toUpperCase();
+    const regTag = c.regime === 'Simples Nacional' ? 'tg' : c.regime === 'Lucro Real' ? 'tb' : c.regime === 'MEI' ? 'tp' : 'ty';
+    return `<div class="cl-card${ativo?' ativo':''}">
+      <div class="cl-avatar">${inicial}</div>
+      <div class="cl-info">
+        <div class="cl-nome">${c.fantasia || c.nome}</div>
+        <div class="cl-sub">${c.cnpjFmt} · ${c.uf} · <span class="tag ${regTag}">${c.regime}</span>${ativo?' · <span class="tag tg">✅ ATIVO</span>':''}</div>
+        <div class="cl-sub">${c.fat > 0 ? 'Faturamento: ' + fmt(c.fat) + '/ano' : ''} ${c.obs ? '· ' + c.obs.slice(0,50) : ''}</div>
+      </div>
+      <div class="cl-actions">
+        ${ativo
+          ? `<button class="btn btn-ghost btn-sm" onclick="desativarCliente()">✕ Desativar</button>`
+          : `<button class="btn btn-primary btn-sm" onclick="ativarCliente('${c.cnpj}')">▶ Ativar</button>`}
+        <button class="btn btn-ghost btn-sm" onclick="editarCliente('${c.cnpj}')">✏️</button>
+        <button class="btn btn-ghost btn-sm" onclick="excluirCliente('${c.cnpj}')" style="color:var(--red)">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function ativarCliente(cnpj){
+  const clientes = getClientes();
+  const c = clientes.find(x => x.cnpj === cnpj);
+  if(!c) return;
+  clienteAtivo = c;
+  // Preencher campos do relatório
+  const nm = $('rl_nome'); if(nm) nm.value = c.nome;
+  const cn = $('rl_cnpj'); if(cn) cn.value = c.cnpjFmt;
+  const rg = $('rl_reg'); if(rg) rg.value = c.regime;
+  const ft = $('rl_fat'); if(ft) ft.value = c.fat || 0;
+  const b2 = $('rl_b2b'); if(b2) b2.value = c.b2b || 50;
+  const uf = $('rl_uf'); if(uf){ Array.from(uf.options).forEach(o=>{if(o.value===c.uf)o.selected=true;}); }
+  // Preencher planejamento
+  const pf = $('pl_fat'); if(pf) pf.value = c.fat || 0;
+  const pb = $('pl_b2b'); if(pb) pb.value = c.b2b || 50;
+  const pr = $('pl_rb12'); if(pr) pr.value = c.rb12 || c.fat || 0;
+  // Preencher Simples
+  const sf = $('sn_f12'); if(sf) sf.value = c.rb12 || c.fat || 0;
+  // Preencher PGDAS
+  const pg = $('pg_cnpj'); if(pg) pg.value = c.cnpjFmt;
+  const pn = $('pg_nome'); if(pn) pn.value = c.nome;
+  const pr12 = $('pg_rb12'); if(pr12) pr12.value = c.rb12 || c.fat || 0;
+  // Atualizar banner
+  const banner = $('cliente-banner');
+  if(banner){ banner.style.display = 'flex'; }
+  const bn = $('cb-nome'); if(bn) bn.textContent = c.fantasia || c.nome;
+  const bi = $('cb-info'); if(bi) bi.textContent = c.cnpjFmt + ' · ' + c.regime + (c.fat ? ' · ' + fmt(c.fat) + '/ano' : '');
+  // Recalcular
+  calcPlan(); calcSN(); gerarRel();
+  toast('Cliente ativado: ' + (c.fantasia || c.nome));
+  renderClientes();
+}
+
+function desativarCliente(){
+  clienteAtivo = null;
+  const banner = $('cliente-banner');
+  if(banner) banner.style.display = 'none';
+  toast('Cliente desativado');
+  renderClientes();
+}
+
+function editarCliente(cnpj){
+  const c = getClientes().find(x => x.cnpj === cnpj);
+  if(!c) return;
+  $('cl_cnpj').value = c.cnpjFmt;
+  $('cl_nome').value = c.nome;
+  $('cl_fantasia').value = c.fantasia || '';
+  $('cl_cnae').value = c.cnae || '';
+  $('cl_uf').value = c.uf || '';
+  $('cl_cidade').value = c.cidade || '';
+  $('cl_sit').value = c.situacao || '';
+  $('cl_fat').value = c.fat || 0;
+  $('cl_rb12').value = c.rb12 || 0;
+  $('cl_b2b').value = c.b2b || 50;
+  $('cl_obs').value = c.obs || '';
+  $('cl_regime').value = c.regime || 'Simples Nacional';
+  $('cl_status_msg').textContent = '✏️ Editando cliente — altere os dados e clique em Salvar.';
+  $('cl_dados').style.display = 'block';
+  $('cl_erro').style.display = 'none';
+  // Scroll to top
+  document.getElementById('p-clientes')?.scrollIntoView({behavior:'smooth'});
+}
+
+function excluirCliente(cnpj){
+  if(!confirm('Excluir este cliente? Esta ação não pode ser desfeita.')) return;
+  if(clienteAtivo && clienteAtivo.cnpj === cnpj) desativarCliente();
+  const clientes = getClientes().filter(c => c.cnpj !== cnpj);
+  saveClientes(clientes);
+  toast('Cliente excluído');
+  renderClientes();
+}
+
+function exportarClientes(){
+  const data = JSON.stringify(getClientes(), null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'clientes-reformatrib-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+}
+
+function importarClientesJSON(){
+  $('cl_import_file')?.click();
+}
+
+function lerImportJSON(input){
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const arr = JSON.parse(e.target.result);
+      if(!Array.isArray(arr)) throw new Error('Formato inválido');
+      const existing = getClientes();
+      let adicionados = 0;
+      arr.forEach(c => {
+        if(c.cnpj && c.nome){
+          const idx = existing.findIndex(x => x.cnpj === c.cnpj);
+          if(idx >= 0) existing[idx] = c; else { existing.push(c); adicionados++; }
+        }
+      });
+      saveClientes(existing);
+      renderClientes();
+      toast(adicionados + ' clientes importados!');
+    } catch(e) { toast('Erro ao importar: ' + e.message, false); }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+// ─── PGDAS-D ─────────────────────────────────────────────────────────────────
+function calcPGDAS(){
+  const rbm = v('pg_rbm'), rb12 = v('pg_rb12'), rst = v('pg_rst'), exp = v('pg_exp');
+  const fr = v('pg_fr'), anexo = vs('pg_anexo');
+  const a = ANEXOS[anexo];
+  if(!a || rb12 <= 0){
+    const res = $('pg_res'); if(res) res.innerHTML = '<div class="al al-warn">Informe a Receita Bruta para calcular.</div>';
+    return;
+  }
+  // Base de cálculo (exclui ST e exportação)
+  const rbBase = Math.max(0, rbm - rst - exp);
+  // Faixas
+  let faixa = a.faixas.length - 1;
+  for(let i=0; i<a.faixas.length; i++){
+    if(rb12 <= a.faixas[i]){ faixa = i; break; }
+  }
+  if(rb12 > 4800000){
+    $('pg_res').innerHTML = '<div class="al al-err">⚠️ Faturamento acima do limite do Simples Nacional.</div>';
+    return;
+  }
+  const aliqNom = a.aliq[faixa];
+  const ded = a.ded[faixa];
+  const aliqEfet = (rb12 * aliqNom / 100 - ded) / rb12 * 100;
+  const das = rbBase * aliqEfet / 100;
+  // Composição aproximada por anexo (% do DAS)
+  const comp = getCompDAS(anexo, faixa);
+  const res = $('pg_res');
+  if(res) res.innerHTML = `
+    <div class="grid g4">
+      <div class="card metric m-blue"><div class="card-title">Receita Base</div><div class="kv hl">${fmt(rbBase)}</div><div class="ks">Excl. ST e exportação</div></div>
+      <div class="card metric m-yellow"><div class="card-title">Alíq. Nominal</div><div class="kv hly">${pct(aliqNom)}</div><div class="ks">Faixa ${faixa+1}</div></div>
+      <div class="card metric m-green"><div class="card-title">Alíq. Efetiva</div><div class="kv hlg">${pct(aliqEfet)}</div><div class="ks">Após dedução</div></div>
+      <div class="card metric m-red"><div class="card-title">DAS do Mês</div><div class="kv hlr">${fmt(das)}</div><div class="ks">A recolher</div></div>
+    </div>
+    <div class="al al-ok mt12">✅ Período: <strong>${$('pg_pa')?.value || '—'}</strong> · RBT12: <strong>${fmt(rb12)}</strong> · Faixa <strong>${faixa+1}</strong> do ${a.nome}</div>`;
+  // Composição
+  const compEl = $('pg_comp');
+  if(compEl && comp){
+    compEl.innerHTML = comp.map(c => `
+      ${rrow(c.nome, pct(c.pct) + ' = ' + fmt(das * c.pct / 100))}
+    `).join('');
+  }
+}
+
+function getCompDAS(anexo, faixa){
+  // Distribuição aproximada do DAS por tributo
+  const comps = {
+    A1: [{nome:'IRPJ',pct:5.5},{nome:'CSLL',pct:3.5},{nome:'COFINS',pct:12.74},{nome:'PIS',pct:2.76},{nome:'CPP',pct:41.5},{nome:'ICMS',pct:34}],
+    B1: [{nome:'IRPJ',pct:5.5},{nome:'CSLL',pct:3.5},{nome:'COFINS',pct:12.74},{nome:'PIS',pct:2.76},{nome:'CPP',pct:41.5},{nome:'IPI',pct:7},{nome:'ICMS',pct:27}],
+    C1: [{nome:'IRPJ',pct:4},{nome:'CSLL',pct:3.5},{nome:'COFINS',pct:12.82},{nome:'PIS',pct:2.78},{nome:'CPP',pct:43.4},{nome:'ISS',pct:33.5}],
+    D1: [{nome:'IRPJ',pct:4},{nome:'CSLL',pct:3.5},{nome:'COFINS',pct:14.1},{nome:'PIS',pct:3.05},{nome:'ISS',pct:32.5}],
+    E1: [{nome:'IRPJ',pct:15.5},{nome:'CSLL',pct:15},{nome:'COFINS',pct:28.27},{nome:'PIS',pct:6.13},{nome:'CPP',pct:23.5},{nome:'ISS',pct:11.6}],
+  };
+  return comps[anexo] || comps.A1;
+}
+
+function adicionarHistPGDAS(){
+  const pa = $('pg_pa')?.value; const rbm = v('pg_rbm'); const rb12 = v('pg_rb12');
+  if(!pa || !rbm){ toast('Informe o PA e a receita bruta', false); return; }
+  const anexo = vs('pg_anexo'); const a = ANEXOS[anexo];
+  let faixa = a.faixas.length - 1;
+  for(let i=0; i<a.faixas.length; i++){ if(rb12 <= a.faixas[i]){ faixa = i; break; } }
+  const aliqNom = a.aliq[faixa], ded = a.ded[faixa];
+  const aliqEfet = (rb12 * aliqNom / 100 - ded) / rb12 * 100;
+  const das = rbm * aliqEfet / 100;
+  pgdasHist.push({pa, rbm, rb12, das, aliqEfet});
+  renderHistPGDAS();
+  toast('Período ' + pa + ' adicionado ao histórico');
+}
+
+function renderHistPGDAS(){
+  const el = $('pg_hist_tbl'); if(!el) return;
+  if(!pgdasHist.length){ el.innerHTML = ''; return; }
+  let html = '<table><tr><th>PA</th><th>Receita Mês</th><th>RBT12</th><th>Alíq. Efetiva</th><th>DAS</th><th></th></tr>';
+  pgdasHist.forEach((h,i) => {
+    html += `<tr><td>${h.pa}</td><td>${fmt(h.rbm)}</td><td>${fmt(h.rb12)}</td><td>${pct(h.aliqEfet)}</td><td class="hlr bold">${fmt(h.das)}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="pgdasHist.splice(${i},1);renderHistPGDAS()" style="color:var(--red)">✕</button></td></tr>`;
+  });
+  const totalDAS = pgdasHist.reduce((a,h)=>a+h.das,0);
+  html += `<tr class="tr-hl"><td colspan="4"><strong>Total acumulado</strong></td><td class="hlr bold">${fmt(totalDAS)}</td><td></td></tr>`;
+  html += '</table>';
+  el.innerHTML = html;
+}
+
+function salvarPGDASnoCliente(){
+  if(!clienteAtivo){ toast('Ative um cliente primeiro', false); return; }
+  const clientes = getClientes();
+  const idx = clientes.findIndex(c => c.cnpj === clienteAtivo.cnpj);
+  if(idx < 0){ toast('Cliente não encontrado', false); return; }
+  const entrada = {
+    pa: $('pg_pa')?.value, rbm: v('pg_rbm'), rb12: v('pg_rb12'),
+    rst: v('pg_rst'), exp: v('pg_exp'), anexo: vs('pg_anexo'),
+    hist: [...pgdasHist], salvoEm: new Date().toISOString()
+  };
+  clientes[idx].pgdas = clientes[idx].pgdas || [];
+  clientes[idx].pgdas.push(entrada);
+  saveClientes(clientes);
+  toast('PGDAS salvo no cliente ' + (clienteAtivo.fantasia || clienteAtivo.nome));
+}
+
+function exportarPGDAS(){
+  const nome = $('pg_nome')?.value || 'cliente';
+  const pa = $('pg_pa')?.value || 'sem-pa';
+  const data = {
+    cliente: nome, pa, cnpj: $('pg_cnpj')?.value,
+    rbm: v('pg_rbm'), rb12: v('pg_rb12'), anexo: vs('pg_anexo'),
+    historico: pgdasHist
+  };
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `pgdas-${nome.slice(0,20).replace(/\s/g,'-')}-${pa.replace('/','')}.json`;
+  a.click();
+}
+
+function limparPGDAS(){
+  ['pg_pa','pg_cnpj','pg_nome'].forEach(id => { const el=$(id); if(el) el.value=''; });
+  ['pg_rbm','pg_rb12','pg_rst','pg_exp','pg_fr'].forEach(id => { const el=$(id); if(el) el.value=0; });
+  pgdasHist = [];
+  renderHistPGDAS();
+  const res = $('pg_res'); if(res) res.innerHTML='';
+  const comp = $('pg_comp'); if(comp) comp.innerHTML='';
+}
+
 // ─── INIT ────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   // Data atual
@@ -1967,6 +2468,7 @@ document.addEventListener('DOMContentLoaded', () => {
   calcImo(); calcComb(); calcPlan(); calcLP(); calcLR(); calcIRPJComp();
   calcSN(); calcSnCred(); calcDecisor();
   gerarRel(); filterGloss(); renderPrazos(); renderAnexos();
+  renderClientes(); calcPGDAS();
   loadConfig();
 });
 </script>
