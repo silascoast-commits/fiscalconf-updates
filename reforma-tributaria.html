@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <title id="page-title">ReformaTrib Pro — Escritório</title>
 <style>
 :root{
@@ -1201,8 +1202,25 @@ tbody tr:last-child td{border-bottom:none}
 
 <!-- ── IMPORTAR PGDAS-D ───────────────────────── -->
 <div id="p-pgdas" class="panel">
-  <div class="sh"><h2>📥 Importar PGDAS-D</h2><p>Informe os dados do PGDAS-D para calcular o DAS e gerar relatório automático</p></div>
-  <div class="al al-info mb16">Informe os valores diretamente do seu PGDAS-D (Programa Gerador do Documento de Arrecadação do Simples Nacional). Os dados serão usados para calcular o DAS e pré-preencher as simulações do cliente ativo.</div>
+  <div class="sh"><h2>📥 Importar PGDAS-D</h2><p>Faça upload do PDF do PGDAS-D ou preencha manualmente</p></div>
+
+  <!-- Upload PDF -->
+  <div class="card mb16" id="pgdas-upload-card">
+    <div class="card-title">📄 Upload do PDF do PGDAS-D</div>
+    <div id="pgdas-dropzone" onclick="$('pgdas_pdf_file').click()"
+      style="border:2px dashed var(--border);border-radius:10px;padding:32px;text-align:center;cursor:pointer;margin-top:12px;transition:all .2s"
+      ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+      ondragleave="this.style.borderColor='var(--border)'"
+      ondrop="event.preventDefault();this.style.borderColor='var(--border)';handlePGDASdrop(event)">
+      <div style="font-size:36px;margin-bottom:8px">📂</div>
+      <div class="bold">Clique aqui ou arraste o PDF do PGDAS-D</div>
+      <div class="sm muted mt8">O sistema extrai automaticamente: CNPJ, Período, Receita Bruta, RBT12, Anexo, DAS e composição tributária</div>
+      <input type="file" id="pgdas_pdf_file" accept=".pdf" style="display:none" onchange="lerPGDAS_PDF(this)">
+    </div>
+    <div id="pgdas-pdf-status" style="display:none" class="mt12"></div>
+  </div>
+
+  <div class="al al-info mb16">Prefere preencher manualmente? Use os campos abaixo.</div>
 
   <div class="grid g2 mb14">
     <div class="card">
@@ -2447,6 +2465,172 @@ function limparPGDAS(){
   renderHistPGDAS();
   const res = $('pg_res'); if(res) res.innerHTML='';
   const comp = $('pg_comp'); if(comp) comp.innerHTML='';
+}
+
+// ─── LEITURA PDF PGDAS-D ────────────────────────────────────────────────────
+function handlePGDASdrop(e){
+  const file = e.dataTransfer?.files?.[0];
+  if(file && file.type === 'application/pdf') processarPGDAS_PDF(file);
+  else toast('Arquivo inválido — envie um PDF', false);
+}
+
+function lerPGDAS_PDF(input){
+  const file = input.files?.[0];
+  if(file) processarPGDAS_PDF(file);
+  input.value = '';
+}
+
+async function processarPGDAS_PDF(file){
+  const statusEl = $('pgdas-pdf-status');
+  statusEl.style.display = 'block';
+  statusEl.innerHTML = '<div class="al al-info">⏳ Lendo o PDF... aguarde.</div>';
+
+  try {
+    // Configurar worker do pdf.js
+    if(typeof pdfjsLib !== 'undefined'){
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    } else {
+      throw new Error('pdf.js não carregado');
+    }
+
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+
+    // Extrair todo o texto de todas as páginas
+    let textoTotal = '';
+    for(let i = 1; i <= pdf.numPages; i++){
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      textoTotal += content.items.map(item => item.str).join(' ') + '\n';
+    }
+
+    // Parsear os campos do PGDAS-D
+    const dados = parsearTextoPGDAS(textoTotal);
+
+    if(!dados.encontrado){
+      statusEl.innerHTML = '<div class="al al-warn">⚠️ Não foi possível identificar o formato do PGDAS-D neste PDF. Tente preencher manualmente ou use um PDF gerado diretamente pelo PGDAS.</div>';
+      return;
+    }
+
+    // Preencher os campos
+    preencherCamposPGDAS(dados);
+
+    let resumo = '<div class="al al-ok mt0"><strong>✅ PDF lido com sucesso!</strong> Campos preenchidos automaticamente:<ul style="margin-top:8px;padding-left:18px;line-height:1.9">';
+    if(dados.cnpj)    resumo += `<li>CNPJ: <strong>${dados.cnpjFmt}</strong></li>`;
+    if(dados.pa)      resumo += `<li>Período de Apuração: <strong>${dados.pa}</strong></li>`;
+    if(dados.nome)    resumo += `<li>Razão Social: <strong>${dados.nome}</strong></li>`;
+    if(dados.rbm > 0) resumo += `<li>Receita Bruta do Mês: <strong>${fmt(dados.rbm)}</strong></li>`;
+    if(dados.rb12 > 0)resumo += `<li>RBT12: <strong>${fmt(dados.rb12)}</strong></li>`;
+    if(dados.das > 0) resumo += `<li>DAS calculado: <strong>${fmt(dados.das)}</strong></li>`;
+    if(dados.anexo)   resumo += `<li>Anexo identificado: <strong>${dados.anexo}</strong></li>`;
+    resumo += '</ul></div>';
+    statusEl.innerHTML = resumo;
+
+    // Recalcular
+    calcPGDAS();
+    toast('PGDAS-D importado com sucesso!');
+
+  } catch(err){
+    console.error('Erro ao ler PDF:', err);
+    statusEl.innerHTML = `<div class="al al-err">❌ Erro ao processar PDF: ${err.message}. Verifique se o arquivo não está protegido por senha.</div>`;
+  }
+}
+
+function parsearTextoPGDAS(txt){
+  const dados = { encontrado: false };
+
+  // Detectar se é PGDAS-D
+  if(!txt.includes('PGDAS') && !txt.includes('Simples Nacional') && !txt.includes('DAS')){
+    return dados;
+  }
+  dados.encontrado = true;
+
+  // CNPJ — padrão XX.XXX.XXX/XXXX-XX
+  const cnpjMatch = txt.match(/(\d{2}[\.\s]?\d{3}[\.\s]?\d{3}[\s\/]?\d{4}[\s\-]?\d{2})/);
+  if(cnpjMatch){
+    dados.cnpjFmt = cnpjMatch[1].replace(/\s/g,'');
+    dados.cnpj = dados.cnpjFmt.replace(/\D/g,'');
+  }
+
+  // Período de Apuração MM/AAAA ou MMAAAA
+  const paMatch = txt.match(/(?:Per[íi]odo|PA|Apura[çc][ãa]o)[^\d]*(\d{2})[\/\s]?(\d{4})/i)
+                || txt.match(/(\d{2})\/(\d{4})/);
+  if(paMatch) dados.pa = paMatch[1] + '/' + paMatch[2];
+
+  // Razão Social — linha após "Razão Social" ou "Nome Empresarial"
+  const nomeMatch = txt.match(/(?:Raz[ãa]o Social|Nome Empresarial)[:\s]+([A-ZÁÀÂÃÉÊÍÓÔÕÚÇÜ][^\n\r]{3,60})/i);
+  if(nomeMatch) dados.nome = nomeMatch[1].trim();
+
+  // Receita Bruta do Mês / Período
+  const rbmMatch = txt.match(/Receita\s*Bruta\s*(?:Total\s*)?(?:do\s*)?(?:M[eê]s|Per[íi]odo)[^R\d]*R?\$?\s*([\d.,]+)/i)
+                 || txt.match(/RBT\s*(?:do\s*)?(?:M[eê]s|Per[íi]odo)[^R\d]*R?\$?\s*([\d.,]+)/i);
+  if(rbmMatch) dados.rbm = parseBR(rbmMatch[1]);
+
+  // RBT12 — Receita Bruta Acumulada 12 meses
+  const rb12Match = txt.match(/(?:Receita\s*Bruta\s*Acumulada|RBT\s*12|12\s*[Mm]eses)[^R\d]*R?\$?\s*([\d.,]+)/i);
+  if(rb12Match) dados.rb12 = parseBR(rb12Match[1]);
+
+  // Valor do DAS
+  const dasMatch = txt.match(/(?:Valor\s*(?:do\s*)?DAS|Total\s*a\s*Pagar)[^R\d]*R?\$?\s*([\d.,]+)/i)
+                 || txt.match(/DAS[^R\d]{0,20}R?\$?\s*([\d.,]+)/i);
+  if(dasMatch) dados.das = parseBR(dasMatch[1]);
+
+  // Substituição Tributária
+  const stMatch = txt.match(/(?:Substitui[çc][ãa]o\s*Tribut[áa]ria|ST)[^R\d]*R?\$?\s*([\d.,]+)/i);
+  if(stMatch) dados.rst = parseBR(stMatch[1]);
+
+  // Alíquota efetiva
+  const aliqMatch = txt.match(/Al[íi]quota\s*(?:Efetiva|Aplic[áa]vel)[^\d]*([\d,]+)\s*%/i);
+  if(aliqMatch) dados.aliqEfet = parseFloat(aliqMatch[1].replace(',','.'));
+
+  // Detectar Anexo pelo texto
+  const anexoMap = [
+    [/Anexo\s*I[^IV]/i, 'A1'],
+    [/Anexo\s*II[^I]/i, 'B1'],
+    [/Anexo\s*III/i, 'C1'],
+    [/Anexo\s*IV/i, 'D1'],
+    [/Anexo\s*V/i, 'E1'],
+    [/com[ée]rcio/i, 'A1'],
+    [/ind[úu]stria/i, 'B1'],
+    [/servi[çc]os/i, 'C1'],
+  ];
+  for(const [re, val] of anexoMap){
+    if(re.test(txt)){ dados.anexo = val; break; }
+  }
+
+  return dados;
+}
+
+function parseBR(str){
+  // Converte "1.234,56" ou "1234.56" para float
+  if(!str) return 0;
+  str = str.replace(/\s/g,'');
+  if(str.includes(',') && str.includes('.')){
+    // "1.234,56" → formato BR
+    return parseFloat(str.replace(/\./g,'').replace(',','.')) || 0;
+  }
+  if(str.includes(',')){
+    return parseFloat(str.replace(',','.')) || 0;
+  }
+  return parseFloat(str) || 0;
+}
+
+function preencherCamposPGDAS(d){
+  if(d.cnpjFmt && $('pg_cnpj')) $('pg_cnpj').value = d.cnpjFmt;
+  if(d.pa && $('pg_pa'))         $('pg_pa').value = d.pa;
+  if(d.nome && $('pg_nome'))     $('pg_nome').value = d.nome;
+  if(d.rbm > 0 && $('pg_rbm'))  $('pg_rbm').value = d.rbm;
+  if(d.rb12 > 0 && $('pg_rb12'))$('pg_rb12').value = d.rb12;
+  if(d.rst > 0 && $('pg_rst'))  $('pg_rst').value = d.rst;
+  if(d.anexo){
+    const sel = $('pg_anexo');
+    if(sel) Array.from(sel.options).forEach(o => { if(o.value === d.anexo) o.selected = true; });
+  }
+  // Se tiver cliente ativo com o mesmo CNPJ, atualizar rb12
+  if(clienteAtivo && d.rb12 > 0){
+    clienteAtivo.rb12 = d.rb12;
+  }
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
