@@ -356,6 +356,13 @@ tbody tr:last-child td{border-bottom:none}
       <div class="card">
         <div class="grid g2">
           <div class="fg"><label>Valor da Operação (R$)</label><input type="number" id="cv_v" value="100000" oninput="calcVenda()"></div>
+          <div class="fg"><label>% B2B (Pessoa Jurídica)</label>
+            <div class="flex gap8 ic">
+              <input type="range" id="cv_b2b" min="0" max="100" step="5" value="50" oninput="updB2B('cv_b2b','cv_b2b_lbl');calcVenda()" style="flex:1">
+              <span id="cv_b2b_lbl" class="tag tb" style="min-width:52px;text-align:center">50%</span>
+            </div>
+            <div class="flex jb xs muted mt4"><span>100% B2C</span><span>100% B2B</span></div>
+          </div>
           <div class="fg"><label>Categoria</label><select id="cv_cat" onchange="calcVenda()">
             <option value="padrao">Padrão — 100%</option>
             <option value="red60">Reduzida 60% (saúde, educação, agro, turismo…)</option>
@@ -547,6 +554,13 @@ tbody tr:last-child td{border-bottom:none}
         <div class="fg"><label>Prazo médio recolhimento atual (dias)</label><input type="number" id="sp_p" value="45" oninput="calcSplit()"></div>
         <div class="fg"><label>Alíquota CBS+IBS efetiva (%)</label><input type="number" id="sp_a" value="15" step="0.5" oninput="calcSplit()"></div>
         <div class="fg"><label>Taxa de juros mensal (%)</label><input type="number" id="sp_t" value="1.8" step="0.1" oninput="calcSplit()"></div>
+        <div class="fg" style="grid-column:1/-1"><label>% Faturamento B2B (cartão/boleto/PIX sujeitos ao split)</label>
+          <div class="flex gap8 ic">
+            <input type="range" id="sp_b2b" min="0" max="100" step="5" value="60" oninput="updB2B('sp_b2b','sp_b2b_lbl');calcSplit()" style="flex:1">
+            <span id="sp_b2b_lbl" class="tag tb" style="min-width:52px;text-align:center">60%</span>
+          </div>
+          <div class="flex jb xs muted mt4"><span>100% B2C (varejo)</span><span>100% B2B</span></div>
+        </div>
       </div>
       <div id="sp_res" class="rbox"></div>
     </div>
@@ -1373,10 +1387,17 @@ function getAliq(ano, cat){
 }
 
 // ─── CALCULADORA VENDA ───────────────────────────────────────────────────────
+function updB2B(rangeId, lblId){
+  const el = $(rangeId); if(!el) return;
+  const lbl = $(lblId); if(lbl) lbl.textContent = el.value + '%';
+}
+
 function calcVenda(){
   const val = v('cv_v'), cat = vs('cv_cat'), ano = vs('cv_ano'), reg = vs('cv_reg');
   const cbsBase = parseFloat($('cv_cbs')?.value || 8.8);
   const ibsBase = parseFloat($('cv_ibs')?.value || 17.7);
+  const b2b = parseFloat($('cv_b2b')?.value || 50) / 100;
+  const b2c = 1 - b2b;
   let fator = 1;
   if(cat === 'red60' || cat === 'cestab') fator = 0.4;
   else if(cat === 'int30') fator = 0.7;
@@ -1384,17 +1405,27 @@ function calcVenda(){
   const cbsR = cbsBase * fator, ibsR = ibsBase * fator;
   const cbs = val * cbsR / 100, ibs = val * ibsR / 100;
   const total = cbs + ibs;
+  // B2B: comprador recupera o crédito → custo real = 0 para o adquirente
+  // B2C: tributo vira custo definitivo no consumidor final
+  const custoCadeia = total * b2c; // custo real (sem recuperação)
+  const creditoClientes = total * b2b;
   let aviso = '';
   if(ano === '2026') aviso = '<div class="al al-warn mt10">2026: Destaque apenas informativo na NF-e. Sem recolhimento efetivo.</div>';
   if(reg === 'simples') aviso += '<div class="al al-info mt8">Simples Nacional: CBS/IBS incluídos no DAS até 2027.</div>';
-  const res = $(  'cv_res');
+  const res = $('cv_res');
   if(res) res.innerHTML = `
     ${rrow('Valor da Operação', fmt(val))}
     ${rrow('CBS (' + pct(cbsR) + ')', fmt(cbs), 'neg')}
     ${rrow('IBS (' + pct(ibsR) + ')', fmt(ibs), 'neg')}
     ${rtotal('Total CBS + IBS', fmt(total), 'neg')}
-    ${rrow('Carga sobre Receita', pct((total/val)*100))}
-    ${rrow('Valor líquido (sem imposto)', fmt(val - total), 'pos')}
+    <hr style="border:none;border-top:1px solid var(--border);margin:8px 0">
+    <div class="xs muted mb6">Análise por perfil de cliente (B2B ${Math.round(b2b*100)}% · B2C ${Math.round(b2c*100)}%)</div>
+    ${rrow('Crédito gerado a clientes B2B', fmt(creditoClientes), 'pos')}
+    ${rrow('Custo final (B2C — sem recuperação)', fmt(custoCadeia), 'neg')}
+    ${rrow('Carga líquida real sobre receita', pct((custoCadeia/val)*100))}
+    ${rrow('Valor líquido recebido', fmt(val - total), 'pos')}
+    ${b2b > 0.6 ? '<div class="al al-ok mt10">✅ Perfil B2B alto: clientes recuperam a maior parte do tributo via crédito.</div>' : ''}
+    ${b2c > 0.6 ? '<div class="al al-warn mt10">⚠️ Perfil B2C alto: tributo vira custo definitivo — revise precificação.</div>' : ''}
     ${aviso}`;
 }
 
@@ -1483,17 +1514,30 @@ function calcImport(){
 // ─── SPLIT PAYMENT ──────────────────────────────────────────────────────────
 function calcSplit(){
   const fat = v('sp_f'), prazo = v('sp_p'), aliq = v('sp_a'), taxa = v('sp_t');
+  const b2b = parseFloat($('sp_b2b')?.value || 60) / 100;
+  const b2c = 1 - b2b;
   const tribMensal = fat * aliq / 100;
-  const floatPerdido = tribMensal * (prazo / 30);
+  // Split incide principalmente sobre B2B (boleto, TED, PIX empresarial) e B2C cartão
+  const tribSujeito = tribMensal; // todo o tributo fica sujeito ao split
+  const floatPerdido = tribSujeito * (prazo / 30);
   const custoPerdidoMes = floatPerdido * taxa / 100;
   const custoAnual = custoPerdidoMes * 12;
+  // Impacto por canal
+  const tribB2B = tribMensal * b2b;
+  const tribB2C = tribMensal * b2c;
   const res = $('sp_res');
   if(res) res.innerHTML = `
-    ${rrow('Tributos mensais (CBS+IBS)', fmt(tribMensal), 'neg')}
-    ${rrow('Float atual (prazo ' + num(prazo) + ' dias)', fmt(floatPerdido))}
-    ${rrow('Custo do float perdido/mês', fmt(custoPerdidoMes), 'neg')}
+    ${rrow('Faturamento Mensal', fmt(fat))}
+    ${rrow('CBS+IBS mensais (' + pct(aliq) + ')', fmt(tribMensal), 'neg')}
+    <hr style="border:none;border-top:1px solid var(--border);margin:6px 0">
+    ${rrow('Tributo B2B (' + Math.round(b2b*100) + '%)', fmt(tribB2B), 'neg')}
+    ${rrow('Tributo B2C (' + Math.round(b2c*100) + '%)', fmt(tribB2C), 'neg')}
+    <hr style="border:none;border-top:1px solid var(--border);margin:6px 0">
+    ${rrow('Float perdido (prazo ' + num(prazo) + ' dias)', fmt(floatPerdido))}
+    ${rrow('Custo do float/mês (' + pct(taxa) + ' a.m.)', fmt(custoPerdidoMes), 'neg')}
     ${rtotal('Custo anual do Split Payment', fmt(custoAnual), 'neg')}
-    <div class="al al-warn mt10">O tributo é retido na origem — nunca entra no caixa. Planeje capital de giro com antecedência.</div>`;
+    ${b2c > 0.5 ? '<div class="al al-warn mt10">⚠️ Perfil B2C alto (varejo): impacto maior no capital de giro — os recebimentos de cartão serão retidos automaticamente.</div>' : ''}
+    ${b2b > 0.5 ? '<div class="al al-info mt10">ℹ️ Perfil B2B alto: tributação via Split em TED/PIX/boleto — renegocie prazos com fornecedores.</div>' : ''}`;
 }
 
 // ─── IMPOSTO SELETIVO ────────────────────────────────────────────────────────
@@ -2645,6 +2689,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Inicializar sliders
   updR('cv_cbs','cv_cbs_lbl');
   updR('cv_ibs','cv_ibs_lbl');
+  updB2B('cv_b2b','cv_b2b_lbl');
+  updB2B('sp_b2b','sp_b2b_lbl');
 
   // Calcular todos
   calcVenda(); calcCred(); calcCadeia(); calcProf(); calcImport();
