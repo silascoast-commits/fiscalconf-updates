@@ -222,6 +222,10 @@ tbody tr:last-child td{border-bottom:none}
   <div class="nav-item" onclick="nav(this,'transicao')"><span class="nav-icon">📅</span>Transição 2026–2033</div>
   <div class="nav-item" onclick="nav(this,'especiais')"><span class="nav-icon">🏭</span>Regimes Especiais</div>
   <div class="nav-item" onclick="nav(this,'precificacao')"><span class="nav-icon">🏷️</span>Precificação Pós-Reforma</div>
+  <div class="nav-item" onclick="nav(this,'fluxocaixa')"><span class="nav-icon">💹</span>Fluxo de Caixa Transição</div>
+  <div class="nav-item" onclick="nav(this,'difal')"><span class="nav-icon">🗺️</span>DIFAL Interestadual</div>
+  <div class="nav-item" onclick="nav(this,'creditos')"><span class="nav-icon">♻️</span>Créditos & Ressarcimento</div>
+  <div class="nav-item" onclick="nav(this,'nfe2026')"><span class="nav-icon">📋</span>NF-e 2026 CBS/IBS</div>
 
   <div class="nav-section">Regimes Tributários</div>
   <div class="nav-item" onclick="nav(this,'planejamento')"><span class="nav-icon">📊</span>Planejamento Tributário</div>
@@ -229,10 +233,15 @@ tbody tr:last-child td{border-bottom:none}
   <div class="nav-item" onclick="nav(this,'simples')"><span class="nav-icon">🔀</span>Simples & Híbrido</div>
   <div class="nav-item" onclick="nav(this,'fatorr')"><span class="nav-icon">📐</span>Fator R</div>
   <div class="nav-item" onclick="nav(this,'mei')"><span class="nav-icon">🧑‍💼</span>MEI</div>
+  <div class="nav-item" onclick="nav(this,'irrf')"><span class="nav-icon">✂️</span>IRRF / Retenções</div>
+  <div class="nav-item" onclick="nav(this,'dividendos')"><span class="nav-icon">💎</span>Dividendos</div>
+  <div class="nav-item" onclick="nav(this,'reorganizacao')"><span class="nav-icon">🏗️</span>Reorganização Societária</div>
+  <div class="nav-item" onclick="nav(this,'cnae')"><span class="nav-icon">🏭</span>Impacto por CNAE</div>
 
   <div class="nav-section">Clientes</div>
   <div class="nav-item" onclick="nav(this,'clientes')"><span class="nav-icon">👥</span>Gestão de Clientes</div>
   <div class="nav-item" onclick="nav(this,'pgdas')"><span class="nav-icon">📥</span>Importar PGDAS-D</div>
+  <div class="nav-item" onclick="nav(this,'calendario')"><span class="nav-icon">📆</span>Calendário do Cliente</div>
 
   <div class="nav-section">Escritório</div>
   <div class="nav-item" onclick="nav(this,'relatorio')"><span class="nav-icon">📄</span>Relatório & Parecer</div>
@@ -1556,6 +1565,547 @@ tbody tr:last-child td{border-bottom:none}
   </div>
 </div>
 
+<!-- ── FLUXO DE CAIXA TRANSIÇÃO ───────────────── -->
+<div id="p-fluxocaixa" class="panel">
+  <div class="sh"><h2>💹 Fluxo de Caixa na Transição</h2><p>Projeção mensal 2026–2033 considerando Split Payment, dupla tributação e capital de giro</p></div>
+  <div class="card mb14">
+    <div class="card-title">Parâmetros da Empresa</div>
+    <div class="grid g4 mt10">
+      <div class="fg"><label>Faturamento Mensal (R$)</label><input type="number" id="fc_fat" value="500000" oninput="calcFC()"></div>
+      <div class="fg"><label>Compras/Custos Mensais (R$)</label><input type="number" id="fc_comp" value="200000" oninput="calcFC()"></div>
+      <div class="fg"><label>Folha de Pagamento (R$)</label><input type="number" id="fc_folha" value="80000" oninput="calcFC()"></div>
+      <div class="fg"><label>Prazo Médio Recebimento (dias)</label><input type="number" id="fc_pmr" value="30" oninput="calcFC()"></div>
+      <div class="fg"><label>Prazo Médio Pagamento (dias)</label><input type="number" id="fc_pmp" value="20" oninput="calcFC()"></div>
+      <div class="fg"><label>Regime</label><select id="fc_reg" onchange="calcFC()">
+        <option value="lp">Lucro Presumido</option>
+        <option value="lr">Lucro Real</option>
+        <option value="sn">Simples Nacional</option>
+      </select></div>
+      <div class="fg"><label>Taxa Juros Capital de Giro (%/mês)</label><input type="number" id="fc_taxa" value="2.5" step="0.1" oninput="calcFC()"></div>
+      <div class="fg"><label>Split Payment ativo a partir de</label><select id="fc_split" onchange="calcFC()">
+        <option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option>
+      </select></div>
+    </div>
+  </div>
+  <div class="card mb14"><div class="card-title">📊 Projeção Anual 2026–2033</div><div id="fc_tbl" class="tbl-wrap mt10"></div></div>
+  <div class="card"><div class="card-title">💸 Necessidade de Capital de Giro por Ano</div><div id="fc_chart" class="mt10"></div></div>
+</div>
+
+<!-- ── DIFAL ──────────────────────────────────── -->
+<div id="p-difal" class="panel">
+  <div class="sh"><h2>🗺️ DIFAL — Diferencial de Alíquota</h2><p>Operações interestaduais · E-commerce · Transição ICMS → IBS (2026–2032)</p></div>
+  <div class="al al-warn mb16"><strong>DIFAL ICMS:</strong> nas vendas para consumidor final não contribuinte em outro estado, aplica-se o diferencial entre a alíquota interna do destino e a interestadual. Com a reforma, o IBS elimina este problema pois usa alíquota única nacional (princípio do destino).</div>
+  <div class="itabs">
+    <button class="itab active" onclick="it(this,'dif-calc')">Calculadora DIFAL</button>
+    <button class="itab" onclick="it(this,'dif-ecom')">E-commerce</button>
+    <button class="itab" onclick="it(this,'dif-trans')">Transição ICMS → IBS</button>
+  </div>
+  <div id="dif-calc" class="ipanel active">
+    <div class="grid g2">
+      <div class="card">
+        <div class="fg mt10"><label>Valor da Operação (R$)</label><input type="number" id="df_val" value="10000" oninput="calcDIFAL()"></div>
+        <div class="fg"><label>UF Origem</label><select id="df_orig" onchange="calcDIFAL()">
+          <option value="12">SP (12%)</option><option value="12">RJ (12%)</option><option value="12">MG (12%)</option>
+          <option value="7">PE (7%)</option><option value="7">BA (7%)</option><option value="7">CE (7%)</option>
+          <option value="7">GO (7%)</option><option value="7">PA (7%)</option><option value="7">MA (7%)</option>
+        </select></div>
+        <div class="fg"><label>UF Destino (consumidor final)</label><select id="df_dest" onchange="calcDIFAL()">
+          <option value="17">SP (17%)</option><option value="20">RJ (20%)</option><option value="18">MG (18%)</option>
+          <option value="18">PR (18%)</option><option value="17">RS (17%)</option><option value="17">SC (17%)</option>
+          <option value="18">BA (18%)</option><option value="17">GO (17%)</option><option value="18">PE (18%)</option>
+          <option value="20">AM (20%)</option><option value="18">CE (18%)</option>
+        </select></div>
+        <div class="fg"><label>Destinatário</label><select id="df_dest_tipo" onchange="calcDIFAL()">
+          <option value="nc">Não contribuinte (DIFAL obrigatório)</option>
+          <option value="contrib">Contribuinte ICMS (operação normal)</option>
+        </select></div>
+        <div id="df_res" class="rbox mt12"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Alíquotas Interestaduais ICMS</div>
+        <table class="mt10"><tr><th>Origem</th><th>Para Sul/Sudeste</th><th>Para N/NE/CO</th></tr>
+          <tr><td>Sul e Sudeste</td><td class="hl">12%</td><td class="hly">7%</td></tr>
+          <tr><td>N, NE, CO, ES</td><td class="hl">12%</td><td class="hl">12%</td></tr>
+        </table>
+        <div class="al al-ok mt12">Com o IBS (2033): alíquota única nacional. Fim do DIFAL. Operações interestaduais tratadas igualmente.</div>
+        <div class="card mt12" style="background:var(--surf)">
+          <div class="card-title">Partilha DIFAL (não contribuinte)</div>
+          <div class="rrow"><span class="rl">2026</span><span class="rv">100% Destino</span></div>
+          <div class="rrow"><span class="rl">2027–2032</span><span class="rv">100% Destino</span></div>
+          <div class="rrow"><span class="rl">2033</span><span class="rv hl">DIFAL extinto — IBS substitui</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="dif-ecom" class="ipanel">
+    <div class="card mb14">
+      <div class="card-title">E-commerce — Cálculo Automático de DIFAL</div>
+      <div class="grid g3 mt10">
+        <div class="fg"><label>Valor Produto (R$)</label><input type="number" id="ec_val" value="500" oninput="calcEcom()"></div>
+        <div class="fg"><label>Alíquota Interestadual (%)</label><input type="number" id="ec_inter" value="12" step="1" oninput="calcEcom()"></div>
+        <div class="fg"><label>Alíquota Interna Destino (%)</label><input type="number" id="ec_int" value="18" step="1" oninput="calcEcom()"></div>
+      </div>
+      <div id="ec_res" class="rbox mt12"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Impacto no E-commerce por Ano</div>
+      <table class="mt10"><tr><th>Ano</th><th>ICMS Inter.</th><th>DIFAL</th><th>IBS</th><th>Situação</th></tr>
+        <tr><td>2026</td><td class="hly">Normal</td><td class="hly">Sim</td><td class="muted">0,1%*</td><td>DIFAL pleno</td></tr>
+        <tr><td>2027–2028</td><td class="hly">Normal</td><td class="hly">Sim</td><td class="hly">Crescendo</td><td>Dupla tributação</td></tr>
+        <tr><td>2029–2032</td><td class="hly">Reduzindo</td><td class="hly">Parcial</td><td class="hlg">Crescendo</td><td>Transição</td></tr>
+        <tr class="tr-hl"><td><strong>2033</strong></td><td class="hlg">Extinto</td><td class="hlg">Extinto</td><td class="hlg">Pleno</td><td class="hlg bold">IBS unificado</td></tr>
+      </table>
+    </div>
+  </div>
+  <div id="dif-trans" class="ipanel">
+    <div class="grid g2">
+      <div class="card">
+        <div class="card-title">Simulação: DIFAL na Transição</div>
+        <div class="fg mt10"><label>Valor Mensal Vendas Interestaduais (R$)</label><input type="number" id="dt_val" value="100000" oninput="calcDIFALTrans()"></div>
+        <div class="fg"><label>DIFAL médio estimado (%)</label><input type="number" id="dt_dif" value="6" step="1" oninput="calcDIFALTrans()"></div>
+        <div id="dt_res" class="rbox mt12"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Cronograma DIFAL → IBS</div>
+        <div class="tl mt10">
+          <div class="tl-i now"><div class="tl-y">2026</div><div class="tl-t">DIFAL pleno + CBS 0,9%</div><div class="tl-d">DIFAL ICMS vigente. CBS destaque informativo. Carga máxima nas interestaduais.</div></div>
+          <div class="tl-i"><div class="tl-y">2029</div><div class="tl-t">IBS 10% começa</div><div class="tl-d">ICMS reduzido 10%. DIFAL reduz proporcionalmente. IBS começa a substituir.</div></div>
+          <div class="tl-i"><div class="tl-y">2033</div><div class="tl-t">DIFAL extinto</div><div class="tl-d">IBS unificado. Alíquota única nacional. Fim da guerra fiscal.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── CRÉDITOS & RESSARCIMENTO ───────────────── -->
+<div id="p-creditos" class="panel">
+  <div class="sh"><h2>♻️ Créditos Acumulados & Ressarcimento</h2><p>Exportadores · Bens de capital · Saldo credor · Prazo 60 dias (LC 214/2025)</p></div>
+  <div class="itabs">
+    <button class="itab active" onclick="it(this,'cr-export')">Exportadores</button>
+    <button class="itab" onclick="it(this,'cr-capital')">Bens de Capital</button>
+    <button class="itab" onclick="it(this,'cr-saldo')">Saldo Credor</button>
+  </div>
+  <div id="cr-export" class="ipanel active">
+    <div class="al al-ok mb12">Exportadores têm imunidade de CBS e IBS sobre as exportações e direito ao ressarcimento de saldo credor em prazo <strong>menor que 60 dias</strong>.</div>
+    <div class="grid g2">
+      <div class="card">
+        <div class="fg mt10"><label>Receita Total Mensal (R$)</label><input type="number" id="exp_rec" value="1000000" oninput="calcCredExp()"></div>
+        <div class="fg"><label>% Receita de Exportação</label><input type="number" id="exp_pct" value="40" min="0" max="100" oninput="calcCredExp()"></div>
+        <div class="fg"><label>Compras/Entradas Tributadas (R$)</label><input type="number" id="exp_ent" value="400000" oninput="calcCredExp()"></div>
+        <div id="exp_res" class="rbox mt12"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Regras para Exportadores</div>
+        <div class="rrow mt8"><span class="rl">Exportação de bens</span><span class="tag tg">Imune CBS+IBS</span></div>
+        <div class="rrow"><span class="rl">Exportação de serviços</span><span class="tag tg">Imune CBS+IBS</span></div>
+        <div class="rrow"><span class="rl">Crédito sobre entradas</span><span class="tag tg">Integral (mesmo para export.)</span></div>
+        <div class="rrow"><span class="rl">Prazo ressarcimento</span><span class="rv hl">Menor que 60 dias</span></div>
+        <div class="rrow"><span class="rl">IS sobre exportação</span><span class="tag tg">Imune</span></div>
+        <div class="rrow"><span class="rl">Regra de proporcionalidade</span><span class="rv muted">Crédito integral — não proporcional</span></div>
+        <div class="al al-ok mt12">Diferente do PIS/COFINS atual, no IVA Dual o crédito sobre entradas é <strong>integral</strong>, mesmo quando parte da receita é exportação.</div>
+      </div>
+    </div>
+  </div>
+  <div id="cr-capital" class="ipanel">
+    <div class="al al-info mb12">Bens do ativo imobilizado geram crédito de CBS+IBS. O contribuinte pode optar por apropriar de forma <strong>imediata</strong> ou em <strong>48 parcelas mensais</strong>.</div>
+    <div class="grid g2">
+      <div class="card">
+        <div class="fg mt10"><label>Valor do Bem (R$)</label><input type="number" id="cap_val" value="500000" oninput="calcCredCap()"></div>
+        <div class="fg"><label>Forma de Apropriação</label><select id="cap_forma" onchange="calcCredCap()">
+          <option value="imediato">Imediato (crédito integral no mês)</option>
+          <option value="48">Parcelado — 48 meses</option>
+        </select></div>
+        <div class="fg"><label>Taxa Selic mensal (%) — para cálculo do valor temporal</label><input type="number" id="cap_selic" value="0.83" step="0.01" oninput="calcCredCap()"></div>
+        <div id="cap_res" class="rbox mt12"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Bens de Capital — Regras</div>
+        <div class="tl mt10">
+          <div class="tl-i"><div class="tl-t">Crédito imediato</div><div class="tl-d">Todo CBS+IBS do bem pode ser creditado no mês da aquisição. Melhor para quem precisa do caixa.</div></div>
+          <div class="tl-i"><div class="tl-t">Parcelamento em 48 meses</div><div class="tl-d">1/48 por mês. Indicado quando a empresa tem saldo devedor suficiente para abater.</div></div>
+          <div class="tl-i"><div class="tl-t">Ressarcimento do saldo</div><div class="tl-d">Se restar saldo credor após 48 meses, é ressarcido em até 60 dias.</div></div>
+          <div class="tl-i"><div class="tl-t">Simples Híbrido</div><div class="tl-d">Empresa no Simples Híbrido que solicitar ressarcimento de capital não pode voltar ao regime unificado por 2 anos.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="cr-saldo" class="ipanel">
+    <div class="grid g2">
+      <div class="card">
+        <div class="card-title">Simulador de Saldo Credor</div>
+        <div class="fg mt10"><label>Saldo Credor Acumulado (R$)</label><input type="number" id="sc_saldo" value="200000" oninput="calcSaldoCred()"></div>
+        <div class="fg"><label>Débito Mensal Médio (R$)</label><input type="number" id="sc_deb" value="30000" oninput="calcSaldoCred()"></div>
+        <div class="fg"><label>Custo de Oportunidade (%/mês)</label><input type="number" id="sc_custo" value="1.0" step="0.1" oninput="calcSaldoCred()"></div>
+        <div id="sc_res" class="rbox mt12"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Prazo de Ressarcimento — LC 214/2025</div>
+        <div class="rrow mt8"><span class="rl">Regra geral</span><span class="rv hl">60 dias corridos</span></div>
+        <div class="rrow"><span class="rl">Exportadores</span><span class="rv hlg">Menor que 60 dias</span></div>
+        <div class="rrow"><span class="rl">Após prazo sem pagamento</span><span class="rv hly">Correção pela Selic</span></div>
+        <div class="rrow"><span class="rl">Modalidades</span><span class="rv">Transferência · Precatório · Compensação</span></div>
+        <div class="al al-ok mt12">Melhora significativa em relação ao PIS/COFINS atual, onde o ressarcimento pode levar anos.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── NF-e 2026 CBS/IBS ──────────────────────── -->
+<div id="p-nfe2026" class="panel">
+  <div class="sh"><h2>📋 Simulador NF-e 2026 — CBS/IBS</h2><p>Visualize como preencher os campos CBS e IBS na NF-e a partir de janeiro/2026</p></div>
+  <div class="al al-warn mb16"><strong>2026 é o Ano-Teste:</strong> os campos CBS e IBS aparecem na NF-e apenas para <em>fins informativos</em>. Os valores <strong>NÃO somam ao total da nota</strong> e <strong>NÃO geram recolhimento real</strong>. Penalidades por preenchimento errado suspensas por 4 meses após regulamentação.</div>
+  <div class="grid g21 mb14">
+    <div class="card">
+      <div class="card-title">Dados da Operação</div>
+      <div class="grid g2 mt10">
+        <div class="fg"><label>Valor do Produto (R$)</label><input type="number" id="nf_val" value="10000" oninput="calcNFe()"></div>
+        <div class="fg"><label>Categoria CBS/IBS</label><select id="nf_cat" onchange="calcNFe()">
+          <option value="padrao">Padrão (8,8% + 17,7%)</option>
+          <option value="red60">Reduzida 60% (3,52% + 7,08%)</option>
+          <option value="int30">Prof. Intelectual -30% (6,16% + 12,39%)</option>
+          <option value="zero">Alíquota Zero (0%)</option>
+          <option value="imune">Exportação — Imune (0%)</option>
+        </select></div>
+        <div class="fg"><label>Regime do Emitente</label><select id="nf_reg" onchange="calcNFe()">
+          <option value="regular">Regime Regular (LR / LP)</option>
+          <option value="hibrido">Simples Híbrido</option>
+          <option value="simples">Simples Unificado (sem CBS/IBS)</option>
+        </select></div>
+        <div class="fg"><label>IS sobre o produto? (%)</label><input type="number" id="nf_is" value="0" step="0.5" oninput="calcNFe()"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📄 Prévia da NF-e 2026</div>
+      <div id="nf_preview" class="mt10" style="font-family:monospace;font-size:12px;line-height:1.8"></div>
+    </div>
+  </div>
+  <div class="card mb14">
+    <div class="card-title">Campos CBS/IBS na NF-e — Detalhamento</div>
+    <div id="nf_campos" class="mt10"></div>
+  </div>
+  <div class="grid g3">
+    <div class="card"><div class="card-title">🟡 Regime Regular</div>
+      <ul class="sm muted mt8" style="padding-left:14px;line-height:1.9">
+        <li>Destaca CBS e IBS separadamente</li>
+        <li>Alíquotas informativas: CBS 0,9% / IBS 0,1%</li>
+        <li>Crédito para adquirente: <strong>informativo</strong></li>
+        <li>PIS/COFINS continua sendo recolhido normalmente</li>
+      </ul>
+    </div>
+    <div class="card"><div class="card-title">🟣 Simples Híbrido</div>
+      <ul class="sm muted mt8" style="padding-left:14px;line-height:1.9">
+        <li>Destaca CBS e IBS separadamente</li>
+        <li>Mesmo tratamento do Regime Regular em 2026</li>
+        <li>Crédito informativo para adquirentes</li>
+        <li>CBS/IBS ainda no DAS em 2026</li>
+      </ul>
+    </div>
+    <div class="card"><div class="card-title">🟢 Simples Unificado</div>
+      <ul class="sm muted mt8" style="padding-left:14px;line-height:1.9">
+        <li><strong>Não destaca</strong> CBS/IBS na NF-e em 2026</li>
+        <li>Alteração só a partir de 2027</li>
+        <li>Sem campos CBS/IBS na nota de 2026</li>
+        <li>Sem crédito para adquirentes em 2026</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ── IRRF / RETENÇÕES ───────────────────────── -->
+<div id="p-irrf" class="panel">
+  <div class="sh"><h2>✂️ IRRF & Retenções na Fonte</h2><p>IRRF · PIS/COFINS/CSLL retidos · INSS retido · CBS/IBS na transição</p></div>
+  <div class="itabs">
+    <button class="itab active" onclick="it(this,'irrf-serv')">Serviços PJ</button>
+    <button class="itab" onclick="it(this,'irrf-pf')">Pessoa Física</button>
+    <button class="itab" onclick="it(this,'irrf-reform')">Mudanças na Reforma</button>
+  </div>
+  <div id="irrf-serv" class="ipanel active">
+    <div class="grid g2">
+      <div class="card">
+        <div class="card-title">Retenções sobre Serviços PJ (Lei 10.833/2003)</div>
+        <div class="fg mt10"><label>Valor do Serviço (R$)</label><input type="number" id="ir_val" value="50000" oninput="calcIRRF()"></div>
+        <div class="fg"><label>Tipo de Serviço</label><select id="ir_tipo" onchange="calcIRRF()">
+          <option value="limpeza">Limpeza, conservação, segurança (1,5%)</option>
+          <option value="ti">TI, análise de sistemas (1,5%)</option>
+          <option value="med">Médicos, dentistas, farmacêuticos (1,5%)</option>
+          <option value="adv">Advocacia, auditoria (1,5%)</option>
+          <option value="eng">Engenharia, arquitetura (1,5%)</option>
+          <option value="outros">Demais serviços (1%)</option>
+          <option value="transp">Transporte de cargas (0,5%)</option>
+          <option value="coop">Cooperativas (5%)</option>
+        </select></div>
+        <div class="fg"><label>Retenção PCC (PIS+COFINS+CSLL)?</label><select id="ir_pcc" onchange="calcIRRF()">
+          <option value="1">Sim (4,65% — obrigatório acima R$215,05)</option>
+          <option value="0">Não (Simples, imune, etc.)</option>
+        </select></div>
+        <div class="fg"><label>INSS retido (11% — quando aplicável)?</label><select id="ir_inss" onchange="calcIRRF()">
+          <option value="0">Não (PJ normal)</option>
+          <option value="1">Sim (CEI/obras, cooperados, etc.)</option>
+        </select></div>
+        <div id="ir_res" class="rbox mt12"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Tabela de Retenções PJ</div>
+        <table class="mt10"><tr><th>Serviço</th><th>IRRF</th><th>PCC</th></tr>
+          <tr><td>Limpeza / conservação</td><td>1,5%</td><td>4,65%</td></tr>
+          <tr><td>TI / Programação</td><td>1,5%</td><td>4,65%</td></tr>
+          <tr><td>Médicos / saúde</td><td>1,5%</td><td>4,65%</td></tr>
+          <tr><td>Advocacia / auditoria</td><td>1,5%</td><td>4,65%</td></tr>
+          <tr><td>Engenharia / arquitetura</td><td>1,5%</td><td>4,65%</td></tr>
+          <tr><td>Demais serviços</td><td>1%</td><td>4,65%</td></tr>
+          <tr><td>Transporte cargas</td><td>0,5%</td><td>4,65%</td></tr>
+          <tr><td>Simples Nacional</td><td class="hlg">Dispensado IRRF</td><td class="hlg">Dispensado PCC</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div id="irrf-pf" class="ipanel">
+    <div class="grid g2">
+      <div class="card">
+        <div class="card-title">IRRF sobre Rendimentos PF</div>
+        <div class="fg mt10"><label>Rendimento Bruto (R$)</label><input type="number" id="irpf_val" value="10000" oninput="calcIRPF()"></div>
+        <div class="fg"><label>Número de Dependentes</label><input type="number" id="irpf_dep" value="0" min="0" oninput="calcIRPF()"></div>
+        <div class="fg"><label>Contribuição INSS (R$)</label><input type="number" id="irpf_inss" value="0" oninput="calcIRPF()"></div>
+        <div id="irpf_res" class="rbox mt12"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Tabela IRPF Mensal 2024/2025</div>
+        <table class="mt10"><tr><th>Base de Cálculo</th><th>Alíquota</th><th>Dedução</th></tr>
+          <tr><td>Até R$ 2.259,20</td><td class="hlg">Isento</td><td>—</td></tr>
+          <tr><td>R$ 2.259,21 a R$ 2.826,65</td><td>7,5%</td><td>R$ 169,44</td></tr>
+          <tr><td>R$ 2.826,66 a R$ 3.751,05</td><td>15%</td><td>R$ 381,44</td></tr>
+          <tr><td>R$ 3.751,06 a R$ 4.664,68</td><td>22,5%</td><td>R$ 662,77</td></tr>
+          <tr><td>Acima de R$ 4.664,68</td><td class="hlr">27,5%</td><td>R$ 896,00</td></tr>
+        </table>
+        <div class="xs muted mt8">Dedução por dependente: R$ 189,59/mês</div>
+      </div>
+    </div>
+  </div>
+  <div id="irrf-reform" class="ipanel">
+    <div class="grid g2">
+      <div class="card">
+        <div class="card-title">Mudanças na Reforma — IRRF e Retenções</div>
+        <div class="tl mt10">
+          <div class="tl-i done"><div class="tl-y">2026</div><div class="tl-t">PCC (PIS+COFINS+CSLL) inalterado</div><div class="tl-d">Retenções PCC continuam em 4,65%. IRRF sem alteração. CBS/IBS ainda não retidos.</div></div>
+          <div class="tl-i"><div class="tl-y">2027</div><div class="tl-t">CBS retida na fonte?</div><div class="tl-d">Regulamentação pendente. Possibilidade de retenção de CBS no pagamento de serviços (Split Payment para serviços).</div></div>
+          <div class="tl-i"><div class="tl-y">2027+</div><div class="tl-t">PIS/COFINS extintos → CBS</div><div class="tl-d">PCC (4,65%) deixa de existir. CBS e IBS assumem via Split Payment. CSLL retida permanece (3%).</div></div>
+          <div class="tl-i"><div class="tl-y">2033</div><div class="tl-t">Novo sistema de retenções</div><div class="tl-d">IRRF permanece. CBS+IBS via Split Payment. CSLL retida permanece. PCC extinto.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Comparativo: Atual × Pós-Reforma (2033)</div>
+        <table class="mt10"><tr><th>Retenção</th><th>Hoje</th><th>2033</th></tr>
+          <tr><td>IRRF PJ (serviços)</td><td>1–1,5%</td><td class="hl">Mantido</td></tr>
+          <tr><td>PIS retido</td><td>0,65%</td><td class="hlr">Extinto</td></tr>
+          <tr><td>COFINS retido</td><td>3%</td><td class="hlr">Extinto</td></tr>
+          <tr><td>CSLL retido</td><td>1%</td><td class="hl">Mantido</td></tr>
+          <tr><td>CBS (Split)</td><td>—</td><td class="hlg">Novo ~8,8%*</td></tr>
+          <tr><td>IBS (Split)</td><td>—</td><td class="hlg">Novo ~17,7%*</td></tr>
+          <tr><td>INSS retido (11%)</td><td>Selecionado</td><td class="hl">Mantido</td></tr>
+        </table>
+        <div class="xs muted mt8">* CBS e IBS via Split Payment — retidos pela IF</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── DIVIDENDOS ─────────────────────────────── -->
+<div id="p-dividendos" class="panel">
+  <div class="sh"><h2>💎 Tributação de Dividendos</h2><p>Cenário atual · Proposta da fase 2 da reforma · Planejamento</p></div>
+  <div class="al al-warn mb16"><strong>Fase 2 da Reforma Tributária</strong> (ainda em discussão no Congresso): proposta de tributar dividendos entre 15% e 20% para compensar eventual redução do IRPJ. Nada aprovado até maio/2026. Use este simulador para planejamento preventivo.</div>
+  <div class="itabs">
+    <button class="itab active" onclick="it(this,'div-atual')">Cenário Atual</button>
+    <button class="itab" onclick="it(this,'div-proposta')">Proposta Fase 2</button>
+    <button class="itab" onclick="it(this,'div-plan')">Planejamento</button>
+  </div>
+  <div id="div-atual" class="ipanel active">
+    <div class="grid g2">
+      <div class="card">
+        <div class="card-title">Simulador — Situação Atual</div>
+        <div class="fg mt10"><label>Lucro Líquido da Empresa (R$)</label><input type="number" id="dv_lucro" value="500000" oninput="calcDiv()"></div>
+        <div class="fg"><label>Regime da Empresa</label><select id="dv_reg" onchange="calcDiv()">
+          <option value="lp">Lucro Presumido</option>
+          <option value="lr">Lucro Real</option>
+          <option value="sn">Simples Nacional</option>
+        </select></div>
+        <div class="fg"><label>Nº de sócios</label><input type="number" id="dv_socios" value="2" min="1" oninput="calcDiv()"></div>
+        <div id="dv_res" class="rbox mt12"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Dividendos — Regras Atuais</div>
+        <div class="rrow mt8"><span class="rl">IR sobre dividendos (PJ → PF)</span><span class="tag tg">Isento</span></div>
+        <div class="rrow"><span class="rl">IR sobre JCP (Juros s/ Cap. Próprio)</span><span class="rv hly">15% na fonte</span></div>
+        <div class="rrow"><span class="rl">Dividendos entre PJs</span><span class="tag tg">Isento</span></div>
+        <div class="rrow"><span class="rl">Limite JCP dedutível</span><span class="rv muted">TJLP × PL</span></div>
+        <div class="rrow"><span class="rl">Dividendo de Simples</span><span class="tag tg">Isento (lucro presumido)</span></div>
+        <div class="al al-ok mt12">Desde a Lei 9.249/1995, dividendos são isentos de IR no Brasil. A fase 2 da reforma pode mudar isso.</div>
+      </div>
+    </div>
+  </div>
+  <div id="div-proposta" class="ipanel">
+    <div class="grid g2">
+      <div class="card">
+        <div class="card-title">Simulador — Proposta de Tributação</div>
+        <div class="fg mt10"><label>Lucro Líquido (R$)</label><input type="number" id="dvp_lucro" value="500000" oninput="calcDivProp()"></div>
+        <div class="fg"><label>Regime</label><select id="dvp_reg" onchange="calcDivProp()">
+          <option value="lp">Lucro Presumido</option><option value="lr">Lucro Real</option><option value="sn">Simples Nacional</option>
+        </select></div>
+        <div class="fg"><label>Alíquota proposta dividendos (%)</label><input type="number" id="dvp_aliq" value="15" step="1" min="0" max="30" oninput="calcDivProp()"></div>
+        <div class="fg"><label>Redução IRPJ proposta (p.p.)</label><input type="number" id="dvp_red_irpj" value="5" step="1" min="0" max="15" oninput="calcDivProp()"></div>
+        <div id="dvp_res" class="rbox mt12"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Proposta em Discussão</div>
+        <div class="tl mt10">
+          <div class="tl-i"><div class="tl-t">Alíquota provável</div><div class="tl-d">15% a 20% na distribuição para PF. Isenção para dividendos até R$20k/mês (proteção pequenas empresas).</div></div>
+          <div class="tl-i"><div class="tl-t">Compensação</div><div class="tl-d">Redução do IRPJ de 25% para ~20% e CSLL de 9% para ~8% para equilibrar a carga total.</div></div>
+          <div class="tl-i"><div class="tl-t">JCP</div><div class="tl-d">Possível extinção da dedutibilidade de JCP para simplificar o sistema.</div></div>
+          <div class="tl-i"><div class="tl-t">Simples Nacional</div><div class="tl-d">Provável isenção para distribuições abaixo de um limite mensal. Proteger pequenos negócios.</div></div>
+        </div>
+        <div class="al al-warn mt12">⚠️ Nada aprovado. Simulação baseada em proposta do Executivo de 2024. Pode mudar significativamente.</div>
+      </div>
+    </div>
+  </div>
+  <div id="div-plan" class="ipanel">
+    <div class="grid g3">
+      <div class="card"><div class="card-title">Estratégia 1 — Antecipar Distribuição</div>
+        <div class="al al-ok mt8 mb8">Distribuir lucros acumulados <strong>antes</strong> da aprovação da lei enquanto ainda são isentos.</div>
+        <div class="tl mt8">
+          <div class="tl-i"><div class="tl-t">Verificar lucros retidos</div><div class="tl-d">Mapear LAIR e lucros acumulados no balanço.</div></div>
+          <div class="tl-i"><div class="tl-t">Distribuir em 2026</div><div class="tl-d">Enquanto isento — aprovação deve ocorrer no máximo em 2027.</div></div>
+          <div class="tl-i"><div class="tl-t">Atenção ao JCP</div><div class="tl-d">JCP com dedução até aprovação da lei que o extinguir.</div></div>
+        </div>
+      </div>
+      <div class="card"><div class="card-title">Estratégia 2 — Pró-labore Otimizado</div>
+        <div class="al al-info mt8 mb8">Avaliar mix pró-labore × dividendos para minimizar carga total com IR na proposta.</div>
+        <div class="tl mt8">
+          <div class="tl-i"><div class="tl-t">Pró-labore razoável</div><div class="tl-d">Valor suficiente para INSS mínimo (1 salário mínimo). Tributado pelo IRPF progressivo.</div></div>
+          <div class="tl-i"><div class="tl-t">Dividendo complementar</div><div class="tl-d">Resto via dividendo. Com proposta, avaliar se dividendo ainda é mais eficiente que pró-labore alto.</div></div>
+        </div>
+      </div>
+      <div class="card"><div class="card-title">Estratégia 3 — Holding</div>
+        <div class="al al-purple mt8 mb8">Dividendo PJ → PJ tende a ser mantido isento. Holding pode diferir a tributação.</div>
+        <div class="tl mt8">
+          <div class="tl-i"><div class="tl-t">Dividendo entre PJs</div><div class="tl-d">PJ → PJ historicamente isento. Proposta foca em PJ → PF.</div></div>
+          <div class="tl-i"><div class="tl-t">Retenção na holding</div><div class="tl-d">Acumular na holding e distribuir de forma planejada ao longo dos anos.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── REORGANIZAÇÃO SOCIETÁRIA ───────────────── -->
+<div id="p-reorganizacao" class="panel">
+  <div class="sh"><h2>🏗️ Reorganização Societária</h2><p>Holdings · Cisão de atividades · Otimização de regime na reforma</p></div>
+  <div class="itabs">
+    <button class="itab active" onclick="it(this,'reo-holding')">Holdings</button>
+    <button class="itab" onclick="it(this,'reo-cisao')">Cisão de Atividades</button>
+    <button class="itab" onclick="it(this,'reo-calc')">Simulador</button>
+  </div>
+  <div id="reo-holding" class="ipanel active">
+    <div class="grid g3 mb14">
+      <div class="card"><div class="card-title">🏢 Holding Patrimonial</div>
+        <div class="rrow mt8"><span class="rl">Objetivo</span><span class="rv muted">Proteger patrimônio</span></div>
+        <div class="rrow"><span class="rl">Imóveis na holding</span><span class="tag tg">Locação: imune CBS/IBS</span></div>
+        <div class="rrow"><span class="rl">Ganho de capital</span><span class="tag ty">Lucro Presumido 15%</span></div>
+        <div class="rrow"><span class="rl">Successão</span><span class="tag tg">Planejamento sucessório</span></div>
+        <div class="al al-ok mt10">Locação residencial é imune ao CBS/IBS — vantagem mantida na reforma.</div>
+      </div>
+      <div class="card"><div class="card-title">🏭 Holding Operacional</div>
+        <div class="rrow mt8"><span class="rl">Objetivo</span><span class="rv muted">Otimizar regime tributário</span></div>
+        <div class="rrow"><span class="rl">Dividendo da operacional</span><span class="tag tg">Isento (hoje)</span></div>
+        <div class="rrow"><span class="rl">CBS/IBS na holding</span><span class="rv hl">Regime Regular</span></div>
+        <div class="rrow"><span class="rl">Créditos CBS/IBS</span><span class="tag tg">Integral para holding</span></div>
+        <div class="al al-warn mt10">Com proposta de tributar dividendos: revisar estrutura para postergar IR.</div>
+      </div>
+      <div class="card"><div class="card-title">🏠 Holding Imobiliária</div>
+        <div class="rrow mt8"><span class="rl">Venda residencial</span><span class="tag ty">CBS/IBS −60% (pós-2029)</span></div>
+        <div class="rrow"><span class="rl">Venda interesse social</span><span class="tag tg">CBS/IBS zero</span></div>
+        <div class="rrow"><span class="rl">Locação residencial</span><span class="tag tg">Imune CBS/IBS</span></div>
+        <div class="rrow"><span class="rl">IRPJ/CSLL venda</span><span class="rv hl">LP: 8% presunção</span></div>
+        <div class="al al-info mt10">RET encerra em 2028. Planejar a transição para CBS/IBS pós-2029.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Vantagens da Holding na Reforma Tributária</div>
+      <table class="mt10"><tr><th>Aspecto</th><th>Sem Holding</th><th>Com Holding</th></tr>
+        <tr><td>Locação residencial</td><td>CBS/IBS normal</td><td class="hlg">Imune (holding patrimonial)</td></tr>
+        <tr><td>Crédito CBS/IBS</td><td>Conforme regime</td><td class="hlg">Integral (regime regular)</td></tr>
+        <tr><td>Dividendos (proposta)</td><td class="hly">Tributados</td><td class="hly">Diferidos na holding</td></tr>
+        <tr><td>Split Payment</td><td>Impacto direto</td><td class="hly">Gerenciado centralizado</td></tr>
+        <tr><td>Planejamento sucessório</td><td class="hlr">ITCMD alto</td><td class="hlg">Planejamento antecipado</td></tr>
+      </table>
+    </div>
+  </div>
+  <div id="reo-cisao" class="ipanel">
+    <div class="al al-info mb14">A cisão de atividades permite que cada empresa mantenha o regime mais vantajoso. Exemplo: separar comércio (Simples) de serviços (Lucro Presumido) ou atividades B2C de B2B.</div>
+    <div class="grid g2 mb14">
+      <div class="card"><div class="card-title">Quando Separar Atividades?</div>
+        <div class="tl mt10">
+          <div class="tl-i"><div class="tl-t">B2C vs B2B</div><div class="tl-d">B2C: Simples é melhor (clientes não precisam de crédito). B2B: regime regular gera crédito integral.</div></div>
+          <div class="tl-i"><div class="tl-t">Comércio vs Serviços</div><div class="tl-d">Cada CNPJ no anexo mais adequado. Evitar que serviços de alta margem contaminem o faturamento do comércio.</div></div>
+          <div class="tl-i"><div class="tl-t">Imóveis vs Operação</div><div class="tl-d">Separar imóveis (holding patrimonial) da operação. Locação residencial imune ao CBS/IBS.</div></div>
+          <div class="tl-i"><div class="tl-t">Limite do Simples</div><div class="tl-d">Empresa perto do limite (R$4,8M): avaliar cisão para manter ambas no Simples — atenção às vedações legais (vinculação de sócios).</div></div>
+        </div>
+      </div>
+      <div class="card"><div class="card-title">⚠️ Riscos da Cisão</div>
+        <div class="al al-err mb10">Proibição de participação: sócios das 2 empresas não podem ser os mesmos se a intenção for manter ambas no Simples Nacional.</div>
+        <div class="tl mt10">
+          <div class="tl-i"><div class="tl-t">Simulação de negócios</div><div class="tl-d">Receita Federal pode desconsiderar a separação se não houver substância econômica real.</div></div>
+          <div class="tl-i"><div class="tl-t">Custo de manutenção</div><div class="tl-d">Dois CNPJs = dobro de obrigações acessórias, contabilidade, alvará, etc.</div></div>
+          <div class="tl-i"><div class="tl-t">Transfer Pricing interno</div><div class="tl-d">Operações entre empresas do mesmo grupo devem ser praticadas a preço de mercado.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="reo-calc" class="ipanel">
+    <div class="grid g2">
+      <div class="card">
+        <div class="card-title">Simulador: Empresa Única vs Cisão</div>
+        <div class="fg mt10"><label>Fat. Atividade A — Comércio (R$/ano)</label><input type="number" id="rc_a" value="1500000" oninput="calcReorg()"></div>
+        <div class="fg"><label>Fat. Atividade B — Serviços (R$/ano)</label><input type="number" id="rc_b" value="1500000" oninput="calcReorg()"></div>
+        <div class="fg"><label>% B2B Atividade A</label><input type="number" id="rc_b2b_a" value="30" min="0" max="100" oninput="calcReorg()"></div>
+        <div class="fg"><label>% B2B Atividade B</label><input type="number" id="rc_b2b_b" value="70" min="0" max="100" oninput="calcReorg()"></div>
+        <div id="rc_res" class="rbox mt12"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Resultado</div>
+        <div id="rc_chart" class="mt10"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── IMPACTO POR CNAE ───────────────────────── -->
+<div id="p-cnae" class="panel">
+  <div class="sh"><h2>🏭 Impacto da Reforma por Setor/CNAE</h2><p>Quem ganha e quem perde com o IVA Dual — análise setorial</p></div>
+  <div class="fg mb14"><label>Buscar setor ou CNAE</label><input type="text" id="cnae_q" placeholder="Ex: comércio, saúde, TI, 4711..." oninput="filtrarCNAE()"></div>
+  <div id="cnae_lista"></div>
+</div>
+
+<!-- ── CALENDÁRIO DO CLIENTE ──────────────────── -->
+<div id="p-calendario" class="panel">
+  <div class="sh"><h2>📆 Calendário Personalizado do Cliente</h2><p>Prazos tributários filtrados pelo regime e atividade do cliente ativo</p></div>
+  <div id="cal_no_cliente" class="al al-warn mb14" style="display:none">⚠️ Nenhum cliente ativo. Vá em <strong>Gestão de Clientes</strong> e clique em <strong>▶ Ativar</strong> para ver o calendário personalizado.</div>
+  <div id="cal_header" style="display:none" class="card mb14">
+    <div class="flex ic gap12">
+      <div style="font-size:28px">👤</div>
+      <div><div class="bold" id="cal_nome">—</div><div class="sm muted" id="cal_info">—</div></div>
+    </div>
+  </div>
+  <div class="grid g2 mb14">
+    <div class="fg"><label>Filtrar por urgência</label><select id="cal_filtro" onchange="renderCalendario()">
+      <option value="todos">Todos os prazos</option>
+      <option value="alta">Apenas urgentes</option>
+      <option value="mes">Próximos 30 dias</option>
+    </select></div>
+    <div class="fg"><label>Ano de referência</label><select id="cal_ano" onchange="renderCalendario()">
+      <option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option>
+    </select></div>
+  </div>
+  <div id="cal_lista"></div>
+</div>
+
 </div><!-- /main -->
 
 <!-- ═══ MODAL CONFIG ══════════════════════════════════════ -->
@@ -2782,6 +3332,324 @@ function limparPGDAS(){
   const comp = $('pg_comp'); if(comp) comp.innerHTML='';
 }
 
+// ─── FLUXO DE CAIXA TRANSIÇÃO ────────────────────────────────────────────────
+function calcFC(){
+  const fat=v('fc_fat'),comp=v('fc_comp'),folha=v('fc_folha');
+  const pmr=v('fc_pmr'),pmp=v('fc_pmp'),taxa=v('fc_taxa'),reg=vs('fc_reg');
+  const splitAno=parseInt(vs('fc_split')||'2027');
+  const anos=['2026','2027','2028','2029','2030','2031','2032','2033'];
+  let html='<table><tr><th>Ano</th><th>Trib. CBS+IBS</th><th>PIS/COFINS/ICMS</th><th>Split Impact</th><th>NCG</th><th>Custo Fin.</th></tr>';
+  let chart='';
+  anos.forEach(a=>{
+    const ai=parseInt(a);
+    const {cbs,ibs}=getAliq(a,'padrao');
+    const cbsIbs=fat*(cbs+ibs)/100;
+    let pisCof=0;
+    if(ai<=2026) pisCof=fat*0.0365;
+    else if(ai===2027) pisCof=0;
+    const splitAtivo=ai>=splitAno;
+    const splitImpact=splitAtivo?cbsIbs*(pmr/30)*taxa/100:0;
+    // NCG = (PMR - PMP) × Fat / 30
+    const ncg=(pmr-pmp)*fat/30;
+    const custFin=(Math.max(0,ncg)+splitImpact)*taxa/100;
+    const tot=cbsIbs+pisCof+splitImpact;
+    html+=`<tr${a==='2026'?' class="tr-hl"':''}><td><strong>${a}</strong></td><td class="hlr">${fmt(cbsIbs)}</td><td class="${pisCof>0?'hly':'hlg'}">${pisCof>0?fmt(pisCof):'—'}</td><td class="${splitAtivo?'hlr':'hlg'}">${splitAtivo?fmt(splitImpact):'—'}</td><td>${fmt(ncg)}</td><td class="neg">${fmt(custFin)}</td></tr>`;
+    chart+=`<div class="cmp-row"><div class="cmp-lbl">${a}</div><div class="cmp-bars"><div class="cbar ${splitAtivo?'cb-red':'cb-blue'}" style="width:${Math.min(100,Math.round(Math.max(ncg,splitImpact)/Math.max(fat*0.2,1)*100))}%">${fmt(Math.max(ncg,splitImpact))}</div></div></div>`;
+  });
+  html+='</table>';
+  const t=$('fc_tbl');if(t)t.innerHTML=html;
+  const c=$('fc_chart');if(c)c.innerHTML=chart;
+}
+
+// ─── DIFAL ────────────────────────────────────────────────────────────────────
+function calcDIFAL(){
+  const val=v('df_val'),orig=parseInt($('df_orig')?.value||12),dest=parseInt($('df_dest')?.value||17);
+  const tipo=vs('df_dest_tipo');
+  if(tipo==='contrib'){
+    const r=$('df_res');if(r)r.innerHTML=`${rrow('Valor',fmt(val))}${rrow('Operação contribuinte','Não há DIFAL')}${rrow('ICMS normal ('+pct(orig)+')',fmt(val*orig/100),'neg')}`;return;
+  }
+  const difal=Math.max(0,dest-orig);
+  const icmsInter=val*orig/100;
+  const difalVal=val*difal/100;
+  const r=$('df_res');
+  if(r)r.innerHTML=`${rrow('Valor da Operação',fmt(val))}${rrow('Alíq. Interestadual (origem)',pct(orig))}${rrow('Alíq. Interna (destino)',pct(dest))}${rrow('DIFAL (diferença)',pct(difal))}${rrow('ICMS Interestadual',fmt(icmsInter),'neg')}${rtotal('DIFAL devido (100% Destino)',fmt(difalVal),'neg')}${rrow('Custo total ICMS+DIFAL',fmt(icmsInter+difalVal),'neg')}`;
+}
+function calcEcom(){
+  const val=v('ec_val'),inter=v('ec_inter'),int=v('ec_int');
+  const difal=Math.max(0,int-inter);
+  const r=$('ec_res');
+  if(r)r.innerHTML=`${rrow('Valor Produto',fmt(val))}${rrow('ICMS Interestadual ('+pct(inter)+')',fmt(val*inter/100),'neg')}${rrow('DIFAL ('+pct(difal)+')',fmt(val*difal/100),'neg')}${rtotal('Carga ICMS total',fmt(val*int/100),'neg')}${rrow('% sobre valor',pct(int))}${rrow('Pós-2033 (IBS unificado)',fmt(val*(CBS_FULL+IBS_FULL)/100),'neg')}`;
+}
+function calcDIFALTrans(){
+  const val=v('dt_val'),dif=v('dt_dif');
+  const anos=['2026','2027','2028','2029','2030','2031','2032','2033'];
+  const r=$('dt_res');if(!r)return;
+  let html='<table><tr><th>Ano</th><th>DIFAL ICMS</th><th>IBS</th><th>Total</th></tr>';
+  anos.forEach(a=>{
+    const ai=parseInt(a);
+    let icmsPct=100,ibsPct=0;
+    if(ai>=2029) ibsPct=(ai-2028)*10;
+    if(ibsPct>100)ibsPct=100;
+    icmsPct=ai>=2029?Math.max(0,100-(ai-2028)*10):100;
+    const difalAno=val*dif/100*(icmsPct/100);
+    const ibsAno=val*(CBS_FULL+IBS_FULL)/100*(ibsPct/100);
+    html+=`<tr><td>${a}</td><td class="hly">${fmt(difalAno)}</td><td class="hlg">${fmt(ibsAno)}</td><td class="bold">${fmt(difalAno+ibsAno)}</td></tr>`;
+  });
+  html+='</table>';
+  r.innerHTML=html;
+}
+
+// ─── CRÉDITOS & RESSARCIMENTO ────────────────────────────────────────────────
+function calcCredExp(){
+  const rec=v('exp_rec'),pctE=v('exp_pct'),ent=v('exp_ent');
+  const recExp=rec*pctE/100,recNac=rec-recExp;
+  const debCBS=recNac*CBS_FULL/100,debIBS=recNac*IBS_FULL/100;
+  const credCBS=ent*CBS_FULL/100,credIBS=ent*IBS_FULL/100;
+  const saldoCBS=credCBS-debCBS,saldoIBS=credIBS-debIBS;
+  const r=$('exp_res');
+  if(r)r.innerHTML=`${rrow('Receita exportação (imune)',fmt(recExp),'pos')}${rrow('Receita nacional',fmt(recNac))}${rrow('Débito CBS',fmt(debCBS),'neg')}${rrow('Crédito CBS entradas',fmt(credCBS),'pos')}${rtotal('Saldo CBS',fmt(Math.abs(saldoCBS)),saldoCBS>=0?'pos':'neg')}${rrow('Débito IBS',fmt(debIBS),'neg')}${rrow('Crédito IBS entradas',fmt(credIBS),'pos')}${rtotal('Saldo IBS',fmt(Math.abs(saldoIBS)),saldoIBS>=0?'pos':'neg')}${(saldoCBS>0||saldoIBS>0)?'<div class="al al-ok mt10">✅ Saldo credor — ressarcimento em prazo menor que 60 dias (exportador).</div>':''}`;
+}
+function calcCredCap(){
+  const val=v('cap_val'),forma=vs('cap_forma'),selic=v('cap_selic');
+  const cbs=val*CBS_FULL/100,ibs=val*IBS_FULL/100,tot=cbs+ibs;
+  const r=$('cap_res');
+  if(forma==='imediato'){
+    if(r)r.innerHTML=`${rrow('Valor do Bem',fmt(val))}${rrow('CBS (',pct(CBS_FULL)+')',fmt(cbs),'neg')}${rrow('IBS ('+pct(IBS_FULL)+')',fmt(ibs),'neg')}${rtotal('Crédito Imediato',fmt(tot),'pos')}<div class="al al-ok mt10">✅ Crédito integral disponível no mês da aquisição.</div>`;
+  } else {
+    const parcela=tot/48;
+    const beneficio=parcela*(selic/100)*48/2; // simplificado
+    if(r)r.innerHTML=`${rrow('Valor do Bem',fmt(val))}${rrow('Crédito Total CBS+IBS',fmt(tot),'pos')}${rrow('Parcela mensal (1/48)',fmt(parcela),'pos')}${rrow('Período',fmt(48)+' meses')}${rrow('Valor temporal perdido est.',fmt(beneficio),'neg')}${rtotal('Total recuperado',fmt(tot),'pos')}<div class="al al-info mt10">Parcelas mensais de ${fmt(parcela)}. Saldo ao final ressarcido em 60 dias.</div>`;
+  }
+}
+function calcSaldoCred(){
+  const saldo=v('sc_saldo'),deb=v('sc_deb'),custo=v('sc_custo');
+  const meses=deb>0?Math.ceil(saldo/deb):0;
+  const custOportunidade=saldo*(custo/100)*Math.min(meses,2); // 2 meses estimado para ressarcimento
+  const r=$('sc_res');
+  if(r)r.innerHTML=`${rrow('Saldo Credor',fmt(saldo),'pos')}${rrow('Débito mensal médio',fmt(deb))}${rrow('Meses para absorver',meses>0?num(meses)+' meses':'Solicitar ressarcimento')}${meses>2?rrow('Custo de oportunidade (2m espera)',fmt(custOportunidade),'neg'):''}${rtotal(meses<=2?'Saldo absorvido internamente':'Solicitar ressarcimento',fmt(saldo),meses<=2?'pos':'hly')}<div class="al ${meses>2?'al-warn':'al-ok'} mt10">${meses>2?'Solicite ressarcimento — prazo legal 60 dias. Saldo retido gera custo de oportunidade.':'Débito suficiente para absorver o crédito internamente. Ressarcimento desnecessário.'}</div>`;
+}
+
+// ─── NF-e 2026 ───────────────────────────────────────────────────────────────
+function calcNFe(){
+  const val=v('nf_val'),cat=vs('nf_cat'),reg=vs('nf_reg'),is_p=v('nf_is');
+  let cbsR=0.9,ibsR=0.1; // 2026: informativo
+  let fator=1;
+  if(cat==='red60')fator=0.4;else if(cat==='int30')fator=0.7;else if(cat==='zero'||cat==='imune')fator=0;
+  cbsR*=fator;ibsR*=fator;
+  const cbs=val*cbsR/100,ibs=val*ibsR/100,is_v=val*is_p/100;
+  const r=$('nf_preview');
+  const mostrar=reg!=='simples';
+  if(r)r.innerHTML=`<div style="background:var(--surf);border:1px solid var(--border);border-radius:8px;padding:14px">
+    <div style="text-align:center;font-weight:700;margin-bottom:10px;color:var(--accent)">NOTA FISCAL ELETRÔNICA — 2026</div>
+    <div style="border-bottom:1px dashed var(--border);margin-bottom:8px;padding-bottom:8px">
+      ${mostrar?`<div>Valor dos Produtos: <strong>${fmt(val)}</strong></div>`:''}
+      ${mostrar&&is_p>0?`<div style="color:var(--red)">IS (${pct(is_p)}): <strong>${fmt(is_v)}</strong></div>`:''}
+      ${mostrar?`<div style="border-top:1px dashed var(--border);margin-top:6px;padding-top:6px;color:var(--t2);font-size:11px">
+        ─── CAMPOS INFORMATIVOS (não somam ao total) ───<br>
+        CBS destacada (${pct(cbsR)}): ${fmt(cbs)} ⓘ<br>
+        IBS destacado (${pct(ibsR)}): ${fmt(ibs)} ⓘ
+      </div>`:'<div style="color:var(--t2);font-size:11px">Simples Nacional: sem campos CBS/IBS em 2026.</div>'}
+    </div>
+    <div><strong>TOTAL NF-e: ${fmt(val + (is_p>0?is_v:0))}</strong></div>
+    <div style="font-size:10px;color:var(--t2);margin-top:6px">CBS e IBS são informativos em 2026 — sem recolhimento efetivo.</div>
+  </div>`;
+  const c=$('nf_campos');
+  if(c&&mostrar)c.innerHTML=`
+    <table><tr><th>Campo NF-e</th><th>Tag XML</th><th>Valor 2026</th><th>Observação</th></tr>
+      <tr><td>CBS — Alíquota</td><td class="sm muted">pCBS</td><td class="hly">${pct(cbsR)}</td><td>Informativo</td></tr>
+      <tr><td>CBS — Valor</td><td class="sm muted">vCBS</td><td class="hly">${fmt(cbs)}</td><td>Não soma ao total</td></tr>
+      <tr><td>IBS — Alíquota</td><td class="sm muted">pIBS</td><td class="hly">${pct(ibsR)}</td><td>Informativo</td></tr>
+      <tr><td>IBS — Valor</td><td class="sm muted">vIBS</td><td class="hly">${fmt(ibs)}</td><td>Não soma ao total</td></tr>
+      ${is_p>0?`<tr><td>IS — Alíquota</td><td class="sm muted">pIS</td><td class="hlr">${pct(is_p)}</td><td>Recolhimento real</td></tr>`:''}
+      <tr><td>vTotTrib (total tributos)</td><td class="sm muted">vTotTrib</td><td class="hl">${fmt(cbs+ibs+is_v)}</td><td>CBS+IBS informativo + IS real</td></tr>
+    </table>`;
+  else if(c&&!mostrar)c.innerHTML='<div class="al al-info">Simples Nacional 2026: campos CBS/IBS ausentes na NF-e. Alteração prevista para 2027.</div>';
+}
+
+// ─── IRRF ─────────────────────────────────────────────────────────────────────
+const IRRF_ALIQ={limpeza:1.5,ti:1.5,med:1.5,adv:1.5,eng:1.5,outros:1,transp:0.5,coop:5};
+function calcIRRF(){
+  const val=v('ir_val'),tipo=vs('ir_tipo'),pcc=v('ir_pcc'),inss=v('ir_inss');
+  const aliq=IRRF_ALIQ[tipo]||1;
+  const irrf=val*aliq/100;
+  const pccV=pcc?val*0.0465:0;
+  const inssV=inss?val*0.11:0;
+  const total=irrf+pccV+inssV;
+  const liq=val-total;
+  const r=$('ir_res');
+  if(r)r.innerHTML=`${rrow('Valor Bruto do Serviço',fmt(val))}${rrow('IRRF ('+pct(aliq)+')',fmt(irrf),'neg')}${pcc?rrow('PCC — PIS+COFINS+CSLL (4,65%)',fmt(pccV),'neg'):''}${inss?rrow('INSS retido (11%)',fmt(inssV),'neg'):''}${rtotal('Total retido',fmt(total),'neg')}${rtotal('Líquido a receber',fmt(liq),'pos')}<div class="al al-info mt10">O tomador retém e recolhe. Prestador declara como antecipação de IR.</div>`;
+}
+
+const IRPF_TAB=[{ate:2259.20,aliq:0,ded:0},{ate:2826.65,aliq:7.5,ded:169.44},{ate:3751.05,aliq:15,ded:381.44},{ate:4664.68,aliq:22.5,ded:662.77},{ate:Infinity,aliq:27.5,ded:896.00}];
+function calcIRPF(){
+  const bruto=v('irpf_val'),dep=v('irpf_dep'),inss=v('irpf_inss');
+  const dedDep=dep*189.59;
+  const base=Math.max(0,bruto-inss-dedDep);
+  let aliq=0,ded=0;
+  for(const f of IRPF_TAB){if(base<=f.ate){aliq=f.aliq;ded=f.ded;break;}}
+  const irrf=Math.max(0,base*aliq/100-ded);
+  const liq=bruto-inss-irrf;
+  const r=$('irpf_res');
+  if(r)r.innerHTML=`${rrow('Rendimento Bruto',fmt(bruto))}${inss?rrow('(−) INSS',fmt(inss),'neg'):''}${dep?rrow('(−) Dedução dependentes ('+dep+')',fmt(dedDep),'neg'):''}${rrow('Base de Cálculo',fmt(base))}${rrow('Alíquota',pct(aliq))}${rtotal('IRRF',fmt(irrf),'neg')}${rtotal('Líquido',fmt(liq),'pos')}`;
+}
+
+// ─── DIVIDENDOS ───────────────────────────────────────────────────────────────
+function calcDiv(){
+  const lucro=v('dv_lucro'),reg=vs('dv_reg'),socios=v('dv_socios');
+  let irpj=0,csll=0;
+  if(reg==='lp'){irpj=lucro*0.08*0.15+Math.max(0,lucro*0.08-240000)*0.10;csll=lucro*0.08*0.09;}
+  else if(reg==='lr'){irpj=lucro*0.15+Math.max(0,lucro-240000)*0.10;csll=lucro*0.09;}
+  const lliq=Math.max(0,lucro-irpj-csll);
+  const divSocio=lliq/Math.max(socios,1);
+  const r=$('dv_res');
+  if(r)r.innerHTML=`${rrow('Lucro antes IRPJ/CSLL',fmt(lucro))}${rrow('IRPJ',fmt(irpj),'neg')}${rrow('CSLL',fmt(csll),'neg')}${rtotal('Lucro Líquido distribuível',fmt(lliq),'pos')}${rrow('Por sócio ('+num(socios)+')',fmt(divSocio),'pos')}${rrow('IR sobre dividendos (hoje)',fmt(0),'pos')}${rtotal('Dividendo líquido/sócio',fmt(divSocio),'pos')}<div class="al al-ok mt10">✅ Dividendos atualmente isentos. Lucro disponível para distribuição: ${fmt(lliq)}.</div>`;
+}
+function calcDivProp(){
+  const lucro=v('dvp_lucro'),reg=vs('dvp_reg');
+  const aliqDiv=v('dvp_aliq'),redIRPJ=v('dvp_red_irpj');
+  let irpjAt=0,csllAt=0;
+  const aliqIRPJ=Math.max(0,25-redIRPJ)/100;
+  if(reg==='lp'){irpjAt=lucro*0.08*aliqIRPJ;csllAt=lucro*0.08*0.08;}
+  else if(reg==='lr'){irpjAt=lucro*aliqIRPJ;csllAt=lucro*0.08;}
+  const lliq=Math.max(0,lucro-irpjAt-csllAt);
+  const isencao=20000*12; // isenção proposta R$20k/mês
+  const baseDiv=Math.max(0,lliq-isencao);
+  const irDiv=baseDiv*aliqDiv/100;
+  const divLiq=lliq-irDiv;
+  // Comparação com cenário atual
+  let irpjHoje=0,csllHoje=0;
+  if(reg==='lp'){irpjHoje=lucro*0.08*0.25;csllHoje=lucro*0.08*0.09;}
+  else if(reg==='lr'){irpjHoje=lucro*0.25;csllHoje=lucro*0.09;}
+  const lliqHoje=Math.max(0,lucro-irpjHoje-csllHoje);
+  const delta=divLiq-lliqHoje;
+  const r=$('dvp_res');
+  if(r)r.innerHTML=`<div class="grid g2"><div><div class="muted xs mb6">HOJE</div>${rrow('IRPJ (25%)',fmt(irpjHoje),'neg')}${rrow('CSLL (9%)',fmt(csllHoje),'neg')}${rrow('IR dividendos',fmt(0),'pos')}${rtotal('Distribuído líquido',fmt(lliqHoje),'pos')}</div><div><div class="muted xs mb6">PROPOSTA</div>${rrow('IRPJ ('+pct(aliqIRPJ*100)+')',fmt(irpjAt),'neg')}${rrow('CSLL',fmt(csllAt),'neg')}${rrow('IR dividendos ('+pct(aliqDiv)+')',fmt(irDiv),'neg')}${rtotal('Distribuído líquido',fmt(divLiq),delta>=0?'pos':'neg')}</div></div><div class="al ${delta>=0?'al-ok':'al-warn'} mt12">${delta>=0?'✅ Proposta mais favorável por '+fmt(delta)+' — redução do IRPJ compensa IR sobre dividendos.':'⚠️ Proposta aumenta carga em '+fmt(Math.abs(delta))+'. Reveja estratégia de distribuição.'}</div>`;
+}
+
+// ─── REORGANIZAÇÃO SOCIETÁRIA ────────────────────────────────────────────────
+function calcReorg(){
+  const a=v('rc_a'),b=v('rc_b'),b2bA=v('rc_b2b_a'),b2bB=v('rc_b2b_b');
+  const fatTotal=a+b;
+  // Empresa única: faturamento combinado no Simples (se possível)
+  let aliqSN=30;
+  if(fatTotal<=180000)aliqSN=6;else if(fatTotal<=360000)aliqSN=11.2;else if(fatTotal<=720000)aliqSN=13.5;else if(fatTotal<=1440000)aliqSN=16;else if(fatTotal<=1800000)aliqSN=21;else if(fatTotal<=3600000)aliqSN=33;
+  const tribUnica=fatTotal*(fatTotal<=4800000?aliqSN/100:0.19);
+  // Separadas: cada uma no melhor regime
+  const aliqA_SN=a<=180000?4:a<=360000?7.3:a<=720000?9.5:a<=1440000?10.7:a<=1800000?14.3:a<=3600000?19:30;
+  const aliqB_SN=b<=180000?6:b<=360000?11.2:b<=720000?13.5:b<=1440000?16:b<=1800000?21:b<=3600000?33:33;
+  const tribA=a*aliqA_SN/100,tribB=b*aliqB_SN/100;
+  const tribSep=tribA+tribB;
+  const economia=tribUnica-tribSep;
+  // Crédito B2B
+  const credA=a*(CBS_FULL+IBS_FULL)/100*b2bA/100;
+  const credB=b*(CBS_FULL+IBS_FULL)/100*b2bB/100;
+  const r=$('rc_res');
+  if(r)r.innerHTML=`${rrow('Empresa única — DAS/ano',fmt(tribUnica),'neg')}${rrow('Empresa A separada — DAS/ano',fmt(tribA),'neg')}${rrow('Empresa B separada — DAS/ano',fmt(tribB),'neg')}${rtotal('Economia com cisão',fmt(economia),economia>0?'pos':'neg')}${rrow('Crédito B2B gerado — Ativ. A',fmt(credA),'pos')}${rrow('Crédito B2B gerado — Ativ. B',fmt(credB),'pos')}<div class="al ${economia>0?'al-ok':'al-info'} mt10">${economia>0?'✅ Cisão pode gerar economia de '+fmt(economia)+'/ano em DAS. Verifique restrição de sócios (art. 15 LC 123/2006).':'ℹ️ Neste cenário, empresa única tem carga similar. Avalie outros critérios (crédito B2B, obrigações).'}</div>`;
+  const ch=$('rc_chart');
+  if(ch){const mx=Math.max(tribUnica,tribSep);ch.innerHTML=`<div class="cmp-row"><div class="cmp-lbl sm">Empresa única</div><div class="cmp-bars"><div class="cbar cb-red" style="width:${Math.round(tribUnica/mx*100)}%">${fmt(tribUnica)}</div></div></div><div class="cmp-row"><div class="cmp-lbl sm">Após cisão</div><div class="cmp-bars"><div class="cbar cb-green" style="width:${Math.round(tribSep/mx*100)}%">${fmt(tribSep)}</div></div></div>`;}
+}
+
+// ─── IMPACTO POR CNAE ────────────────────────────────────────────────────────
+const SETORES=[
+  {cnae:'4711',setor:'Supermercados / Varejo Alimentar',impacto:'neutro',desc:'Alíquota zero na cesta básica. Padrão para demais. Fim da guerra fiscal beneficia.'},
+  {cnae:'4712',setor:'Mercearias / Minimercados',impacto:'positivo',desc:'Cesta básica com alíquota zero. Simplificação via DAS ou Regime Regular.'},
+  {cnae:'6201',setor:'Tecnologia da Informação / Softwares',impacto:'positivo',desc:'Fator R pode reduzir ao Anexo III. Crédito pleno para clientes B2B.'},
+  {cnae:'8630',setor:'Saúde / Médicos e Clínicas',impacto:'positivo',desc:'Redução de 60% nas alíquotas. Cashback para pacientes de baixa renda.'},
+  {cnae:'8511',setor:'Educação / Escolas',impacto:'positivo',desc:'Redução de 60% nas alíquotas. Cashback disponível.'},
+  {cnae:'4531',setor:'Concessionárias / Veículos',impacto:'negativo',desc:'IS sobre veículos a combustão (~1-7%). Pode impactar margens.'},
+  {cnae:'1811',setor:'Indústria Gráfica / Impressão',impacto:'neutro',desc:'IPI zerado beneficia. CBS/IBS padrão. Fim do crédito IPI.'},
+  {cnae:'0111',setor:'Agropecuária / Grãos',impacto:'positivo',desc:'Insumos agropecuários: redução 60%. Exportações imunes. Diferimento permitido.'},
+  {cnae:'4120',setor:'Construção Civil',impacto:'positivo',desc:'CBS/IBS com crédito pleno nas compras. Fim da cumulatividade do ISS.'},
+  {cnae:'6110',setor:'Telecomunicações',impacto:'neutro',desc:'Alíquota padrão. Cashback 100% CBS / 20% IBS para baixa renda.'},
+  {cnae:'6411',setor:'Bancos / Financeiro',impacto:'negativo',desc:'Regime especial com base no spread. Alíquota maior que atual PIS/COFINS estimada.'},
+  {cnae:'5510',setor:'Hotéis / Turismo',impacto:'positivo',desc:'Redução de 60% para turismo nacional. Incentivo à hospitalidade.'},
+  {cnae:'5590',setor:'Outros Alojamentos',impacto:'positivo',desc:'Redução de 60%. Cashback para hóspedes elegíveis.'},
+  {cnae:'4921',setor:'Transporte Rodoviário Passageiros',impacto:'positivo',desc:'Redução de 60%. Cashback para passageiros de baixa renda.'},
+  {cnae:'4930',setor:'Transporte de Cargas',impacto:'positivo',desc:'Crédito pleno nas entradas (combustível, peças). Fim da cumulatividade.'},
+  {cnae:'1910',setor:'Refino de Petróleo / Combustíveis',impacto:'neutro',desc:'Monotributação: CBS/IBS incide só na refinaria. Simplificação da cadeia.'},
+  {cnae:'1920',setor:'Indústria de Bebidas',impacto:'negativo',desc:'IS sobre bebidas alcoólicas (~20-35%). Carga pode aumentar significativamente.'},
+  {cnae:'1200',setor:'Indústria do Fumo',impacto:'muito negativo',desc:'IS sobre tabaco (~150%). Carga extrafiscal altíssima.'},
+  {cnae:'4130',setor:'Incorporação Imobiliária',impacto:'neutro',desc:'RET garantido até 2028. Pós-2029: CBS/IBS com redução 60% residencial.'},
+  {cnae:'6810',setor:'Atividades Imobiliárias',impacto:'positivo',desc:'Locação residencial: imune CBS/IBS. Locação comercial: padrão.'},
+  {cnae:'6920',setor:'Contabilidade / Auditoria',impacto:'positivo',desc:'Profissional intelectual: redução 30%. Fator R pode direcionar ao Anexo III.'},
+  {cnae:'6911',setor:'Advocacia',impacto:'positivo',desc:'Profissional intelectual: redução 30%. Sem IS. Crédito integral clientes B2B.'},
+  {cnae:'7111',setor:'Arquitetura / Engenharia',impacto:'positivo',desc:'Profissional intelectual: redução 30%. Fator R vantajoso.'},
+  {cnae:'4781',setor:'Vestuário / Confecções',impacto:'neutro',desc:'Alíquota padrão. Fim do IPI simplifica indústria. Crédito pleno na cadeia.'},
+  {cnae:'3292',setor:'Joias e Bijuterias',impacto:'negativo',desc:'IS sobre joias e cosméticos de luxo (~10%). Carga adicional.'},
+  {cnae:'9200',setor:'Loterias / Apostas',impacto:'negativo',desc:'IS ~30% sobre apostas esportivas e fantasy sport.'},
+  {cnae:'8720',setor:'Saúde Mental / Psicologia',impacto:'positivo',desc:'Redução 60%. Prof. regulamentado: redução 30%. Cashback para baixa renda.'},
+  {cnae:'0210',setor:'Silvicultura / Madeira',impacto:'positivo',desc:'Agro: redução 60% insumos. Exportações imunes. Diferimento.'},
+  {cnae:'3812',setor:'Coleta / Reciclagem',impacto:'positivo',desc:'Sem IS. CBS/IBS padrão. Crédito pleno nas entradas.'},
+];
+function filtrarCNAE(){
+  const q=($('cnae_q')?.value||'').toLowerCase();
+  const el=$('cnae_lista');if(!el)return;
+  const lista=SETORES.filter(s=>!q||s.cnae.includes(q)||s.setor.toLowerCase().includes(q)||s.desc.toLowerCase().includes(q));
+  const cores={positivo:'al-ok','muito positivo':'al-ok',neutro:'al-info',negativo:'al-warn','muito negativo':'al-err'};
+  const icones={positivo:'📈','muito positivo':'🚀',neutro:'➡️',negativo:'📉','muito negativo':'🔴'};
+  el.innerHTML=`<div class="grid g2">`+lista.map(s=>`
+    <div class="al ${cores[s.impacto]||'al-info'} mb0" style="border-radius:9px">
+      <div class="flex ic gap8 mb4"><span style="font-size:16px">${icones[s.impacto]||'➡️'}</span><strong>${s.setor}</strong><span class="tag tgr sm" style="margin-left:auto">CNAE ${s.cnae}</span></div>
+      <div class="sm">${s.desc}</div>
+    </div>`).join('')+'</div>';
+}
+
+// ─── CALENDÁRIO PERSONALIZADO ────────────────────────────────────────────────
+const PRAZOS_BASE=[
+  {data:'Jan', dia:31, prazo:'Mudança de regime tributário (LR/LP/SN)', regime:['Lucro Real','Lucro Presumido','Simples Nacional','MEI'], urgencia:'alta'},
+  {data:'Jan', dia:31, prazo:'DCTF mensal (Lucro Real / Presumido)', regime:['Lucro Real','Lucro Presumido'], urgencia:'alta'},
+  {data:'Jan', dia:20, prazo:'DAS-MEI — Competência dezembro', regime:['MEI'], urgencia:'alta'},
+  {data:'Jan', dia:20, prazo:'DAS Simples Nacional — Competência dezembro', regime:['Simples Nacional'], urgencia:'alta'},
+  {data:'Fev', dia:28, prazo:'ECF — início preparação (entrega em jul)', regime:['Lucro Real','Lucro Presumido'], urgencia:'media'},
+  {data:'Mar', dia:31, prazo:'DEFIS — Declaração Simples Nacional', regime:['Simples Nacional'], urgencia:'alta'},
+  {data:'Abr', dia:30, prazo:'IRPF sócios / pró-labore — declaração anual', regime:['Lucro Real','Lucro Presumido','Simples Nacional'], urgencia:'alta'},
+  {data:'Abr', dia:30, prazo:'Opção Simples Híbrido — jul–dez/2026', regime:['Simples Nacional'], urgencia:'media'},
+  {data:'Jun', dia:30, prazo:'ECD — Escrituração Contábil Digital', regime:['Lucro Real','Lucro Presumido'], urgencia:'alta'},
+  {data:'Jul', dia:31, prazo:'ECF — Escrituração Contábil Fiscal', regime:['Lucro Real','Lucro Presumido'], urgencia:'alta'},
+  {data:'Set', dia:30, prazo:'Opção Simples Híbrido — jan–jun/2027', regime:['Simples Nacional'], urgencia:'media'},
+  {data:'Out', dia:31, prazo:'DASN-SIMEI (MEI) — Declaração Anual', regime:['MEI'], urgencia:'alta'},
+  {data:'Dez', dia:31, prazo:'Encerramento Exercício — Balanço Anual', regime:['Lucro Real','Lucro Presumido'], urgencia:'media'},
+  {data:'Dez', dia:20, prazo:'DAS-MEI — Competência novembro', regime:['MEI'], urgencia:'media'},
+  // Reforma
+  {data:'Jan', dia:1, prazo:'NF-e com campos CBS/IBS informativo (2026)', regime:['Lucro Real','Lucro Presumido','Simples Nacional'], urgencia:'alta', ano:2026},
+  {data:'Jan', dia:1, prazo:'CBS plena em vigor — PIS/COFINS extintos (2027)', regime:['Lucro Real','Lucro Presumido'], urgencia:'alta', ano:2027},
+  {data:'Dez', dia:31, prazo:'Último dia do RET imobiliário (2028)', regime:['Lucro Real','Lucro Presumido'], urgencia:'alta', ano:2028},
+];
+function renderCalendario(){
+  const filtro=vs('cal_filtro'),ano=parseInt(vs('cal_ano')||'2026');
+  const nc=$('cal_no_cliente'),hdr=$('cal_header');
+  if(!clienteAtivo){
+    if(nc)nc.style.display='block';
+    if(hdr)hdr.style.display='none';
+    const el=$('cal_lista');if(el)el.innerHTML='';return;
+  }
+  if(nc)nc.style.display='none';
+  if(hdr)hdr.style.display='flex';
+  const cn=$('cal_nome');if(cn)cn.textContent=clienteAtivo.fantasia||clienteAtivo.nome;
+  const ci=$('cal_info');if(ci)ci.textContent=clienteAtivo.cnpjFmt+' · '+clienteAtivo.regime;
+  const reg=clienteAtivo.regime;
+  let prazos=PRAZOS_BASE.filter(p=>{
+    const regOk=p.regime.includes(reg)||(reg==='MEI'&&p.regime.includes('MEI'));
+    const anoOk=!p.ano||p.ano===ano;
+    const filtOk=filtro==='todos'||filtro===p.urgencia||(filtro==='mes'&&p.dia<=30);
+    return regOk&&anoOk&&filtOk;
+  });
+  const meses=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const el=$('cal_lista');if(!el)return;
+  if(!prazos.length){el.innerHTML='<div class="al al-ok">Nenhum prazo para o filtro selecionado.</div>';return;}
+  let html='';
+  meses.forEach(m=>{
+    const pm=prazos.filter(p=>p.data===m);
+    if(!pm.length)return;
+    html+=`<div class="bold sm mb8 mt12" style="color:var(--accent)">${m}/${ano}</div>`;
+    pm.forEach(p=>{
+      const cls=p.urgencia==='alta'?'al-err':p.urgencia==='media'?'al-warn':'al-ok';
+      html+=`<div class="al ${cls} mb6">Dia ${p.dia}: ${p.prazo}</div>`;
+    });
+  });
+  el.innerHTML=html;
+}
+
 // ─── PAINEL DO ESCRITÓRIO ────────────────────────────────────────────────────
 function renderEscritorio(){
   const clientes = getClientes();
@@ -3261,6 +4129,11 @@ document.addEventListener('DOMContentLoaded', () => {
   renderClientes(); calcPGDAS();
   renderEscritorio(); calcFatorR(); calcMEI(); calcMEIMigracao();
   updB2B('pr_b2b','pr_b2b_lbl'); calcPrec(); calcPrecTrans();
+  calcFC(); calcDIFAL(); calcDIFALTrans();
+  calcCredExp(); calcCredCap(); calcSaldoCred();
+  calcNFe(); calcIRRF(); calcIRPF();
+  calcDiv(); calcDivProp(); calcReorg();
+  filtrarCNAE(); renderCalendario();
   loadConfig();
 });
 </script>
