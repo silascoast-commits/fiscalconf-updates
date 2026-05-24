@@ -212,6 +212,7 @@ tbody tr:last-child td{border-bottom:none}
 <div id="sidebar">
   <div class="nav-section">Visão Geral</div>
   <div class="nav-item active" onclick="nav(this,'dash')"><span class="nav-icon">🏠</span>Dashboard</div>
+  <div class="nav-item" onclick="nav(this,'escritorio')"><span class="nav-icon">📈</span>Painel do Escritório</div>
 
   <div class="nav-section">Reforma Tributária</div>
   <div class="nav-item" onclick="nav(this,'calc')"><span class="nav-icon">🧮</span>Calculadora CBS/IBS</div>
@@ -220,11 +221,14 @@ tbody tr:last-child td{border-bottom:none}
   <div class="nav-item" onclick="nav(this,'cashback')"><span class="nav-icon">💸</span>Cashback Social</div>
   <div class="nav-item" onclick="nav(this,'transicao')"><span class="nav-icon">📅</span>Transição 2026–2033</div>
   <div class="nav-item" onclick="nav(this,'especiais')"><span class="nav-icon">🏭</span>Regimes Especiais</div>
+  <div class="nav-item" onclick="nav(this,'precificacao')"><span class="nav-icon">🏷️</span>Precificação Pós-Reforma</div>
 
   <div class="nav-section">Regimes Tributários</div>
   <div class="nav-item" onclick="nav(this,'planejamento')"><span class="nav-icon">📊</span>Planejamento Tributário</div>
   <div class="nav-item" onclick="nav(this,'irpj')"><span class="nav-icon">💰</span>IRPJ / CSLL</div>
   <div class="nav-item" onclick="nav(this,'simples')"><span class="nav-icon">🔀</span>Simples & Híbrido</div>
+  <div class="nav-item" onclick="nav(this,'fatorr')"><span class="nav-icon">📐</span>Fator R</div>
+  <div class="nav-item" onclick="nav(this,'mei')"><span class="nav-icon">🧑‍💼</span>MEI</div>
 
   <div class="nav-section">Clientes</div>
   <div class="nav-item" onclick="nav(this,'clientes')"><span class="nav-icon">👥</span>Gestão de Clientes</div>
@@ -1151,6 +1155,271 @@ tbody tr:last-child td{border-bottom:none}
   <div id="prazos_list"></div>
 </div>
 
+<!-- ── PAINEL DO ESCRITÓRIO ───────────────────── -->
+<div id="p-escritorio" class="panel">
+  <div class="sh"><h2>📈 Painel do Escritório</h2><p>KPIs consolidados · Alertas automáticos · Clientes em risco</p></div>
+  <div id="esc_kpis" class="grid g5 mb16"></div>
+  <div class="grid g2 mb16">
+    <div class="card">
+      <div class="card-title">⚠️ Alertas Automáticos</div>
+      <div id="esc_alertas" class="mt10"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 Clientes por Regime</div>
+      <div id="esc_regimes" class="mt10"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">👥 Clientes em Atenção — Perto do Limite do Simples / Risco de Exclusão</div>
+    <div id="esc_risco" class="mt10"></div>
+  </div>
+</div>
+
+<!-- ── FATOR R ────────────────────────────────── -->
+<div id="p-fatorr" class="panel">
+  <div class="sh"><h2>📐 Calculadora Fator R</h2><p>Define se Simples Nacional aplica Anexo III ou Anexo V — regra válida para serviços de TI, publicidade, engenharia, contabilidade e outros</p></div>
+  <div class="al al-info mb16"><strong>Fator R = Folha de Salários (12m) ÷ Receita Bruta (12m).</strong> Se Fator R ≥ 28%: Anexo III (menor carga). Se Fator R &lt; 28%: Anexo V (maior carga). A opção pode valer a pena contratar mais ou pagar pró-labore maior para migrar ao Anexo III.</div>
+  <div class="grid g2 mb14">
+    <div class="card">
+      <div class="card-title">Dados para o Cálculo</div>
+      <div class="grid g2 mt10">
+        <div class="fg"><label>Receita Bruta 12 meses (R$)</label><input type="number" id="fr_rb12" value="600000" oninput="calcFatorR()"></div>
+        <div class="fg"><label>Receita do Mês Atual (R$)</label><input type="number" id="fr_mes" value="55000" oninput="calcFatorR()"></div>
+        <div class="fg"><label>Folha Salários 12m (R$) — inclui pró-labore</label><input type="number" id="fr_folha12" value="180000" oninput="calcFatorR()"></div>
+        <div class="fg"><label>Folha do Mês Atual (R$)</label><input type="number" id="fr_folhames" value="16000" oninput="calcFatorR()"></div>
+      </div>
+      <div id="fr_res" class="rbox mt12"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Simulador: quanto preciso de folha para migrar ao Anexo III?</div>
+      <div class="al al-purple mt10 mb12">Ajuste a folha 12m no slider para ver o ponto de virada (28% da RBT12).</div>
+      <div class="fg"><label>Folha 12m simulada (R$) <span id="fr_sim_lbl" class="muted"></span></label>
+        <input type="range" id="fr_sim" min="0" max="600000" step="5000" value="180000" oninput="calcFatorRSim()">
+      </div>
+      <div id="fr_sim_res" class="rbox mt12"></div>
+      <div class="al al-warn mt12">
+        <strong>Atenção:</strong> O pró-labore do sócio <strong>conta</strong> para o Fator R. Aumentar o pró-labore é uma estratégia legítima para alcançar os 28%, mas gera encargos previdenciários (INSS 11% sócio + 20% empresa). Faça o custo-benefício.
+      </div>
+    </div>
+  </div>
+  <div class="card mb14">
+    <div class="card-title">📅 Histórico Mensal — Evolução do Fator R</div>
+    <div class="al al-info mb10">Insira até 12 meses para ver a evolução e detectar risco de mudança de anexo.</div>
+    <div id="fr_hist_form" class="grid g4 mb10">
+      <div class="fg"><label>Mês/Ano</label><input type="text" id="fr_h_mes" placeholder="MM/AAAA" maxlength="7"></div>
+      <div class="fg"><label>Receita Bruta (R$)</label><input type="number" id="fr_h_rb" value="0"></div>
+      <div class="fg"><label>Folha (R$)</label><input type="number" id="fr_h_f" value="0"></div>
+      <div class="fg" style="display:flex;align-items:flex-end"><button class="btn btn-primary btn-sm" onclick="addFatorRHist()">➕ Adicionar</button></div>
+    </div>
+    <div id="fr_hist_tbl"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Atividades Sujeitas ao Fator R (Anexo III vs V)</div>
+    <div class="grid g2 mt10">
+      <table><tr><th>Atividade</th><th>Sem Fator R</th><th>Com Fator R ≥28%</th></tr>
+        <tr><td>Tecnologia da Informação</td><td class="hlr">Anexo V</td><td class="hlg">Anexo III</td></tr>
+        <tr><td>Publicidade e Propaganda</td><td class="hlr">Anexo V</td><td class="hlg">Anexo III</td></tr>
+        <tr><td>Engenharia (exceto construção)</td><td class="hlr">Anexo V</td><td class="hlg">Anexo III</td></tr>
+        <tr><td>Medicina / Odontologia PJ</td><td class="hlr">Anexo V</td><td class="hlg">Anexo III</td></tr>
+        <tr><td>Consultoria / Auditoria</td><td class="hlr">Anexo V</td><td class="hlg">Anexo III</td></tr>
+      </table>
+      <table><tr><th>Atividade</th><th>Sempre Anexo</th></tr>
+        <tr><td>Comércio em geral</td><td class="hl">I (fixo)</td></tr>
+        <tr><td>Indústria</td><td class="hl">II (fixo)</td></tr>
+        <tr><td>Locação, creches, agências de viagem</td><td class="hl">III (fixo)</td></tr>
+        <tr><td>Construção civil, vigilância, limpeza</td><td class="hl">IV (fixo)</td></tr>
+        <tr><td>Academias, fisioterapia</td><td class="hl">III (fixo)</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── MEI ────────────────────────────────────── -->
+<div id="p-mei" class="panel">
+  <div class="sh"><h2>🧑‍💼 MEI — Microempreendedor Individual</h2><p>DAS-MEI, limites, atividades permitidas e análise de quando migrar para ME/EPP</p></div>
+  <div class="grid g4 mb16">
+    <div class="card metric m-blue"><div class="card-title">Limite Anual MEI</div><div class="kv hl">R$ 81 mil</div><div class="ks">Ou R$ 6.750/mês</div></div>
+    <div class="card metric m-green"><div class="card-title">DAS-MEI Comércio/Ind.</div><div class="kv hlg">R$ 75,90</div><div class="ks">INSS + ICMS fixo/mês</div></div>
+    <div class="card metric m-yellow"><div class="card-title">DAS-MEI Serviços</div><div class="kv hly">R$ 80,90</div><div class="ks">INSS + ISS fixo/mês</div></div>
+    <div class="card metric m-purple"><div class="card-title">DAS-MEI Misto</div><div class="kv hlp">R$ 81,90</div><div class="ks">INSS + ICMS + ISS</div></div>
+  </div>
+  <div class="itabs">
+    <button class="itab active" onclick="it(this,'mei-das')">DAS-MEI & Limites</button>
+    <button class="itab" onclick="it(this,'mei-migracao')">Quando Migrar para ME?</button>
+    <button class="itab" onclick="it(this,'mei-reforma')">MEI na Reforma Tributária</button>
+  </div>
+  <div id="mei-das" class="ipanel active">
+    <div class="grid g2">
+      <div class="card">
+        <div class="card-title">Simulador MEI</div>
+        <div class="fg mt10"><label>Faturamento Mensal (R$)</label><input type="number" id="mei_f" value="5000" oninput="calcMEI()"></div>
+        <div class="fg"><label>Faturamento Acumulado no Ano (R$)</label><input type="number" id="mei_fa" value="30000" oninput="calcMEI()"></div>
+        <div class="fg"><label>Atividade</label><select id="mei_ativ" onchange="calcMEI()">
+          <option value="com">Comércio / Indústria (R$ 75,90/mês)</option>
+          <option value="serv">Serviços (R$ 80,90/mês)</option>
+          <option value="misto">Comércio + Serviços (R$ 81,90/mês)</option>
+        </select></div>
+        <div class="fg"><label>Funcionário contratado?</label><select id="mei_func" onchange="calcMEI()">
+          <option value="0">Não</option>
+          <option value="1">Sim (1 — máximo permitido)</option>
+        </select></div>
+        <div id="mei_res" class="rbox mt12"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Regras do MEI</div>
+        <div class="tl mt10">
+          <div class="tl-i"><div class="tl-t">Limite de faturamento</div><div class="tl-d">R$81.000/ano (R$6.750/mês). Excesso de até 20% no 1º ano: DAS proporcional. Acima: exclusão e enquadramento no Simples.</div></div>
+          <div class="tl-i"><div class="tl-t">Funcionário</div><div class="tl-d">Pode ter 1 funcionário com salário mínimo ou piso da categoria. Encargo patronal: 3% (acidente) + 8% FGTS.</div></div>
+          <div class="tl-i"><div class="tl-t">Atividades proibidas</div><div class="tl-d">Mais de 530 atividades vedadas: advogado, médico, engenheiro, dentista, arquiteto, psicólogo. Use a tabela CGSN 147/2019.</div></div>
+          <div class="tl-i"><div class="tl-t">Benefícios previdenciários</div><div class="tl-d">Aposentadoria por idade (não por tempo de contribuição), auxílio-doença, salário-maternidade. Contribuição: INSS 5% do salário mínimo.</div></div>
+          <div class="tl-i now"><div class="tl-t">MEI e Reforma 2026</div><div class="tl-d">MEI não recolhe CBS/IBS — operações MEI não geram crédito para adquirentes. Clientes LR/LP consideram isso ao comprar de MEI.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="mei-migracao" class="ipanel">
+    <div class="grid g2">
+      <div class="card">
+        <div class="card-title">Análise de Migração MEI → Simples Nacional</div>
+        <div class="fg mt10"><label>Faturamento Anual Projetado (R$)</label><input type="number" id="mei_mig_fat" value="90000" oninput="calcMEIMigracao()"></div>
+        <div class="fg"><label>Atividade Principal</label><select id="mei_mig_ativ" onchange="calcMEIMigracao()">
+          <option value="A1">Comércio (Anexo I)</option>
+          <option value="B1">Indústria (Anexo II)</option>
+          <option value="C1">Serviços (Anexo III)</option>
+          <option value="D1">Serviços (Anexo IV)</option>
+          <option value="E1">Serviços TI/Publicidade (Anexo V)</option>
+        </select></div>
+        <div class="fg"><label>% Clientes B2B (LR/LP) que exigem NF-e completa</label><input type="number" id="mei_mig_b2b" value="30" min="0" max="100" oninput="calcMEIMigracao()"></div>
+        <div id="mei_mig_res" class="rbox mt12"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Diferenças MEI × Simples Nacional</div>
+        <table class="mt10"><tr><th>Item</th><th>MEI</th><th>Simples ME</th></tr>
+          <tr><td>Limite faturamento</td><td class="hly">R$ 81k/ano</td><td class="hlg">R$ 4,8M/ano</td></tr>
+          <tr><td>Impostos</td><td class="hlg">Fixo mensal</td><td class="hly">% sobre receita</td></tr>
+          <tr><td>NF-e completa</td><td class="hlr">Limitada</td><td class="hlg">Sim</td></tr>
+          <tr><td>Crédito para adquirente</td><td class="hlr">Não gera</td><td class="hlg">Proporcional/Integral</td></tr>
+          <tr><td>Funcionários</td><td class="hly">Máx. 1</td><td class="hlg">Sem limite</td></tr>
+          <tr><td>Pró-labore obrigatório</td><td class="hlg">Não</td><td class="hly">Recomendado</td></tr>
+          <tr><td>IRPJ / CSLL</td><td class="hlg">Isento</td><td class="hly">Incluso no DAS</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div id="mei-reforma" class="ipanel">
+    <div class="grid g2">
+      <div class="card">
+        <div class="card-title">MEI na Reforma Tributária — Impactos</div>
+        <div class="tl mt10">
+          <div class="tl-i done"><div class="tl-y">2026</div><div class="tl-t">MEI não destaca CBS/IBS</div><div class="tl-d">NF-e do MEI não terá campos CBS/IBS. Sem impacto direto em 2026.</div></div>
+          <div class="tl-i"><div class="tl-y">2027</div><div class="tl-t">CBS plena — MEI sem crédito</div><div class="tl-d">Clientes LR/LP não recuperam crédito de compras feitas de MEI. Pode prejudicar vendas B2B.</div></div>
+          <div class="tl-i"><div class="tl-y">2029</div><div class="tl-t">IBS começa — MEI fora do sistema</div><div class="tl-d">MEI permanece fora do IBS. Desvantagem competitiva B2B se amplia.</div></div>
+          <div class="tl-i"><div class="tl-y">2033</div><div class="tl-t">Limite MEI será revisado?</div><div class="tl-d">Discussão sobre novo limite para MEI após plena vigência do IVA Dual. Possível elevação para R$120k.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">MEI × Reforma: Resumo Prático</div>
+        <div class="rrow"><span class="rl">CBS/IBS incide sobre MEI?</span><span class="tag tr">Não diretamente</span></div>
+        <div class="rrow"><span class="rl">MEI gera crédito para adquirente?</span><span class="tag tr">Não</span></div>
+        <div class="rrow"><span class="rl">Cashback social disponível?</span><span class="tag tg">Sim (se elegível)</span></div>
+        <div class="rrow"><span class="rl">Split Payment afeta MEI?</span><span class="tag tg">Não (não é contribuinte)</span></div>
+        <div class="rrow"><span class="rl">IS sobre produtos MEI?</span><span class="tag ty">Se vender produtos sujeitos</span></div>
+        <div class="rrow"><span class="rl">Impacto B2B</span><span class="tag tr">Alto — clientes LR/LP perdem crédito</span></div>
+        <div class="al al-warn mt12"><strong>Recomendação:</strong> MEI com mais de 30% de clientes LR/LP deve avaliar migração para Simples com Regime Híbrido para gerar crédito integral.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PRECIFICAÇÃO PÓS-REFORMA ───────────────── -->
+<div id="p-precificacao" class="panel">
+  <div class="sh"><h2>🏷️ Precificação Pós-Reforma</h2><p>Recalcule seus preços para manter a margem com a nova carga tributária CBS/IBS</p></div>
+  <div class="al al-warn mb16"><strong>Atenção:</strong> A mudança de regime tributário e as novas alíquotas CBS/IBS alteram a carga efetiva sobre cada produto/serviço. Use esta ferramenta para recalcular preços e preservar sua margem.</div>
+  <div class="itabs">
+    <button class="itab active" onclick="it(this,'prec-simples')">Produto / Serviço</button>
+    <button class="itab" onclick="it(this,'prec-trans')">Durante a Transição</button>
+    <button class="itab" onclick="it(this,'prec-tabela')">Tabela de Produtos</button>
+  </div>
+  <div id="prec-simples" class="ipanel active">
+    <div class="grid g2">
+      <div class="card">
+        <div class="card-title">Dados do Produto / Serviço</div>
+        <div class="grid g2 mt10">
+          <div class="fg"><label>Preço de Venda Atual (R$)</label><input type="number" id="pr_preco" value="1000" oninput="calcPrec()"></div>
+          <div class="fg"><label>Custo Direto (R$)</label><input type="number" id="pr_custo" value="400" oninput="calcPrec()"></div>
+          <div class="fg"><label>Regime Atual</label><select id="pr_reg_atual" onchange="calcPrec()">
+            <option value="simples">Simples Nacional (DAS)</option>
+            <option value="lp">Lucro Presumido</option>
+            <option value="lr">Lucro Real</option>
+            <option value="mei">MEI</option>
+          </select></div>
+          <div class="fg"><label>Regime Futuro / Pós-Reforma</label><select id="pr_reg_fut" onchange="calcPrec()">
+            <option value="lp">Lucro Presumido (2027+)</option>
+            <option value="lr">Lucro Real (2027+)</option>
+            <option value="hibrido">Simples Híbrido (2027+)</option>
+            <option value="simples">Simples Unificado (2027+)</option>
+          </select></div>
+          <div class="fg"><label>Alíquota Atual Total (%) — incluindo todos os tributos</label><input type="number" id="pr_aliq_at" value="6" step="0.1" oninput="calcPrec()"></div>
+          <div class="fg"><label>% B2B (adquirentes recuperam CBS/IBS)</label>
+            <div class="flex gap8 ic">
+              <input type="range" id="pr_b2b" min="0" max="100" step="5" value="50" oninput="updB2B('pr_b2b','pr_b2b_lbl');calcPrec()" style="flex:1">
+              <span id="pr_b2b_lbl" class="tag tb" style="min-width:52px;text-align:center">50%</span>
+            </div>
+          </div>
+          <div class="fg"><label>Categoria CBS/IBS</label><select id="pr_cat" onchange="calcPrec()">
+            <option value="padrao">Padrão (26,5%)</option>
+            <option value="red60">Reduzida 60% (10,6%)</option>
+            <option value="int30">Prof. Intelectual (-30% → 18,55%)</option>
+            <option value="zero">Alíquota Zero</option>
+          </select></div>
+          <div class="fg"><label>Margem desejada (%)</label><input type="number" id="pr_margem" value="30" step="1" oninput="calcPrec()"></div>
+        </div>
+        <div id="pr_res" class="rbox mt12"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Como Calcular o Preço Correto</div>
+        <div class="tl mt10">
+          <div class="tl-i"><div class="tl-t">Método de Markup</div><div class="tl-d">Preço = Custo ÷ (1 − %tributo − %margem). Garante que a margem seja calculada sobre o preço final.</div></div>
+          <div class="tl-i"><div class="tl-t">Impacto do B2B</div><div class="tl-d">Clientes B2B recuperam o CBS/IBS. Para eles, o preço sem o tributo é o custo real. Você pode ser mais competitivo do que parece.</div></div>
+          <div class="tl-i"><div class="tl-t">Período de Transição (2026-2028)</div><div class="tl-d">Dupla tributação possível: PIS/COFINS ainda existe + CBS/IBS crescendo. Some as cargas para precificar corretamente.</div></div>
+          <div class="tl-i"><div class="tl-t">Revisão anual obrigatória</div><div class="tl-d">IBS sobe 10%/ano de 2029-2032. Revise preços de contratos plurianuais com cláusula de reajuste tributário.</div></div>
+        </div>
+        <div class="al al-ok mt12" id="pr_dica"></div>
+      </div>
+    </div>
+  </div>
+  <div id="prec-trans" class="ipanel">
+    <div class="card mb14">
+      <div class="card-title">Evolução do Preço Necessário por Ano (2026–2033)</div>
+      <div class="grid g3 mt10">
+        <div class="fg"><label>Custo Direto (R$)</label><input type="number" id="pt_custo" value="400" oninput="calcPrecTrans()"></div>
+        <div class="fg"><label>Margem Desejada (%)</label><input type="number" id="pt_margem" value="30" step="1" oninput="calcPrecTrans()"></div>
+        <div class="fg"><label>Categoria CBS/IBS</label><select id="pt_cat" onchange="calcPrecTrans()">
+          <option value="padrao">Padrão (100%)</option>
+          <option value="red60">Reduzida 60%</option>
+          <option value="int30">Prof. Intelectual (-30%)</option>
+          <option value="zero">Zero</option>
+        </select></div>
+      </div>
+    </div>
+    <div class="card mb14"><div class="card-title">Tabela Anual</div><div id="pt_tbl" class="tbl-wrap mt10"></div></div>
+    <div class="card"><div class="card-title">Variação Visual do Preço</div><div id="pt_chart" class="mt10"></div></div>
+  </div>
+  <div id="prec-tabela" class="ipanel">
+    <div class="card mb14">
+      <div class="card-title">Tabela de Produtos — Precificação em Lote</div>
+      <div class="al al-info mb12">Insira vários produtos/serviços para comparar a precificação atual vs pós-reforma.</div>
+      <div class="grid g4 mb10">
+        <div class="fg"><label>Produto/Serviço</label><input type="text" id="pt2_nome" placeholder="Nome"></div>
+        <div class="fg"><label>Preço Atual (R$)</label><input type="number" id="pt2_preco" value="0"></div>
+        <div class="fg"><label>Custo (R$)</label><input type="number" id="pt2_custo" value="0"></div>
+        <div class="fg" style="display:flex;align-items:flex-end"><button class="btn btn-primary btn-sm" onclick="addProduto()">➕ Adicionar</button></div>
+      </div>
+      <div id="pt2_tbl"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ── GESTÃO DE CLIENTES ─────────────────────── -->
 <div id="p-clientes" class="panel">
   <div class="sh"><h2>👥 Gestão de Clientes</h2><p>Cadastre clientes por CNPJ com busca automática e ative para simulações</p></div>
@@ -1351,6 +1620,8 @@ function nav(el, panelId){
   document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
   const p = document.getElementById('p-' + panelId);
   if(p) p.classList.add('active');
+  if(panelId === 'escritorio') renderEscritorio();
+  if(panelId === 'clientes') renderClientes();
 }
 
 function it(el, panelId){
@@ -2511,6 +2782,295 @@ function limparPGDAS(){
   const comp = $('pg_comp'); if(comp) comp.innerHTML='';
 }
 
+// ─── PAINEL DO ESCRITÓRIO ────────────────────────────────────────────────────
+function renderEscritorio(){
+  const clientes = getClientes();
+  const total = clientes.length;
+  const regimes = {};
+  let alertas = [];
+  let riscoHTML = '';
+  let emRisco = 0;
+
+  clientes.forEach(c => {
+    regimes[c.regime] = (regimes[c.regime] || 0) + 1;
+    const rb12 = c.rb12 || c.fat || 0;
+    const pct_limite = rb12 / 4800000 * 100;
+    if(c.regime === 'Simples Nacional'){
+      if(rb12 >= 4320000){ // 90% do limite
+        alertas.push(`<div class="al al-err mb8">🚨 <strong>${c.fantasia||c.nome}</strong> — Receita R$${(rb12/1000).toFixed(0)}k/ano · ${pct_limite.toFixed(0)}% do limite do Simples. Risco de exclusão iminente!</div>`);
+        emRisco++;
+      } else if(rb12 >= 3840000){ // 80%
+        alertas.push(`<div class="al al-warn mb8">⚠️ <strong>${c.fantasia||c.nome}</strong> — Receita R$${(rb12/1000).toFixed(0)}k/ano · ${pct_limite.toFixed(0)}% do limite. Monitorar de perto.</div>`);
+        emRisco++;
+      }
+    }
+    if(rb12 >= 3840000 && c.regime === 'Simples Nacional'){
+      const pbar = Math.min(100, pct_limite);
+      const cor = pbar >= 90 ? 'var(--red)' : pbar >= 80 ? 'var(--yellow)' : 'var(--green)';
+      riscoHTML += `<div class="mb12">
+        <div class="flex jb ic mb4">
+          <span class="bold">${c.fantasia||c.nome}</span>
+          <span class="sm ${pbar>=90?'hlr':pbar>=80?'hly':'hlg'}">${fmt(rb12)}/ano · ${pct_limite.toFixed(1)}% do limite</span>
+        </div>
+        <div class="prog"><div class="prog-b" style="width:${pbar}%;background:${cor}"></div></div>
+        <div class="xs muted mt4">Margem restante: ${fmt(4800000 - rb12)} · ${c.cnpjFmt}</div>
+      </div>`;
+    }
+  });
+
+  // KPIs
+  const kpis = $('esc_kpis');
+  if(kpis) kpis.innerHTML = `
+    <div class="card metric m-blue"><div class="card-title">Total Clientes</div><div class="kv hl">${total}</div><div class="ks">cadastrados</div></div>
+    <div class="card metric m-green"><div class="card-title">Simples Nacional</div><div class="kv hlg">${regimes['Simples Nacional']||0}</div><div class="ks">${total?((regimes['Simples Nacional']||0)/total*100).toFixed(0):0}% da base</div></div>
+    <div class="card metric m-yellow"><div class="card-title">Lucro Presumido</div><div class="kv hly">${regimes['Lucro Presumido']||0}</div><div class="ks">clientes</div></div>
+    <div class="card metric m-purple"><div class="card-title">Lucro Real</div><div class="kv hlp">${regimes['Lucro Real']||0}</div><div class="ks">clientes</div></div>
+    <div class="card metric m-red"><div class="card-title">Em Risco SN</div><div class="kv hlr">${emRisco}</div><div class="ks">> 80% do limite</div></div>`;
+
+  // Alertas
+  const alEl = $('esc_alertas');
+  if(alEl) alEl.innerHTML = alertas.length ? alertas.join('') : '<div class="al al-ok">✅ Nenhum alerta crítico no momento.</div>';
+
+  // Regimes chart
+  const regEl = $('esc_regimes');
+  if(regEl){
+    const maxR = Math.max(...Object.values(regimes), 1);
+    const cores = {'Simples Nacional':'cb-green','Lucro Presumido':'cb-yellow','Lucro Real':'cb-blue','MEI':'cb-purple'};
+    regEl.innerHTML = Object.entries(regimes).map(([r,n]) =>
+      `<div class="cmp-row"><div class="cmp-lbl sm">${r}</div><div class="cmp-bars"><div class="cbar ${cores[r]||'cb-blue'}" style="width:${Math.round(n/maxR*100)}%">${n}</div></div></div>`
+    ).join('') || '<div class="muted sm">Nenhum cliente cadastrado.</div>';
+  }
+
+  // Risco
+  const rEl = $('esc_risco');
+  if(rEl) rEl.innerHTML = riscoHTML || '<div class="al al-ok">✅ Nenhum cliente acima de 80% do limite do Simples Nacional.</div>';
+}
+
+// ─── FATOR R ─────────────────────────────────────────────────────────────────
+let fatorRHist = [];
+
+function calcFatorR(){
+  const rb12 = v('fr_rb12'), mes = v('fr_mes');
+  const folha12 = v('fr_folha12'), folhaMes = v('fr_folhames');
+  if(!rb12){ const r=$('fr_res'); if(r) r.innerHTML=''; return; }
+  const fr = folha12 / rb12;
+  const frPct = fr * 100;
+  const meta28 = rb12 * 0.28;
+  const faltaFolha = Math.max(0, meta28 - folha12);
+  const atual = fr >= 0.28 ? 'A1' : 'E1'; // simplificado para apresentação
+  const res = $('fr_res');
+  if(res) res.innerHTML = `
+    ${rrow('Receita Bruta 12m', fmt(rb12))}
+    ${rrow('Folha de Salários 12m', fmt(folha12))}
+    ${rtotal('Fator R', pct(frPct), fr>=0.28?'hlg':'hlr')}
+    ${rrow('Resultado', fr>=0.28
+      ? '<span class="tag tg">✅ Anexo III — Menor carga</span>'
+      : '<span class="tag tr">❌ Anexo V — Maior carga</span>')}
+    <hr style="border:none;border-top:1px solid var(--border);margin:8px 0">
+    ${rrow('Meta Fator R (28%)', fmt(meta28) + '/ano de folha')}
+    ${faltaFolha > 0 ? rrow('Aumentar folha em', fmt(faltaFolha) + '/ano (' + fmt(faltaFolha/12) + '/mês)', 'hly') : rrow('Folha suficiente', '✅ já no Anexo III', 'hlg')}`;
+
+  // Atualizar slider sim
+  const sim = $('fr_sim');
+  if(sim) sim.max = rb12 * 1.5;
+  calcFatorRSim();
+}
+
+function calcFatorRSim(){
+  const rb12 = v('fr_rb12');
+  const folhaSim = parseFloat($('fr_sim')?.value || 0);
+  const lbl = $('fr_sim_lbl'); if(lbl) lbl.textContent = fmt(folhaSim) + '/ano';
+  if(!rb12) return;
+  const fr = folhaSim / rb12;
+  const res = $('fr_sim_res');
+  if(res) res.innerHTML = `
+    ${rrow('Folha simulada', fmt(folhaSim))}
+    ${rrow('Fator R simulado', pct(fr*100), fr>=0.28?'hlg':'hlr')}
+    ${rtotal('Anexo aplicável', fr>=0.28?'Anexo III ✅':'Anexo V ❌', fr>=0.28?'hlg':'hlr')}
+    ${rrow('Diferença para 28%', fmt(Math.abs(rb12*0.28 - folhaSim)), fr>=0.28?'hlg':'hly')}`;
+}
+
+function addFatorRHist(){
+  const mes = $('fr_h_mes')?.value, rb = v('fr_h_rb'), f = v('fr_h_f');
+  if(!mes||!rb){ toast('Informe o mês e a receita bruta', false); return; }
+  fatorRHist.push({mes, rb, f, fr: rb > 0 ? f/rb*100 : 0});
+  renderFatorRHist();
+  $('fr_h_mes').value=''; $('fr_h_rb').value=0; $('fr_h_f').value=0;
+}
+
+function renderFatorRHist(){
+  const el = $('fr_hist_tbl'); if(!el) return;
+  if(!fatorRHist.length){ el.innerHTML=''; return; }
+  let html = '<table><tr><th>Mês</th><th>Receita</th><th>Folha</th><th>Fator R</th><th>Anexo</th><th></th></tr>';
+  fatorRHist.forEach((h,i) => {
+    const ok = h.fr >= 28;
+    html += `<tr><td>${h.mes}</td><td>${fmt(h.rb)}</td><td>${fmt(h.f)}</td>
+      <td class="${ok?'hlg':'hlr'} bold">${pct(h.fr)}</td>
+      <td><span class="tag ${ok?'tg':'tr'}">${ok?'III':'V'}</span></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="fatorRHist.splice(${i},1);renderFatorRHist()" style="color:var(--red)">✕</button></td></tr>`;
+  });
+  html += '</table>';
+  el.innerHTML = html;
+}
+
+// ─── MEI ─────────────────────────────────────────────────────────────────────
+function calcMEI(){
+  const fat = v('mei_f'), fa = v('mei_fa'), ativ = vs('mei_ativ'), func = v('mei_func');
+  const das = ativ === 'com' ? 75.90 : ativ === 'serv' ? 80.90 : 81.90;
+  const limiteAnual = 81000, limiteMes = 6750;
+  const pctAnual = fa / limiteAnual * 100;
+  const excessoMes = Math.max(0, fat - limiteMes);
+  let alerta = '';
+  if(pctAnual >= 100) alerta = '<div class="al al-err mt10">🚨 Limite anual EXCEDIDO. Exclusão do MEI obrigatória. Regularize imediatamente.</div>';
+  else if(pctAnual >= 80) alerta = '<div class="al al-warn mt10">⚠️ ' + pctAnual.toFixed(0) + '% do limite anual utilizado. Monitorar de perto.</div>';
+  else alerta = '<div class="al al-ok mt10">✅ Dentro do limite. Margem restante: ' + fmt(limiteAnual - fa) + '</div>';
+  // Custo funcionário
+  const salMin = 1518;
+  const custoFunc = func ? salMin * 0.11 + salMin * 0.08 : 0; // INSS + FGTS patronal
+  const totalMes = das + custoFunc;
+  const res = $('mei_res');
+  if(res) res.innerHTML = `
+    ${rrow('Faturamento do Mês', fmt(fat))}
+    ${rrow('Limite mensal', fmt(limiteMes))}
+    ${excessoMes > 0 ? rrow('⚠️ Excesso no mês', fmt(excessoMes), 'hlr') : rrow('Situação mensal', '✅ OK', 'hlg')}
+    <hr style="border:none;border-top:1px solid var(--border);margin:8px 0">
+    ${rrow('DAS-MEI mensal', fmt(das), 'neg')}
+    ${func ? rrow('Encargos funcionário (INSS+FGTS)', fmt(custoFunc), 'neg') : ''}
+    ${rtotal('Total tributos/mês', fmt(totalMes), 'neg')}
+    ${rrow('Carga efetiva sobre faturamento', pct(fat > 0 ? totalMes/fat*100 : 0))}
+    <hr style="border:none;border-top:1px solid var(--border);margin:8px 0">
+    ${rrow('Acumulado no ano', fmt(fa))}
+    ${rrow('Limite anual', fmt(limiteAnual))}
+    ${rrow('% do limite utilizado', pct(pctAnual))}
+    ${alerta}`;
+}
+
+function calcMEIMigracao(){
+  const fat = v('mei_mig_fat'), ativ = vs('mei_mig_ativ'), b2b = v('mei_mig_b2b');
+  const a = ANEXOS[ativ];
+  if(!a) return;
+  let faixa = a.faixas.length - 1;
+  for(let i=0;i<a.faixas.length;i++){ if(fat <= a.faixas[i]){ faixa=i; break; } }
+  const aliqEfet = fat > 0 ? (fat * a.aliq[faixa]/100 - a.ded[faixa]) / fat * 100 : 0;
+  const dasSN = fat * aliqEfet / 100;
+  // MEI: fixo (~R$81,90 + proporção)
+  const dasMEI = 81.90 * 12; // anual
+  const difAnual = dasSN - dasMEI;
+  // Benefício B2B: crédito gerado para clientes
+  const credB2B = fat * (CBS_FULL + IBS_FULL) / 100 * b2b / 100;
+  const res = $('mei_mig_res');
+  if(res) res.innerHTML = `
+    <div class="bold mb8">Comparativo Anual</div>
+    ${rrow('DAS-MEI (fixo anual)', fmt(dasMEI))}
+    ${rrow('DAS Simples Nacional', fmt(dasSN))}
+    ${rrow('Custo adicional ao migrar', fmt(difAnual), difAnual>0?'neg':'pos')}
+    <hr style="border:none;border-top:1px solid var(--border);margin:8px 0">
+    ${rrow('Crédito gerado a clientes B2B', fmt(credB2B), 'pos')}
+    ${rrow('Benefício líquido (B2B − custo)', fmt(credB2B - difAnual), credB2B>difAnual?'pos':'neg')}
+    <div class="al ${credB2B > difAnual ? 'al-ok' : b2b >= 30 ? 'al-warn' : 'al-info'} mt10">
+      ${credB2B > difAnual
+        ? '✅ Migrar para Simples vale a pena: o crédito gerado a clientes B2B supera o custo extra.'
+        : b2b >= 30
+          ? '⚠️ Com ' + b2b + '% de clientes B2B, avalie migrar para Simples Híbrido para gerar crédito integral.'
+          : 'ℹ️ Perfil majoritariamente B2C. Migrar ao Simples aumenta o custo sem benefício proporcional.'}
+    </div>`;
+}
+
+// ─── PRECIFICAÇÃO ─────────────────────────────────────────────────────────────
+let produtosList = [];
+
+function calcPrec(){
+  const preco = v('pr_preco'), custo = v('pr_custo');
+  const aliqAt = v('pr_aliq_at'), b2b = parseFloat($('pr_b2b')?.value||50)/100;
+  const cat = vs('pr_cat'), margem = v('pr_margem');
+  let aliqNova = CBS_FULL + IBS_FULL;
+  if(cat==='red60') aliqNova = aliqNova * 0.4;
+  else if(cat==='int30') aliqNova = aliqNova * 0.7;
+  else if(cat==='zero') aliqNova = 0;
+  // Preço atual
+  const tribAt = preco * aliqAt / 100;
+  const margemAt = preco - custo - tribAt;
+  const margemPctAt = preco > 0 ? margemAt/preco*100 : 0;
+  // Preço novo necessário para manter margem (markup)
+  const precNovo = custo / (1 - aliqNova/100 - margem/100);
+  const tribNovo = precNovo * aliqNova / 100;
+  const margemNovo = precNovo * margem / 100;
+  const delta = precNovo - preco;
+  // Custo real ao B2B (recupera crédito)
+  const custoB2B = custo + precNovo * aliqNova / 100 * (1 - b2b); // tributo não recuperado
+  const dica = delta > 0
+    ? `Aumento necessário de <strong>${fmt(delta)}</strong> (${pct(delta/preco*100)}) para manter margem de ${pct(margem)}.`
+    : `Redução possível de <strong>${fmt(Math.abs(delta))}</strong> — nova carga menor que a atual.`;
+  const res = $('pr_res');
+  if(res) res.innerHTML = `
+    <div class="grid g2">
+      <div>
+        <div class="muted xs mb6">ATUAL</div>
+        ${rrow('Preço de Venda', fmt(preco))}
+        ${rrow('Tributos (' + pct(aliqAt) + ')', fmt(tribAt), 'neg')}
+        ${rrow('Margem bruta', fmt(margemAt), margemAt>0?'pos':'neg')}
+        ${rrow('Margem %', pct(margemPctAt))}
+      </div>
+      <div>
+        <div class="muted xs mb6">PÓS-REFORMA (2033)</div>
+        ${rrow('Preço necessário', fmt(precNovo), delta>0?'hly':'hlg')}
+        ${rrow('CBS+IBS (' + pct(aliqNova) + ')', fmt(tribNovo), 'neg')}
+        ${rrow('Margem alvo', fmt(margemNovo), 'pos')}
+        ${rrow('Variação de preço', (delta>=0?'+':'')+fmt(delta), delta>0?'neg':'pos')}
+      </div>
+    </div>
+    <hr style="border:none;border-top:1px solid var(--border);margin:10px 0">
+    ${rrow('Custo efetivo B2B (cliente recupera crédito)', fmt(custo + tribNovo*(1-b2b)))}
+    ${rtotal('Recomendação', dica)}`;
+  const dEl = $('pr_dica');
+  if(dEl) dEl.innerHTML = dica;
+}
+
+function calcPrecTrans(){
+  const custo = v('pt_custo'), margem = v('pt_margem'), cat = vs('pt_cat');
+  const anos = ['2026','2027','2028','2029','2030','2031','2032','2033'];
+  let html = '<table><tr><th>Ano</th><th>Alíq. CBS+IBS</th><th>Preço Necessário</th><th>Variação vs 2026</th></tr>';
+  let chart = '', base = 0;
+  anos.forEach((a, i) => {
+    const {cbs, ibs} = getAliq(a, cat);
+    const aliq = cbs + ibs;
+    const prec = aliq < 100 ? custo / (1 - aliq/100 - margem/100) : custo / (1 - margem/100);
+    if(i === 0) base = prec;
+    const delta = prec - base;
+    html += `<tr${a==='2026'?' class="tr-hl"':''}><td><strong>${a}</strong></td><td class="hl">${pct(aliq)}</td><td class="bold">${fmt(prec)}</td><td class="${delta>0?'hlr':'hlg'}">${delta>=0?'+':''}${fmt(delta)}</td></tr>`;
+    chart += `<div class="cmp-row"><div class="cmp-lbl">${a}</div><div class="cmp-bars"><div class="cbar cb-blue" style="width:${Math.min(100,Math.round(prec/base*100))}%">${fmt(prec)}</div></div></div>`;
+  });
+  html += '</table>';
+  const t = $('pt_tbl'); if(t) t.innerHTML = html;
+  const c = $('pt_chart'); if(c) c.innerHTML = chart;
+}
+
+function addProduto(){
+  const nome = $('pt2_nome')?.value, preco = v('pt2_preco'), custo = v('pt2_custo');
+  if(!nome||!preco){ toast('Informe o nome e o preço', false); return; }
+  produtosList.push({nome, preco, custo});
+  renderProdutos();
+  $('pt2_nome').value=''; $('pt2_preco').value=0; $('pt2_custo').value=0;
+}
+
+function renderProdutos(){
+  const el = $('pt2_tbl'); if(!el) return;
+  if(!produtosList.length){ el.innerHTML=''; return; }
+  const aliqNova = CBS_FULL + IBS_FULL;
+  let html = '<table><tr><th>Produto</th><th>Preço Atual</th><th>Custo</th><th>Margem Atual</th><th>Preço Novo (CBS+IBS 26,5%)</th><th>Δ</th><th></th></tr>';
+  produtosList.forEach((p,i) => {
+    const margem = p.preco > 0 ? (p.preco - p.custo) / p.preco * 100 : 0;
+    const precNovo = p.custo / (1 - aliqNova/100 - margem/100);
+    const delta = precNovo - p.preco;
+    html += `<tr><td>${p.nome}</td><td>${fmt(p.preco)}</td><td>${fmt(p.custo)}</td>
+      <td>${pct(margem)}</td><td class="bold">${fmt(precNovo)}</td>
+      <td class="${delta>0?'hlr':'hlg'}">${delta>=0?'+':''}${fmt(delta)}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="produtosList.splice(${i},1);renderProdutos()" style="color:var(--red)">✕</button></td></tr>`;
+  });
+  html += '</table>';
+  el.innerHTML = html;
+}
+
 // ─── LEITURA PDF PGDAS-D ────────────────────────────────────────────────────
 function handlePGDASdrop(e){
   const file = e.dataTransfer?.files?.[0];
@@ -2699,6 +3259,8 @@ document.addEventListener('DOMContentLoaded', () => {
   calcSN(); calcSnCred(); calcDecisor();
   gerarRel(); filterGloss(); renderPrazos(); renderAnexos();
   renderClientes(); calcPGDAS();
+  renderEscritorio(); calcFatorR(); calcMEI(); calcMEIMigracao();
+  updB2B('pr_b2b','pr_b2b_lbl'); calcPrec(); calcPrecTrans();
   loadConfig();
 });
 </script>
