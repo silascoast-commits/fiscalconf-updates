@@ -2152,7 +2152,9 @@ function rtotal(lbl, val, cls=''){
 
 function updR(rangeId, lblId){
   const el = $(rangeId); if(!el) return;
-  const lbl = $(lblId); if(lbl) lbl.textContent = '(' + parseFloat(el.value).toFixed(2).replace('.',',') + '%)';
+  const lbl = $(lblId); if(!lbl) return;
+  const v = parseFloat(el.value);
+  lbl.textContent = '(' + (isNaN(v) ? '0,00' : v.toFixed(2).replace('.',',')) + '%)';
 }
 
 function toast(msg, ok=true){
@@ -2732,7 +2734,7 @@ function calcSN(){
   }
   const aliqNom = anexo.aliq[faixa];
   const ded = anexo.ded[faixa];
-  const aliqEfet = (f12 * aliqNom / 100 - ded) / f12 * 100;
+  const aliqEfet = f12 > 0 ? (f12 * aliqNom / 100 - ded) / f12 * 100 : 0;
   const das = mes * aliqEfet / 100;
   const res = $('sn_res');
   if(res) res.innerHTML = `
@@ -3028,14 +3030,14 @@ function salvarCliente(){
   const cnpj = cnpjRaw($('cl_cnpj')?.value || '');
   if(cnpj.length !== 14){ toast('CNPJ inválido', false); return; }
   const cliente = {
-    cnpj, cnpjFmt: $('cl_cnpj').value,
-    nome: $('cl_nome').value,
-    fantasia: $('cl_fantasia').value,
-    cnae: $('cl_cnae').value,
-    uf: $('cl_uf').value,
-    cidade: $('cl_cidade').value,
-    situacao: $('cl_sit').value,
-    regime: $('cl_regime').value,
+    cnpj, cnpjFmt: $('cl_cnpj')?.value || '',
+    nome: $('cl_nome')?.value || '',
+    fantasia: $('cl_fantasia')?.value || '',
+    cnae: $('cl_cnae')?.value || '',
+    uf: $('cl_uf')?.value || '',
+    cidade: $('cl_cidade')?.value || '',
+    situacao: $('cl_sit')?.value || '',
+    regime: $('cl_regime')?.value || '',
     fat: v('cl_fat'), rb12: v('cl_rb12'), b2b: v('cl_b2b'),
     obs: $('cl_obs')?.value || '',
     criadoEm: new Date().toISOString(),
@@ -3065,7 +3067,7 @@ function limparFormCliente(){
 }
 
 function getClientes(){ try { return JSON.parse(localStorage.getItem('rt_clientes')||'[]'); } catch(e){ return []; } }
-function saveClientes(arr){ localStorage.setItem('rt_clientes', JSON.stringify(arr)); }
+function saveClientes(arr){ try { localStorage.setItem('rt_clientes', JSON.stringify(arr)); } catch(e){ toast('Erro ao salvar dados locais', false); } }
 
 function renderClientes(){
   const el = $('cl_lista'); if(!el) return;
@@ -3230,7 +3232,7 @@ function calcPGDAS(){
   }
   const aliqNom = a.aliq[faixa];
   const ded = a.ded[faixa];
-  const aliqEfet = (rb12 * aliqNom / 100 - ded) / rb12 * 100;
+  const aliqEfet = rb12 > 0 ? (rb12 * aliqNom / 100 - ded) / rb12 * 100 : 0;
   const das = rbBase * aliqEfet / 100;
   // Composição aproximada por anexo (% do DAS)
   const comp = getCompDAS(anexo, faixa);
@@ -3271,7 +3273,7 @@ function adicionarHistPGDAS(){
   let faixa = a.faixas.length - 1;
   for(let i=0; i<a.faixas.length; i++){ if(rb12 <= a.faixas[i]){ faixa = i; break; } }
   const aliqNom = a.aliq[faixa], ded = a.ded[faixa];
-  const aliqEfet = (rb12 * aliqNom / 100 - ded) / rb12 * 100;
+  const aliqEfet = rb12 > 0 ? (rb12 * aliqNom / 100 - ded) / rb12 * 100 : 0;
   const das = rbm * aliqEfet / 100;
   pgdasHist.push({pa, rbm, rb12, das, aliqEfet});
   renderHistPGDAS();
@@ -3720,7 +3722,7 @@ let fatorRHist = [];
 function calcFatorR(){
   const rb12 = v('fr_rb12'), mes = v('fr_mes');
   const folha12 = v('fr_folha12'), folhaMes = v('fr_folhames');
-  if(!rb12){ const r=$('fr_res'); if(r) r.innerHTML=''; return; }
+  if(rb12 <= 0){ const r=$('fr_res'); if(r) r.innerHTML=''; return; }
   const fr = folha12 / rb12;
   const frPct = fr * 100;
   const meta28 = rb12 * 0.28;
@@ -3746,9 +3748,9 @@ function calcFatorR(){
 
 function calcFatorRSim(){
   const rb12 = v('fr_rb12');
-  const folhaSim = parseFloat($('fr_sim')?.value || 0);
+  const folhaSim = v('fr_sim');
   const lbl = $('fr_sim_lbl'); if(lbl) lbl.textContent = fmt(folhaSim) + '/ano';
-  if(!rb12) return;
+  if(rb12 <= 0) return;
   const fr = folhaSim / rb12;
   const res = $('fr_sim_res');
   if(res) res.innerHTML = `
@@ -3760,8 +3762,8 @@ function calcFatorRSim(){
 
 function addFatorRHist(){
   const mes = $('fr_h_mes')?.value, rb = v('fr_h_rb'), f = v('fr_h_f');
-  if(!mes||!rb){ toast('Informe o mês e a receita bruta', false); return; }
-  fatorRHist.push({mes, rb, f, fr: rb > 0 ? f/rb*100 : 0});
+  if(!mes || rb <= 0){ toast('Informe o mês e a receita bruta válida', false); return; }
+  fatorRHist.push({mes, rb, f, fr: f/rb*100});
   renderFatorRHist();
   const _m=$('fr_h_mes'),_r=$('fr_h_rb'),_ff=$('fr_h_f');
   if(_m) _m.value=''; if(_r) _r.value=0; if(_ff) _ff.value=0;
@@ -3869,7 +3871,7 @@ function calcPrec(){
   // Custo real ao B2B (recupera crédito)
   const custoB2B = custo + precNovo * aliqNova / 100 * (1 - b2b); // tributo não recuperado
   const dica = delta > 0
-    ? `Aumento necessário de <strong>${fmt(delta)}</strong> (${pct(delta/preco*100)}) para manter margem de ${pct(margem)}.`
+    ? `Aumento necessário de <strong>${fmt(delta)}</strong> (${preco > 0 ? pct(delta/preco*100) : 'N/A'}) para manter margem de ${pct(margem)}.`
     : `Redução possível de <strong>${fmt(Math.abs(delta))}</strong> — nova carga menor que a atual.`;
   const res = $('pr_res');
   if(res) res.innerHTML = `
