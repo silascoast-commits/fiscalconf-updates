@@ -565,7 +565,19 @@ tbody tr:last-child td{border-bottom:none}
       <div class="grid g2 mt8">
         <div class="fg"><label>Faturamento Mensal (R$)</label><input type="number" id="sp_f" value="500000" oninput="calcSplit()"></div>
         <div class="fg"><label>Prazo médio recolhimento atual (dias)</label><input type="number" id="sp_p" value="45" oninput="calcSplit()"></div>
-        <div class="fg"><label>Alíquota CBS+IBS efetiva (%)</label><input type="number" id="sp_a" value="15" step="0.5" oninput="calcSplit()"></div>
+        <div class="fg"><label>Ano de referência</label><select id="sp_ano" onchange="syncSplitAliq();calcSplit()">
+          <option value="2026">2026 (Teste)</option><option value="2027">2027</option>
+          <option value="2028">2028</option><option value="2029">2029</option>
+          <option value="2030">2030</option><option value="2031">2031</option>
+          <option value="2032">2032</option><option value="2033" selected>2033 (Pleno)</option>
+        </select></div>
+        <div class="fg"><label>Categoria</label><select id="sp_cat" onchange="syncSplitAliq();calcSplit()">
+          <option value="padrao">Padrão — 100%</option>
+          <option value="red60">Reduzida 60%</option>
+          <option value="int30">Prof. Intelectual — 30% red.</option>
+          <option value="zero">Alíquota Zero</option>
+        </select></div>
+        <div class="fg"><label>Alíquota CBS+IBS efetiva (%) <span class="muted xs" id="sp_a_info"></span></label><input type="number" id="sp_a" value="26.5" step="0.1" oninput="calcSplit()"></div>
         <div class="fg"><label>Taxa de juros mensal (%)</label><input type="number" id="sp_t" value="1.8" step="0.1" oninput="calcSplit()"></div>
         <div class="fg" style="grid-column:1/-1"><label>% Faturamento B2B (cartão/boleto/PIX sujeitos ao split)</label>
           <div class="flex gap8 ic">
@@ -1759,10 +1771,16 @@ tbody tr:last-child td{border-bottom:none}
       <div class="card-title">Dados da Operação</div>
       <div class="grid g2 mt10">
         <div class="fg"><label>Valor do Produto (R$)</label><input type="number" id="nf_val" value="10000" oninput="calcNFe()"></div>
+        <div class="fg"><label>Ano de referência</label><select id="nf_ano" onchange="calcNFe()">
+          <option value="2026" selected>2026 (Teste)</option><option value="2027">2027</option>
+          <option value="2028">2028</option><option value="2029">2029</option>
+          <option value="2030">2030</option><option value="2031">2031</option>
+          <option value="2032">2032</option><option value="2033">2033 (Pleno)</option>
+        </select></div>
         <div class="fg"><label>Categoria CBS/IBS</label><select id="nf_cat" onchange="calcNFe()">
-          <option value="padrao">Padrão (8,8% + 17,7%)</option>
-          <option value="red60">Reduzida 60% (3,52% + 7,08%)</option>
-          <option value="int30">Prof. Intelectual -30% (6,16% + 12,39%)</option>
+          <option value="padrao">Padrão</option>
+          <option value="red60">Reduzida 60%</option>
+          <option value="int30">Prof. Intelectual -30%</option>
           <option value="zero">Alíquota Zero (0%)</option>
           <option value="imune">Exportação — Imune (0%)</option>
         </select></div>
@@ -2344,6 +2362,15 @@ function calcImport(){
 }
 
 // ─── SPLIT PAYMENT ──────────────────────────────────────────────────────────
+function syncSplitAliq(){
+  const ano = vs('sp_ano'), cat = vs('sp_cat');
+  if(!ano || !cat) return;
+  const {cbs, ibs} = getAliq(ano, cat);
+  const total = Math.round((cbs + ibs) * 100) / 100;
+  const el = $('sp_a'); if(el) el.value = total;
+  const info = $('sp_a_info'); if(info) info.textContent = '(CBS ' + pct(cbs) + ' + IBS ' + pct(ibs) + ')';
+}
+
 function calcSplit(){
   const fat = v('sp_f'), prazo = v('sp_p'), aliq = v('sp_a'), taxa = v('sp_t');
   const b2b = parseFloat($('sp_b2b')?.value || 60) / 100;
@@ -3443,15 +3470,13 @@ function calcSaldoCred(){
 // ─── NF-e 2026 ───────────────────────────────────────────────────────────────
 function calcNFe(){
   const val=v('nf_val'),cat=vs('nf_cat'),reg=vs('nf_reg'),is_p=v('nf_is');
-  let cbsR=0.9,ibsR=0.1; // 2026: informativo
-  let fator=1;
-  if(cat==='red60')fator=0.4;else if(cat==='int30')fator=0.7;else if(cat==='zero'||cat==='imune')fator=0;
-  cbsR*=fator;ibsR*=fator;
+  const ano=vs('nf_ano')||'2026';
+  const {cbs:cbsR,ibs:ibsR}=getAliq(ano,cat);
   const cbs=val*cbsR/100,ibs=val*ibsR/100,is_v=val*is_p/100;
   const r=$('nf_preview');
   const mostrar=reg!=='simples';
   if(r)r.innerHTML=`<div style="background:var(--surf);border:1px solid var(--border);border-radius:8px;padding:14px">
-    <div style="text-align:center;font-weight:700;margin-bottom:10px;color:var(--accent)">NOTA FISCAL ELETRÔNICA — 2026</div>
+    <div style="text-align:center;font-weight:700;margin-bottom:10px;color:var(--accent)">NOTA FISCAL ELETRÔNICA — ${ano}</div>
     <div style="border-bottom:1px dashed var(--border);margin-bottom:8px;padding-bottom:8px">
       ${mostrar?`<div>Valor dos Produtos: <strong>${fmt(val)}</strong></div>`:''}
       ${mostrar&&is_p>0?`<div style="color:var(--red)">IS (${pct(is_p)}): <strong>${fmt(is_v)}</strong></div>`:''}
@@ -3462,7 +3487,7 @@ function calcNFe(){
       </div>`:'<div style="color:var(--t2);font-size:11px">Simples Nacional: sem campos CBS/IBS em 2026.</div>'}
     </div>
     <div><strong>TOTAL NF-e: ${fmt(val + (is_p>0?is_v:0))}</strong></div>
-    <div style="font-size:10px;color:var(--t2);margin-top:6px">CBS e IBS são informativos em 2026 — sem recolhimento efetivo.</div>
+    <div style="font-size:10px;color:var(--t2);margin-top:6px">${ano==='2026'?'CBS e IBS são informativos em 2026 — sem recolhimento efetivo.':ano<='2028'?'CBS plena; IBS em transição — recolhimento parcial.':'CBS+IBS com recolhimento via Split Payment.'}</div>
   </div>`;
   const c=$('nf_campos');
   if(c&&mostrar)c.innerHTML=`
@@ -4138,7 +4163,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Calcular todos
   calcVenda(); calcCred(); calcCadeia(); calcProf(); calcImport();
-  calcSplit(); calcIS(); calcCashback(); calcTrans();
+  syncSplitAliq(); calcSplit(); calcIS(); calcCashback(); calcTrans();
   calcImo(); calcComb(); calcPlan(); calcLP(); calcLR(); calcIRPJComp();
   calcSN(); calcSnCred(); calcDecisor();
   gerarRel(); filterGloss(); renderPrazos(); renderAnexos();
