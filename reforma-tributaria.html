@@ -3763,7 +3763,8 @@ function addFatorRHist(){
   if(!mes||!rb){ toast('Informe o mês e a receita bruta', false); return; }
   fatorRHist.push({mes, rb, f, fr: rb > 0 ? f/rb*100 : 0});
   renderFatorRHist();
-  $('fr_h_mes').value=''; $('fr_h_rb').value=0; $('fr_h_f').value=0;
+  const _m=$('fr_h_mes'),_r=$('fr_h_rb'),_ff=$('fr_h_f');
+  if(_m) _m.value=''; if(_r) _r.value=0; if(_ff) _ff.value=0;
 }
 
 function renderFatorRHist(){
@@ -3849,7 +3850,7 @@ let produtosList = [];
 
 function calcPrec(){
   const preco = v('pr_preco'), custo = v('pr_custo');
-  const aliqAt = v('pr_aliq_at'), b2b = parseFloat($('pr_b2b')?.value||50)/100;
+  const aliqAt = v('pr_aliq_at'), b2b = v('pr_b2b')/100;
   const cat = vs('pr_cat'), margem = v('pr_margem');
   let aliqNova = CBS_FULL + IBS_FULL;
   if(cat==='red60') aliqNova = aliqNova * 0.4;
@@ -3860,7 +3861,8 @@ function calcPrec(){
   const margemAt = preco - custo - tribAt;
   const margemPctAt = preco > 0 ? margemAt/preco*100 : 0;
   // Preço novo necessário para manter margem (markup)
-  const precNovo = custo / (1 - aliqNova/100 - margem/100);
+  const _div1 = 1 - aliqNova/100 - margem/100;
+  const precNovo = _div1 > 0.001 ? custo / _div1 : 0;
   const tribNovo = precNovo * aliqNova / 100;
   const margemNovo = precNovo * margem / 100;
   const delta = precNovo - preco;
@@ -3902,7 +3904,8 @@ function calcPrecTrans(){
   anos.forEach((a, i) => {
     const {cbs, ibs} = getAliq(a, cat);
     const aliq = cbs + ibs;
-    const prec = aliq < 100 ? custo / (1 - aliq/100 - margem/100) : custo / (1 - margem/100);
+    const _d = 1 - aliq/100 - margem/100;
+    const prec = _d > 0.001 ? custo / _d : (margem < 100 ? custo / (1 - margem/100) : 0);
     if(i === 0) base = prec;
     const delta = prec - base;
     html += `<tr${a==='2026'?' class="tr-hl"':''}><td><strong>${a}</strong></td><td class="hl">${pct(aliq)}</td><td class="bold">${fmt(prec)}</td><td class="${delta>0?'hlr':'hlg'}">${delta>=0?'+':''}${fmt(delta)}</td></tr>`;
@@ -3918,7 +3921,7 @@ function addProduto(){
   if(!nome||!preco){ toast('Informe o nome e o preço', false); return; }
   produtosList.push({nome, preco, custo});
   renderProdutos();
-  $('pt2_nome').value=''; $('pt2_preco').value=0; $('pt2_custo').value=0;
+  const _n=$('pt2_nome'); if(_n){_n.value='';} const _pp=$('pt2_preco'); if(_pp){_pp.value=0;} const _pc=$('pt2_custo'); if(_pc){_pc.value=0;}
 }
 
 function renderProdutos(){
@@ -3928,7 +3931,8 @@ function renderProdutos(){
   let html = '<table><tr><th>Produto</th><th>Preço Atual</th><th>Custo</th><th>Margem Atual</th><th>Preço Novo (CBS+IBS 26,5%)</th><th>Δ</th><th></th></tr>';
   produtosList.forEach((p,i) => {
     const margem = p.preco > 0 ? (p.preco - p.custo) / p.preco * 100 : 0;
-    const precNovo = p.custo / (1 - aliqNova/100 - margem/100);
+    const _d2 = 1 - aliqNova/100 - margem/100;
+    const precNovo = _d2 > 0.001 ? p.custo / _d2 : 0;
     const delta = precNovo - p.preco;
     html += `<tr><td>${p.nome}</td><td>${fmt(p.preco)}</td><td>${fmt(p.custo)}</td>
       <td>${pct(margem)}</td><td class="bold">${fmt(precNovo)}</td>
