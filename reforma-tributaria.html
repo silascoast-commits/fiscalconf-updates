@@ -376,7 +376,7 @@ tbody tr:last-child td{border-bottom:none}
             </div>
             <div class="flex jb xs muted mt4"><span>100% B2C</span><span>100% B2B</span></div>
           </div>
-          <div class="fg"><label>Categoria</label><select id="cv_cat" onchange="calcVenda()">
+          <div class="fg"><label>Categoria</label><select id="cv_cat" onchange="syncCBSIBS();calcVenda()">
             <option value="padrao">Padrão — 100%</option>
             <option value="red60">Reduzida 60% (saúde, educação, agro, turismo…)</option>
             <option value="int30">Profissional Intelectual — 30% redução</option>
@@ -384,7 +384,7 @@ tbody tr:last-child td{border-bottom:none}
             <option value="zero">Cesta Básica Nacional / Medicamentos — 0%</option>
             <option value="imune">Exportação / Imune — 0%</option>
           </select></div>
-          <div class="fg"><label>Ano</label><select id="cv_ano" onchange="calcVenda()">
+          <div class="fg"><label>Ano</label><select id="cv_ano" onchange="syncCBSIBS();calcVenda()">
             <option value="2026">2026 (Teste)</option><option value="2027">2027</option>
             <option value="2028">2028</option><option value="2029">2029</option>
             <option value="2030">2030</option><option value="2031">2031</option>
@@ -2210,6 +2210,15 @@ function getAliq(ano, cat){
 }
 
 // ─── CALCULADORA VENDA ───────────────────────────────────────────────────────
+function syncCBSIBS(){
+  const ano = vs('cv_ano'), cat = vs('cv_cat');
+  if(!ano || !cat) return;
+  const {cbs, ibs} = getAliq(ano, cat);
+  const sc = $('cv_cbs'), si = $('cv_ibs');
+  if(sc){ sc.value = cbs; updR('cv_cbs','cv_cbs_lbl'); }
+  if(si){ si.value = ibs; updR('cv_ibs','cv_ibs_lbl'); }
+}
+
 function updB2B(rangeId, lblId){
   const el = $(rangeId); if(!el) return;
   const lbl = $(lblId); if(lbl) lbl.textContent = el.value + '%';
@@ -4120,7 +4129,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const dd = $('dash-date'); if(dd) dd.textContent = dataStr;
   const rd = $('rl_data'); if(rd) rd.value = now.toLocaleDateString('pt-BR');
 
-  // Inicializar sliders
+  // Inicializar sliders (sincroniza com ano+categoria padrão)
+  syncCBSIBS();
   updR('cv_cbs','cv_cbs_lbl');
   updR('cv_ibs','cv_ibs_lbl');
   updB2B('cv_b2b','cv_b2b_lbl');
