@@ -2466,34 +2466,85 @@ const NCM_CAP_CST = {
 };
 
 function buscarNCM_cv(){
-  const q = ($('cv_ncm')?.value||'').toLowerCase().trim();
+  const q = ($('cv_ncm')?.value||'').trim();
   const sel = $('cv_ncm_sel'); if(!sel) return;
   sel.innerHTML = '<option value="">↳ selecione para preencher categoria automaticamente</option>';
   const info=$('cv_ncm_info');
   if(q.length < 2){ if(info) info.textContent=''; return; }
   const qNum = q.replace(/\D/g,'');
+  const qLow = q.toLowerCase();
+
+  // 1. Busca na lista local
   const matches = NCM_COMUNS.filter(n =>
     n.ncm.replace(/\D/g,'').startsWith(qNum) ||
-    n.ncm.toLowerCase().includes(q) ||
-    n.d.toLowerCase().includes(q) ||
-    n.obs.toLowerCase().includes(q)
+    n.ncm.toLowerCase().includes(qLow) ||
+    n.d.toLowerCase().includes(qLow) ||
+    n.obs.toLowerCase().includes(qLow)
   );
   if(matches.length){
-    matches.forEach(n => {
-      sel.insertAdjacentHTML('beforeend', `<option value="${n.ncm}">${n.ncm} — ${n.d}</option>`);
-    });
+    matches.forEach(n => sel.insertAdjacentHTML('beforeend', `<option value="${n.ncm}">${n.ncm} — ${n.d}</option>`));
     if(info) info.textContent = matches.length + ' NCM(s) encontrado(s) — selecione ao lado ↗';
+    return;
+  }
+
+  // 2. Se parece um código NCM (≥4 dígitos), consulta BrasilAPI
+  if(qNum.length >= 4){
+    if(info){ info.textContent = '🔍 Consultando Receita Federal...'; info.style.color='var(--accent)'; }
+    clearTimeout(buscarNCM_cv._t);
+    buscarNCM_cv._t = setTimeout(() => buscarNCM_api(qNum, sel, info), 600);
+    return;
+  }
+
+  // 3. Fallback por capítulo (2 dígitos)
+  const cap = qNum.substring(0,2);
+  const capDesc = NCM_CAPITULOS[cap];
+  const capCst = NCM_CAP_CST[cap]||'01';
+  if(capDesc){
+    sel.insertAdjacentHTML('beforeend', `<option value="__cap__${cap}__${capCst}">Capítulo ${cap} — ${capDesc} (estimativa)</option>`);
+    if(info){ info.textContent = `⚠️ Capítulo ${cap}: ${capDesc} — categoria estimada.`; info.style.color=''; }
   } else {
-    // Fallback por capítulo
-    const cap = qNum.substring(0,2);
-    const capDesc = NCM_CAPITULOS[cap];
+    if(info){ info.textContent = 'NCM não encontrado. Selecione a categoria manualmente.'; info.style.color=''; }
+  }
+}
+
+async function buscarNCM_api(ncmNum, sel, info){
+  const catLabels = {padrao:'Padrão (100%)',red60:'Reduzida 60%',int30:'Prof. Intelectual -30%',cestab:'Cesta Básica Ampliada',zero:'Alíquota Zero',imune:'Exportação/Imune'};
+  try {
+    const r = await fetch(`https://brasilapi.com.br/api/ncm/v1/${ncmNum}`);
+    if(!r.ok) throw new Error('não encontrado');
+    const d = await r.json();
+    const desc = d.descricao || d.Descricao || (Array.isArray(d) && d[0]?.descricao) || '';
+    if(!desc) throw new Error('sem descrição');
+
+    // Determina categoria pelo capítulo
+    const cap = ncmNum.substring(0,2);
     const capCst = NCM_CAP_CST[cap]||'01';
-    if(capDesc){
-      sel.insertAdjacentHTML('beforeend', `<option value="__cap__${cap}__${capCst}">NCM capítulo ${cap} — ${capDesc} (estimativa)</option>`);
-      if(info) info.textContent = `⚠️ NCM não mapeado individualmente. Capítulo ${cap}: ${capDesc} — categoria estimada pelo capítulo.`;
-    } else {
-      if(info) info.textContent = 'NCM não encontrado. Selecione a categoria manualmente.';
+    const cat = cstToCat(capCst, capCst+'.001');
+
+    // Verifica se há mapeamento exato local
+    const local = NCM_COMUNS.find(n => n.ncm.replace(/\D/g,'') === ncmNum);
+    const catFinal = local ? cstToCat(local.cst, local.ctrib) : cat;
+    const obsFinal = local ? local.obs : `Capítulo ${cap} — categoria estimada · confirme na LC 214/2025`;
+
+    sel.innerHTML = `<option value="__api__${ncmNum}__${catFinal}">${ncmNum} — ${desc}</option>`;
+    sel.selectedIndex = 1;
+
+    if(info){
+      info.textContent = `✅ ${desc} — Categoria estimada: ${catLabels[catFinal]||catFinal}. ${local?'':'⚠️ Verifique o enquadramento exato na LC 214.'}`;
+      info.style.color = local ? 'var(--green)' : 'var(--yellow)';
     }
+
+    // Auto-aplicar
+    const catSel=$('cv_cat'); if(catSel) catSel.value=catFinal;
+    syncCBSIBS(); calcVenda();
+
+  } catch(e){
+    // Fallback capítulo
+    const cap = ncmNum.substring(0,2);
+    const capDesc = NCM_CAPITULOS[cap]||'Produto diverso';
+    const capCst = NCM_CAP_CST[cap]||'01';
+    sel.innerHTML = `<option value="__cap__${cap}__${capCst}">Capítulo ${cap} — ${capDesc} (estimativa)</option>`;
+    if(info){ info.textContent = `⚠️ NCM ${ncmNum} não localizado na Receita Federal. Capítulo ${cap}: ${capDesc} — verifique manualmente.`; info.style.color=''; }
   }
 }
 
@@ -2502,13 +2553,11 @@ function aplicarNCM_cv(){
   const catLabels = {padrao:'Padrão (100%)',red60:'Reduzida 60%',int30:'Prof. Intelectual -30%',cestab:'Cesta Básica Ampliada',zero:'Alíquota Zero',imune:'Exportação/Imune'};
   const info = $('cv_ncm_info');
 
-  // Fallback por capítulo
-  if(sel.value.startsWith('__cap__')){
-    const parts = sel.value.split('__');
-    const cap=parts[2], cst=parts[3];
-    const cat = cstToCat(cst, cst+'.001');
+  // Resultado de API (__api__NNNN__cat) ou capítulo (__cap__XX__cst)
+  if(sel.value.startsWith('__api__') || sel.value.startsWith('__cap__')){
+    const parts = sel.value.split('__').filter(Boolean);
+    const cat = parts[2]||'padrao';
     const catSel=$('cv_cat'); if(catSel) catSel.value=cat;
-    if(info) info.textContent=`⚠️ Categoria estimada pelo capítulo ${cap} — verifique o enquadramento exato na LC 214/2025. Categoria: ${catLabels[cat]||cat}`;
     syncCBSIBS(); calcVenda(); return;
   }
 
@@ -2517,7 +2566,7 @@ function aplicarNCM_cv(){
   const inp = $('cv_ncm'); if(inp) inp.value = ncm.ncm;
   const cat = cstToCat(ncm.cst, ncm.ctrib);
   const catSel = $('cv_cat'); if(catSel) catSel.value = cat;
-  if(info) info.textContent = `✅ ${ncm.d} · ${ncm.obs} → Categoria: ${catLabels[cat]||cat}`;
+  if(info){ info.textContent = `✅ ${ncm.d} · ${ncm.obs} → Categoria: ${catLabels[cat]||cat}`; info.style.color='var(--green)'; }
   syncCBSIBS(); calcVenda();
 }
 
