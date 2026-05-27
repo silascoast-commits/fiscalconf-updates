@@ -2441,40 +2441,84 @@ function cstToCat(cst, ctrib){
   return 'zero';
 }
 
+// Fallback por capítulo NCM (primeiros 2 dígitos)
+const NCM_CAPITULOS = {
+  '01':'Animais vivos','02':'Carnes','03':'Pescado','04':'Laticínios/ovos','07':'Hortaliças','08':'Frutas',
+  '09':'Café/chá/especiarias','10':'Cereais','11':'Farinhas/amidos','12':'Sementes/oleaginosas',
+  '15':'Gorduras/óleos vegetais','17':'Açúcares','19':'Preparações de cereais/pão','20':'Conservas',
+  '21':'Preparações alimentícias diversas','22':'Bebidas/vinagres','23':'Resíduos indústria alimentar',
+  '24':'Tabaco','27':'Combustíveis minerais','30':'Produtos farmacêuticos','31':'Adubos/fertilizantes',
+  '32':'Tintas/vernizes','33':'Perfumes/cosméticos','34':'Sabões/detergentes','38':'Produtos químicos diversos',
+  '39':'Plásticos','40':'Borracha','44':'Madeira','48':'Papel/cartão','49':'Livros/impressos',
+  '50':'Seda','51':'Lã','52':'Algodão','54':'Filamentos sintéticos','60':'Malhas','61':'Vestuário de malha',
+  '62':'Vestuário (exceto malha)','63':'Outros artigos têxteis','64':'Calçados','72':'Ferro/aço',
+  '73':'Obras de ferro/aço','76':'Alumínio','84':'Máquinas/reatores nucleares','85':'Aparelhos elétricos/eletrônicos',
+  '87':'Veículos automóveis/peças','88':'Aeronaves','89':'Embarcações','90':'Instrumentos ópticos/médicos',
+  '94':'Móveis/iluminação','95':'Brinquedos/jogos','96':'Obras diversas',
+};
+const NCM_CAP_CST = {
+  '01':'02','02':'02','03':'02','04':'02','07':'03','08':'03','09':'02','10':'02','11':'02','12':'02',
+  '15':'02','17':'03','19':'02','20':'02','21':'02','22':'06','23':'02','24':'06','27':'06',
+  '30':'03','31':'02','32':'01','33':'02','34':'02','38':'01','39':'01','40':'01','44':'01',
+  '48':'01','49':'02','50':'01','51':'01','52':'01','54':'01','60':'01','61':'01','62':'01','63':'01',
+  '64':'01','72':'01','73':'01','76':'01','84':'01','85':'01','87':'01','88':'01','89':'01',
+  '90':'02','94':'01','95':'01','96':'01',
+};
+
 function buscarNCM_cv(){
   const q = ($('cv_ncm')?.value||'').toLowerCase().trim();
   const sel = $('cv_ncm_sel'); if(!sel) return;
   sel.innerHTML = '<option value="">↳ selecione para preencher categoria automaticamente</option>';
-  if(q.length < 2){ $('cv_ncm_info').textContent=''; return; }
+  const info=$('cv_ncm_info');
+  if(q.length < 2){ if(info) info.textContent=''; return; }
+  const qNum = q.replace(/\D/g,'');
   const matches = NCM_COMUNS.filter(n =>
-    n.ncm.toLowerCase().includes(q) || n.d.toLowerCase().includes(q) || n.obs.toLowerCase().includes(q)
+    n.ncm.replace(/\D/g,'').startsWith(qNum) ||
+    n.ncm.toLowerCase().includes(q) ||
+    n.d.toLowerCase().includes(q) ||
+    n.obs.toLowerCase().includes(q)
   );
-  if(!matches.length){
-    const info=$('cv_ncm_info'); if(info) info.textContent='Nenhum NCM encontrado. Selecione a categoria manualmente.';
-    return;
+  if(matches.length){
+    matches.forEach(n => {
+      sel.insertAdjacentHTML('beforeend', `<option value="${n.ncm}">${n.ncm} — ${n.d}</option>`);
+    });
+    if(info) info.textContent = matches.length + ' NCM(s) encontrado(s) — selecione ao lado ↗';
+  } else {
+    // Fallback por capítulo
+    const cap = qNum.substring(0,2);
+    const capDesc = NCM_CAPITULOS[cap];
+    const capCst = NCM_CAP_CST[cap]||'01';
+    if(capDesc){
+      sel.insertAdjacentHTML('beforeend', `<option value="__cap__${cap}__${capCst}">NCM capítulo ${cap} — ${capDesc} (estimativa)</option>`);
+      if(info) info.textContent = `⚠️ NCM não mapeado individualmente. Capítulo ${cap}: ${capDesc} — categoria estimada pelo capítulo.`;
+    } else {
+      if(info) info.textContent = 'NCM não encontrado. Selecione a categoria manualmente.';
+    }
   }
-  matches.forEach(n => {
-    sel.insertAdjacentHTML('beforeend', `<option value="${n.ncm}">${n.ncm} — ${n.d}</option>`);
-  });
-  const info=$('cv_ncm_info'); if(info) info.textContent= matches.length + ' NCM(s) encontrado(s) — selecione ao lado ↗';
 }
 
 function aplicarNCM_cv(){
   const sel = $('cv_ncm_sel'); if(!sel||!sel.value) return;
+  const catLabels = {padrao:'Padrão (100%)',red60:'Reduzida 60%',int30:'Prof. Intelectual -30%',cestab:'Cesta Básica Ampliada',zero:'Alíquota Zero',imune:'Exportação/Imune'};
+  const info = $('cv_ncm_info');
+
+  // Fallback por capítulo
+  if(sel.value.startsWith('__cap__')){
+    const parts = sel.value.split('__');
+    const cap=parts[2], cst=parts[3];
+    const cat = cstToCat(cst, cst+'.001');
+    const catSel=$('cv_cat'); if(catSel) catSel.value=cat;
+    if(info) info.textContent=`⚠️ Categoria estimada pelo capítulo ${cap} — verifique o enquadramento exato na LC 214/2025. Categoria: ${catLabels[cat]||cat}`;
+    syncCBSIBS(); calcVenda(); return;
+  }
+
   const ncm = NCM_COMUNS.find(n => n.ncm === sel.value);
   if(!ncm) return;
-  // Preencher NCM text
   const inp = $('cv_ncm'); if(inp) inp.value = ncm.ncm;
-  // Determinar categoria
   const cat = cstToCat(ncm.cst, ncm.ctrib);
-  const catSel = $('cv_cat'); if(catSel){ catSel.value = cat; }
-  // Atualizar info
-  const info = $('cv_ncm_info');
-  const catLabels = {padrao:'Padrão (100%)',red60:'Reduzida 60%',int30:'Prof. Intelectual -30%',cestab:'Cesta Básica Ampliada',zero:'Alíquota Zero',imune:'Exportação/Imune'};
+  const catSel = $('cv_cat'); if(catSel) catSel.value = cat;
   if(info) info.textContent = `✅ ${ncm.d} · ${ncm.obs} → Categoria: ${catLabels[cat]||cat}`;
-  // CST info no resultado
-  syncCBSIBS();
-  calcVenda();
+  syncCBSIBS(); calcVenda();
 }
 
 function syncCBSIBS(){
@@ -4005,28 +4049,110 @@ const CTRIB_CODES = {
 };
 
 const NCM_COMUNS = [
-  {ncm:'0901.21',d:'Café torrado não descafeinado',cst:'02',ctrib:'02.001',obs:'Cesta Básica Ampliada — redução 60%'},
-  {ncm:'1001.99',d:'Trigo (outros)',cst:'02',ctrib:'02.003',obs:'Produção agropecuária — redução 60%'},
-  {ncm:'1006.30',d:'Arroz semibranqueado ou branqueado',cst:'02',ctrib:'02.001',obs:'Cesta Básica Ampliada — redução 60%'},
-  {ncm:'0201.10',d:'Carne bovina em carcaças',cst:'02',ctrib:'02.001',obs:'Cesta Básica Ampliada — redução 60%'},
-  {ncm:'0401.10',d:'Leite integral',cst:'02',ctrib:'02.001',obs:'Cesta Básica Ampliada — redução 60%'},
+  // CESTA BÁSICA NACIONAL (alíquota zero)
+  {ncm:'1006.30',d:'Arroz beneficiado',cst:'03',ctrib:'03.001',obs:'Cesta Básica Nacional — alíquota zero'},
+  {ncm:'0713.33',d:'Feijão preto/carioca',cst:'03',ctrib:'03.001',obs:'Cesta Básica Nacional — alíquota zero'},
+  {ncm:'0207.14',d:'Frango (cortes congelados)',cst:'03',ctrib:'03.001',obs:'Cesta Básica Nacional — alíquota zero'},
+  {ncm:'0203.29',d:'Carne suína congelada',cst:'03',ctrib:'03.001',obs:'Cesta Básica Nacional — alíquota zero'},
+  {ncm:'0402.21',d:'Leite em pó integral',cst:'03',ctrib:'03.001',obs:'Cesta Básica Nacional — alíquota zero'},
+  {ncm:'1507.90',d:'Óleo de soja refinado',cst:'03',ctrib:'03.001',obs:'Cesta Básica Nacional — alíquota zero'},
+  {ncm:'1905.90',d:'Pão de forma',cst:'03',ctrib:'03.001',obs:'Cesta Básica Nacional — alíquota zero'},
+  {ncm:'1701.14',d:'Açúcar de cana refinado',cst:'03',ctrib:'03.001',obs:'Cesta Básica Nacional — alíquota zero'},
+  {ncm:'1101.00',d:'Farinha de trigo',cst:'03',ctrib:'03.001',obs:'Cesta Básica Nacional — alíquota zero'},
+  {ncm:'0814.00',d:'Cascas de ovos — ovos (frescos)',cst:'03',ctrib:'03.001',obs:'Cesta Básica Nacional — alíquota zero'},
+  {ncm:'0709.99',d:'Hortaliças (outros)',cst:'03',ctrib:'03.001',obs:'Cesta Básica Nacional — alíquota zero'},
+  {ncm:'0804.30',d:'Abacaxi',cst:'03',ctrib:'03.001',obs:'Cesta Básica Nacional — alíquota zero'},
+  // CESTA BÁSICA AMPLIADA / ALIMENTOS (redução 60%)
+  {ncm:'0901.21',d:'Café torrado não descafeinado',cst:'02',ctrib:'02.007',obs:'Cesta Básica Ampliada — redução 60%'},
+  {ncm:'1001.99',d:'Trigo em grão (outros)',cst:'02',ctrib:'02.003',obs:'Produção agropecuária — redução 60%'},
+  {ncm:'0201.10',d:'Carne bovina em carcaças',cst:'02',ctrib:'02.007',obs:'Cesta Básica Ampliada — redução 60%'},
+  {ncm:'0401.10',d:'Leite integral fluido',cst:'02',ctrib:'02.007',obs:'Cesta Básica Ampliada — redução 60%'},
+  {ncm:'3401.11',d:'Sabão em barras',cst:'02',ctrib:'02.007',obs:'Higiene pessoal — redução 60%'},
+  {ncm:'3305.10',d:'Shampoo',cst:'02',ctrib:'02.007',obs:'Higiene pessoal — redução 60%'},
+  {ncm:'3401.20',d:'Sabonete',cst:'02',ctrib:'02.007',obs:'Higiene pessoal — redução 60%'},
+  {ncm:'3302.10',d:'Pasta de dente',cst:'02',ctrib:'02.007',obs:'Higiene pessoal/dental — redução 60%'},
+  // MEDICAMENTOS E SAÚDE (alíquota zero / redução 60%)
   {ncm:'3004.90',d:'Medicamentos (uso humano, outros)',cst:'03',ctrib:'03.002',obs:'Alíquota zero — RENAME'},
   {ncm:'3004.10',d:'Medicamentos com penicilinas',cst:'03',ctrib:'03.002',obs:'Alíquota zero — RENAME'},
+  {ncm:'3004.20',d:'Medicamentos com antibióticos',cst:'03',ctrib:'03.002',obs:'Alíquota zero — RENAME'},
+  {ncm:'3004.50',d:'Medicamentos com vitaminas',cst:'02',ctrib:'02.001',obs:'Redução 60% — saúde'},
   {ncm:'9021.10',d:'Próteses ortopédicas',cst:'03',ctrib:'03.003',obs:'Alíquota zero — dispositivos de acessibilidade'},
-  {ncm:'2710.12',d:'Gasolina',cst:'06',ctrib:'06.001',obs:'Monofásico — IS incidente na refinaria'},
-  {ncm:'2710.19',d:'Óleo diesel',cst:'06',ctrib:'06.001',obs:'Monofásico — IS incidente na refinaria'},
-  {ncm:'2207.10',d:'Álcool etílico/etanol',cst:'06',ctrib:'06.001',obs:'Monofásico — IS incidente'},
+  {ncm:'9018.90',d:'Equipamentos médicos/cirúrgicos',cst:'02',ctrib:'02.001',obs:'Dispositivos médicos Anvisa — redução 60%'},
+  {ncm:'9019.10',d:'Cadeiras de rodas',cst:'03',ctrib:'03.003',obs:'Alíquota zero — dispositivos de acessibilidade para PCD'},
+  {ncm:'4818.10',d:'Absorventes higiênicos',cst:'04',ctrib:'04.001',obs:'Isenção 100% — saúde menstrual (Art. 144)'},
+  // EDUCAÇÃO (redução 60%)
+  {ncm:'4901.99',d:'Livros técnicos e educativos',cst:'02',ctrib:'02.002',obs:'Educação — redução 60%'},
+  {ncm:'4820.10',d:'Cadernos escolares',cst:'02',ctrib:'02.002',obs:'Material educativo — redução 60%'},
+  // COMBUSTÍVEIS E ENERGIA (monofásico)
+  {ncm:'2710.12',d:'Gasolina comum/aditivada',cst:'06',ctrib:'06.001',obs:'Monofásico — IS incidente na refinaria'},
+  {ncm:'2710.19',d:'Óleo diesel B S10/S500',cst:'06',ctrib:'06.001',obs:'Monofásico — IS incidente na refinaria'},
+  {ncm:'2711.19',d:'GLP (gás de cozinha)',cst:'06',ctrib:'06.001',obs:'Monofásico — IS incidente'},
+  {ncm:'2207.10',d:'Álcool etílico hidratado (etanol)',cst:'06',ctrib:'06.001',obs:'Monofásico — IS incidente'},
+  // BEBIDAS (monofásico)
   {ncm:'2402.20',d:'Cigarros (tabaco)',cst:'06',ctrib:'06.002',obs:'Monofásico + IS ~150%'},
-  {ncm:'2204.21',d:'Vinhos',cst:'06',ctrib:'06.003',obs:'Monofásico + IS ~27%'},
-  {ncm:'2202.10',d:'Refrigerantes',cst:'06',ctrib:'06.004',obs:'Monofásico + IS ~20%'},
-  {ncm:'8517.12',d:'Smartphones e celulares',cst:'01',ctrib:'01.001',obs:'Tributação integral padrão'},
-  {ncm:'8471.30',d:'Computadores portáteis (notebook)',cst:'01',ctrib:'01.001',obs:'Tributação integral padrão'},
-  {ncm:'8528.72',d:'Televisores',cst:'01',ctrib:'01.001',obs:'Tributação integral padrão'},
-  {ncm:'6403.99',d:'Calçados com sola de borracha/couro',cst:'01',ctrib:'01.001',obs:'Tributação integral padrão'},
-  {ncm:'6204.62',d:'Calças jeans femininas',cst:'01',ctrib:'01.001',obs:'Tributação integral padrão'},
-  {ncm:'9401.61',d:'Cadeiras e assentos',cst:'01',ctrib:'01.001',obs:'Tributação integral padrão'},
-  {ncm:'8703.22',d:'Automóveis até 1000cc',cst:'01',ctrib:'01.001',obs:'Tributação integral + IS ~4%'},
-  {ncm:'3401.11',d:'Sabão em barras',cst:'02',ctrib:'02.001',obs:'Cesta Básica Ampliada — redução 60%'},
+  {ncm:'2204.21',d:'Vinhos de uvas frescas',cst:'06',ctrib:'06.003',obs:'Monofásico + IS ~27%'},
+  {ncm:'2203.00',d:'Cerveja de malte',cst:'06',ctrib:'06.003',obs:'Monofásico + IS ~27%'},
+  {ncm:'2208.40',d:'Rum e aguardente de cana',cst:'06',ctrib:'06.003',obs:'Monofásico + IS ~27%'},
+  {ncm:'2202.10',d:'Refrigerantes (águas gaseificadas)',cst:'06',ctrib:'06.004',obs:'Monofásico + IS ~20%'},
+  {ncm:'2202.99',d:'Bebidas energéticas',cst:'06',ctrib:'06.004',obs:'Monofásico + IS ~20%'},
+  // ELETROELETRÔNICOS (tributação integral)
+  {ncm:'8517.12',d:'Smartphones e celulares',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  {ncm:'8471.30',d:'Computadores portáteis (notebook)',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  {ncm:'8471.41',d:'Computadores desktop',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  {ncm:'8528.72',d:'Televisores LED/OLED',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  {ncm:'8516.50',d:'Fornos de micro-ondas',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  {ncm:'8516.60',d:'Fogões e cooktops',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  {ncm:'8418.10',d:'Geladeiras e refrigeradores',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  {ncm:'8450.11',d:'Máquinas de lavar roupa',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  {ncm:'8509.40',d:'Liquidificadores e processadores',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  // VEÍCULOS E PEÇAS (tributação integral + IS)
+  {ncm:'8703.22',d:'Automóveis até 1000cc (flex)',cst:'01',ctrib:'01.001',obs:'Tributação integral + IS ~4%'},
+  {ncm:'8703.23',d:'Automóveis 1001cc a 2000cc (flex)',cst:'01',ctrib:'01.001',obs:'Tributação integral + IS ~7%'},
+  {ncm:'8704.21',d:'Caminhões e veículos carga diesel',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  {ncm:'8711.20',d:'Motocicletas até 50cc',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  {ncm:'8708.10',d:'Para-choques e partes',cst:'01',ctrib:'01.001',obs:'Peças e acessórios veículos — tributação integral'},
+  {ncm:'8708.21',d:'Cintos de segurança',cst:'01',ctrib:'01.001',obs:'Peças e acessórios veículos — tributação integral'},
+  {ncm:'8708.29',d:'Partes de carroceria (outras)',cst:'01',ctrib:'01.001',obs:'Peças e acessórios veículos — tributação integral'},
+  {ncm:'8708.30',d:'Freios e servo-freios',cst:'01',ctrib:'01.001',obs:'Peças e acessórios veículos — tributação integral'},
+  {ncm:'8708.40',d:'Caixas de câmbio',cst:'01',ctrib:'01.001',obs:'Peças e acessórios veículos — tributação integral'},
+  {ncm:'8708.50',d:'Eixos motrizes e rodas',cst:'01',ctrib:'01.001',obs:'Peças e acessórios veículos — tributação integral'},
+  {ncm:'8708.70',d:'Rodas e acessórios',cst:'01',ctrib:'01.001',obs:'Peças e acessórios veículos — tributação integral'},
+  {ncm:'8708.80',d:'Sistemas de suspensão e amortecedores',cst:'01',ctrib:'01.001',obs:'Peças e acessórios veículos — tributação integral'},
+  {ncm:'8708.91',d:'Radiadores',cst:'01',ctrib:'01.001',obs:'Peças e acessórios veículos — tributação integral'},
+  {ncm:'8708.92',d:'Silenciosos e tubos de escape',cst:'01',ctrib:'01.001',obs:'Peças e acessórios veículos — tributação integral'},
+  {ncm:'8708.93',d:'Embreagens e partes',cst:'01',ctrib:'01.001',obs:'Peças e acessórios veículos — tributação integral'},
+  {ncm:'8708.94',d:'Volantes e colunas de direção',cst:'01',ctrib:'01.001',obs:'Peças e acessórios veículos — tributação integral'},
+  {ncm:'8708.99',d:'Outras partes e acessórios de veículos',cst:'01',ctrib:'01.001',obs:'Peças e acessórios veículos — tributação integral'},
+  {ncm:'4011.10',d:'Pneus novos para automóveis',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  {ncm:'3819.00',d:'Fluidos de freio',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  {ncm:'3403.19',d:'Óleo lubrificante para motores',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  // VESTUÁRIO E CALÇADOS
+  {ncm:'6403.99',d:'Calçados com sola de borracha/couro',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  {ncm:'6404.11',d:'Tênis esportivos',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  {ncm:'6204.62',d:'Calças jeans femininas',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  {ncm:'6203.42',d:'Calças jeans masculinas',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  {ncm:'6205.20',d:'Camisas masculinas de algodão',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  {ncm:'6109.10',d:'Camisetas de malha de algodão',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  // CONSTRUÇÃO CIVIL
+  {ncm:'6908.90',d:'Revestimentos cerâmicos (azulejos)',cst:'01',ctrib:'01.001',obs:'Tributação integral — construção civil'},
+  {ncm:'7308.90',d:'Estruturas metálicas',cst:'01',ctrib:'01.001',obs:'Tributação integral — construção civil'},
+  {ncm:'3925.90',d:'Tubos e conexões PVC',cst:'01',ctrib:'01.001',obs:'Tributação integral — construção civil'},
+  {ncm:'8544.49',d:'Fios e cabos elétricos',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  {ncm:'6901.00',d:'Tijolos e blocos cerâmicos',cst:'01',ctrib:'01.001',obs:'Tributação integral — construção civil'},
+  {ncm:'2523.29',d:'Cimento Portland',cst:'01',ctrib:'01.001',obs:'Tributação integral — construção civil'},
+  // MÓVEIS E UTILIDADES
+  {ncm:'9401.61',d:'Cadeiras e assentos estofados',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  {ncm:'9403.20',d:'Móveis de metal',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  {ncm:'9403.60',d:'Móveis de madeira (outros)',cst:'01',ctrib:'01.001',obs:'Tributação integral'},
+  // AGROPECUÁRIA (insumos / redução 60%)
+  {ncm:'3101.00',d:'Fertilizantes orgânicos',cst:'02',ctrib:'02.003',obs:'Insumos agropecuários — redução 60% (Art. 138)'},
+  {ncm:'3102.10',d:'Ureia (fertilizante)',cst:'02',ctrib:'02.003',obs:'Insumos agropecuários — redução 60% (Art. 138)'},
+  {ncm:'3808.91',d:'Inseticidas/defensivos agrícolas',cst:'02',ctrib:'02.003',obs:'Insumos agropecuários — redução 60% (Art. 138)'},
+  {ncm:'8432.10',d:'Arados e grades agrícolas',cst:'02',ctrib:'02.003',obs:'Insumos agropecuários — redução 60%'},
+  // SERVIÇOS (para referência em NF-e)
+  {ncm:'9983.00',d:'Serviços de TI / Software',cst:'01',ctrib:'01.002',obs:'Serviço tributação integral (profissional: redução 30%)'},
+  {ncm:'9985.00',d:'Serviços de saúde',cst:'02',ctrib:'02.001',obs:'Serviços saúde — redução 60%'},
+  {ncm:'9986.00',d:'Serviços de educação',cst:'02',ctrib:'02.002',obs:'Serviços educação — redução 60%'},
 ];
 
 function initChaveFiscal(){
