@@ -226,6 +226,7 @@ tbody tr:last-child td{border-bottom:none}
   <div class="nav-item" onclick="nav(this,'difal')"><span class="nav-icon">🗺️</span>DIFAL Interestadual</div>
   <div class="nav-item" onclick="nav(this,'creditos')"><span class="nav-icon">♻️</span>Créditos & Ressarcimento</div>
   <div class="nav-item" onclick="nav(this,'nfe2026')"><span class="nav-icon">📋</span>NF-e 2026 CBS/IBS</div>
+  <div class="nav-item" onclick="nav(this,'dre')"><span class="nav-icon">📑</span>DRE Comparativa</div>
 
   <div class="nav-section">Regimes Tributários</div>
   <div class="nav-item" onclick="nav(this,'planejamento')"><span class="nav-icon">📊</span>Planejamento Tributário</div>
@@ -1706,6 +1707,7 @@ tbody tr:last-child td{border-bottom:none}
     <button class="itab active" onclick="it(this,'cr-export')">Exportadores</button>
     <button class="itab" onclick="it(this,'cr-capital')">Bens de Capital</button>
     <button class="itab" onclick="it(this,'cr-saldo')">Saldo Credor</button>
+    <button class="itab" onclick="it(this,'cr-lanc')">Lançamentos Contábeis</button>
   </div>
   <div id="cr-export" class="ipanel active">
     <div class="al al-ok mb12">Exportadores têm imunidade de CBS e IBS sobre as exportações e direito ao ressarcimento de saldo credor em prazo <strong>menor que 60 dias</strong>.</div>
@@ -1769,6 +1771,61 @@ tbody tr:last-child td{border-bottom:none}
         <div class="al al-ok mt12">Melhora significativa em relação ao PIS/COFINS atual, onde o ressarcimento pode levar anos.</div>
       </div>
     </div>
+  </div>
+
+  <!-- ── LANÇAMENTOS CONTÁBEIS ── -->
+  <div id="cr-lanc" class="ipanel">
+    <div class="al al-info mb14">Lançamentos contábeis padrão para CBS/IBS conforme LC 214/2025 · Split Payment · Regime de Competência e Caixa</div>
+    <div class="grid g2 mb14">
+      <div class="card">
+        <div class="fg"><label>Valor da Mercadoria/Serviço (R$)</label><input type="number" id="lc_val" value="100" oninput="calcLanc()"></div>
+        <div class="fg"><label>Alíquota CBS+IBS (%)</label><input type="number" id="lc_aliq" value="26.5" step="0.5" oninput="calcLanc()"></div>
+        <div class="fg"><label>Valor da Despesa (R$)</label><input type="number" id="lc_desp" value="70" oninput="calcLanc()"></div>
+        <div class="fg"><label>Alíquota CBS+IBS sobre Despesa (%)</label><input type="number" id="lc_aliq_d" value="26.5" step="0.5" oninput="calcLanc()"></div>
+        <div class="fg"><label>Margem de venda sobre custo (%)</label><input type="number" id="lc_margem" value="35" step="1" oninput="calcLanc()"></div>
+      </div>
+      <div class="card" id="lc_resumo"></div>
+    </div>
+    <div id="lc_tabelas"></div>
+  </div>
+</div>
+
+<!-- ── DRE COMPARATIVA ──────────────────────────── -->
+<div id="p-dre" class="panel">
+  <div class="sh"><h2>📑 DRE Comparativa — Antes × Depois da Reforma</h2><p>Demonstração do Resultado por regime tributário · Lucro Real · Lucro Presumido · Simples Nacional</p></div>
+  <div class="al al-info mb14">Baseado na metodologia desenvolvida por <strong>Ronaldo Dias Oliveira</strong> (www.reformatributaria.inf.br). Os valores do CMV/CSV são reduzidos pós-reforma porque os fornecedores também eliminam impostos de seus preços na cadeia.</div>
+  <div class="card mb14">
+    <div class="card-title">⚙️ Parâmetros da Empresa</div>
+    <div class="grid g3 mt10">
+      <div class="fg"><label>Faturamento Bruto Mensal (R$)</label><input type="number" id="dre_fat" value="50000" oninput="calcDRE()"></div>
+      <div class="fg"><label>% Receita de Produtos</label><input type="number" id="dre_pprod" value="0" min="0" max="100" step="5" oninput="calcDRE()"></div>
+      <div class="fg"><label>% Receita de Serviços</label><input type="number" id="dre_pserv" value="100" min="0" max="100" step="5" oninput="calcDRE()"></div>
+      <div class="fg"><label>% CMV (sobre receita produto)</label><input type="number" id="dre_cmv" value="10" min="0" max="100" step="5" oninput="calcDRE()"></div>
+      <div class="fg"><label>% CSV — Custo dos Serviços</label><input type="number" id="dre_csv" value="70" min="0" max="100" step="5" oninput="calcDRE()"></div>
+      <div class="fg"><label>% Despesas Operacionais</label><input type="number" id="dre_desp" value="5" min="0" max="100" step="1" oninput="calcDRE()"></div>
+      <div class="fg"><label>% Despesas c/ direito a crédito IBS/CBS</label><input type="number" id="dre_dcred" value="70" min="0" max="100" step="5" oninput="calcDRE()"></div>
+      <div class="fg"><label>Alíquota IBS/CBS — pós-reforma (%)</label><input type="number" id="dre_ibscbs" value="26.5" step="0.5" oninput="calcDRE()"></div>
+      <div class="fg"><label>Regime</label><select id="dre_reg" onchange="calcDRE()">
+        <option value="lr">Lucro Real</option>
+        <option value="lp">Lucro Presumido</option>
+        <option value="sn_cred">Simples Nacional (c/ crédito IBS/CBS fora do DAS)</option>
+        <option value="sn_das">Simples Nacional (IBS/CBS dentro do DAS)</option>
+      </select></div>
+    </div>
+  </div>
+  <div class="itabs">
+    <button class="itab active" onclick="it(this,'dre-comp')">DRE Comparativa</button>
+    <button class="itab" onclick="it(this,'dre-analise')">Análise de Impacto</button>
+    <button class="itab" onclick="it(this,'dre-todos')">Todos os Regimes</button>
+  </div>
+  <div id="dre-comp" class="ipanel active">
+    <div id="dre_tabela" class="card mt0"></div>
+  </div>
+  <div id="dre-analise" class="ipanel">
+    <div id="dre_analise" class="card mt0"></div>
+  </div>
+  <div id="dre-todos" class="ipanel">
+    <div id="dre_todos" class="card mt0"></div>
   </div>
 </div>
 
@@ -3659,6 +3716,224 @@ function calcSaldoCred(){
   if(r)r.innerHTML=`${rrow('Saldo Credor',fmt(saldo),'pos')}${rrow('Débito mensal médio',fmt(deb))}${rrow('Meses para absorver',meses>0?num(meses)+' meses':'Solicitar ressarcimento')}${meses>2?rrow('Custo de oportunidade (2m espera)',fmt(custOportunidade),'neg'):''}${rtotal(meses<=2?'Saldo absorvido internamente':'Solicitar ressarcimento',fmt(saldo),meses<=2?'pos':'hly')}<div class="al ${meses>2?'al-warn':'al-ok'} mt10">${meses>2?'Solicite ressarcimento — prazo legal 60 dias. Saldo retido gera custo de oportunidade.':'Débito suficiente para absorver o crédito internamente. Ressarcimento desnecessário.'}</div>`;
 }
 
+// ─── LANÇAMENTOS CONTÁBEIS ───────────────────────────────────────────────────
+function calcLanc(){
+  const val=v('lc_val'), aliq=v('lc_aliq'), desp=v('lc_desp'), aliqD=v('lc_aliq_d'), margem=v('lc_margem');
+  const ibscbs=val*aliq/100, ibscbsD=desp*aliqD/100;
+  const precoVenda=val*(1+margem/100);
+  const ibscbsVenda=precoVenda*aliq/100;
+  const totalCliente=precoVenda+ibscbsVenda;
+
+  const res=$('lc_resumo');
+  if(res) res.innerHTML=`<div class="card-title">Resumo dos Valores</div>
+    ${rrow('Custo da mercadoria',fmt(val))}
+    ${rrow('IBS/CBS sobre compra ('+pct(aliq)+')',fmt(ibscbs),'neg')}
+    ${rrow('Preço de venda (margem '+pct(margem)+')',fmt(precoVenda))}
+    ${rrow('IBS/CBS cobrado do cliente',fmt(ibscbsVenda),'neg')}
+    ${rrow('Total pago pelo cliente',fmt(totalCliente))}
+    ${rrow('IBS/CBS sobre despesas',fmt(ibscbsD),'pos')}
+    ${rtotal('Saldo IBS/CBS (débito − créditos)',fmt(ibscbsVenda-ibscbs-ibscbsD),ibscbsVenda-ibscbs-ibscbsD>0?'neg':'hlg')}`;
+
+  const tbl=$('lc_tabelas');
+  if(!tbl) return;
+
+  function lanc(titulo, linhas, obs){
+    return `<div class="card mb14">
+      <div class="card-title">${titulo}</div>
+      <table class="mt10">
+        <tr><th style="width:50px">D/C</th><th>Conta</th><th style="width:110px;text-align:right">Valor (R$)</th><th>Histórico</th></tr>
+        ${linhas.map(l=>`<tr>
+          <td><span class="tag ${l[0]==='D'?'tb':'tg'} sm">${l[0]}</span></td>
+          <td><strong>${l[1]}</strong></td>
+          <td style="text-align:right">${fmt(l[2])}</td>
+          <td class="xs muted">${l[3]}</td>
+        </tr>`).join('')}
+      </table>
+      ${obs?`<div class="al al-info mt8 xs">${obs}</div>`:''}
+    </div>`;
+  }
+
+  tbl.innerHTML=
+  lanc('1) Compra de Mercadoria — Regime de Competência',[
+    ['D','Estoques',val,'Aquisição mercadoria conf. NF — Fornecedor'],
+    ['C','Fornecedor',val,'Aquisição mercadoria conf. NF — Fornecedor'],
+  ],'O crédito de IBS/CBS é reconhecido no pagamento (regime caixa) ou na emissão da NF (regime competência conforme regulamentação).')+
+
+  lanc('1.1) Pagamento ao Fornecedor — Aproveitamento do Crédito IBS/CBS',[
+    ['D','Fornecedor',val,'Pagamento NF — Fornecedor'],
+    ['D','IBS/CBS a Recuperar',ibscbs,'Crédito IBS/CBS s/ compra NF — Fornecedor'],
+    ['C','Bancos',val+ibscbs,'Pagamento NF — Fornecedor'],
+  ],'O crédito de '+pct(aliq)+' (R$ '+fmt(ibscbs)+') é reconhecido separadamente e compensado com débitos futuros ou ressarcido em até 60 dias.')+
+
+  lanc('2) Venda de Mercadoria (Emissão da NF)',[
+    ['D','Clientes',precoVenda,'Venda mercadoria NF — Cliente'],
+    ['C','Receitas',precoVenda,'Venda mercadoria NF — Cliente'],
+  ])+
+
+  lanc('2.1) Provisão IBS/CBS sobre a Venda — Split Payment',[
+    ['D','IBS/CBS a Recolher s/ Venda (Cliente)',ibscbsVenda,'IBS/CBS destacado na NF — pago pelo cliente via Split Payment'],
+    ['C','IBS/CBS a Recolher',ibscbsVenda,'IBS/CBS a recolher NF — Cliente'],
+  ],'No Split Payment, o valor de '+fmt(ibscbsVenda)+' é retido diretamente pelo banco/adquirente e repassado ao Comitê Gestor. Não transita pelo caixa da empresa.')+
+
+  lanc('3) CMV — Baixa do Estoque',[
+    ['D','CMV',val,'Custo da mercadoria vendida'],
+    ['C','Estoques',val,'Baixa estoque mercadoria vendida'],
+  ])+
+
+  lanc('4) Recebimento do Cliente',[
+    ['D','Bancos',precoVenda,'Recebimento NF — Cliente (valor sem IBS/CBS — retido pelo split)'],
+    ['C','Clientes',precoVenda,'Recebimento NF — Cliente'],
+  ],'O cliente paga '+fmt(totalCliente)+' no total. O banco retém '+fmt(ibscbsVenda)+' de IBS/CBS e repassa ao Comitê Gestor. A empresa recebe apenas '+fmt(precoVenda)+'.')+
+
+  lanc('4.1) Inadimplência — Cliente não Paga IBS/CBS',[
+    ['D','IBS/CBS a Recolher',ibscbsVenda,'Estorno IBS/CBS — cliente inadimplente NF'],
+    ['C','IBS/CBS a Recuperar (ou Banco)',ibscbsVenda,'Recuperação IBS/CBS inadimplência NF'],
+  ],'Se o cliente não pagar, a empresa pode recuperar o IBS/CBS não recebido via compensação ou ressarcimento.')+
+
+  lanc('5) Despesas Operacionais com Crédito IBS/CBS',[
+    ['D','Despesas Operacionais',desp,'Pagamento despesas operacionais — NF'],
+    ['D','IBS/CBS a Recuperar',ibscbsD,'Crédito IBS/CBS s/ despesas — NF'],
+    ['C','Bancos',desp+ibscbsD,'Pagamento despesas operacionais — NF'],
+  ])+
+
+  lanc('6) Compensação / Ressarcimento do Saldo Credor',[
+    ['D','Bancos / Tributos a Compensar',Math.max(0,ibscbsVenda-ibscbs-ibscbsD),'Ressarcimento saldo credor IBS/CBS — Comitê Gestor'],
+    ['C','IBS/CBS a Recuperar',Math.max(0,ibscbsVenda-ibscbs-ibscbsD),'Ressarcimento saldo credor IBS/CBS'],
+  ],'Prazo: 60 dias corridos para ressarcimento. Exportadores: prazo menor. Após prazo: correção pela Selic.');
+}
+
+// ─── DRE COMPARATIVA ─────────────────────────────────────────────────────────
+function calcDRE(){
+  const fat=v('dre_fat'), pprod=v('dre_pprod')/100, pserv=v('dre_pserv')/100;
+  const cmvPct=v('dre_cmv')/100, csvPct=v('dre_csv')/100, despPct=v('dre_desp')/100;
+  const dcredPct=v('dre_dcred')/100, ibscbsAliq=v('dre_ibscbs')/100;
+  const reg=vs('dre_reg');
+
+  // Alíquotas extintas por regime (estimativa média ponderada)
+  const aliqExtiReg={lr:0.068, lp:0.066, sn_cred:0.069, sn_das:0.069};
+  const aliqExti=aliqExtiReg[reg]||0.068;
+  const irpjReg={lr:0.24, lp:0.24, sn_cred:0.0105, sn_das:0.0105};
+  const irpjAliq=irpjReg[reg]||0.24;
+
+  // ANTES
+  const recBrutaAntes=fat;
+  const deducoesAntes=recBrutaAntes*aliqExti;
+  const recLiqAntes=recBrutaAntes-deducoesAntes;
+  const cmvAntes=recBrutaAntes*pprod*cmvPct;
+  const csvAntes=recBrutaAntes*pserv*csvPct;
+  const despAntes=recBrutaAntes*despPct;
+  const totalCustosAntes=cmvAntes+csvAntes+despAntes;
+  const lucroAntesTrib=recLiqAntes-totalCustosAntes;
+  const irpjAntes=Math.max(0,lucroAntesTrib)*irpjAliq;
+  const lucroLiqAntes=lucroAntesTrib-irpjAntes;
+
+  // DEPOIS — preço cai porque fornecedores também eliminam impostos
+  const reducaoFornec=0.2415; // redução estimada no CMV/CSV pós-reforma
+  const recBrutaDepois=recBrutaAntes*(1-aliqExti); // preço de mercado cai
+  const cmvDepois=cmvAntes*(1-reducaoFornec); // custo cai na cadeia
+  const csvDepois=csvAntes*(1-reducaoFornec*dcredPct);
+  const despDepois=despAntes*(1-reducaoFornec*dcredPct);
+  // IBS/CBS pago líquido: débito s/ venda - crédito s/ compras+desp
+  const ibsCbsDebito=recBrutaDepois*ibscbsAliq;
+  const ibsCbsCredito=(cmvDepois+despDepois*dcredPct)*ibscbsAliq;
+  const ibsCbsLiq=Math.max(0,ibsCbsDebito-ibsCbsCredito);
+  // Despesas após reforma
+  const despTotalDepois=cmvDepois+csvDepois+despDepois+ibsCbsLiq;
+  const lucroDepoisTrib=recBrutaDepois-despTotalDepois;
+  const irpjDepois=Math.max(0,lucroDepoisTrib)*irpjAliq;
+  const lucroLiqDepois=lucroDepoisTrib-irpjDepois;
+  const varLucro=lucroLiqDepois-lucroLiqAntes;
+  const varPct=lucroLiqAntes!==0?varLucro/Math.abs(lucroLiqAntes)*100:0;
+
+  // Tabela DRE
+  function dreRow(desc, antes, depois, bold){
+    const diff=depois-antes;
+    const cls=diff>0?'hlg':diff<0?'hlr':'';
+    return `<tr${bold?' style="font-weight:700;background:rgba(37,99,235,.07)"':''}>
+      <td>${desc}</td>
+      <td style="text-align:right">${fmt(antes)}</td>
+      <td style="text-align:right">${pct(antes/recBrutaAntes*100)}</td>
+      <td style="text-align:right">${fmt(depois)}</td>
+      <td style="text-align:right">${pct(depois/recBrutaDepois*100)}</td>
+      <td style="text-align:right" class="${cls}">${diff>=0?'+':''}${fmt(diff)}</td>
+    </tr>`;
+  }
+
+  const regNomes={lr:'Lucro Real',lp:'Lucro Presumido',sn_cred:'Simples Nacional (IBS/CBS fora do DAS)',sn_das:'Simples Nacional (IBS/CBS dentro do DAS)'};
+  const tab=$('dre_tabela');
+  if(tab) tab.innerHTML=`
+    <div class="card-title mb10">📊 DRE — ${regNomes[reg]} — Base: ${fmt(fat)}/mês</div>
+    <table>
+      <tr><th>Descrição</th><th style="text-align:right">Antes (R$)</th><th style="text-align:right">%</th><th style="text-align:right">Depois (R$)</th><th style="text-align:right">%</th><th style="text-align:right">Δ (R$)</th></tr>
+      ${dreRow('Receita Bruta',recBrutaAntes,recBrutaDepois,true)}
+      ${dreRow('(−) Deduções (ICMS/PIS/COFINS/ISS/IPI)',-deducoesAntes,0)}
+      ${dreRow('(=) Receita Líquida',recLiqAntes,recBrutaDepois,true)}
+      ${dreRow('(−) CMV',-cmvAntes,-cmvDepois)}
+      ${dreRow('(−) CSV',-csvAntes,-csvDepois)}
+      ${dreRow('(−) Despesas Operacionais',-despAntes,-despDepois)}
+      ${dreRow('(−) IBS/CBS líquido',0,-ibsCbsLiq)}
+      ${dreRow('(=) Lucro Antes IRPJ/CSLL',lucroAntesTrib,lucroDepoisTrib,true)}
+      ${dreRow('(−) IRPJ e CSLL',-irpjAntes,-irpjDepois)}
+      ${dreRow('(=) Lucro Líquido',lucroLiqAntes,lucroLiqDepois,true)}
+    </table>
+    <div class="al ${varLucro>=0?'al-ok':'al-err'} mt12">
+      ${varLucro>=0?'📈':'📉'} <strong>Impacto no Lucro Líquido: ${varLucro>=0?'+':''}${fmt(varLucro)}/mês (${varLucro>=0?'+':''}${pct(varPct)})</strong>
+      ${varLucro>=0?' — A reforma tende a aumentar o lucro neste cenário devido à redução de custos na cadeia e eliminação da cumulatividade.':' — Avaliar renegociação de preços e mix de produtos/serviços.'}
+    </div>`;
+
+  // Análise de impacto
+  const analise=$('dre_analise');
+  if(analise) analise.innerHTML=`
+    <div class="card-title mb10">🔍 Análise Detalhada de Impacto</div>
+    <div class="grid g2 mt10">
+      <div>
+        ${rrow('Carga tributária ANTES',pct(deducoesAntes/recBrutaAntes*100),'hlr')}
+        ${rrow('Carga IBS/CBS DEPOIS',pct(ibsCbsLiq/recBrutaDepois*100),'hly')}
+        ${rrow('Redução de carga tributária',pct((deducoesAntes/recBrutaAntes - ibsCbsLiq/recBrutaDepois)*100),'hlg')}
+        <hr style="border:none;border-top:1px solid var(--border);margin:8px 0">
+        ${rrow('Crédito IBS/CBS s/ compras',fmt(ibsCbsCredito),'hlg')}
+        ${rrow('Débito IBS/CBS s/ venda',fmt(ibsCbsDebito),'hlr')}
+        ${rtotal('IBS/CBS líquido a recolher',fmt(ibsCbsLiq),'neg')}
+      </div>
+      <div>
+        ${rrow('Redução CMV pós-reforma',fmt(cmvAntes-cmvDepois),'hlg')}
+        ${rrow('Redução CSV pós-reforma',fmt(csvAntes-csvDepois),'hlg')}
+        ${rrow('Redução despesas pós-reforma',fmt(despAntes-despDepois),'hlg')}
+        <hr style="border:none;border-top:1px solid var(--border);margin:8px 0">
+        ${rrow('Lucro líquido ANTES',fmt(lucroLiqAntes))}
+        ${rrow('Lucro líquido DEPOIS',fmt(lucroLiqDepois))}
+        ${rtotal('Ganho/Perda',fmt(varLucro),varLucro>=0?'hlg':'hlr')}
+      </div>
+    </div>
+    <div class="al al-info mt12">Fonte metodológica: Ronaldo Dias Oliveira — www.reformatributaria.inf.br. O CMV/CSV é reduzido porque os fornecedores também eliminarão os impostos extintos de seus preços ao longo da cadeia produtiva.</div>`;
+
+  // Todos os regimes
+  const todosEl=$('dre_todos');
+  if(!todosEl) return;
+  const regs=['lr','lp','sn_cred','sn_das'];
+  let html=`<div class="card-title mb10">📋 Comparativo Todos os Regimes — Base: ${fmt(fat)}/mês</div><table>
+    <tr><th>Regime</th><th style="text-align:right">Lucro Antes</th><th style="text-align:right">Lucro Depois</th><th style="text-align:right">Δ Lucro</th><th style="text-align:right">Δ %</th></tr>`;
+  regs.forEach(r=>{
+    const ae=aliqExtiReg[r]||0.068, ir=irpjReg[r]||0.24;
+    const ded=recBrutaAntes*ae;
+    const rl=recBrutaAntes-ded;
+    const ct=cmvAntes+csvAntes+despAntes;
+    const lat=rl-ct; const irA=Math.max(0,lat)*ir; const llA=lat-irA;
+    const rbd=recBrutaAntes*(1-ae);
+    const cmd=cmvAntes*(1-reducaoFornec), csd=csvAntes*(1-reducaoFornec*dcredPct), dd=despAntes*(1-reducaoFornec*dcredPct);
+    const deb=rbd*ibscbsAliq, cred=(cmd+dd*dcredPct)*ibscbsAliq, liq=Math.max(0,deb-cred);
+    const ldt=rbd-cmd-csd-dd-liq; const irD=Math.max(0,ldt)*ir; const llD=ldt-irD;
+    const diff=llD-llA, pctD=llA!==0?diff/Math.abs(llA)*100:0;
+    html+=`<tr><td><strong>${regNomes[r]}</strong></td>
+      <td style="text-align:right">${fmt(llA)}</td>
+      <td style="text-align:right">${fmt(llD)}</td>
+      <td style="text-align:right" class="${diff>=0?'hlg':'hlr'}">${diff>=0?'+':''}${fmt(diff)}</td>
+      <td style="text-align:right" class="${diff>=0?'hlg':'hlr'}">${diff>=0?'+':''}${pct(pctD)}</td>
+    </tr>`;
+  });
+  todosEl.innerHTML=html+'</table><div class="al al-warn mt12">⚠️ Os valores são estimativas baseadas em alíquotas médias. O impacto real depende do setor, mix de produtos e negociação da cadeia de fornecedores.</div>';
+}
+
 // ─── NF-e 2026 ───────────────────────────────────────────────────────────────
 
 const CST_CODES = [
@@ -4002,35 +4277,69 @@ function calcReorg(){
 
 // ─── IMPACTO POR CNAE ────────────────────────────────────────────────────────
 const SETORES=[
-  {cnae:'4711',setor:'Supermercados / Varejo Alimentar',impacto:'neutro',desc:'Alíquota zero na cesta básica. Padrão para demais. Fim da guerra fiscal beneficia.'},
-  {cnae:'4712',setor:'Mercearias / Minimercados',impacto:'positivo',desc:'Cesta básica com alíquota zero. Simplificação via DAS ou Regime Regular.'},
-  {cnae:'6201',setor:'Tecnologia da Informação / Softwares',impacto:'positivo',desc:'Fator R pode reduzir ao Anexo III. Crédito pleno para clientes B2B.'},
-  {cnae:'8630',setor:'Saúde / Médicos e Clínicas',impacto:'positivo',desc:'Redução de 60% nas alíquotas. Cashback para pacientes de baixa renda.'},
-  {cnae:'8511',setor:'Educação / Escolas',impacto:'positivo',desc:'Redução de 60% nas alíquotas. Cashback disponível.'},
-  {cnae:'4531',setor:'Concessionárias / Veículos',impacto:'negativo',desc:'IS sobre veículos a combustão (~1-7%). Pode impactar margens.'},
-  {cnae:'1811',setor:'Indústria Gráfica / Impressão',impacto:'neutro',desc:'IPI zerado beneficia. CBS/IBS padrão. Fim do crédito IPI.'},
-  {cnae:'0111',setor:'Agropecuária / Grãos',impacto:'positivo',desc:'Insumos agropecuários: redução 60%. Exportações imunes. Diferimento permitido.'},
-  {cnae:'4120',setor:'Construção Civil',impacto:'positivo',desc:'CBS/IBS com crédito pleno nas compras. Fim da cumulatividade do ISS.'},
-  {cnae:'6110',setor:'Telecomunicações',impacto:'neutro',desc:'Alíquota padrão. Cashback 100% CBS / 20% IBS para baixa renda.'},
-  {cnae:'6411',setor:'Bancos / Financeiro',impacto:'negativo',desc:'Regime especial com base no spread. Alíquota maior que atual PIS/COFINS estimada.'},
-  {cnae:'5510',setor:'Hotéis / Turismo',impacto:'positivo',desc:'Redução de 60% para turismo nacional. Incentivo à hospitalidade.'},
-  {cnae:'5590',setor:'Outros Alojamentos',impacto:'positivo',desc:'Redução de 60%. Cashback para hóspedes elegíveis.'},
-  {cnae:'4921',setor:'Transporte Rodoviário Passageiros',impacto:'positivo',desc:'Redução de 60%. Cashback para passageiros de baixa renda.'},
-  {cnae:'4930',setor:'Transporte de Cargas',impacto:'positivo',desc:'Crédito pleno nas entradas (combustível, peças). Fim da cumulatividade.'},
-  {cnae:'1910',setor:'Refino de Petróleo / Combustíveis',impacto:'neutro',desc:'Monotributação: CBS/IBS incide só na refinaria. Simplificação da cadeia.'},
-  {cnae:'1920',setor:'Indústria de Bebidas',impacto:'negativo',desc:'IS sobre bebidas alcoólicas (~20-35%). Carga pode aumentar significativamente.'},
-  {cnae:'1200',setor:'Indústria do Fumo',impacto:'muito negativo',desc:'IS sobre tabaco (~150%). Carga extrafiscal altíssima.'},
-  {cnae:'4130',setor:'Incorporação Imobiliária',impacto:'neutro',desc:'RET garantido até 2028. Pós-2029: CBS/IBS com redução 60% residencial.'},
-  {cnae:'6810',setor:'Atividades Imobiliárias',impacto:'positivo',desc:'Locação residencial: imune CBS/IBS. Locação comercial: padrão.'},
-  {cnae:'6920',setor:'Contabilidade / Auditoria',impacto:'positivo',desc:'Profissional intelectual: redução 30%. Fator R pode direcionar ao Anexo III.'},
-  {cnae:'6911',setor:'Advocacia',impacto:'positivo',desc:'Profissional intelectual: redução 30%. Sem IS. Crédito integral clientes B2B.'},
-  {cnae:'7111',setor:'Arquitetura / Engenharia',impacto:'positivo',desc:'Profissional intelectual: redução 30%. Fator R vantajoso.'},
-  {cnae:'4781',setor:'Vestuário / Confecções',impacto:'neutro',desc:'Alíquota padrão. Fim do IPI simplifica indústria. Crédito pleno na cadeia.'},
-  {cnae:'3292',setor:'Joias e Bijuterias',impacto:'negativo',desc:'IS sobre joias e cosméticos de luxo (~10%). Carga adicional.'},
-  {cnae:'9200',setor:'Loterias / Apostas',impacto:'negativo',desc:'IS ~30% sobre apostas esportivas e fantasy sport.'},
-  {cnae:'8720',setor:'Saúde Mental / Psicologia',impacto:'positivo',desc:'Redução 60%. Prof. regulamentado: redução 30%. Cashback para baixa renda.'},
-  {cnae:'0210',setor:'Silvicultura / Madeira',impacto:'positivo',desc:'Agro: redução 60% insumos. Exportações imunes. Diferimento.'},
-  {cnae:'3812',setor:'Coleta / Reciclagem',impacto:'positivo',desc:'Sem IS. CBS/IBS padrão. Crédito pleno nas entradas.'},
+  // Alimentação
+  {cnae:'4711',setor:'Supermercados / Varejo Alimentar',impacto:'neutro',desc:'Cesta básica nacional: alíquota zero (Art. 125). Demais alimentos consumo humano: redução 60% (Art. 135). Fim da guerra fiscal beneficia cadeia.'},
+  {cnae:'4712',setor:'Mercearias / Minimercados',impacto:'positivo',desc:'Cesta básica alíquota zero. Alimentos consumo humano redução 60%. Simplificação via Simples ou Regime Regular.'},
+  {cnae:'5611',setor:'Bares e Restaurantes',impacto:'positivo',desc:'Regime específico sobre receita bruta com redução de 40% (Art. 273-276). Gorjetas até 15% e comissões de apps excluídas da base. Sem crédito ao adquirente.'},
+  {cnae:'5612',setor:'Serviços de Alimentação por Contrato',impacto:'neutro',desc:'Não se aplica o regime especial para refeições em contratos corporativos. Tributação padrão CBS/IBS.'},
+  // Saúde
+  {cnae:'8630',setor:'Saúde / Médicos e Clínicas',impacto:'positivo',desc:'Serviços de saúde humana: redução 60% (Art. 130, Anexo III). Planos de saúde: regime específico + redução 60% (Art. 234-242). Cashback para baixa renda.'},
+  {cnae:'8640',setor:'Laboratórios e Diagnósticos',impacto:'positivo',desc:'Serviços de saúde humana: redução 60% (Art. 130). Equipamentos médicos: redução 60% (Art. 131, Anexo IV). Crédito pleno nas entradas.'},
+  {cnae:'8720',setor:'Saúde Mental / Psicologia',impacto:'positivo',desc:'Redução 60% como serviço de saúde humana (Art. 130). Profissional intelectual: também elegível à redução 30% (Art. 127).'},
+  {cnae:'4771',setor:'Farmácias / Drogarias',impacto:'positivo',desc:'Medicamentos RENAME: alíquota zero (Art. 133). Demais medicamentos Anvisa: redução 60%. Absorventes e higiene menstrual: isenção 100% (Art. 144).'},
+  // Educação
+  {cnae:'8511',setor:'Educação Básica / Escolas',impacto:'positivo',desc:'Redução 60% CBS/IBS (Art. 129, Anexo II). PROUNI: alíquota zero CBS. Cashback disponível para alunos de baixa renda.'},
+  {cnae:'8542',setor:'Educação Superior / Faculdades',impacto:'positivo',desc:'Redução 60% CBS/IBS (Art. 129). PROUNI: alíquota zero na CBS apenas. Crédito para empresas que adquirem cursos corporativos.'},
+  // Tecnologia
+  {cnae:'6201',setor:'Tecnologia da Informação / Softwares',impacto:'positivo',desc:'Profissional intelectual: redução 30% (Art. 127). Fator R pode migrar ao Anexo III (menor DAS). Crédito pleno para clientes B2B.'},
+  {cnae:'6202',setor:'Consultoria em TI / Suporte',impacto:'positivo',desc:'Profissional intelectual: redução 30%. Fator R vantajoso. Sem IS.'},
+  // Agropecuária
+  {cnae:'0111',setor:'Agropecuária / Grãos',impacto:'positivo',desc:'Insumos agropecuários e aquícolas: redução 60% (Art. 138, Anexo IX). Exportações: imunes. Diferimento para produtores rurais. Crédito presumido para PF até R$3,6M/ano.'},
+  {cnae:'0322',setor:'Aquicultura / Pesca',impacto:'positivo',desc:'Produtos aquícolas in natura: redução 60%. Insumos: redução 60% (Art. 138). Exportações imunes.'},
+  {cnae:'0210',setor:'Silvicultura / Madeira',impacto:'positivo',desc:'Produção florestal: redução 60% insumos. Exportações imunes. Diferimento na cadeia.'},
+  // Construção Civil
+  {cnae:'4120',setor:'Construção Civil — Prestação de Serviços',impacto:'neutro',desc:'Prestação a PF / condomínios: sem redução, alíquota cheia. Vedação de crédito sobre materiais quando prestado a não contribuintes (Art. 255 §5º/6º).'},
+  {cnae:'4130',setor:'Incorporação Imobiliária',impacto:'positivo',desc:'Regime específico com alíquota unificada 0,53% sobre receita mensal (Art. 485). Sem direito a créditos. REIDI: suspensão e posterior alíquota zero (Art. 104).'},
+  {cnae:'4211',setor:'Obras de Infraestrutura / REIDI',impacto:'positivo',desc:'Suspensão e conversão em alíquota zero do IBS e CBS (100% após uso na obra, Art. 104). Aplica-se a rodovias, ferrovias, pontes e saneamento.'},
+  {cnae:'4162',setor:'Reabilitação Urbana / Restauro',impacto:'positivo',desc:'Redução 80% CBS/IBS para reabilitação urbana e zonas históricas (Art. 162, Inc. VI). Aplica-se por 5 anos após habite-se.'},
+  // Imóveis
+  {cnae:'6810',setor:'Atividades Imobiliárias / Locação',impacto:'positivo',desc:'Locação de imóveis: redução 70% IBS e CBS (Art. 261). Locação não residencial: regime específico 3,65% (Art. 484). PF residencial até R$600: redutor social (Art. 260).'},
+  // Transporte
+  {cnae:'4921',setor:'Transporte Coletivo Urbano / Metroviário',impacto:'muito positivo',desc:'Urbano/metropolitano: alíquota zero 100% (Art. 283-289). Demais: redução a definir. Cashback para passageiros de baixa renda.'},
+  {cnae:'5112',setor:'Aviação Regional',impacto:'positivo',desc:'Transporte aéreo regional: redução 40% CBS/IBS (Art. 128, Inc. XIII). Crédito sobre aquisições na proporção de 60%.'},
+  {cnae:'4930',setor:'Transporte de Cargas',impacto:'positivo',desc:'Crédito pleno nas entradas (combustível, peças, pedágio). Fim da cumulatividade do ICMS no frete. Sem IS.'},
+  // Turismo e Hotelaria
+  {cnae:'5510',setor:'Hotéis / Hotelaria',impacto:'positivo',desc:'Regime específico (Art. 275-282). Hospedagem: redução 60% para turismo nacional. Alíquota definitiva por regulamentação.'},
+  {cnae:'7911',setor:'Agências de Viagem / Turismo',impacto:'positivo',desc:'Regime específico sobre receita bruta recebida (Art. 290-291). Abrange intermediação e organização de viagens. Alíquota a definir.'},
+  {cnae:'9321',setor:'Parques de Diversão / Temáticos',impacto:'positivo',desc:'Regime específico sobre receita bruta (Art. 275-282). Inclui serviços recreativos e de lazer. Alíquota por regulamentação.'},
+  // Profissionais Liberais e Serviços
+  {cnae:'6920',setor:'Contabilidade / Auditoria',impacto:'positivo',desc:'Profissional intelectual: redução 30% CBS/IBS (Art. 127, Anexo II). Fator R pode direcionar Simples ao Anexo III.'},
+  {cnae:'6911',setor:'Advocacia / Serviços Jurídicos',impacto:'positivo',desc:'Profissional intelectual: redução 30% (Art. 127). Sem IS. Crédito integral para clientes B2B.'},
+  {cnae:'7111',setor:'Arquitetura / Engenharia',impacto:'positivo',desc:'Profissional intelectual: redução 30% (Art. 127). Fator R vantajoso no Simples.'},
+  {cnae:'8621',setor:'Serviços de Intermediação de Saúde',impacto:'positivo',desc:'Mesma alíquota reduzida 60% aplicável ao plano de saúde (Art. 240). Alíquota nacionalmente uniforme.'},
+  // Financeiro
+  {cnae:'6411',setor:'Bancos / Serviços Financeiros',impacto:'negativo',desc:'Regime específico com base variável (Art. 182-227). Vedação de crédito para previdência e capitalização. Carga estimada superior ao atual PIS/COFINS.'},
+  // Energia e Telecomunicações
+  {cnae:'6110',setor:'Telecomunicações / Internet',impacto:'neutro',desc:'Alíquota padrão. Cashback 100% CBS / mínimo 20% IBS para baixa renda em energia, gás, água, esgoto, telefonia e internet (Art. 156-157).'},
+  {cnae:'3510',setor:'Geração e Distribuição de Energia',impacto:'neutro',desc:'Alíquota padrão com Split Payment. Cashback integral CBS para baixa renda. Regime específico pode ser editado por regulamentação.'},
+  // Combustíveis
+  {cnae:'1910',setor:'Refino de Petróleo / Combustíveis',impacto:'neutro',desc:'Monotributação: CBS/IBS incide com alíquota específica por unidade na refinaria (Art. 172-180). Sem apropriação de crédito nas etapas seguintes.'},
+  {cnae:'4731',setor:'Postos de Combustíveis',impacto:'positivo',desc:'Etapa pós-refinaria: CST 07 (monofásico cobrado) — sem CBS/IBS adicional. Simplificação e fim da cumulatividade.'},
+  // Indústrias
+  {cnae:'1920',setor:'Indústria de Bebidas Alcoólicas',impacto:'negativo',desc:'IS monofásico sobre bebidas alcoólicas (~27%, Art. 128). Carga pode aumentar significativamente pós-2027.'},
+  {cnae:'1200',setor:'Indústria do Fumo / Cigarros',impacto:'muito negativo',desc:'IS sobre tabaco (~150%, extrafiscal). Carga altíssima proposital para desestimular consumo.'},
+  {cnae:'2911',setor:'Fabricação de Automóveis',impacto:'negativo',desc:'IS sobre veículos a combustão (~4-7%). Veículos elétricos: sem IS. PCDs e táxis: isenção 100% CBS/IBS (Art. 147).'},
+  {cnae:'1811',setor:'Indústria Gráfica / Impressão',impacto:'neutro',desc:'CBS/IBS padrão. IPI zerado (saiu do sistema). Crédito pleno na cadeia. Fim da cumulatividade beneficia.'},
+  // Outros
+  {cnae:'4781',setor:'Vestuário / Confecções',impacto:'neutro',desc:'Alíquota padrão. Crédito pleno na cadeia. Fim do IPI simplifica indústria têxtil.'},
+  {cnae:'3292',setor:'Joias e Cosméticos de Luxo',impacto:'negativo',desc:'IS sobre joias, perfumes e cosméticos de luxo (~10%). Carga adicional sobre itens supérfluos.'},
+  {cnae:'9200',setor:'Loterias / Apostas Esportivas',impacto:'negativo',desc:'IS ~30% sobre apostas esportivas e fantasy sport. Carga extrafiscal elevada.'},
+  {cnae:'8010',setor:'Segurança Privada / Vigilância',impacto:'neutro',desc:'Regime específico para serviços financeiros pode afetar parcialmente. Alíquota padrão CBS/IBS.'},
+  {cnae:'7490',setor:'Comunicação Institucional / Publicidade',impacto:'positivo',desc:'Campanhas de utilidade pública, educativas ou culturais: redução 60% (Art. 139). Deve respeitar produção nacional e interesse coletivo.'},
+  {cnae:'9001',setor:'Artes / Eventos / Audiovisual',impacto:'positivo',desc:'Produções artísticas, culturais, eventos e audiovisual: redução 60% (Art. 139). Espetáculos, shows, desfiles e produções nacionais beneficiados.'},
+  {cnae:'8630',setor:'ICTs Sem Fins Lucrativos / P&D',impacto:'positivo',desc:'Entidades certificadas de inovação, ciência e tecnologia sem fins lucrativos: isenção 100% CBS/IBS (Art. 143). Desde que não distribuam resultado.'},
+  {cnae:'3812',setor:'Coleta / Reciclagem / Saneamento',impacto:'positivo',desc:'Sem IS. CBS/IBS padrão com crédito pleno. Obras de infraestrutura de saneamento: REIDI com alíquota zero (Art. 104).'},
+  {cnae:'0150',setor:'Produtores Rurais Pessoa Física',impacto:'positivo',desc:'Receita até R$3,6M/ano: crédito presumido de IBS para o adquirente (Art. 164-168). Sem CBS/IBS próprio. Diferimento facilitado.'},
 ];
 function filtrarCNAE(){
   const q=($('cnae_q')?.value||'').toLowerCase();
@@ -4585,6 +4894,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderClientes(); calcPGDAS();
   renderEscritorio(); calcFatorR(); calcMEI(); calcMEIMigracao();
   updB2B('pr_b2b','pr_b2b_lbl'); calcPrec(); calcPrecTrans();
+  calcLanc(); calcDRE();
   calcFC(); calcDIFAL(); calcDIFALTrans();
   calcCredExp(); calcCredCap(); calcSaldoCred();
   calcNFe(); initChaveFiscal(); calcChaveFiscal(); calcIRRF(); calcIRPF();
