@@ -1764,8 +1764,14 @@ tbody tr:last-child td{border-bottom:none}
 
 <!-- ── NF-e 2026 CBS/IBS ──────────────────────── -->
 <div id="p-nfe2026" class="panel">
-  <div class="sh"><h2>📋 Simulador NF-e 2026 — CBS/IBS</h2><p>Visualize como preencher os campos CBS e IBS na NF-e a partir de janeiro/2026</p></div>
+  <div class="sh"><h2>📋 Simulador NF-e 2026 — CBS/IBS</h2><p>Visualize como preencher os campos CBS/IBS, NCM, CST e cClassTrib na NF-e a partir de jan/2026</p></div>
   <div class="al al-warn mb16"><strong>2026 é o Ano-Teste:</strong> os campos CBS e IBS aparecem na NF-e apenas para <em>fins informativos</em>. Os valores <strong>NÃO somam ao total da nota</strong> e <strong>NÃO geram recolhimento real</strong>. Penalidades por preenchimento errado suspensas por 4 meses após regulamentação.</div>
+  <div class="itabs">
+    <button class="itab active" onclick="it(this,'nfe-sim')">Simulador NF-e</button>
+    <button class="itab" onclick="it(this,'nfe-chave')">Chave Fiscal NCM+CST+cClassTrib</button>
+    <button class="itab" onclick="it(this,'nfe-ref')">Tabela de Referência</button>
+  </div>
+  <div id="nfe-sim" class="ipanel active">
   <div class="grid g21 mb14">
     <div class="card">
       <div class="card-title">Dados da Operação</div>
@@ -1827,6 +1833,119 @@ tbody tr:last-child td{border-bottom:none}
       </ul>
     </div>
   </div>
+  </div><!-- /nfe-sim -->
+
+  <!-- ── CHAVE FISCAL NCM+CST+cClassTrib ── -->
+  <div id="nfe-chave" class="ipanel">
+    <div class="al al-err mb14">⚠️ A combinação incorreta de NCM + CST + cClassTrib causa <strong>rejeição automática</strong> da NF-e. A validação é feita instantaneamente pelo fisco no momento da emissão.</div>
+    <div class="grid g21 mb14">
+      <div class="card">
+        <div class="card-title">🔑 Montar Chave Fiscal do Item</div>
+        <div class="grid g2 mt10">
+          <div class="fg" style="grid-column:1/-1">
+            <label>NCM — Nomenclatura Comum do Mercosul</label>
+            <div class="flex gap8">
+              <input type="text" id="cf_ncm" placeholder="Ex: 8517.12.31" maxlength="10" oninput="calcChaveFiscal()" style="flex:1">
+              <select id="cf_ncm_sel" onchange="preencherNCM()" style="flex:2">
+                <option value="">↳ ou selecione um NCM comum...</option>
+              </select>
+            </div>
+            <div id="cf_ncm_desc" class="xs muted mt4"></div>
+          </div>
+          <div class="fg">
+            <label>CST-CBS</label>
+            <select id="cf_cst_cbs" onchange="syncCClassTrib();calcChaveFiscal()">
+              <option value="">— selecione —</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>CST-IBS</label>
+            <select id="cf_cst_ibs" onchange="calcChaveFiscal()">
+              <option value="">— selecione —</option>
+            </select>
+          </div>
+          <div class="fg" style="grid-column:1/-1">
+            <label>cClassTrib — Classificação Tributária (compatível com CST-CBS)</label>
+            <select id="cf_ctrib" onchange="calcChaveFiscal()">
+              <option value="">— selecione o CST primeiro —</option>
+            </select>
+            <div id="cf_ctrib_desc" class="xs muted mt4"></div>
+          </div>
+          <div class="fg"><label>Valor do Item (R$)</label><input type="number" id="cf_val" value="10000" oninput="calcChaveFiscal()"></div>
+          <div class="fg"><label>Regime do Emitente</label><select id="cf_reg" onchange="calcChaveFiscal()">
+            <option value="regular">Regime Regular (LR/LP)</option>
+            <option value="simples">Simples Unificado</option>
+            <option value="hibrido">Simples Híbrido</option>
+          </select></div>
+        </div>
+        <button class="btn btn-primary mt12" onclick="calcChaveFiscal()">✅ Validar Combinação</button>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 Resultado da Validação</div>
+        <div id="cf_res" class="mt10"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🧾 Preview XML — Campos do Item na NF-e</div>
+      <div id="cf_xml" class="mt10" style="font-family:monospace;font-size:11px;line-height:1.7;background:var(--surf);border:1px solid var(--border);border-radius:8px;padding:14px;overflow-x:auto"></div>
+    </div>
+  </div><!-- /nfe-chave -->
+
+  <!-- ── TABELA DE REFERÊNCIA ── -->
+  <div id="nfe-ref" class="ipanel">
+    <div class="grid g2 mb14">
+      <div class="card">
+        <div class="card-title">📗 CST-CBS / CST-IBS — Códigos LC 214/2025</div>
+        <table class="mt10">
+          <tr><th>Código</th><th>Descrição</th><th>Alíquota</th></tr>
+          <tr><td class="bold hl">01</td><td>Tributação integral</td><td class="hlr">Plena (8,8% / 17,7%)</td></tr>
+          <tr><td class="bold hl">02</td><td>Redução de alíquota</td><td class="hly">Reduzida (30% ou 60%)</td></tr>
+          <tr><td class="bold hl">03</td><td>Alíquota zero</td><td class="hlg">0%</td></tr>
+          <tr><td class="bold hl">04</td><td>Isenção</td><td class="hlg">0% + manutenção crédito</td></tr>
+          <tr><td class="bold hl">05</td><td>Imunidade (exportação)</td><td class="hlg">0% + crédito integral</td></tr>
+          <tr><td class="bold hl">06</td><td>Monofásico — cobrador</td><td class="hly">Alíquota específica</td></tr>
+          <tr><td class="bold hl">07</td><td>Monofásico — cobrado</td><td class="hlg">0% na etapa</td></tr>
+          <tr><td class="bold hl">08</td><td>Diferimento total</td><td class="hly">Diferido</td></tr>
+          <tr><td class="bold hl">09</td><td>Suspensão</td><td class="hly">Suspenso</td></tr>
+          <tr><td class="bold hl">10</td><td>Não incidência</td><td class="muted">Fora do campo</td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title">🔗 Regra de Vinculação CST × cClassTrib</div>
+        <div class="al al-info mt8 mb10">O cClassTrib é <strong>"filho"</strong> do CST — cada CST aceita apenas determinados cClassTrib. Usar um código incompatível causa rejeição imediata.</div>
+        <table>
+          <tr><th>CST</th><th>cClassTrib compatíveis</th></tr>
+          <tr><td class="bold">01</td><td>01.001 Venda mercadoria · 01.002 Serviço · 01.003 Energia elétrica · 01.004 Comunicação</td></tr>
+          <tr><td class="bold">02</td><td>02.001 Saúde · 02.002 Educação · 02.003 Agropecuária · 02.004 Transp. público · 02.005 Turismo · 02.006 Prof. Intelectual · 02.007 Cesta Ampliada</td></tr>
+          <tr><td class="bold">03</td><td>03.001 Cesta Básica Nacional · 03.002 Medicamentos essenciais · 03.003 Disp. médicos</td></tr>
+          <tr><td class="bold">04</td><td>04.001 Isenção legal · 04.002 IPES/OSCIP</td></tr>
+          <tr><td class="bold">05</td><td>05.001 Exportação · 05.002 Entidade religiosa · 05.003 Sem fins lucrativos</td></tr>
+          <tr><td class="bold">06</td><td>06.001 Combustíveis · 06.002 Tabaco · 06.003 Beb. alcoólicas · 06.004 Beb. açucaradas</td></tr>
+          <tr><td class="bold">07</td><td>07.001 Cobrado — combustíveis · 07.002 Cobrado — tabaco</td></tr>
+          <tr><td class="bold">08</td><td>08.001 Diferimento interno · 08.002 Ativo imobilizado</td></tr>
+          <tr><td class="bold">09</td><td>09.001 Drawback · 09.002 Exportação temporária</td></tr>
+          <tr><td class="bold">10</td><td>10.001 Serviços financeiros · 10.002 Operações imobiliárias · 10.003 Seguro</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📦 NCM × Tratamento Típico na Reforma</div>
+      <table class="mt10">
+        <tr><th>NCM</th><th>Produto</th><th>CST Típico</th><th>cClassTrib</th><th>Obs.</th></tr>
+        <tr><td>0901</td><td>Café torrado</td><td class="hly">02</td><td>02.001</td><td>Cesta Básica Ampliada — redução 60%</td></tr>
+        <tr><td>1001</td><td>Trigo</td><td class="hly">02</td><td>02.001</td><td>Produção agropecuária — redução 60%</td></tr>
+        <tr><td>3004</td><td>Medicamentos</td><td class="hlg">03</td><td>03.002</td><td>Alíquota zero — lista RENAME</td></tr>
+        <tr><td>2710</td><td>Gasolina/diesel</td><td class="hly">06</td><td>06.001</td><td>Monofásico — IS + CBS/IBS na refinaria</td></tr>
+        <tr><td>8517</td><td>Smartphones</td><td class="hlr">01</td><td>01.001</td><td>Tributação integral (+ possível IS)</td></tr>
+        <tr><td>8471</td><td>Computadores</td><td class="hlr">01</td><td>01.001</td><td>Tributação integral</td></tr>
+        <tr><td>6403</td><td>Calçados</td><td class="hlr">01</td><td>01.001</td><td>Tributação integral</td></tr>
+        <tr><td>2402</td><td>Cigarros</td><td class="hly">06</td><td>06.002</td><td>Monofásico + IS ~150%</td></tr>
+        <tr><td>2204</td><td>Vinhos</td><td class="hly">06</td><td>06.003</td><td>Monofásico + IS ~27%</td></tr>
+        <tr><td>9401</td><td>Móveis/assentos</td><td class="hlr">01</td><td>01.001</td><td>Tributação integral</td></tr>
+      </table>
+    </div>
+  </div><!-- /nfe-ref -->
+
 </div>
 
 <!-- ── IRRF / RETENÇÕES ───────────────────────── -->
@@ -3468,6 +3587,229 @@ function calcSaldoCred(){
 }
 
 // ─── NF-e 2026 ───────────────────────────────────────────────────────────────
+
+const CST_CODES = [
+  {c:'01', d:'Tributação integral', aliq:'plena'},
+  {c:'02', d:'Redução de alíquota', aliq:'reduzida'},
+  {c:'03', d:'Alíquota zero', aliq:'zero'},
+  {c:'04', d:'Isenção', aliq:'zero'},
+  {c:'05', d:'Imunidade (exportação/entidade)', aliq:'zero'},
+  {c:'06', d:'Monofásico — cobrador', aliq:'mono'},
+  {c:'07', d:'Monofásico — cobrado (etapa seguinte)', aliq:'zero'},
+  {c:'08', d:'Diferimento total', aliq:'dif'},
+  {c:'09', d:'Suspensão', aliq:'sus'},
+  {c:'10', d:'Não incidência', aliq:'zero'},
+];
+
+const CTRIB_CODES = {
+  '01':[
+    {c:'01.001',d:'Venda de mercadoria — tributação integral'},
+    {c:'01.002',d:'Prestação de serviço — tributação integral'},
+    {c:'01.003',d:'Fornecimento de energia elétrica'},
+    {c:'01.004',d:'Serviços de comunicação'},
+  ],
+  '02':[
+    {c:'02.001',d:'Redução 60% — Saúde (planos, equipamentos, serviços)'},
+    {c:'02.002',d:'Redução 60% — Educação (ensino, cursos, material)'},
+    {c:'02.003',d:'Redução 60% — Produção agropecuária e aquicultura'},
+    {c:'02.004',d:'Redução 60% — Transporte público coletivo'},
+    {c:'02.005',d:'Redução 60% — Turismo nacional'},
+    {c:'02.006',d:'Redução 30% — Profissional intelectual (advogado, médico, engenheiro…)'},
+    {c:'02.007',d:'Redução 60% — Cesta Básica Ampliada'},
+  ],
+  '03':[
+    {c:'03.001',d:'Alíquota zero — Cesta Básica Nacional'},
+    {c:'03.002',d:'Alíquota zero — Medicamentos essenciais (RENAME)'},
+    {c:'03.003',d:'Alíquota zero — Dispositivos médicos e de acessibilidade'},
+  ],
+  '04':[
+    {c:'04.001',d:'Isenção legal — operação interna'},
+    {c:'04.002',d:'Isenção — IPES/OSCIP/entidade de assistência social'},
+  ],
+  '05':[
+    {c:'05.001',d:'Imunidade — exportação de mercadorias e serviços'},
+    {c:'05.002',d:'Imunidade — templos e entidades religiosas'},
+    {c:'05.003',d:'Imunidade — entidades sem fins lucrativos (art. 150 CF)'},
+  ],
+  '06':[
+    {c:'06.001',d:'Monofásico cobrador — Combustíveis (gasolina, diesel, etanol)'},
+    {c:'06.002',d:'Monofásico cobrador — Tabaco e derivados'},
+    {c:'06.003',d:'Monofásico cobrador — Bebidas alcoólicas'},
+    {c:'06.004',d:'Monofásico cobrador — Bebidas açucaradas'},
+  ],
+  '07':[
+    {c:'07.001',d:'Monofásico cobrado — Combustíveis (etapas posteriores)'},
+    {c:'07.002',d:'Monofásico cobrado — Tabaco (etapas posteriores)'},
+  ],
+  '08':[
+    {c:'08.001',d:'Diferimento — operação interna (entrada no estoque)'},
+    {c:'08.002',d:'Diferimento — aquisição de ativo imobilizado'},
+  ],
+  '09':[
+    {c:'09.001',d:'Suspensão — drawback (insumo para exportação)'},
+    {c:'09.002',d:'Suspensão — exportação temporária'},
+  ],
+  '10':[
+    {c:'10.001',d:'Não incidência — serviços financeiros (regulação específica)'},
+    {c:'10.002',d:'Não incidência — operações com imóveis (regime específico)'},
+    {c:'10.003',d:'Não incidência — seguros (regime específico)'},
+  ],
+};
+
+const NCM_COMUNS = [
+  {ncm:'0901.21',d:'Café torrado não descafeinado',cst:'02',ctrib:'02.001',obs:'Cesta Básica Ampliada — redução 60%'},
+  {ncm:'1001.99',d:'Trigo (outros)',cst:'02',ctrib:'02.003',obs:'Produção agropecuária — redução 60%'},
+  {ncm:'1006.30',d:'Arroz semibranqueado ou branqueado',cst:'02',ctrib:'02.001',obs:'Cesta Básica Ampliada — redução 60%'},
+  {ncm:'0201.10',d:'Carne bovina em carcaças',cst:'02',ctrib:'02.001',obs:'Cesta Básica Ampliada — redução 60%'},
+  {ncm:'0401.10',d:'Leite integral',cst:'02',ctrib:'02.001',obs:'Cesta Básica Ampliada — redução 60%'},
+  {ncm:'3004.90',d:'Medicamentos (uso humano, outros)',cst:'03',ctrib:'03.002',obs:'Alíquota zero — RENAME'},
+  {ncm:'3004.10',d:'Medicamentos com penicilinas',cst:'03',ctrib:'03.002',obs:'Alíquota zero — RENAME'},
+  {ncm:'9021.10',d:'Próteses ortopédicas',cst:'03',ctrib:'03.003',obs:'Alíquota zero — dispositivos de acessibilidade'},
+  {ncm:'2710.12',d:'Gasolina',cst:'06',ctrib:'06.001',obs:'Monofásico — IS incidente na refinaria'},
+  {ncm:'2710.19',d:'Óleo diesel',cst:'06',ctrib:'06.001',obs:'Monofásico — IS incidente na refinaria'},
+  {ncm:'2207.10',d:'Álcool etílico/etanol',cst:'06',ctrib:'06.001',obs:'Monofásico — IS incidente'},
+  {ncm:'2402.20',d:'Cigarros (tabaco)',cst:'06',ctrib:'06.002',obs:'Monofásico + IS ~150%'},
+  {ncm:'2204.21',d:'Vinhos',cst:'06',ctrib:'06.003',obs:'Monofásico + IS ~27%'},
+  {ncm:'2202.10',d:'Refrigerantes',cst:'06',ctrib:'06.004',obs:'Monofásico + IS ~20%'},
+  {ncm:'8517.12',d:'Smartphones e celulares',cst:'01',ctrib:'01.001',obs:'Tributação integral padrão'},
+  {ncm:'8471.30',d:'Computadores portáteis (notebook)',cst:'01',ctrib:'01.001',obs:'Tributação integral padrão'},
+  {ncm:'8528.72',d:'Televisores',cst:'01',ctrib:'01.001',obs:'Tributação integral padrão'},
+  {ncm:'6403.99',d:'Calçados com sola de borracha/couro',cst:'01',ctrib:'01.001',obs:'Tributação integral padrão'},
+  {ncm:'6204.62',d:'Calças jeans femininas',cst:'01',ctrib:'01.001',obs:'Tributação integral padrão'},
+  {ncm:'9401.61',d:'Cadeiras e assentos',cst:'01',ctrib:'01.001',obs:'Tributação integral padrão'},
+  {ncm:'8703.22',d:'Automóveis até 1000cc',cst:'01',ctrib:'01.001',obs:'Tributação integral + IS ~4%'},
+  {ncm:'3401.11',d:'Sabão em barras',cst:'02',ctrib:'02.001',obs:'Cesta Básica Ampliada — redução 60%'},
+];
+
+function initChaveFiscal(){
+  const cstSel = $('cf_cst_cbs'), cstIbs = $('cf_cst_ibs');
+  const ncmSel = $('cf_ncm_sel');
+  if(!cstSel) return;
+  CST_CODES.forEach(c => {
+    const op = `<option value="${c.c}">${c.c} — ${c.d}</option>`;
+    cstSel.insertAdjacentHTML('beforeend', op);
+    cstIbs.insertAdjacentHTML('beforeend', op);
+  });
+  NCM_COMUNS.forEach(n => {
+    ncmSel.insertAdjacentHTML('beforeend', `<option value="${n.ncm}">${n.ncm} — ${n.d}</option>`);
+  });
+}
+
+function preencherNCM(){
+  const sel = $('cf_ncm_sel'); if(!sel) return;
+  const v = sel.value; if(!v) return;
+  const ncm = NCM_COMUNS.find(n => n.ncm === v);
+  if(!ncm) return;
+  const inp = $('cf_ncm'); if(inp) inp.value = ncm.ncm;
+  const desc = $('cf_ncm_desc'); if(desc) desc.textContent = ncm.d + ' · ' + ncm.obs;
+  const cstCbs = $('cf_cst_cbs'); if(cstCbs){ cstCbs.value = ncm.cst; syncCClassTrib(); }
+  const cstIbs = $('cf_cst_ibs'); if(cstIbs) cstIbs.value = ncm.cst;
+  setTimeout(() => {
+    const ct = $('cf_ctrib'); if(ct) ct.value = ncm.ctrib;
+    calcChaveFiscal();
+  }, 50);
+}
+
+function syncCClassTrib(){
+  const cst = $('cf_cst_cbs')?.value;
+  const ct = $('cf_ctrib'); if(!ct) return;
+  ct.innerHTML = '<option value="">— selecione —</option>';
+  const desc = $('cf_ctrib_desc'); if(desc) desc.textContent='';
+  if(!cst || !CTRIB_CODES[cst]) return;
+  CTRIB_CODES[cst].forEach(c => {
+    ct.insertAdjacentHTML('beforeend', `<option value="${c.c}">${c.c} — ${c.d}</option>`);
+  });
+}
+
+function calcChaveFiscal(){
+  const ncm = ($('cf_ncm')?.value||'').trim();
+  const cstCbs = $('cf_cst_cbs')?.value||'';
+  const cstIbs = $('cf_cst_ibs')?.value||'';
+  const ctrib = $('cf_ctrib')?.value||'';
+  const val = v('cf_val');
+  const reg = vs('cf_reg');
+  const res = $('cf_res'), xml = $('cf_xml');
+  if(!res||!xml) return;
+
+  // Update cClassTrib description
+  if(ctrib && CTRIB_CODES[cstCbs]) {
+    const found = CTRIB_CODES[cstCbs].find(c=>c.c===ctrib);
+    const d=$('cf_ctrib_desc'); if(d) d.textContent = found ? found.d : '';
+  }
+
+  if(!ncm || !cstCbs || !cstIbs || !ctrib){
+    res.innerHTML = '<div class="al al-info">Preencha NCM, CST-CBS, CST-IBS e cClassTrib para validar.</div>';
+    xml.innerHTML = '';
+    return;
+  }
+
+  // Validation: CST-IBS should be compatible with CST-CBS (same or complementary)
+  let erros = [], avisos = [], ok = [];
+  if(cstCbs !== cstIbs) avisos.push('CST-CBS e CST-IBS diferentes — verifique se a divergência é intencional (ex: monofásico apenas para CBS).');
+  if(!CTRIB_CODES[cstCbs] || !CTRIB_CODES[cstCbs].find(c=>c.c===ctrib))
+    erros.push(`cClassTrib <strong>${ctrib}</strong> incompatível com CST <strong>${cstCbs}</strong> — combinação causa REJEIÇÃO.`);
+  if(ncm.replace(/\D/g,'').length < 4) erros.push('NCM deve ter ao menos 4 dígitos.');
+  if(reg==='simples' && (cstCbs==='01'||cstCbs==='02')) avisos.push('Simples Unificado: em 2026 não destaca CBS/IBS na NF-e — campos informativos apenas a partir de 2027.');
+  if(cstCbs==='06') ok.push('Monofásico: CBS/IBS já recolhidos na primeira etapa — demais etapas usam CST 07.');
+  if(cstCbs==='05') ok.push('Exportação: imunidade constitucional — crédito integral acumulado ressarcível em até 60 dias.');
+  if(cstCbs==='03') ok.push('Alíquota zero: sem CBS/IBS no item — verifique enquadramento nos Anexos da LC 214.');
+
+  // Rates
+  const cstInfo = CST_CODES.find(c=>c.c===cstCbs);
+  let cbsR=0, ibsR=0;
+  if(cstCbs==='01'){cbsR=8.8;ibsR=17.7;}
+  else if(cstCbs==='02'){
+    if(ctrib.startsWith('02.006')){cbsR=8.8*0.7;ibsR=17.7*0.7;}
+    else{cbsR=8.8*0.4;ibsR=17.7*0.4;}
+  }
+  else if(cstCbs==='06'){cbsR=8.8;ibsR=17.7;} // na etapa responsável
+  const cbsV=val*cbsR/100, ibsV=val*ibsR/100;
+
+  const statusClass = erros.length ? 'al-err' : avisos.length ? 'al-warn' : 'al-ok';
+  const statusIcon = erros.length ? '❌' : avisos.length ? '⚠️' : '✅';
+  const statusMsg = erros.length ? 'Combinação INVÁLIDA — corrigir antes de emitir' : avisos.length ? 'Combinação válida com ressalvas' : 'Combinação válida — NF-e aprovada';
+
+  res.innerHTML = `
+    <div class="al ${statusClass} mb10">${statusIcon} <strong>${statusMsg}</strong></div>
+    ${erros.map(e=>`<div class="al al-err mb6">❌ ${e}</div>`).join('')}
+    ${avisos.map(a=>`<div class="al al-warn mb6">⚠️ ${a}</div>`).join('')}
+    ${ok.map(o=>`<div class="al al-ok mb6">ℹ️ ${o}</div>`).join('')}
+    <hr style="border:none;border-top:1px solid var(--border);margin:10px 0">
+    ${rrow('NCM', ncm)}
+    ${rrow('CST-CBS', cstCbs + ' — ' + (cstInfo?.d||''))}
+    ${rrow('CST-IBS', cstIbs + ' — ' + (CST_CODES.find(c=>c.c===cstIbs)?.d||''))}
+    ${rrow('cClassTrib', ctrib + ' — ' + (CTRIB_CODES[cstCbs]?.find(c=>c.c===ctrib)?.d||''))}
+    <hr style="border:none;border-top:1px solid var(--border);margin:10px 0">
+    ${rrow('CBS (' + pct(cbsR) + ')', fmt(cbsV), cbsR>0?'neg':'hlg')}
+    ${rrow('IBS (' + pct(ibsR) + ')', fmt(ibsV), ibsR>0?'neg':'hlg')}
+    ${rtotal('Total CBS+IBS', fmt(cbsV+ibsV), cbsV+ibsV>0?'neg':'hlg')}`;
+
+  // XML preview
+  const ctribInfo = CTRIB_CODES[cstCbs]?.find(c=>c.c===ctrib);
+  xml.innerHTML = `<span style="color:var(--t2)">&lt;!-- Campos do item na NF-e — LC 214/2025 --&gt;</span>
+&lt;<span style="color:#7dd3fc">det</span> <span style="color:#86efac">nItem</span>=<span style="color:#fde68a">"1"</span>&gt;
+  &lt;<span style="color:#7dd3fc">prod</span>&gt;
+    &lt;<span style="color:#7dd3fc">NCM</span>&gt;<strong>${ncm.replace(/\D/g,'')}</strong>&lt;/NCM&gt;
+    &lt;<span style="color:#7dd3fc">vProd</span>&gt;<strong>${val.toFixed(2)}</strong>&lt;/vProd&gt;
+    ...
+  &lt;/prod&gt;
+  &lt;<span style="color:#7dd3fc">imposto</span>&gt;
+    &lt;<span style="color:#7dd3fc">CBS</span>&gt;
+      &lt;<span style="color:#7dd3fc">CST</span>&gt;<strong style="color:#fde68a">${cstCbs}</strong>&lt;/CST&gt;  <span style="color:var(--t2)">&lt;!-- ${cstInfo?.d||''} --&gt;</span>
+      &lt;<span style="color:#7dd3fc">cClassTrib</span>&gt;<strong style="color:#fde68a">${ctrib}</strong>&lt;/cClassTrib&gt;  <span style="color:var(--t2)">&lt;!-- ${ctribInfo?.d||''} --&gt;</span>
+      &lt;<span style="color:#7dd3fc">pCBS</span>&gt;<strong>${cbsR.toFixed(2)}</strong>&lt;/pCBS&gt;
+      &lt;<span style="color:#7dd3fc">vCBS</span>&gt;<strong>${cbsV.toFixed(2)}</strong>&lt;/vCBS&gt;
+    &lt;/CBS&gt;
+    &lt;<span style="color:#7dd3fc">IBS</span>&gt;
+      &lt;<span style="color:#7dd3fc">CST</span>&gt;<strong style="color:#fde68a">${cstIbs}</strong>&lt;/CST&gt;
+      &lt;<span style="color:#7dd3fc">cClassTrib</span>&gt;<strong style="color:#fde68a">${ctrib}</strong>&lt;/cClassTrib&gt;
+      &lt;<span style="color:#7dd3fc">pIBS</span>&gt;<strong>${ibsR.toFixed(2)}</strong>&lt;/pIBS&gt;
+      &lt;<span style="color:#7dd3fc">vIBS</span>&gt;<strong>${ibsV.toFixed(2)}</strong>&lt;/vIBS&gt;
+    &lt;/IBS&gt;
+  &lt;/imposto&gt;
+&lt;/det&gt;`;
+}
+
 function calcNFe(){
   const val=v('nf_val'),cat=vs('nf_cat'),reg=vs('nf_reg'),is_p=v('nf_is');
   const ano=vs('nf_ano')||'2026';
@@ -4172,7 +4514,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updB2B('pr_b2b','pr_b2b_lbl'); calcPrec(); calcPrecTrans();
   calcFC(); calcDIFAL(); calcDIFALTrans();
   calcCredExp(); calcCredCap(); calcSaldoCred();
-  calcNFe(); calcIRRF(); calcIRPF();
+  calcNFe(); initChaveFiscal(); calcChaveFiscal(); calcIRRF(); calcIRPF();
   calcDiv(); calcDivProp(); calcReorg();
   filtrarCNAE(); renderCalendario();
   loadConfig();
