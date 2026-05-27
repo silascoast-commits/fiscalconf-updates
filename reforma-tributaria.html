@@ -376,6 +376,16 @@ tbody tr:last-child td{border-bottom:none}
             </div>
             <div class="flex jb xs muted mt4"><span>100% B2C</span><span>100% B2B</span></div>
           </div>
+          <div class="fg" style="grid-column:1/-1">
+            <label>NCM — Busca automática de categoria <span class="muted xs">(opcional)</span></label>
+            <div class="flex gap8">
+              <input type="text" id="cv_ncm" placeholder="Digite o NCM ou parte do nome…" oninput="buscarNCM_cv()" style="flex:1">
+              <select id="cv_ncm_sel" onchange="aplicarNCM_cv()" style="flex:2">
+                <option value="">↳ selecione para preencher categoria automaticamente</option>
+              </select>
+            </div>
+            <div id="cv_ncm_info" class="xs mt4" style="color:var(--accent)"></div>
+          </div>
           <div class="fg"><label>Categoria</label><select id="cv_cat" onchange="syncCBSIBS();calcVenda()">
             <option value="padrao">Padrão — 100%</option>
             <option value="red60">Reduzida 60% (saúde, educação, agro, turismo…)</option>
@@ -2347,6 +2357,69 @@ function getAliq(ano, cat){
 }
 
 // ─── CALCULADORA VENDA ───────────────────────────────────────────────────────
+// Mapa CST → categoria do cv_cat
+const CST_TO_CAT = {
+  '01': 'padrao',
+  '02_60': 'red60',   // redução 60% (saúde, edu, agro, turismo)
+  '02_30': 'int30',   // redução 30% (profissional intelectual)
+  '02_cestab': 'cestab', // cesta básica ampliada
+  '03': 'zero',       // alíquota zero
+  '04': 'zero',
+  '05': 'imune',
+  '06': 'padrao',     // monofásico — tributação integral na etapa cobrador
+  '07': 'zero',       // monofásico cobrado — zero na etapa seguinte
+  '08': 'zero',
+  '09': 'zero',
+  '10': 'zero',
+};
+
+function cstToCat(cst, ctrib){
+  if(cst === '02'){
+    if(ctrib === '02.006') return 'int30';
+    if(ctrib === '02.007') return 'cestab';
+    return 'red60';
+  }
+  if(cst === '05') return 'imune';
+  if(cst === '01' || cst === '06') return 'padrao';
+  return 'zero';
+}
+
+function buscarNCM_cv(){
+  const q = ($('cv_ncm')?.value||'').toLowerCase().trim();
+  const sel = $('cv_ncm_sel'); if(!sel) return;
+  sel.innerHTML = '<option value="">↳ selecione para preencher categoria automaticamente</option>';
+  if(q.length < 2){ $('cv_ncm_info').textContent=''; return; }
+  const matches = NCM_COMUNS.filter(n =>
+    n.ncm.toLowerCase().includes(q) || n.d.toLowerCase().includes(q) || n.obs.toLowerCase().includes(q)
+  );
+  if(!matches.length){
+    const info=$('cv_ncm_info'); if(info) info.textContent='Nenhum NCM encontrado. Selecione a categoria manualmente.';
+    return;
+  }
+  matches.forEach(n => {
+    sel.insertAdjacentHTML('beforeend', `<option value="${n.ncm}">${n.ncm} — ${n.d}</option>`);
+  });
+  const info=$('cv_ncm_info'); if(info) info.textContent= matches.length + ' NCM(s) encontrado(s) — selecione ao lado ↗';
+}
+
+function aplicarNCM_cv(){
+  const sel = $('cv_ncm_sel'); if(!sel||!sel.value) return;
+  const ncm = NCM_COMUNS.find(n => n.ncm === sel.value);
+  if(!ncm) return;
+  // Preencher NCM text
+  const inp = $('cv_ncm'); if(inp) inp.value = ncm.ncm;
+  // Determinar categoria
+  const cat = cstToCat(ncm.cst, ncm.ctrib);
+  const catSel = $('cv_cat'); if(catSel){ catSel.value = cat; }
+  // Atualizar info
+  const info = $('cv_ncm_info');
+  const catLabels = {padrao:'Padrão (100%)',red60:'Reduzida 60%',int30:'Prof. Intelectual -30%',cestab:'Cesta Básica Ampliada',zero:'Alíquota Zero',imune:'Exportação/Imune'};
+  if(info) info.textContent = `✅ ${ncm.d} · ${ncm.obs} → Categoria: ${catLabels[cat]||cat}`;
+  // CST info no resultado
+  syncCBSIBS();
+  calcVenda();
+}
+
 function syncCBSIBS(){
   const ano = vs('cv_ano'), cat = vs('cv_cat');
   if(!ano || !cat) return;
