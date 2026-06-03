@@ -14,6 +14,7 @@ const navMain = [
   { href: "/xml",        label: "XML NF-e",     icon: FileCode2 },
   { href: "/consulta",   label: "Consultar",    icon: FileText },
   { href: "/apuracao",   label: "Apuração",     icon: Calculator },
+  { href: "/hibrido",    label: "SN × Híbrido", icon: GitCompare },
 ];
 
 // Itens secundários — ficam no dropdown "Mais"
@@ -21,7 +22,6 @@ const navMore = [
   { href: "/mapa",        label: "Mapa Transição",  icon: MapPin },
   { href: "/kit",         label: "Kit Prompts",      icon: BookOpen },
   { href: "/simulador",   label: "Simulador RT",     icon: TrendingDown },
-  { href: "/hibrido",     label: "SN × Híbrido",    icon: GitCompare },
   { href: "/ncms",        label: "NCMs",             icon: Database },
   { href: "/calculadora", label: "Calc. Tributos",   icon: Scale },
   { href: "/calendario",  label: "Calendário",        icon: CalendarDays },
