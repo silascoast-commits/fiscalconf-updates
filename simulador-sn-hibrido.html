@@ -3,839 +3,988 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simulador SN × Sistema Híbrido — Reforma Tributária 2026</title>
+<title>Simulador SN × Sistema Híbrido — Reforma Tributária</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f4f8;color:#1e293b;min-height:100vh}
 
-  body {
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    background: #f0f4f8;
-    color: #1e293b;
-    min-height: 100vh;
-  }
+/* ── HEADER ── */
+header{background:linear-gradient(135deg,#1e40af 0%,#7c3aed 100%);color:white;padding:22px 32px;box-shadow:0 4px 20px rgba(30,64,175,.3)}
+header h1{font-size:1.4rem;font-weight:800;margin-bottom:4px}
+header p{font-size:.82rem;opacity:.88;max-width:720px;line-height:1.5}
+.badge-h{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);border-radius:20px;padding:2px 10px;font-size:.7rem;margin-top:8px;margin-right:4px}
 
-  header {
-    background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
-    color: white;
-    padding: 24px 32px;
-    box-shadow: 0 4px 20px rgba(30,64,175,0.3);
-  }
-  header h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
-  header p  { font-size: 0.85rem; opacity: 0.85; max-width: 700px; }
-  .badge-header {
-    display: inline-block;
-    background: rgba(255,255,255,0.2);
-    border: 1px solid rgba(255,255,255,0.35);
-    border-radius: 20px;
-    padding: 2px 10px;
-    font-size: 0.72rem;
-    margin-top: 8px;
-  }
+/* ── LAYOUT ── */
+.wrap{max-width:980px;margin:0 auto;padding:24px 16px 60px}
+.card{background:white;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.07);margin-bottom:18px;overflow:hidden}
+.card-h{padding:16px 20px 10px;border-bottom:1px solid #f1f5f9;display:flex;align-items:flex-start;gap:10px}
+.card-h-ico{font-size:1.2rem;flex-shrink:0;margin-top:2px}
+.card-h h2{font-size:.93rem;font-weight:700}
+.card-h p{font-size:.76rem;color:#64748b;margin-top:2px}
+.card-h-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.card-b{padding:18px 20px}
 
-  .container { max-width: 960px; margin: 0 auto; padding: 28px 16px 60px; }
+/* ── GRID ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:680px){.g2,.g3,.g4{grid-template-columns:1fr}}
+@media(max-width:820px){.g4{grid-template-columns:1fr 1fr}}
 
-  .card {
-    background: white;
-    border-radius: 14px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-    margin-bottom: 20px;
-    overflow: hidden;
-  }
-  .card-header {
-    padding: 18px 22px 12px;
-    border-bottom: 1px solid #f1f5f9;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .card-header h2 { font-size: 0.95rem; font-weight: 700; color: #1e293b; }
-  .card-header p  { font-size: 0.78rem; color: #64748b; margin-top: 2px; }
-  .card-body { padding: 20px 22px; }
+/* ── FORM ── */
+.field{margin-bottom:0}
+label{font-size:.78rem;font-weight:600;color:#475569;display:block;margin-bottom:4px}
+input,select{width:100%;padding:8px 11px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:.88rem;color:#1e293b;background:#f8fafc;transition:border-color .2s;font-family:'Courier New',monospace}
+input:focus,select:focus{outline:none;border-color:#6366f1;background:white}
+select{font-family:'Segoe UI',system-ui,sans-serif}
+.hint{font-size:.7rem;color:#94a3b8;margin-top:3px;line-height:1.4}
+.sep{border:none;border-top:1px solid #f1f5f9;margin:14px 0}
 
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
-  @media(max-width:640px) {
-    .grid-2,.grid-3,.grid-4 { grid-template-columns: 1fr; }
-  }
+/* ── ALERTAS ── */
+.alerta{border-radius:10px;padding:13px 16px;font-size:.8rem;line-height:1.6;margin-bottom:16px;border:1px solid}
+.alerta-blue{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}
+.alerta-amber{background:#fffbeb;border-color:#fde68a;color:#92400e}
+.alerta-red{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+.alerta strong{font-weight:700}
 
-  label { font-size: 0.8rem; font-weight: 600; color: #475569; display: block; margin-bottom: 5px; }
-  input, select {
-    width: 100%;
-    padding: 9px 12px;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    color: #1e293b;
-    background: #f8fafc;
-    transition: border-color .2s;
-    font-family: 'Courier New', monospace;
-  }
-  input:focus, select:focus {
-    outline: none;
-    border-color: #6366f1;
-    background: white;
-  }
-  .hint { font-size: 0.72rem; color: #94a3b8; margin-top: 4px; }
+/* ── TABS ── */
+.tabs{display:flex;gap:4px;background:#f1f5f9;border-radius:10px;padding:4px;margin-bottom:16px}
+.tab{flex:1;padding:7px 10px;border:none;border-radius:7px;font-size:.78rem;font-weight:600;cursor:pointer;background:none;color:#64748b;transition:all .2s}
+.tab.ativo{background:white;color:#1e293b;box-shadow:0 1px 4px rgba(0,0,0,.1)}
 
-  .info-box {
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
-    border-radius: 10px;
-    padding: 14px 16px;
-    font-size: 0.82rem;
-    color: #1e40af;
-    line-height: 1.6;
-    margin-bottom: 20px;
-  }
-  .info-box strong { color: #1e3a8a; }
+/* ── RESULTADO CARDS ── */
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:680px){.res-grid{grid-template-columns:1fr}}
+.res-card{border-radius:14px;border:2.5px solid #e2e8f0;padding:18px;background:white}
+.res-card.winner{border-color:#10b981;background:#f0fdf4}
+.res-card h3{font-size:.88rem;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.res-sub{font-size:.72rem;color:#64748b;margin-bottom:12px}
+.aliq-big{font-size:2.6rem;font-weight:800;font-family:'Courier New',monospace;line-height:1}
+.aliq-info{font-size:.72rem;color:#64748b;margin-top:3px;margin-bottom:14px}
+.row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:.8rem;border-bottom:1px solid #f8fafc}
+.row:last-child{border-bottom:none}
+.row .lbl{color:#64748b}
+.row .val{font-family:'Courier New',monospace;font-weight:600}
+.row.total-row{font-weight:700;font-size:.87rem;background:#f8fafc;margin:6px -4px;padding:7px 4px;border-radius:6px;border:none}
+.cred-box{margin-top:11px;border-radius:8px;padding:10px 12px;font-size:.77rem}
+.cred-sn{background:#fefce8;border:1px solid #fde047}
+.cred-hib{background:#f0fdf4;border:1px solid #86efac}
+.cred-box .ct{font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:5px}
 
-  /* Resultado cards */
-  .resultado-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-  @media(max-width:640px) { .resultado-grid { grid-template-columns: 1fr; } }
+/* ── BADGE ── */
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.68rem;font-weight:700}
+.badge-rec{background:#d1fae5;color:#065f46}
+.badge-green{background:#d1fae5;color:#065f46}
+.badge-blue{background:#dbeafe;color:#1d4ed8}
+.badge-amber{background:#fef3c7;color:#92400e}
+.badge-red{background:#fee2e2;color:#991b1b}
+.badge-purple{background:#ede9fe;color:#6d28d9}
+.badge-gray{background:#f1f5f9;color:#475569}
 
-  .res-card {
-    border-radius: 14px;
-    border: 2.5px solid #e2e8f0;
-    padding: 20px;
-    background: white;
-    transition: border-color .3s;
-  }
-  .res-card.winner { border-color: #10b981; background: #f0fdf4; }
-  .res-card.loser  { border-color: #e2e8f0; }
+/* ── REC PANEL ── */
+.rec-panel{border-radius:14px;padding:20px 22px;margin-bottom:16px;display:flex;gap:14px;align-items:flex-start}
+.rec-icon{font-size:2rem;flex-shrink:0}
+.rec-title{font-size:1.05rem;font-weight:800;margin-bottom:6px}
+.rec-text{font-size:.83rem;line-height:1.65}
+.rec-metrics{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.rec-m{background:rgba(0,0,0,.06);padding:3px 10px;border-radius:20px;font-size:.76rem}
+.rec-hibrido{background:#f0fdf4;border:2px solid #34d399}
+.rec-simples{background:#eff6ff;border:2px solid #60a5fa}
+.rec-analisar{background:#fffbeb;border:2px solid #fbbf24}
 
-  .res-card h3 {
-    font-size: 0.9rem;
-    font-weight: 700;
-    margin-bottom: 4px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .res-card .sub { font-size: 0.75rem; color: #64748b; margin-bottom: 14px; }
-  .aliq-big { font-size: 2.4rem; font-weight: 800; font-family: 'Courier New', monospace; line-height: 1; }
-  .aliq-sub { font-size: 0.75rem; color: #64748b; margin-top: 4px; margin-bottom: 16px; }
+/* ── COMP BOXES ── */
+.comp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:16px}
+@media(max-width:820px){.comp-grid{grid-template-columns:1fr 1fr}}
+.comp-box{border-radius:10px;border:1px solid #e2e8f0;padding:12px;text-align:center}
+.comp-box .cl{font-size:.68rem;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
+.comp-box .cv{font-size:1.4rem;font-weight:800;font-family:'Courier New',monospace}
+.comp-box .cs{font-size:.68rem;color:#64748b;margin-top:3px}
+.cb-green{background:#f0fdf4;border-color:#86efac}
+.cb-red{background:#fff7ed;border-color:#fdba74}
+.cb-purple{background:#faf5ff;border-color:#c4b5fd}
 
-  .row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 0.82rem; border-bottom: 1px solid #f1f5f9; }
-  .row:last-child { border-bottom: none; }
-  .row .lbl { color: #64748b; }
-  .row .val { font-family: 'Courier New', monospace; font-weight: 600; }
-  .row.total { font-weight: 700; font-size: 0.9rem; background: #f8fafc; margin: 6px -6px; padding: 8px 6px; border-radius: 6px; }
+/* ── BARRAS ── */
+.barra-wrap{margin-top:14px}
+.barra-lbl{display:flex;justify-content:space-between;font-size:.77rem;margin-bottom:4px}
+.barra-bg{height:13px;background:#e2e8f0;border-radius:99px;overflow:hidden;margin-bottom:8px}
+.barra-sn{background:#fbbf24;height:100%;border-radius:99px;transition:width .6s}
+.barra-hib{background:#10b981;height:100%;border-radius:99px;width:100%}
 
-  .credito-box {
-    margin-top: 12px;
-    border-radius: 8px;
-    padding: 10px 12px;
-    font-size: 0.78rem;
-  }
-  .credito-box.sn  { background: #fefce8; border: 1px solid #fde047; }
-  .credito-box.hib { background: #f0fdf4; border: 1px solid #86efac; }
-  .credito-box .ct { font-weight: 700; margin-bottom: 4px; }
-  .credito-box .row { padding: 3px 0; border: none; }
+/* ── TABELA ANO A ANO ── */
+.tabela-ano{width:100%;border-collapse:collapse;font-size:.78rem}
+.tabela-ano th{text-align:right;padding:7px 10px;background:#f8fafc;font-size:.72rem;color:#64748b;border-bottom:1px solid #e2e8f0}
+.tabela-ano th:first-child{text-align:left}
+.tabela-ano td{padding:7px 10px;border-bottom:1px solid #f8fafc;text-align:right;font-family:'Courier New',monospace}
+.tabela-ano td:first-child{text-align:left;font-family:'Segoe UI',system-ui;font-weight:600}
+.tabela-ano tr:hover{background:#f8fafc}
+.tabela-ano tr.dest td{background:#f0fdf4;font-weight:700}
 
-  /* Badge recomendado */
-  .badge-rec {
-    display: inline-block;
-    padding: 2px 10px;
-    border-radius: 20px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    background: #d1fae5;
-    color: #065f46;
-  }
+/* ── TABELA DETALHES ── */
+.tec-table{width:100%;border-collapse:collapse;font-size:.79rem}
+.tec-table th{text-align:left;padding:7px 11px;background:#f8fafc;font-size:.72rem;color:#64748b;border-bottom:1px solid #e2e8f0}
+.tec-table td{padding:7px 11px;border-bottom:1px solid #f8fafc}
+.tec-table td.n{font-family:'Courier New',monospace;text-align:right;font-weight:600}
+.tec-table tr.sub td{background:#f8fafc;font-weight:700}
 
-  /* Painel de recomendação */
-  .rec-panel {
-    border-radius: 14px;
-    padding: 22px 24px;
-    margin-bottom: 20px;
-    display: flex;
-    gap: 16px;
-    align-items: flex-start;
-  }
-  .rec-panel.hibrido { background: #f0fdf4; border: 2px solid #34d399; }
-  .rec-panel.simples  { background: #eff6ff; border: 2px solid #60a5fa; }
-  .rec-panel.analisar { background: #fffbeb; border: 2px solid #fbbf24; }
+/* ── CHECK ── */
+.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:680px){.check-grid{grid-template-columns:1fr}}
+.check-item{border-radius:10px;padding:11px 13px;font-size:.78rem;display:flex;gap:9px;align-items:flex-start;border:1px solid #e2e8f0;background:#f8fafc}
+.check-item.ok{background:#f0fdf4;border-color:#bbf7d0}
+.check-item.warn{background:#fffbeb;border-color:#fde68a}
+.check-item.bad{background:#fef2f2;border-color:#fecaca}
+.ci{font-size:1.1rem;flex-shrink:0}
+.ct{font-weight:700;margin-bottom:3px;font-size:.8rem}
+.cd{color:#475569;line-height:1.5}
 
-  .rec-icon { font-size: 2rem; flex-shrink: 0; }
-  .rec-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 6px; }
-  .rec-text { font-size: 0.85rem; line-height: 1.65; }
-  .rec-metrics { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 12px; font-size: 0.8rem; }
-  .rec-metrics span { background: rgba(0,0,0,0.06); padding: 3px 10px; border-radius: 20px; }
+/* ── IS PANEL ── */
+.is-panel{border-radius:10px;padding:12px 14px;background:#faf5ff;border:1px solid #c4b5fd;font-size:.79rem;margin-top:10px}
 
-  /* Painel comparativo */
-  .comp-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 18px; }
-  @media(max-width:640px) { .comp-grid { grid-template-columns: 1fr 1fr; } }
+/* ── PRINT ── */
+.print-btn{background:linear-gradient(135deg,#1e40af,#7c3aed);color:white;border:none;border-radius:8px;padding:9px 20px;font-size:.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px}
+.print-btn:hover{opacity:.9}
+@media print{
+  header{background:none!important;color:#1e293b!important;border-bottom:2px solid #1e40af;padding:12px 0}
+  .no-print{display:none!important}
+  .card{box-shadow:none;border:1px solid #e2e8f0}
+  body{background:white}
+  .wrap{padding:0}
+}
 
-  .comp-box {
-    border-radius: 10px;
-    border: 1px solid #e2e8f0;
-    padding: 14px;
-    text-align: center;
-  }
-  .comp-box .cl { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
-  .comp-box .cv { font-size: 1.5rem; font-weight: 800; font-family: 'Courier New', monospace; }
-  .comp-box .cs { font-size: 0.7rem; color: #64748b; margin-top: 4px; }
-  .comp-box.green  { background: #f0fdf4; border-color: #86efac; }
-  .comp-box.red    { background: #fff7ed; border-color: #fdba74; }
-  .comp-box.purple { background: #faf5ff; border-color: #c4b5fd; }
-
-  /* Barra de progresso */
-  .barra-wrap { margin-top: 16px; }
-  .barra-label { display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 5px; }
-  .barra-bg { height: 14px; background: #e2e8f0; border-radius: 99px; overflow: hidden; }
-  .barra-fill { height: 100%; border-radius: 99px; transition: width .6s ease; }
-  .barra-fill.sn  { background: #fbbf24; }
-  .barra-fill.hib { background: #10b981; }
-
-  /* Tabela técnica */
-  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-  th { text-align: left; padding: 8px 12px; background: #f8fafc; font-size: 0.75rem; color: #64748b; border-bottom: 1px solid #e2e8f0; }
-  td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; }
-  td.num { font-family: 'Courier New', monospace; text-align: right; font-weight: 600; }
-  tr.subtotal td { background: #f8fafc; font-weight: 700; }
-
-  /* Checklist */
-  .check-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  @media(max-width:640px) { .check-grid { grid-template-columns: 1fr; } }
-
-  .check-item {
-    border-radius: 10px;
-    padding: 12px 14px;
-    font-size: 0.8rem;
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-    border: 1px solid #e2e8f0;
-    background: #f8fafc;
-  }
-  .check-item.ok  { background: #f0fdf4; border-color: #bbf7d0; }
-  .check-item .ci { font-size: 1.1rem; flex-shrink: 0; }
-  .check-item .ct { font-weight: 700; margin-bottom: 3px; font-size: 0.82rem; }
-  .check-item .cd { color: #475569; line-height: 1.5; }
-
-  footer {
-    text-align: center;
-    font-size: 0.75rem;
-    color: #94a3b8;
-    padding: 24px;
-    border-top: 1px solid #e2e8f0;
-    background: white;
-    margin-top: 20px;
-  }
-
-  .hidden { display: none !important; }
-  .sep { border: none; border-top: 1px solid #e2e8f0; margin: 16px 0; }
-  .tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; }
-  .tag-blue   { background: #dbeafe; color: #1d4ed8; }
-  .tag-green  { background: #d1fae5; color: #065f46; }
-  .tag-orange { background: #ffedd5; color: #9a3412; }
-  .tag-purple { background: #ede9fe; color: #6d28d9; }
-
-  /* Botão detalhes */
-  .btn-det {
-    background: none;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 7px 16px;
-    font-size: 0.8rem;
-    cursor: pointer;
-    color: #475569;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: background .2s;
-  }
-  .btn-det:hover { background: #f1f5f9; }
+/* ── UTILS ── */
+.hidden{display:none!important}
+.tag{display:inline-block;padding:1px 7px;border-radius:5px;font-size:.68rem;font-weight:600}
+footer{text-align:center;font-size:.72rem;color:#94a3b8;padding:20px;border-top:1px solid #e2e8f0;background:white;margin-top:20px}
+.toggle-det{background:none;border:1px solid #e2e8f0;border-radius:7px;padding:6px 13px;font-size:.77rem;cursor:pointer;color:#475569;display:flex;align-items:center;gap:5px}
+.toggle-det:hover{background:#f1f5f9}
+.section-title{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin-bottom:10px}
+.incerteza-note{font-size:.72rem;color:#64748b;font-style:italic;margin-top:4px}
 </style>
 </head>
 <body>
 
 <header>
   <h1>⚖️ Simulador: Simples Nacional × Sistema Híbrido</h1>
-  <p>Analisa se o cliente do Simples Nacional deve migrar para o regime híbrido (IBS/CBS fora do DAS) ou permanecer no modelo padrão.</p>
-  <span class="badge-header">LC 214/2025 — Arts. 140–152 · Reforma Tributária · Projeção 2033</span>
+  <p>Analisa se o cliente do Simples Nacional deve optar pelo regime híbrido (IBS/CBS fora do DAS com crédito pleno) ou permanecer no modelo padrão. Projeção 2026–2033.</p>
+  <span class="badge-h">LC 214/2025 — Arts. 140–152</span>
+  <span class="badge-h">EC 132/2023</span>
+  <span class="badge-h">LC 123/2006 — Res. CGSN 140/2018</span>
 </header>
 
-<div class="container">
+<div class="wrap">
 
-  <!-- INFO -->
-  <div class="info-box">
-    <strong>O que é o Sistema Híbrido?</strong>
-    Pela LC 214/2025, o optante do Simples Nacional pode separar o IBS e a CBS do DAS,
-    recolhendo-os à parte com <em>crédito pleno</em> (não-cumulatividade total).
-    Isso faz com que seus clientes empresariais (LP/LR) passem a creditar <strong>26,5%</strong> nas compras
-    (IBS 17,7% + CBS 8,8%), em vez do crédito proporcional reduzido que o SN padrão gera.
-    <br><br>
-    <strong>Pergunta central:</strong> O benefício competitivo (mais crédito para seus clientes) compensa o custo tributário extra do híbrido?
+<!-- ALERTA REGULATÓRIO -->
+<div class="alerta alerta-amber no-print">
+  <strong>⚠️ Atenção — Incerteza Regulatória:</strong>
+  As alíquotas definitivas de IBS e CBS ainda serão fixadas por resolução do Senado Federal (EC 132/2023, art. 11).
+  O percentual exato do crédito proporcional do SN (Art. 144, LC 214/2025) depende de regulamentação complementar.
+  Os valores abaixo são <strong>referências técnicas</strong> para planejamento tributário — não definitivos.
+</div>
+
+<!-- PARÂMETROS -->
+<div class="card">
+  <div class="card-h">
+    <div class="card-h-ico">📋</div>
+    <div>
+      <h2>Parâmetros da Empresa</h2>
+      <p>Preencha com os dados do cliente do Simples Nacional</p>
+    </div>
+  </div>
+  <div class="card-b">
+
+    <!-- BLOCO 1: Faturamento + RBT12 + Anexo -->
+    <div class="section-title">Identificação do Regime</div>
+    <div class="g3" style="margin-bottom:16px">
+      <div class="field">
+        <label>Faturamento Mensal (R$)</label>
+        <input type="text" id="faturamento" value="100.000" oninput="calcular()">
+        <p class="hint">Receita bruta média mensal</p>
+      </div>
+      <div class="field">
+        <label>RBT12 — Receita 12 meses (R$)</label>
+        <input type="text" id="rbt12" placeholder="Vazio = mensal × 12" oninput="calcular()">
+        <p class="hint">Determina a faixa e alíquota do DAS</p>
+      </div>
+      <div class="field">
+        <label>Anexo do Simples Nacional</label>
+        <select id="anexo" onchange="onAnexoChange()">
+          <option value="I">Anexo I — Comércio</option>
+          <option value="II">Anexo II — Indústria</option>
+          <option value="III">Anexo III — Serviços grupo A</option>
+          <option value="IV">Anexo IV — Serviços grupo B</option>
+          <option value="V">Anexo V — Serviços grupo C / fator r</option>
+        </select>
+        <p class="hint" id="hint-anexo">Supermercado, farmácia, loja de roupas</p>
+      </div>
+    </div>
+
+    <!-- BLOCO FATOR R (só Anexo V) -->
+    <div id="bloco-fatorr" class="hidden">
+      <div class="alerta alerta-blue" style="margin-bottom:12px">
+        <strong>📐 Anexo V — Fator r:</strong>
+        O Anexo V exige o cálculo do <strong>fator r = folha de salários 12 meses ÷ RBT12</strong>.
+        Se fator r ≥ 28%: aplica-se o <strong>Anexo III</strong> (menor carga).
+        Se fator r &lt; 28%: aplica-se o <strong>Anexo V</strong> (maior carga).
+        Informe a folha para cálculo automático.
+      </div>
+      <div class="g3" style="margin-bottom:16px">
+        <div class="field">
+          <label>Folha de Salários (12 meses, R$)</label>
+          <input type="text" id="folha12" value="0" oninput="calcular()">
+          <p class="hint">Pró-labore + salários + encargos (FGTS incluso)</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding-top:22px">
+          <div style="background:#f1f5f9;border-radius:8px;padding:10px 14px;font-size:.82rem;flex:1">
+            Fator r calculado: <strong id="fatorR-display" style="color:#7c3aed;font-family:'Courier New'">—</strong>
+            <br><span id="fatorR-result" style="font-size:.72rem;color:#64748b">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BLOCO CPP SEPARADA (Anexo IV) -->
+    <div id="bloco-cpp" class="hidden">
+      <div class="alerta alerta-blue" style="margin-bottom:12px">
+        <strong>🧾 Anexo IV — CPP fora do DAS:</strong>
+        No Anexo IV a Contribuição Patronal Previdenciária (CPP ~20% da folha + RAT + terceiros)
+        <strong>não está embutida no DAS</strong> — é recolhida separadamente via GPS/DARF.
+        Informe a folha para incluir a CPP na carga total.
+      </div>
+      <div class="g3" style="margin-bottom:16px">
+        <div class="field">
+          <label>Folha de Salários Mensal (R$)</label>
+          <input type="text" id="folhaIV" value="0" oninput="calcular()">
+          <p class="hint">Base para CPP: pró-labore + salários (sem FGTS)</p>
+        </div>
+        <div class="field">
+          <label>Alíquota CPP estimada (%)</label>
+          <input type="number" id="aliqCPP" value="27.8" min="20" max="36" step=".1" oninput="calcular()">
+          <p class="hint">INSS patronal 20% + RAT + terceiros. Padrão: 27,8%</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding-top:22px">
+          <div style="background:#fff7ed;border-radius:8px;padding:10px 14px;font-size:.82rem;flex:1;border:1px solid #fdba74">
+            CPP mensal estimada: <strong id="cpp-display" style="color:#ea580c;font-family:'Courier New'">R$ 0,00</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="sep">
+
+    <!-- BLOCO 2: Entradas e Vendas -->
+    <div class="section-title">Entradas e Perfil de Vendas</div>
+    <div class="g3" style="margin-bottom:16px">
+      <div class="field">
+        <label>💰 Compras / Entradas Mensais (R$)</label>
+        <input type="text" id="compras" value="60.000" oninput="calcular()">
+        <p class="hint">Mercadorias, insumos e serviços com IBS/CBS</p>
+      </div>
+      <div class="field">
+        <label>% Compras de Fornecedores LP/LR</label>
+        <input type="number" id="pctLPLR" value="70" min="0" max="100" step="5" oninput="calcular()">
+        <p class="hint">LP/LR → crédito pleno. SN → crédito proporcional</p>
+      </div>
+      <div class="field">
+        <label>% Vendas para Empresas (B2B)</label>
+        <input type="number" id="pctB2B" value="80" min="0" max="100" step="5" oninput="calcular()">
+        <p class="hint">Apenas B2B se beneficia do crédito pleno</p>
+      </div>
+    </div>
+
+    <hr class="sep">
+
+    <!-- BLOCO 3: Parâmetros avançados -->
+    <div class="section-title">Parâmetros Avançados — Regulamentação Pendente</div>
+    <div class="g3" style="margin-bottom:14px">
+      <div class="field">
+        <label>Crédito Proporcional SN (%)</label>
+        <input type="number" id="credPropSN" value="15" min="5" max="50" step="1" oninput="calcular()">
+        <p class="hint">Art. 144, LC 214/2025 — percentual definitivo pendente. Padrão conservador: 15%</p>
+        <p class="incerteza-note">⚠️ Regulamentação pendente</p>
+      </div>
+      <div class="field">
+        <label>Alíquota IBS referência (%)</label>
+        <input type="number" id="aliqIBS" value="17.7" min="10" max="25" step=".1" oninput="calcular()">
+        <p class="hint">Alíquota de referência IBS 2033. Senado fixará o definitivo.</p>
+        <p class="incerteza-note">⚠️ Pendente resolução Senado</p>
+      </div>
+      <div class="field">
+        <label>Alíquota CBS referência (%)</label>
+        <input type="number" id="aliqCBS" value="8.8" min="5" max="15" step=".1" oninput="calcular()">
+        <p class="hint">Alíquota de referência CBS 2033. Senado fixará o definitivo.</p>
+        <p class="incerteza-note">⚠️ Pendente resolução Senado</p>
+      </div>
+    </div>
+
+    <!-- BLOCO 4: Imposto Seletivo -->
+    <hr class="sep">
+    <div class="section-title">Imposto Seletivo — IS (LC 214/2025, Art. 415–450)</div>
+    <div class="g3">
+      <div class="field">
+        <label>Setor sujeito ao IS</label>
+        <select id="setorIS" onchange="calcular()">
+          <option value="0">Não aplicável</option>
+          <option value="20">Bebidas alcoólicas — 20% (Art. 415 §2º, I)</option>
+          <option value="100">Cigarros / produtos do fumo — 100% (Art. 415 §2º, II)</option>
+          <option value="7.5">Veículos automotores — 7,5% (Art. 415 §2º, III)</option>
+          <option value="10">Embarcações / aeronaves — 10% (Art. 415 §2º, IV)</option>
+          <option value="25">Armas e munições — 25% (Art. 415 §2º, V)</option>
+          <option value="10b">Bebidas não-alcoólicas — 10% (Art. 415 §2º, VI)</option>
+          <option value="1">Minérios / petróleo — 1% (Art. 415 §2º, VII)</option>
+          <option value="10c">Agrotóxicos — 10% (Art. 415 §2º, VIII)</option>
+        </select>
+      </div>
+      <div id="is-info" class="hidden" style="grid-column:span 2">
+        <div class="is-panel">
+          <div style="font-weight:700;color:#6d28d9;margin-bottom:6px">🧪 Imposto Seletivo — vigência a partir de 2027</div>
+          <div id="is-texto" style="color:#5b21b6;line-height:1.6;font-size:.79rem"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- card-b -->
+</div><!-- card parâmetros -->
+
+
+<!-- RESULTADO -->
+<div id="resultado" class="hidden">
+
+  <!-- REC PANEL -->
+  <div id="recPanel" class="rec-panel">
+    <div class="rec-icon" id="recIcon">✅</div>
+    <div style="flex:1">
+      <div class="rec-title" id="recTitle">—</div>
+      <div class="rec-text" id="recText">—</div>
+      <div class="rec-metrics" id="recMetrics"></div>
+    </div>
+    <button class="print-btn no-print" onclick="window.print()">🖨️ Imprimir</button>
   </div>
 
-  <!-- PARÂMETROS -->
+  <!-- CARDS SN × HÍBRIDO -->
+  <div class="res-grid">
+    <!-- SN -->
+    <div class="res-card" id="cardSN">
+      <h3>⚖️ Simples Nacional Padrão <span id="badgeSN" class="badge badge-rec hidden">RECOMENDADO</span></h3>
+      <div class="res-sub">DAS único — IBS/CBS embarcados na alíquota</div>
+      <div id="aliqSN" class="aliq-big" style="color:#2563eb">—</div>
+      <div id="faixaSN" class="aliq-info">—</div>
+      <div class="row"><span class="lbl">DAS Total Mensal</span><span class="val" id="dasTotalSN">—</span></div>
+      <div class="row" id="rowCPP-SN" style="display:none"><span class="lbl">+ CPP separada (Anexo IV)</span><span class="val" id="cppSN" style="color:#ea580c">—</span></div>
+      <div class="row" id="rowIS-SN" style="display:none"><span class="lbl">+ Imposto Seletivo (2027+)</span><span class="val" id="isSN" style="color:#7c3aed">—</span></div>
+      <div class="row"><span class="lbl">↳ IBS embutido</span><span class="val" id="ibsNoSN" style="color:#2563eb">—</span></div>
+      <div class="row"><span class="lbl">↳ CBS embutida</span><span class="val" id="cbsNoSN" style="color:#2563eb">—</span></div>
+      <div class="row total-row"><span class="lbl">Carga Total Mensal</span><span class="val" id="cargaSNTotal">—</span></div>
+      <div class="row"><span class="lbl">Carga % receita</span><span class="val" id="pctSNTotal">—</span></div>
+      <div class="row"><span class="lbl">Carga anual estimada</span><span class="val" id="cargaSNAnual">—</span></div>
+      <div class="cred-box cred-sn">
+        <div class="ct">🏷️ Crédito gerado para clientes B2B</div>
+        <div class="row"><span class="lbl">Alíquota crédito</span><span class="val" id="aliqCredSN" style="color:#b45309">—</span></div>
+        <div class="row"><span class="lbl">Crédito mensal gerado</span><span class="val" id="credClienteSN" style="color:#b45309">—</span></div>
+        <div style="font-size:.69rem;color:#92400e;margin-top:5px">Proporcional ao DAS — Art. 144, §1º, LC 214/2025 · <strong id="credPropDisplay">15%</strong> do crédito pleno</div>
+      </div>
+    </div>
+
+    <!-- HÍBRIDO -->
+    <div class="res-card" id="cardHib">
+      <h3>🔀 Sistema Híbrido <span id="badgeHib" class="badge badge-rec hidden">RECOMENDADO</span></h3>
+      <div class="res-sub">DAS reduzido + IBS/CBS separados com crédito pleno</div>
+      <div id="aliqHib" class="aliq-big">—</div>
+      <div id="difHib" class="aliq-info">—</div>
+      <div class="row"><span class="lbl">DAS Reduzido (só IRPJ+CSLL+CPP)</span><span class="val" id="dasRedHib">—</span></div>
+      <div class="row" id="rowIS-Hib" style="display:none"><span class="lbl">+ Imposto Seletivo (2027+)</span><span class="val" id="isHib" style="color:#7c3aed">—</span></div>
+      <div class="row"><span class="lbl">IBS saídas (<span id="ibsAliqDisplay">17,7</span>%)</span><span class="val" id="ibsSaidaHib">—</span></div>
+      <div class="row"><span class="lbl">CBS saídas (<span id="cbsAliqDisplay">8,8</span>%)</span><span class="val" id="cbsSaidaHib">—</span></div>
+      <div class="row" style="color:#059669"><span class="lbl">− Crédito IBS entradas</span><span class="val" id="credIbsHib">—</span></div>
+      <div class="row" style="color:#059669"><span class="lbl">− Crédito CBS entradas</span><span class="val" id="credCbsHib">—</span></div>
+      <div class="row total-row"><span class="lbl">Carga Total Mensal</span><span class="val" id="cargaHibTotal">—</span></div>
+      <div class="row"><span class="lbl">Carga % receita</span><span class="val" id="pctHibTotal">—</span></div>
+      <div class="row"><span class="lbl">Carga anual estimada</span><span class="val" id="cargaHibAnual">—</span></div>
+      <div class="cred-box cred-hib">
+        <div class="ct">✅ Crédito gerado para clientes B2B</div>
+        <div class="row"><span class="lbl">Alíquota crédito</span><span class="val" style="color:#065f46" id="aliqCredHibDisplay">—</span></div>
+        <div class="row"><span class="lbl">Crédito mensal gerado</span><span class="val" id="credClienteHib" style="color:#065f46">—</span></div>
+        <div style="font-size:.69rem;color:#166534;margin-top:5px">Crédito integral IBS+CBS — Art. 28–47, LC 214/2025</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPARATIVO -->
   <div class="card">
-    <div class="card-header">
-      <span style="font-size:1.2rem">📋</span>
-      <div>
-        <h2>Parâmetros da Empresa</h2>
-        <p>Preencha com os dados do cliente do Simples Nacional</p>
-      </div>
+    <div class="card-h">
+      <div class="card-h-ico">📊</div>
+      <div><h2>Análise Comparativa — Resumo Financeiro Mensal</h2></div>
     </div>
-    <div class="card-body">
-      <div class="grid-3" style="margin-bottom:18px">
-        <div>
-          <label>Faturamento Mensal (R$)</label>
-          <input type="text" id="faturamento" value="100.000" oninput="calcular()">
-          <p class="hint">Receita bruta média mensal</p>
+    <div class="card-b">
+      <div class="comp-grid">
+        <div class="comp-box" id="boxDif">
+          <div class="cl">Diferença de Carga</div>
+          <div class="cv" id="cvDif">—</div>
+          <div class="cs" id="csDif">—</div>
         </div>
-        <div>
-          <label>RBT12 — Receita 12 meses (R$)</label>
-          <input type="text" id="rbt12" placeholder="Deixe em branco = mensal × 12" oninput="calcular()">
-          <p class="hint">Determina a faixa e alíquota do DAS</p>
+        <div class="comp-box cb-green">
+          <div class="cl">Crédito Extra p/ Clientes</div>
+          <div class="cv" id="cvCredExtra" style="color:#059669">—</div>
+          <div class="cs">por mês (B2B)</div>
         </div>
-        <div>
-          <label>Anexo do Simples Nacional</label>
-          <select id="anexo" onchange="calcular()">
-            <option value="I">Anexo I — Comércio (revenda)</option>
-            <option value="II">Anexo II — Indústria (fabricação)</option>
-            <option value="III">Anexo III — Serviços grupo A</option>
-            <option value="IV">Anexo IV — Serviços grupo B (sem CPP no DAS)</option>
-            <option value="V">Anexo V — Serviços grupo C / fator r</option>
-          </select>
-          <p class="hint" id="hint-anexo">Supermercado, farmácia, loja de roupas, material de construção</p>
+        <div class="comp-box" id="boxSaldo">
+          <div class="cl">Saldo Econômico Líquido</div>
+          <div class="cv" id="cvSaldo">—</div>
+          <div class="cs">benefício − custo extra</div>
+        </div>
+        <div class="comp-box cb-purple">
+          <div class="cl">Fator Competitividade</div>
+          <div class="cv" id="cvFator" style="color:#7c3aed">—</div>
+          <div class="cs">≥1,5× → híbrido indicado</div>
         </div>
       </div>
-
-      <hr class="sep">
-
-      <div class="grid-3">
-        <div>
-          <label>💰 Compras / Entradas Mensais (R$)</label>
-          <input type="text" id="compras" value="60.000" oninput="calcular()">
-          <p class="hint">Mercadorias, insumos, serviços tomados com IBS/CBS</p>
-        </div>
-        <div>
-          <label>% Compras de Fornecedores LP/LR</label>
-          <input type="number" id="pctLPLR" value="70" min="0" max="100" step="5" oninput="calcular()">
-          <p class="hint">LP/LR → crédito pleno. SN → crédito proporcional (~15%)</p>
-        </div>
-        <div>
-          <label>% Vendas para Empresas (B2B)</label>
-          <input type="number" id="pctB2B" value="80" min="0" max="100" step="5" oninput="calcular()">
-          <p class="hint">Apenas B2B se beneficia do crédito pleno. B2C (PF) não usa créditos.</p>
-        </div>
+      <div class="barra-wrap">
+        <div style="font-size:.78rem;font-weight:600;color:#475569;margin-bottom:8px">Alíquota de crédito gerada para clientes B2B</div>
+        <div class="barra-lbl"><span>Simples Nacional Padrão</span><strong id="barLblSN">—</strong></div>
+        <div class="barra-bg"><div class="barra-sn" id="barraSN" style="width:0%"></div></div>
+        <div class="barra-lbl"><span>Sistema Híbrido</span><strong id="barLblHib" style="color:#059669">—</strong></div>
+        <div class="barra-bg"><div class="barra-hib"></div></div>
       </div>
     </div>
   </div>
 
-  <!-- RESULTADO -->
-  <div id="resultado" class="hidden">
-
-    <!-- Recomendação -->
-    <div id="recPanel" class="rec-panel">
-      <div class="rec-icon" id="recIcon">✅</div>
+  <!-- PROJEÇÃO ANO A ANO (TABS: 2026-2033) -->
+  <div class="card">
+    <div class="card-h">
+      <div class="card-h-ico">📅</div>
       <div>
-        <div class="rec-title" id="recTitle">—</div>
-        <div class="rec-text" id="recText">—</div>
-        <div class="rec-metrics" id="recMetrics"></div>
+        <h2>Projeção Ano a Ano — 2026 a 2033</h2>
+        <p>Evolução da carga conforme o cronograma de transição da Reforma Tributária</p>
       </div>
     </div>
-
-    <!-- Cards lado a lado -->
-    <div class="resultado-grid">
-
-      <!-- Simples Nacional -->
-      <div class="res-card" id="cardSN">
-        <h3>
-          ⚖️ Simples Nacional Padrão
-          <span id="badgeSN" class="badge-rec hidden">RECOMENDADO</span>
-        </h3>
-        <div class="sub">DAS único — IBS/CBS embarcados</div>
-
-        <div id="aliqSN" class="aliq-big" style="color:#2563eb">—</div>
-        <div class="aliq-sub" id="faixaSN">—</div>
-
-        <div class="row"><span class="lbl">DAS Total Mensal</span><span class="val" id="dasTotalSN">—</span></div>
-        <div class="row"><span class="lbl">↳ IBS embutido no DAS</span><span class="val" id="ibsNoSN" style="color:#2563eb">—</span></div>
-        <div class="row"><span class="lbl">↳ CBS embutida no DAS</span><span class="val" id="cbsNoSN" style="color:#2563eb">—</span></div>
-        <div class="row total"><span class="lbl">Carga tributária mensal</span><span class="val" id="cargaSNTotal">—</span></div>
-        <div class="row"><span class="lbl">Carga anual estimada</span><span class="val" id="cargaSNAnual">—</span></div>
-
-        <div class="credito-box sn">
-          <div class="ct">🏷️ Crédito gerado para clientes B2B</div>
-          <div class="row"><span class="lbl">Alíquota de crédito</span><span class="val" id="aliqCreditoSN" style="color:#b45309">—</span></div>
-          <div class="row"><span class="lbl">Crédito mensal gerado</span><span class="val" id="creditoSN" style="color:#b45309">—</span></div>
-          <div style="font-size:0.71rem;color:#92400e;margin-top:5px">Proporcional ao DAS — Art. 144, LC 214/2025</div>
-        </div>
-      </div>
-
-      <!-- Híbrido -->
-      <div class="res-card" id="cardHib">
-        <h3>
-          🔀 Sistema Híbrido
-          <span id="badgeHib" class="badge-rec hidden">RECOMENDADO</span>
-        </h3>
-        <div class="sub">DAS reduzido + IBS/CBS com crédito pleno</div>
-
-        <div id="aliqHib" class="aliq-big">—</div>
-        <div class="aliq-sub" id="difHib">—</div>
-
-        <div class="row"><span class="lbl">DAS Reduzido (sem IBS/CBS)</span><span class="val" id="dasRedHib">—</span></div>
-        <div class="row"><span class="lbl">IBS saídas (17,7%)</span><span class="val" id="ibsSaidaHib">—</span></div>
-        <div class="row"><span class="lbl">CBS saídas (8,8%)</span><span class="val" id="cbsSaidaHib">—</span></div>
-        <div class="row" style="color:#059669"><span class="lbl">− Crédito IBS entradas</span><span class="val" id="credIbsHib">—</span></div>
-        <div class="row" style="color:#059669"><span class="lbl">− Crédito CBS entradas</span><span class="val" id="credCbsHib">—</span></div>
-        <div class="row total"><span class="lbl">Carga tributária mensal</span><span class="val" id="cargaHibTotal">—</span></div>
-        <div class="row"><span class="lbl">Carga anual estimada</span><span class="val" id="cargaHibAnual">—</span></div>
-
-        <div class="credito-box hib">
-          <div class="ct">✅ Crédito gerado para clientes B2B</div>
-          <div class="row"><span class="lbl">Alíquota de crédito</span><span class="val" style="color:#065f46">26,50% (IBS+CBS plenos)</span></div>
-          <div class="row"><span class="lbl">Crédito mensal gerado</span><span class="val" id="creditoHib" style="color:#065f46">—</span></div>
-          <div style="font-size:0.71rem;color:#166534;margin-top:5px">Crédito integral — LC 214/2025, Art. 28–47</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Comparativo numérico -->
-    <div class="card">
-      <div class="card-header">
-        <span style="font-size:1.2rem">📊</span>
-        <div><h2>Análise Comparativa — Resumo Financeiro Mensal</h2></div>
-      </div>
-      <div class="card-body">
-        <div class="comp-grid">
-          <div class="comp-box" id="boxDif">
-            <div class="cl">Diferença de Carga</div>
-            <div class="cv" id="cvDif">—</div>
-            <div class="cs" id="csDif">—</div>
-          </div>
-          <div class="comp-box green">
-            <div class="cl">Crédito Extra p/ Clientes</div>
-            <div class="cv" id="cvCredExtra" style="color:#059669">—</div>
-            <div class="cs">Por mês (vendas B2B)</div>
-          </div>
-          <div class="comp-box" id="boxSaldo">
-            <div class="cl">Saldo Líquido Econômico</div>
-            <div class="cv" id="cvSaldo">—</div>
-            <div class="cs">Benefício extra − custo extra</div>
-          </div>
-          <div class="comp-box purple">
-            <div class="cl">Fator de Competitividade</div>
-            <div class="cv" id="cvFator" style="color:#7c3aed">—</div>
-            <div class="cs">Benefício ÷ Custo (acima de 1,5× → híbrido)</div>
-          </div>
-        </div>
-
-        <!-- Barra de crédito -->
-        <div class="barra-wrap">
-          <div style="font-size:0.8rem;font-weight:600;color:#475569;margin-bottom:10px">Alíquota de crédito gerada para clientes B2B</div>
-          <div class="barra-label">
-            <span>SN Padrão</span>
-            <strong id="barLabelSN">—</strong>
-          </div>
-          <div class="barra-bg" style="margin-bottom:8px">
-            <div class="barra-fill sn" id="barraSN" style="width:0%"></div>
-          </div>
-          <div class="barra-label">
-            <span>Híbrido</span>
-            <strong style="color:#059669">26,50% (máximo)</strong>
-          </div>
-          <div class="barra-bg">
-            <div class="barra-fill hib" style="width:100%"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Impacto no cliente B2B -->
-    <div class="card">
-      <div class="card-header">
-        <span style="font-size:1.2rem">👥</span>
-        <div>
-          <h2>Impacto para o Cliente B2B (Comprador LP/LR)</h2>
-          <p>Como a decisão afeta o custo efetivo de aquisição do seu cliente empresarial</p>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="grid-3">
-          <div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px;font-size:0.82rem;">
-            <div style="font-size:0.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">Compra de R$ 100.000 do seu cliente</div>
-            <div class="row"><span class="lbl">Preço pago</span><span class="val">R$ 100.000</span></div>
-            <div class="row"><span class="lbl" style="color:#b45309">Crédito (SN padrão)</span><span class="val" id="b2bCredSN" style="color:#b45309">—</span></div>
-            <div class="row"><span class="lbl" style="color:#059669">Crédito (Híbrido)</span><span class="val" id="b2bCredHib" style="color:#059669">—</span></div>
-            <div class="row total"><span class="lbl">Crédito extra no híbrido</span><span class="val" id="b2bExtra" style="color:#059669">—</span></div>
-          </div>
-
-          <div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px;font-size:0.82rem;">
-            <div style="font-size:0.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">Custo efetivo para o comprador</div>
-            <div class="row"><span class="lbl">Custo bruto</span><span class="val">R$ 100.000</span></div>
-            <div class="row"><span class="lbl" style="color:#b45309">Custo líquido (SN padrão)</span><span class="val" id="b2bCustoSN" style="color:#b45309">—</span></div>
-            <div class="row"><span class="lbl" style="color:#059669">Custo líquido (Híbrido)</span><span class="val" id="b2bCustoHib" style="color:#059669">—</span></div>
-            <div class="row total"><span class="lbl">Economia do cliente</span><span class="val" id="b2bEco" style="color:#059669">—</span></div>
-          </div>
-
-          <div style="border:1px solid #c4b5fd;border-radius:10px;padding:14px;font-size:0.82rem;background:#faf5ff;">
-            <div style="font-size:0.72rem;color:#7c3aed;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;font-weight:700">💡 Argumento Comercial</div>
-            <p id="argumentoComercial" style="color:#5b21b6;line-height:1.6;">—</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Fatores de decisão -->
-    <div class="card">
-      <div class="card-header">
-        <span style="font-size:1.2rem">💡</span>
-        <div><h2>Fatores Complementares para Decisão</h2></div>
-      </div>
-      <div class="card-body">
-        <div class="check-grid" id="checkGrid">
-          <!-- preenchido via JS -->
-        </div>
-      </div>
-    </div>
-
-    <!-- Tabela técnica -->
-    <div class="card">
-      <div class="card-header" style="justify-content:space-between;cursor:pointer" onclick="toggleDet()">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:1.2rem">🔎</span>
-          <div><h2>Detalhamento Técnico — Memória de Cálculo</h2></div>
-        </div>
-        <button class="btn-det" id="btnDet">▼ Expandir</button>
-      </div>
-      <div id="detBody" class="card-body hidden">
-        <table>
+    <div class="card-b">
+      <div style="overflow-x:auto">
+        <table class="tabela-ano">
           <thead>
             <tr>
-              <th>Componente</th>
-              <th style="text-align:right;color:#2563eb">SN Padrão</th>
-              <th style="text-align:right;color:#059669">Híbrido</th>
-              <th style="text-align:right">Diferença</th>
+              <th style="text-align:left">Ano</th>
+              <th>Fase</th>
+              <th>IBS efetivo</th>
+              <th>CBS efetiva</th>
+              <th>Carga SN</th>
+              <th>Carga Híbrido</th>
+              <th>Dif.</th>
+              <th>Crédito SN</th>
+              <th>Crédito Híbrido</th>
             </tr>
           </thead>
-          <tbody id="tabelaDet"></tbody>
+          <tbody id="tabelaAnos"></tbody>
         </table>
-        <hr class="sep">
-        <div style="font-size:0.75rem;color:#64748b;line-height:1.7">
-          <strong style="color:#475569">Premissas e Bases Legais</strong><br>
-          • Alíquotas IBS/CBS de referência para 2033: IBS 17,7% + CBS 8,8% = 26,5%. Valores definitivos fixados por resolução do Senado Federal (EC 132/2023, art. 11).<br>
-          • Proporção IBS/CBS no DAS estimada com base na distribuição de ICMS/ISS/PIS/COFINS por Anexo (LC 123/2006, Res. CGSN 140/2018).<br>
-          • Crédito proporcional SN: ~15% do IBS/CBS pleno (Art. 144, §1º, LC 214/2025).<br>
-          • Crédito pleno LP/LR nas entradas: 100% do IBS+CBS do fornecedor (Art. 28–47, LC 214/2025 — não-cumulatividade plena).<br>
-          • Modelo simplificado para planejamento tributário. Não substitui análise técnica individualizada com dados fiscais reais do cliente.
+      </div>
+      <div style="font-size:.71rem;color:#94a3b8;margin-top:10px;line-height:1.6">
+        * Carga SN inclui DAS + IS (se aplicável) + CPP separada (Anexo IV). Carga Híbrido inclui DAS reduzido + IBS/CBS líquido (com crédito de entradas) + IS + CPP.
+        Carga não inclui IRPJ/CSLL (já embutidos no DAS).
+      </div>
+    </div>
+  </div>
+
+  <!-- IMPACTO NO CLIENTE B2B -->
+  <div class="card">
+    <div class="card-h">
+      <div class="card-h-ico">👥</div>
+      <div>
+        <h2>Impacto para o Cliente Comprador (LP/LR)</h2>
+        <p>Custo efetivo de aquisição de R$ 100.000 conforme o regime do fornecedor</p>
+      </div>
+    </div>
+    <div class="card-b">
+      <div class="g3">
+        <div style="border:1px solid #e2e8f0;border-radius:10px;padding:13px;font-size:.79rem">
+          <div class="section-title">Crédito na Compra de R$ 100.000</div>
+          <div class="row"><span class="lbl">Preço pago</span><span class="val">R$ 100.000</span></div>
+          <div class="row"><span class="lbl" style="color:#b45309">Crédito (SN padrão)</span><span class="val" id="b2bCredSN" style="color:#b45309">—</span></div>
+          <div class="row"><span class="lbl" style="color:#059669">Crédito (Híbrido)</span><span class="val" id="b2bCredHib" style="color:#059669">—</span></div>
+          <div class="row total-row"><span class="lbl">Crédito extra no Híbrido</span><span class="val" id="b2bExtra" style="color:#059669">—</span></div>
+        </div>
+        <div style="border:1px solid #e2e8f0;border-radius:10px;padding:13px;font-size:.79rem">
+          <div class="section-title">Custo Efetivo para o Comprador</div>
+          <div class="row"><span class="lbl">Custo bruto</span><span class="val">R$ 100.000</span></div>
+          <div class="row"><span class="lbl" style="color:#b45309">Custo líquido (SN)</span><span class="val" id="b2bCustoSN" style="color:#b45309">—</span></div>
+          <div class="row"><span class="lbl" style="color:#059669">Custo líquido (Híbrido)</span><span class="val" id="b2bCustoHib" style="color:#059669">—</span></div>
+          <div class="row total-row"><span class="lbl">Economia do comprador</span><span class="val" id="b2bEco" style="color:#059669">—</span></div>
+        </div>
+        <div style="border:1px solid #c4b5fd;border-radius:10px;padding:13px;font-size:.79rem;background:#faf5ff">
+          <div class="section-title" style="color:#7c3aed">💡 Argumento Comercial</div>
+          <p id="argComercial" style="color:#5b21b6;line-height:1.6">—</p>
         </div>
       </div>
     </div>
+  </div>
 
-  </div><!-- fim #resultado -->
+  <!-- CHECKLIST FATORES -->
+  <div class="card">
+    <div class="card-h">
+      <div class="card-h-ico">💡</div>
+      <div><h2>Fatores Complementares para Decisão</h2></div>
+    </div>
+    <div class="card-b">
+      <div class="check-grid" id="checkGrid"></div>
+    </div>
+  </div>
 
-</div><!-- fim container -->
+  <!-- DETALHAMENTO TÉCNICO -->
+  <div class="card">
+    <div class="card-h" style="cursor:pointer" onclick="toggleDet()">
+      <div class="card-h-ico">🔎</div>
+      <div><h2>Memória de Cálculo Técnica</h2></div>
+      <div class="card-h-right no-print">
+        <button class="toggle-det" id="btnDet">▼ Expandir</button>
+      </div>
+    </div>
+    <div id="detBody" class="card-b hidden">
+      <table class="tec-table">
+        <thead>
+          <tr>
+            <th>Componente</th>
+            <th style="text-align:right;color:#2563eb">SN Padrão</th>
+            <th style="text-align:right;color:#059669">Híbrido</th>
+            <th style="text-align:right">Diferença</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaDet"></tbody>
+      </table>
+      <hr class="sep">
+      <div style="font-size:.72rem;color:#64748b;line-height:1.8">
+        <strong style="color:#475569">Premissas e Bases Legais</strong><br>
+        • <strong>IBS/CBS 2033:</strong> Alíquotas de referência IBS 17,7% + CBS 8,8% = 26,5% (EC 132/2023, art. 11). Definitivas pelo Senado.<br>
+        • <strong>Proporção IBS/CBS no DAS:</strong> Estimada com base na distribuição atual ICMS/ISS/PIS/COFINS por Anexo (LC 123/2006, Res. CGSN 140/2018, adaptada ao modelo pós-reforma).<br>
+        • <strong>Crédito proporcional SN:</strong> Configurável (padrão 15%). Art. 144, §1º, LC 214/2025. Percentual definitivo pendente de regulamentação.<br>
+        • <strong>Crédito pleno LP/LR:</strong> 100% do IBS+CBS do fornecedor (Art. 28–47, LC 214/2025 — não-cumulatividade plena).<br>
+        • <strong>Fator r Anexo V:</strong> Calculado como Folha-12/RBT12. Se ≥28% → aplica Anexo III; se &lt;28% → aplica Anexo V (LC 123/2006, art. 18, §5º-M).<br>
+        • <strong>CPP Anexo IV:</strong> Recolhida separadamente via GPS. Estimada sobre folha informada (padrão 27,8% = INSS patronal 20% + RAT médio 3% + terceiros 4,8%).<br>
+        • <strong>Imposto Seletivo:</strong> Extrafiscal. Incide sobre saída do fabricante/importador (1ª etapa). Não gera crédito. Vigente a partir de 2027.<br>
+        • <strong>Cronograma IBS:</strong> 2026 0,1%, 2027-2028 0,1% (CBS plena), 2029 1,77%, 2030 3,54%, 2031 5,31%, 2032 7,08%, 2033 17,7%. ICMS/ISS reduzidos a partir de 2029.<br>
+        • Simulador para planejamento tributário. Não substitui análise técnica individualizada.
+      </div>
+    </div>
+  </div>
+
+</div><!-- fim #resultado -->
+</div><!-- fim .wrap -->
 
 <footer>
-  FiscalConf · Simulador SN × Híbrido · Reforma Tributária 2026 · LC 214/2025 · EC 132/2023<br>
-  Gerado para fins de planejamento tributário. Consulte sempre um especialista.
+  FiscalConf · Simulador SN × Sistema Híbrido · Reforma Tributária 2026–2033<br>
+  LC 214/2025 · EC 132/2023 · LC 123/2006 · Uso exclusivo para fins de planejamento tributário
 </footer>
 
 <script>
-// ─── DADOS ────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// DADOS
+// ═══════════════════════════════════════════════════════════════════════════
 const ANEXOS = {
-  I:   { nome: "Anexo I — Comércio",       hint: "Supermercado, farmácia, loja de roupas, materiais",   pctIbs: 0.340, pctCbs: 0.156,
-         faixas: [[180000,4.00,0],[360000,7.30,5940],[720000,9.50,13860],[1800000,10.70,22500],[3600000,14.30,87300],[4800000,19.00,378000]] },
-  II:  { nome: "Anexo II — Indústria",      hint: "Confecção, alimentos, móveis, embalagens, calçados",  pctIbs: 0.340, pctCbs: 0.156,
-         faixas: [[180000,4.50,0],[360000,7.80,5940],[720000,10.00,13860],[1800000,11.20,22500],[3600000,14.70,85500],[4800000,30.00,720000]] },
-  III: { nome: "Anexo III — Serviços A",    hint: "Instalação, reparos, manutenção, agências, academias", pctIbs: 0.335, pctCbs: 0.156,
-         faixas: [[180000,6.00,0],[360000,11.20,9360],[720000,13.50,17640],[1800000,16.00,35640],[3600000,21.00,125640],[4800000,33.00,648000]] },
-  IV:  { nome: "Anexo IV — Serviços B",     hint: "Construção civil, limpeza, vigilância, advocacia, saúde", pctIbs: 0.445, pctCbs: 0.215,
-         faixas: [[180000,4.50,0],[360000,9.00,8100],[720000,10.20,12420],[1800000,14.00,39780],[3600000,22.00,183780],[4800000,33.00,828000]] },
-  V:   { nome: "Anexo V — Serviços C/fator r", hint: "TI, engenharia, auditoria, publicidade, medicina, arquitetura", pctIbs: 0.300, pctCbs: 0.128,
-         faixas: [[180000,15.50,0],[360000,18.00,4500],[720000,19.50,9900],[1800000,20.50,17100],[3600000,23.00,62100],[4800000,30.50,540000]] },
+  I:  {hint:"Supermercado, farmácia, loja de roupas, material de construção",
+       pIbs:.340, pCbs:.156,
+       f:[[180e3,4.00,0],[360e3,7.30,5940],[720e3,9.50,13860],[1800e3,10.70,22500],[3600e3,14.30,87300],[4800e3,19.00,378000]]},
+  II: {hint:"Confecção, alimentos, móveis, embalagens, calçados",
+       pIbs:.340, pCbs:.156,
+       f:[[180e3,4.50,0],[360e3,7.80,5940],[720e3,10.00,13860],[1800e3,11.20,22500],[3600e3,14.70,85500],[4800e3,30.00,720000]]},
+  III:{hint:"Instalação, reparos, manutenção, agências de turismo, academias",
+       pIbs:.335, pCbs:.156,
+       f:[[180e3,6.00,0],[360e3,11.20,9360],[720e3,13.50,17640],[1800e3,16.00,35640],[3600e3,21.00,125640],[4800e3,33.00,648000]]},
+  IV: {hint:"Construção civil, limpeza, vigilância, advocacia, saúde — CPP FORA do DAS",
+       pIbs:.445, pCbs:.215,
+       f:[[180e3,4.50,0],[360e3,9.00,8100],[720e3,10.20,12420],[1800e3,14.00,39780],[3600e3,22.00,183780],[4800e3,33.00,828000]]},
+  V:  {hint:"TI, engenharia, auditoria, publicidade, medicina — depende do fator r",
+       pIbs:.300, pCbs:.128,
+       f:[[180e3,15.50,0],[360e3,18.00,4500],[720e3,19.50,9900],[1800e3,20.50,17100],[3600e3,23.00,62100],[4800e3,30.50,540000]]},
 };
 
-const IBS = 17.7, CBS = 8.8, IBS_CBS = 26.5;
+// Cronograma de transição IBS/CBS 2026-2033
+// [ano, ibsAliq%, cbsAliq%, icmsRedução%, issRedução%, pisCofinsExtintos]
+const CRONO = [
+  [2026, 0.10, 0.90, 0,   0,   false, "Testes"],
+  [2027, 0.10, 8.80, 0,   0,   true,  "CBS Efetiva"],
+  [2028, 0.10, 8.80, 0,   0,   true,  "CBS Consolida"],
+  [2029, 1.77, 8.80, 10,  10,  true,  "IBS 10%"],
+  [2030, 3.54, 8.80, 20,  20,  true,  "IBS 20%"],
+  [2031, 5.31, 8.80, 30,  30,  true,  "IBS 30%"],
+  [2032, 7.08, 8.80, 40,  40,  true,  "IBS 40%"],
+  [2033,17.70, 8.80,100, 100,  true,  "IVA Dual Pleno"],
+];
 
-// ─── UTILITÁRIOS ─────────────────────────────────────────────────────────────
-function parseBRL(str) {
-  return parseFloat((str||"0").replace(/\./g,"").replace(",",".")) || 0;
-}
-function fmtBRL(v) {
-  return v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-}
-function fmtPct(v) { return v.toFixed(2)+"%"; }
-function fmtPct1(v){ return v.toFixed(1)+"%"; }
-function el(id)    { return document.getElementById(id); }
-function setText(id, txt) { const e = el(id); if(e) e.textContent = txt; }
+// ═══════════════════════════════════════════════════════════════════════════
+// UTILITÁRIOS
+// ═══════════════════════════════════════════════════════════════════════════
+const brl = v => v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const pct  = v => v.toFixed(2)+"%";
+const pct1 = v => v.toFixed(1)+"%";
+const el   = id => document.getElementById(id);
+const set  = (id,t) => { const e=el(id); if(e) e.textContent=t; };
+const show = (id,v=true) => { const e=el(id); if(e) e.style.display = v?"":"none"; };
+const cls  = (id,c,on=true) => { const e=el(id); if(e) e.classList.toggle(c,on); };
 
-function calcAliqEfetiva(rbt12, faixas) {
-  for (let i=0; i<faixas.length; i++) {
-    if (rbt12 <= faixas[i][0]) {
-      const aliqNom = faixas[i][1];
-      const ded     = faixas[i][2];
-      const ef      = rbt12 > 0 ? Math.max(0, (rbt12 * aliqNom/100 - ded) / rbt12 * 100) : aliqNom;
-      return { ef, nom: aliqNom, faixa: i+1 };
+function parseBRL(s){
+  return parseFloat((s||"0").replace(/[^\d,.]/g,"").replace(/\./g,"").replace(",",".")) || 0;
+}
+
+function calcAliqEfetiva(rbt12, faixas){
+  for(let i=0;i<faixas.length;i++){
+    const [max,nom,ded]=faixas[i];
+    if(rbt12<=max){
+      const ef = rbt12>0 ? Math.max(0,(rbt12*nom/100-ded)/rbt12*100) : nom;
+      return {ef, nom, faixa:i+1};
     }
   }
-  return { ef: 0, nom: 0, faixa: 7 };
+  return {ef:0,nom:0,faixa:7};
 }
 
-// ─── CÁLCULO PRINCIPAL ───────────────────────────────────────────────────────
-function calcSimulacao(fat, rbt12, anexo, comp, pctLPLR, pctB2B) {
-  const cfg = ANEXOS[anexo];
-  if (!cfg || fat <= 0) return null;
+// ═══════════════════════════════════════════════════════════════════════════
+// LÓGICA CENTRAL
+// ═══════════════════════════════════════════════════════════════════════════
+function calcAnual(fat, rbt12, cfg, comp, pctLPLR, pctB2B, credProp, ibsAliq, cbsAliq, cpp, is){
+  // Para Anexo V, o fatorR já foi resolvido antes — cfg já é o correto
+  const {ef:aliqEf, nom:aliqNom, faixa} = calcAliqEfetiva(rbt12, cfg.f);
 
-  const { ef: aliqEf, nom: aliqNom, faixa } = calcAliqEfetiva(rbt12, cfg.faixas);
+  const IBC = ibsAliq + cbsAliq;
 
-  // ── SN PADRÃO ──
-  const dasTotal   = fat * aliqEf / 100;
-  const ibsNoDas   = dasTotal * cfg.pctIbs;
-  const cbsNoDas   = dasTotal * cfg.pctCbs;
-  const ibsCbsDas  = ibsNoDas + cbsNoDas;
-  const aliqCredSN = fat > 0 ? ibsCbsDas / fat * 100 : 0;
-  const credClienteSN = fat * (pctB2B/100) * (aliqCredSN/100);
-  const cargaSN = dasTotal;
+  // ── SN ──
+  const dasTotal = fat * aliqEf/100;
+  const ibsNoDas = dasTotal * cfg.pIbs;
+  const cbsNoDas = dasTotal * cfg.pCbs;
+  const aliqCredSN = fat>0 ? (ibsNoDas+cbsNoDas)/fat*100 : 0;
+  const credCliSN = fat * (pctB2B/100) * (aliqCredSN/100);
+  const cargaSN = dasTotal + cpp + is; // cpp e is somados para carga total
 
   // ── HÍBRIDO ──
-  const pctRed   = Math.max(0, 1 - cfg.pctIbs - cfg.pctCbs);
-  const dasRed   = dasTotal * pctRed;
-  const ibsSaida = fat * IBS/100;
-  const cbsSaida = fat * CBS/100;
-  const compLP   = comp * pctLPLR/100;
-  const compSN   = comp * (1-pctLPLR/100);
-  const credIbs  = compLP * IBS/100 + compSN * IBS/100 * 0.15;
-  const credCbs  = compLP * CBS/100 + compSN * CBS/100 * 0.15;
-  const credEnt  = credIbs + credCbs;
-  const ibsCbsLiq = Math.max(0, ibsSaida + cbsSaida - credEnt);
-  const cargaHib = dasRed + ibsCbsLiq;
-  const aliqHib  = fat > 0 ? cargaHib/fat*100 : 0;
-  const credClienteHib = fat * (pctB2B/100) * IBS_CBS/100;
+  const pRed = Math.max(0, 1 - cfg.pIbs - cfg.pCbs);
+  const dasRed = dasTotal * pRed;
+  const ibsSaida = fat * ibsAliq/100;
+  const cbsSaida = fat * cbsAliq/100;
+  const compLP = comp * pctLPLR/100;
+  const compSN = comp * (1-pctLPLR/100);
+  const credIbs = compLP*ibsAliq/100 + compSN*ibsAliq/100*(credProp/100);
+  const credCbs = compLP*cbsAliq/100 + compSN*cbsAliq/100*(credProp/100);
+  const credEnt = credIbs + credCbs;
+  const ibsCbsLiq = Math.max(0, ibsSaida+cbsSaida-credEnt);
+  const cargaHib = dasRed + ibsCbsLiq + cpp + is;
 
-  // ── COMPARATIVO ──
-  const difCarga    = cargaHib - cargaSN;
-  const credExtra   = credClienteHib - credClienteSN;
-  const saldoLiq    = credExtra - difCarga;
-  const fatorComp   = difCarga > 0 ? credExtra / difCarga : 99;
+  const aliqCredHib = IBC;
+  const credCliHib = fat * (pctB2B/100) * (IBC/100);
 
-  // ── RECOMENDAÇÃO ──
-  let rec, justificativa, nivel;
-  if (pctB2B < 20) {
-    rec = "simples"; nivel = "forte";
-    justificativa = `Apenas ${pctB2B}% das vendas são para empresas (B2B). O benefício do crédito pleno é irrelevante para clientes pessoa física. O híbrido encareceria a carga tributária sem contrapartida comercial. Permanecer no Simples Nacional padrão é claramente a melhor opção.`;
-  } else if (difCarga <= 0) {
-    rec = "hibrido"; nivel = "forte";
-    justificativa = `O sistema híbrido apresenta carga tributária igual ou MENOR que o Simples Nacional padrão (${fmtPct(aliqHib)} vs ${fmtPct(aliqEf)}), com a vantagem adicional de gerar créditos plenos (26,5%) para seus clientes empresariais. A opção pelo híbrido é vantajosa em todos os aspectos.`;
-  } else if (fatorComp >= 2.0 && pctB2B >= 60) {
-    rec = "hibrido"; nivel = "forte";
-    justificativa = `Com ${pctB2B}% de vendas B2B e fator de competitividade de ${fatorComp.toFixed(1)}×, os clientes ganham muito mais em crédito do que a empresa paga de custo extra. O híbrido fortalece sua posição competitiva e justifica uma negociação de preço com os compradores.`;
-  } else if (fatorComp >= 1.5 && pctB2B >= 40) {
-    rec = "hibrido"; nivel = "moderado";
-    justificativa = `O benefício de crédito para clientes B2B supera o custo extra do híbrido (fator ${fatorComp.toFixed(1)}×). Recomenda-se avaliar a migração, especialmente se seus clientes são empresas LP/LR que sofrerão com a baixa geração de crédito no SN padrão.`;
-  } else if (difCarga > 0 && fatorComp < 1.0) {
-    rec = "simples"; nivel = "forte";
-    justificativa = `O custo extra do híbrido (${fmtBRL(difCarga)}/mês) supera o benefício gerado para os clientes (${fmtBRL(credExtra)}/mês). Permanecer no Simples Nacional padrão é financeiramente mais vantajoso.`;
+  return {aliqEf,aliqNom,faixa,dasTotal,ibsNoDas,cbsNoDas,aliqCredSN,credCliSN,cargaSN,
+          dasRed,ibsSaida,cbsSaida,credIbs,credCbs,credEnt,ibsCbsLiq,cargaHib,
+          aliqCredHib,credCliHib,cpp,is,
+          pctSN:fat>0?cargaSN/fat*100:0, pctHib:fat>0?cargaHib/fat*100:0};
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RECOMENDAÇÃO
+// ═══════════════════════════════════════════════════════════════════════════
+function gerarRec(s, pctB2B){
+  const dif = s.cargaHib - s.cargaSN;
+  const credExtra = s.credCliHib - s.credCliSN;
+  const saldo = credExtra - dif;
+  const fator = dif > 0 ? credExtra/dif : 99;
+  let rec, nivel, texto;
+
+  if(pctB2B < 15){
+    rec="simples"; nivel="forte";
+    texto=`Com apenas ${pctB2B}% de vendas para empresas, praticamente nenhum cliente aproveita créditos fiscais. O sistema híbrido elevaria a carga tributária sem qualquer contrapartida comercial. Permanecer no Simples Nacional padrão é a decisão correta.`;
+  } else if(dif <= 0){
+    rec="hibrido"; nivel="forte";
+    texto=`O sistema híbrido apresenta carga tributária igual ou MENOR (${pct(s.pctHib)} vs ${pct(s.pctSN)} no SN), com a vantagem adicional de gerar créditos plenos de ${pct1(s.aliqCredHib)} para seus clientes empresariais. A opção pelo híbrido é vantajosa em todos os aspectos — recomendação forte.`;
+  } else if(fator >= 2.5 && pctB2B >= 60){
+    rec="hibrido"; nivel="forte";
+    texto=`Fator de competitividade de ${fator.toFixed(1)}× com ${pctB2B}% de vendas B2B: para cada R$ 1,00 de custo extra do híbrido, seus clientes economizam R$ ${fator.toFixed(2)} em créditos. A vantagem competitiva é expressiva e justifica a migração para o regime híbrido.`;
+  } else if(fator >= 1.5 && pctB2B >= 40){
+    rec="hibrido"; nivel="moderado";
+    texto=`O benefício de crédito para clientes B2B supera o custo extra do híbrido (fator ${fator.toFixed(1)}×). A migração é recomendada, especialmente se seus clientes LP/LR precisam de crédito pleno para competir. Avalie com os principais clientes o impacto no custo efetivo de aquisição.`;
+  } else if(fator < 1.0 && dif > 0){
+    rec="simples"; nivel="forte";
+    texto=`O custo extra do híbrido (${brl(dif)}/mês) supera o benefício gerado para os clientes (${brl(credExtra)}/mês). Permanecer no Simples Nacional padrão é financeiramente mais vantajoso. Reavalie se o perfil de vendas mudar ou se as alíquotas definitivas reduzirem a carga do híbrido.`;
   } else {
-    rec = "analisar"; nivel = "moderado";
-    justificativa = `O resultado é equilibrado (fator ${fatorComp.toFixed(1)}×). A decisão depende do perfil dos clientes: se a maioria é empresa LP/LR com alta necessidade de crédito, o híbrido pode ser estrategicamente vantajoso mesmo com custo ligeiramente maior. Consulte seus principais clientes antes de decidir.`;
+    rec="analisar"; nivel="moderado";
+    texto=`Resultado equilibrado (fator ${fator.toFixed(1)}×). A decisão deve considerar o perfil específico dos clientes: se a maioria é empresa LP/LR com alta demanda por crédito fiscal, o híbrido pode ser estrategicamente vantajoso mesmo com custo marginalmente maior. Consulte os principais clientes antes de decidir.`;
   }
-
-  return {
-    aliqEf, aliqNom, faixa,
-    dasTotal, ibsNoDas, cbsNoDas, ibsCbsDas, aliqCredSN, credClienteSN, cargaSN,
-    dasRed, ibsSaida, cbsSaida, credIbs, credCbs, credEnt, ibsCbsLiq, cargaHib, aliqHib,
-    credClienteHib,
-    difCarga, credExtra, saldoLiq, fatorComp,
-    rec, justificativa, nivel,
-    cfg, pctB2B, fat, comp,
-  };
+  return {rec,nivel,texto,dif,credExtra,saldo,fator};
 }
 
-// ─── RENDER ──────────────────────────────────────────────────────────────────
-function toggleDet() {
-  const b = el("detBody"), btn = el("btnDet");
-  if (b.classList.contains("hidden")) { b.classList.remove("hidden"); btn.textContent = "▲ Ocultar"; }
-  else { b.classList.add("hidden"); btn.textContent = "▼ Expandir"; }
+// ═══════════════════════════════════════════════════════════════════════════
+// ONLOAD / ONANEXO
+// ═══════════════════════════════════════════════════════════════════════════
+function onAnexoChange(){
+  const a = el("anexo").value;
+  cls("bloco-fatorr","hidden", a!=="V");
+  cls("bloco-cpp","hidden", a!=="IV");
+  el("hint-anexo").textContent = ANEXOS[a]?.hint || "";
+  calcular();
 }
 
-function calcular() {
-  // Inputs
+function toggleDet(){
+  const b=el("detBody"), btn=el("btnDet");
+  if(b.classList.contains("hidden")){ b.classList.remove("hidden"); btn.textContent="▲ Ocultar"; }
+  else{ b.classList.add("hidden"); btn.textContent="▼ Expandir"; }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CALCULAR
+// ═══════════════════════════════════════════════════════════════════════════
+function calcular(){
+  // inputs
   const fat    = parseBRL(el("faturamento").value);
   const rbt12s = el("rbt12").value.trim();
-  const rbt12  = rbt12s ? parseBRL(rbt12s) : fat * 12;
+  const rbt12  = rbt12s ? parseBRL(rbt12s) : fat*12;
   const anexo  = el("anexo").value;
   const comp   = parseBRL(el("compras").value);
-  const pctLPLR = parseFloat(el("pctLPLR").value) || 0;
-  const pctB2B  = parseFloat(el("pctB2B").value)  || 0;
+  const pctLPLR = parseFloat(el("pctLPLR").value)||0;
+  const pctB2B  = parseFloat(el("pctB2B").value)||0;
+  const credProp = parseFloat(el("credPropSN").value)||15;
+  const ibsRef   = parseFloat(el("aliqIBS").value)||17.7;
+  const cbsRef   = parseFloat(el("aliqCBS").value)||8.8;
+  const IBC      = ibsRef + cbsRef;
 
-  // Hint do anexo
-  el("hint-anexo").textContent = ANEXOS[anexo]?.hint || "";
+  // IS
+  const isVal = el("setorIS").value;
+  const isAliq = (isVal && isVal!=="0") ? parseFloat(isVal.replace(/[a-z]/g,""))||0 : 0;
+  const isMensal = fat * isAliq/100;
+  const isAtivo = isAliq > 0;
 
-  if (fat <= 0) { el("resultado").classList.add("hidden"); return; }
-  el("resultado").classList.remove("hidden");
+  // IS UI
+  cls("is-info","hidden", !isAtivo);
+  if(isAtivo){
+    el("is-texto").innerHTML =
+      `Alíquota: <strong>${isAliq}%</strong> sobre receita bruta · IS mensal: <strong>${brl(isMensal)}</strong><br>
+       O IS é extrafiscal: <strong>não gera crédito</strong> para o adquirente e não compensa com IBS/CBS.<br>
+       Incide sobre a saída do fabricante/importador. Vigente a partir de <strong>2027</strong>.`;
+  }
 
-  const s = calcSimulacao(fat, rbt12, anexo, comp, pctLPLR, pctB2B);
-  if (!s) return;
+  // Fator r (Anexo V)
+  let cfgAtivo = ANEXOS[anexo];
+  if(anexo==="V"){
+    const folha12 = parseBRL(el("folha12").value);
+    const fr = rbt12 > 0 ? folha12/rbt12 : 0;
+    el("fatorR-display").textContent = (fr*100).toFixed(1)+"%";
+    el("fatorR-result").textContent = fr >= 0.28
+      ? `✅ Fator r ≥ 28% → aplica ANEXO III (${(fr*100).toFixed(1)}% ≥ 28%)`
+      : `⚠️ Fator r < 28% → aplica ANEXO V (${(fr*100).toFixed(1)}% < 28%)`;
+    cfgAtivo = fr >= 0.28 ? ANEXOS["III"] : ANEXOS["V"];
+  }
 
-  // ── RECOMENDAÇÃO ──
-  const recCls = { hibrido:"hibrido simples:simples analisar:analisar" };
-  el("recPanel").className = "rec-panel " + s.rec;
-  el("recIcon").textContent  = s.rec === "hibrido" ? "✅" : s.rec === "simples" ? "🔵" : "⚠️";
-  el("recTitle").textContent = s.rec === "hibrido" ? "Recomendação: Optar pelo Sistema Híbrido" :
-                               s.rec === "simples"  ? "Recomendação: Permanecer no Simples Nacional" :
-                                                      "Análise Caso a Caso Recomendada";
-  el("recText").textContent  = s.justificativa;
+  // CPP Anexo IV
+  let cppMensal = 0;
+  if(anexo==="IV"){
+    const folhaIV  = parseBRL(el("folhaIV").value);
+    const aliqCPP  = parseFloat(el("aliqCPP").value)||27.8;
+    cppMensal = folhaIV * aliqCPP/100;
+    el("cpp-display").textContent = brl(cppMensal);
+  }
+
+  if(!cfgAtivo || fat<=0){ cls("resultado","hidden",true); return; }
+  cls("resultado","hidden",false);
+
+  // Atualiza displays de alíquotas
+  set("ibsAliqDisplay", pct1(ibsRef).replace("%",""));
+  set("cbsAliqDisplay", pct1(cbsRef).replace("%",""));
+  set("credPropDisplay", credProp+"%");
+
+  // ── CÁLCULO PRINCIPAL (2033 / regime maduro) ──
+  const s = calcAnual(fat, rbt12, cfgAtivo, comp, pctLPLR, pctB2B, credProp, ibsRef, cbsRef, cppMensal, isMensal);
+  const r = gerarRec(s, pctB2B);
+
+  // ── REC PANEL ──
+  el("recPanel").className = "rec-panel rec-"+r.rec;
+  el("recIcon").textContent  = r.rec==="hibrido"?"✅":r.rec==="simples"?"🔵":"⚠️";
+  el("recTitle").textContent = r.rec==="hibrido" ? "Recomendação: Optar pelo Sistema Híbrido" :
+                               r.rec==="simples"  ? "Recomendação: Permanecer no Simples Nacional" :
+                                                    "Análise Caso a Caso Recomendada";
+  el("recText").textContent  = r.texto;
   el("recMetrics").innerHTML =
-    `<span>Carga SN: <strong>${fmtPct(s.aliqEf)}</strong></span>
-     <span>Carga Híbrido: <strong>${fmtPct(s.aliqHib)}</strong></span>
-     <span>Crédito SN: <strong>${fmtPct(s.aliqCredSN)}</strong></span>
-     <span>Crédito Híbrido: <strong>26,50%</strong></span>`;
+    `<span class="rec-m">Carga SN: <strong>${pct(s.pctSN)}</strong></span>
+     <span class="rec-m">Carga Híbrido: <strong>${pct(s.pctHib)}</strong></span>
+     <span class="rec-m">Crédito SN: <strong>${pct(s.aliqCredSN)}</strong></span>
+     <span class="rec-m">Crédito Híbrido: <strong>${pct(IBC)}</strong></span>
+     <span class="rec-m">Fator: <strong>${r.fator>50?"∞":r.fator.toFixed(1)+"×"}</strong></span>
+     ${r.nivel==="forte" ? '<span class="rec-m">⭐ Confiança Alta</span>' : '<span class="rec-m">🔶 Confiança Moderada</span>'}`;
 
   // ── CARD SN ──
-  el("cardSN").className = "res-card " + (s.rec === "simples" ? "winner" : "loser");
-  el("badgeSN").classList.toggle("hidden", s.rec !== "simples");
-  el("aliqSN").textContent   = fmtPct(s.aliqEf);
+  el("cardSN").className = "res-card "+(r.rec==="simples"?"winner":"loser");
+  cls("badgeSN","hidden", r.rec!=="simples");
+  el("aliqSN").textContent   = pct(s.aliqEf);
   el("aliqSN").style.color   = "#2563eb";
-  el("faixaSN").textContent  = `Nominal: ${fmtPct(s.aliqNom)} · Faixa ${s.faixa} · RBT12: ${fmtBRL(rbt12)}`;
-  setText("dasTotalSN",  fmtBRL(s.dasTotal));
-  setText("ibsNoSN",     fmtBRL(s.ibsNoDas));
-  setText("cbsNoSN",     fmtBRL(s.cbsNoDas));
-  setText("cargaSNTotal",fmtBRL(s.cargaSN));
-  setText("cargaSNAnual",fmtBRL(s.cargaSN * 12));
-  setText("aliqCreditoSN", fmtPct(s.aliqCredSN));
-  setText("creditoSN",     fmtBRL(s.credClienteSN));
+  el("faixaSN").textContent  = `Nominal: ${pct(s.aliqNom)} · Faixa ${s.faixa} · RBT12: ${brl(rbt12)}`;
+  set("dasTotalSN",  brl(s.dasTotal));
+  set("ibsNoSN",     brl(s.ibsNoDas));
+  set("cbsNoSN",     brl(s.cbsNoDas));
+  set("cargaSNTotal",brl(s.cargaSN));
+  set("pctSNTotal",  pct(s.pctSN));
+  set("cargaSNAnual",brl(s.cargaSN*12));
+  set("aliqCredSN",  pct(s.aliqCredSN));
+  set("credClienteSN", brl(s.credCliSN));
+  // CPP row
+  show("rowCPP-SN", anexo==="IV" && cppMensal>0);
+  set("cppSN", brl(cppMensal));
+  // IS row
+  show("rowIS-SN", isAtivo);
+  set("isSN", brl(isMensal));
 
   // ── CARD HÍB ──
-  el("cardHib").className = "res-card " + (s.rec === "hibrido" ? "winner" : "loser");
-  el("badgeHib").classList.toggle("hidden", s.rec !== "hibrido");
-  el("aliqHib").textContent = fmtPct(s.aliqHib);
-  el("aliqHib").style.color = s.aliqHib < s.aliqEf ? "#059669" : "#ea580c";
-  el("difHib").textContent  = s.aliqHib < s.aliqEf
-    ? `−${fmtPct(s.aliqEf - s.aliqHib)} vs SN padrão`
-    : `+${fmtPct(s.aliqHib - s.aliqEf)} vs SN padrão`;
-  setText("dasRedHib",   fmtBRL(s.dasRed));
-  setText("ibsSaidaHib", fmtBRL(s.ibsSaida));
-  setText("cbsSaidaHib", fmtBRL(s.cbsSaida));
-  setText("credIbsHib",  "−" + fmtBRL(s.credIbs));
-  setText("credCbsHib",  "−" + fmtBRL(s.credCbs));
-  setText("cargaHibTotal",fmtBRL(s.cargaHib));
-  setText("cargaHibAnual",fmtBRL(s.cargaHib * 12));
-  setText("creditoHib",   fmtBRL(s.credClienteHib));
+  el("cardHib").className = "res-card "+(r.rec==="hibrido"?"winner":"loser");
+  cls("badgeHib","hidden", r.rec!=="hibrido");
+  el("aliqHib").textContent = pct(s.pctHib);
+  el("aliqHib").style.color = s.pctHib < s.pctSN ? "#059669" : "#ea580c";
+  el("difHib").textContent  = s.pctHib < s.pctSN
+    ? `−${pct(s.pctSN-s.pctHib)} vs SN · ${pct(s.pctHib)} sobre a receita`
+    : `+${pct(s.pctHib-s.pctSN)} vs SN · ${pct(s.pctHib)} sobre a receita`;
+  set("dasRedHib",   brl(s.dasRed));
+  set("ibsSaidaHib", brl(s.ibsSaida));
+  set("cbsSaidaHib", brl(s.cbsSaida));
+  set("credIbsHib",  "−"+brl(s.credIbs));
+  set("credCbsHib",  "−"+brl(s.credCbs));
+  set("cargaHibTotal",brl(s.cargaHib));
+  set("pctHibTotal",  pct(s.pctHib));
+  set("cargaHibAnual",brl(s.cargaHib*12));
+  set("aliqCredHibDisplay", pct(IBC)+" (IBS+CBS plenos)");
+  set("credClienteHib", brl(s.credCliHib));
+  show("rowIS-Hib", isAtivo);
+  set("isHib", brl(isMensal));
 
   // ── COMPARATIVO ──
-  const difPos = s.difCarga > 0;
-  el("cvDif").textContent   = (difPos ? "+" : "") + fmtBRL(s.difCarga);
-  el("cvDif").style.color   = difPos ? "#ea580c" : "#059669";
-  el("csDif").textContent   = difPos ? "Híbrido é mais caro" : "Híbrido é mais barato";
-  el("boxDif").className    = "comp-box " + (difPos ? "red" : "green");
-  setText("cvCredExtra", "+" + fmtBRL(s.credExtra));
-  el("cvSaldo").textContent = (s.saldoLiq >= 0 ? "+" : "") + fmtBRL(s.saldoLiq);
-  el("cvSaldo").style.color = s.saldoLiq >= 0 ? "#059669" : "#dc2626";
-  el("boxSaldo").className  = "comp-box " + (s.saldoLiq >= 0 ? "green" : "red");
-  el("cvFator").textContent = s.fatorComp > 50 ? "∞" : s.fatorComp.toFixed(1) + "×";
-
-  // Barra
-  const pctBarra = Math.min(100, (s.aliqCredSN / IBS_CBS) * 100);
-  el("barraSN").style.width = pctBarra + "%";
-  el("barLabelSN").textContent = fmtPct(s.aliqCredSN);
+  el("cvDif").textContent = (r.dif>0?"+":"")+brl(r.dif);
+  el("cvDif").style.color = r.dif>0?"#ea580c":"#059669";
+  el("csDif").textContent = r.dif>0?"Híbrido mais caro":"Híbrido mais barato";
+  el("boxDif").className  = "comp-box "+(r.dif>0?"cb-red":"cb-green");
+  set("cvCredExtra", "+"+brl(r.credExtra));
+  el("cvSaldo").textContent = (r.saldo>=0?"+":"")+brl(r.saldo);
+  el("cvSaldo").style.color = r.saldo>=0?"#059669":"#dc2626";
+  el("boxSaldo").className  = "comp-box "+(r.saldo>=0?"cb-green":"cb-red");
+  el("cvFator").textContent = r.fator>50?"∞":r.fator.toFixed(1)+"×";
+  el("cvFator").style.color = r.fator>=1.5?"#7c3aed":"#ea580c";
+  // barras
+  const pBar = Math.min(100,(s.aliqCredSN/IBC)*100);
+  el("barraSN").style.width = pBar+"%";
+  set("barLblSN", pct(s.aliqCredSN));
+  set("barLblHib", pct(IBC)+" (máximo)");
 
   // ── B2B ──
-  const credSN100 = 1000 * s.aliqCredSN;
-  const credHib100 = 1000 * IBS_CBS;
-  setText("b2bCredSN",  fmtBRL(credSN100));
-  setText("b2bCredHib", fmtBRL(credHib100));
-  setText("b2bExtra",   "+" + fmtBRL(credHib100 - credSN100));
-  setText("b2bCustoSN",  fmtBRL(100000 - credSN100));
-  setText("b2bCustoHib", fmtBRL(100000 - credHib100));
-  setText("b2bEco",      fmtBRL(credHib100 - credSN100));
-  el("argumentoComercial").innerHTML =
-    `No híbrido, seu cliente LP/LR paga <strong>R$ 100.000</strong> e credita <strong>${fmtBRL(credHib100)}</strong> de IBS/CBS, ` +
-    `reduzindo o custo efetivo para <strong>${fmtBRL(100000 - credHib100)}</strong>. ` +
-    `No SN padrão o custo seria <strong>${fmtBRL(100000 - credSN100)}</strong> — ` +
-    `<strong style="color:#6d28d9">${fmtBRL(credHib100 - credSN100)} a mais.</strong>`;
+  const c100SN  = 1000 * s.aliqCredSN;
+  const c100Hib = 1000 * IBC;
+  set("b2bCredSN",  brl(c100SN));
+  set("b2bCredHib", brl(c100Hib));
+  set("b2bExtra",   "+"+brl(c100Hib-c100SN));
+  set("b2bCustoSN",  brl(100000-c100SN));
+  set("b2bCustoHib", brl(100000-c100Hib));
+  set("b2bEco",      brl(c100Hib-c100SN));
+  el("argComercial").innerHTML =
+    `No híbrido, seu cliente LP/LR paga <strong>R$ 100.000</strong> e credita <strong>${brl(c100Hib)}</strong> de IBS/CBS,
+    custo efetivo <strong>${brl(100000-c100Hib)}</strong>. No SN padrão o custo efetivo seria <strong>${brl(100000-c100SN)}</strong> —
+    <strong style="color:#6d28d9">${brl(c100Hib-c100SN)} a mais</strong>. Potencial de reajuste de preço sem perder competitividade.`;
+
+  // ── TABELA ANO A ANO ──
+  let htmlAnos = "";
+  CRONO.forEach(([ano,ibsA,cbsA,,,,fase])=>{
+    const IBCA = ibsA+cbsA;
+    // Recalcula carga para o ano com alíquotas do cronograma (mantém proporções do DAS, IS vigente só a partir 2027)
+    const isAno = ano>=2027 ? isMensal : 0;
+    const dasA = fat * s.aliqEf/100;
+    const ibsDasA = dasA * cfgAtivo.pIbs * (ibsA/ibsRef || (ibsRef===17.7?1:1));
+    const cbsDasA = dasA * cfgAtivo.pCbs;
+    const credSNA = fat>0?(ibsDasA+cbsDasA)/fat*100:0;
+    const cargaSnA = dasA + cppMensal + isAno;
+    const pRedA = Math.max(0,1-cfgAtivo.pIbs-cfgAtivo.pCbs);
+    const compLP2=comp*pctLPLR/100, compSN2=comp*(1-pctLPLR/100);
+    const cIbs=compLP2*ibsA/100+compSN2*ibsA/100*(credProp/100);
+    const cCbs=compLP2*cbsA/100+compSN2*cbsA/100*(credProp/100);
+    const ibsCbsL = Math.max(0, fat*ibsA/100+fat*cbsA/100-cIbs-cCbs);
+    const cargaHibA = dasA*pRedA + ibsCbsL + cppMensal + isAno;
+    const difA = cargaHibA - cargaSnA;
+    const dest = ano===2033 ? ' class="dest"' : "";
+    const difCor = difA>0?"#ea580c":"#059669";
+    const sinal = difA>0?"+":"";
+    htmlAnos +=
+      `<tr${dest}>
+        <td>${ano}</td>
+        <td style="text-align:left;font-family:inherit"><span class="badge badge-gray" style="font-size:.67rem">${fase}</span></td>
+        <td>${pct1(ibsA)}</td>
+        <td>${pct1(cbsA)}</td>
+        <td style="color:#2563eb">${pct(fat>0?cargaSnA/fat*100:0)}</td>
+        <td style="color:${cargaHibA<=cargaSnA?"#059669":"#ea580c"}">${pct(fat>0?cargaHibA/fat*100:0)}</td>
+        <td style="color:${difCor}">${sinal}${pct(fat>0?difA/fat*100:0)}</td>
+        <td style="color:#b45309">${pct(credSNA)}</td>
+        <td style="color:#059669">${pct(IBCA)}</td>
+      </tr>`;
+  });
+  el("tabelaAnos").innerHTML = htmlAnos;
 
   // ── CHECKLIST ──
-  const margem = comp > 0 ? (fat - comp) / fat : 0;
-  const fatores = [
-    {
-      ok: pctB2B >= 50,
-      icon: pctB2B >= 50 ? "✅" : "⚪",
-      title: "Perfil da Carteira de Clientes",
-      desc: pctB2B >= 50
-        ? `${pctB2B}% B2B — clientes empresariais valorizam crédito pleno. Híbrido tem vantagem competitiva.`
-        : `${pctB2B}% B2B — maioria B2C não aproveita créditos. Híbrido tem pouco impacto comercial.`,
-    },
-    {
-      ok: comp > 0 && margem > 0.3,
-      icon: comp > 0 && margem > 0.3 ? "✅" : "⚪",
-      title: "Margem de Valor Adicionado",
-      desc: comp > 0
-        ? `Margem estimada: ${fmtPct1(margem*100)}. ${margem > 0.4 ? "Margem alta → IBS/CBS líquido menor no híbrido." : "Margem baixa → crédito de entradas reduz pouco o IBS/CBS."}`
-        : "Informe o valor de compras para avaliar o impacto dos créditos de entradas.",
-    },
-    {
-      ok: s.credExtra > s.difCarga,
-      icon: s.credExtra > s.difCarga ? "✅" : "⚪",
-      title: "Negociação de Preço com Clientes",
-      desc: s.credExtra > s.difCarga
-        ? `Para cada R$ 1,00 de custo extra você gera R$ ${s.fatorComp.toFixed(2)} de benefício ao cliente. Espaço para negociar reajuste.`
-        : "O benefício gerado ao cliente não compensa o custo extra. Negociação de reajuste seria difícil.",
-    },
-    {
-      ok: false,
-      icon: "⚠️",
-      title: "Complexidade Operacional",
-      desc: "O híbrido exige apuração separada de IBS/CBS (DCTF Web / EFD), escrituração de créditos e controle de saldo credor. Avalie o custo contábil adicional.",
-    },
-    {
-      ok: comp > fat * 0.5,
-      icon: comp > fat * 0.5 ? "✅" : "⚪",
-      title: "Saldo Credor Acumulado",
-      desc: comp > fat * 0.5
-        ? "Alto volume de compras → pode acumular crédito de IBS/CBS. LC 214/2025 prevê ressarcimento ou compensação."
-        : "Compras moderadas → pouco risco de saldo credor acumulado.",
-    },
-    {
-      ok: IBS_CBS > s.aliqCredSN * 2,
-      icon: IBS_CBS > s.aliqCredSN * 2 ? "✅" : "⚪",
-      title: "Concorrência LP/LR",
-      desc: `Concorrentes LP/LR geram ${fmtPct1(IBS_CBS)} de crédito. No SN padrão você gera ${fmtPct(s.aliqCredSN)}. ${IBS_CBS > s.aliqCredSN * 2 ? "O híbrido equipara sua oferta à dos concorrentes." : "A diferença não é tão expressiva."}`,
-    },
+  const margem = comp>0?(fat-comp)/fat:0;
+  const fatores=[
+    {c: pctB2B>=50, w:false, ic:"✅","⚪":true,
+     titulo:"Perfil da Carteira de Clientes",
+     desc: pctB2B>=50
+       ? `${pctB2B}% B2B — clientes empresariais valorizam crédito pleno. Vantagem competitiva expressiva no híbrido.`
+       : `${pctB2B}% B2B — maioria B2C não aproveita créditos. Híbrido tem impacto comercial reduzido.`},
+    {c: comp>0&&margem>0.3, w:false,
+     titulo:"Margem de Valor Adicionado",
+     desc: comp>0
+       ? `Margem estimada: ${pct1(margem*100)}. ${margem>0.4?"Alta margem → IBS/CBS líquido menor no híbrido.":"Margem baixa → crédito de entradas reduz pouco o IBS/CBS."}`
+       : "Informe compras para avaliar o impacto dos créditos de entradas."},
+    {c: r.credExtra>r.dif, w:false,
+     titulo:"Negociação de Preço com Clientes",
+     desc: r.credExtra>r.dif
+       ? `Fator ${r.fator.toFixed(2)}×: para cada R$1 de custo extra você gera R$${r.fator.toFixed(2)} de benefício ao cliente. Espaço para reajuste.`
+       : "Benefício ao cliente não supera o custo extra. Negociação de reajuste seria difícil."},
+    {c: false, w:true,
+     titulo:"Complexidade Operacional",
+     desc:"O híbrido exige apuração separada de IBS/CBS (DCTF Web / EFD), escrituração de créditos e controle de saldo credor. Avalie o custo contábil adicional antes de decidir."},
+    {c: comp>fat*0.5, w:false,
+     titulo:"Saldo Credor Acumulado",
+     desc: comp>fat*0.5
+       ? "Alto volume de compras → pode acumular crédito de IBS/CBS. LC 214/2025 prevê ressarcimento, compensação ou transferência."
+       : "Compras moderadas → risco baixo de saldo credor acumulado."},
+    {c: IBC > s.aliqCredSN*2, w:false,
+     titulo:"Paridade com Concorrentes LP/LR",
+     desc:`Concorrentes LP/LR geram ${pct1(IBC)} de crédito. No SN padrão você gera ${pct(s.aliqCredSN)}. ${IBC>s.aliqCredSN*2?"O híbrido equipara sua oferta.":"Diferença não é tão expressiva no seu caso."}`},
+    {c: !isAtivo, w: isAtivo,
+     titulo:"Imposto Seletivo",
+     desc: isAtivo
+       ? `IS de ${isAliq}% incide sobre a receita. Não gera crédito. Custo adicional de ${brl(isMensal)}/mês a partir de 2027 — afeta os dois regimes igualmente.`
+       : "Não há Imposto Seletivo para esta atividade. Sem impacto adicional."},
+    {c: anexo!=="IV" || cppMensal===0, w: anexo==="IV"&&cppMensal>0,
+     titulo:"CPP fora do DAS (Anexo IV)",
+     desc: anexo==="IV" && cppMensal>0
+       ? `CPP estimada: ${brl(cppMensal)}/mês — incluída na carga total de ambos os regimes. Impacto idêntico no SN e no híbrido.`
+       : anexo==="IV"
+         ? "Informe a folha de salários para incluir a CPP no cálculo (Anexo IV recolhe CPP separadamente)."
+         : "Não aplicável — CPP embutida no DAS para este Anexo."},
   ];
-
-  el("checkGrid").innerHTML = fatores.map(f =>
-    `<div class="check-item ${f.ok ? "ok" : ""}">
-      <div class="ci">${f.icon}</div>
-      <div>
-        <div class="ct">${f.title}</div>
-        <div class="cd">${f.desc}</div>
-      </div>
-    </div>`
-  ).join("");
+  el("checkGrid").innerHTML = fatores.map(f=>{
+    const cls2 = f.c?"ok":f.w?"warn":"";
+    const icon = f.c?"✅":f.w?"⚠️":"⚪";
+    return `<div class="check-item ${cls2}"><div class="ci">${icon}</div><div><div class="ct">${f.titulo}</div><div class="cd">${f.desc}</div></div></div>`;
+  }).join("");
 
   // ── TABELA TÉCNICA ──
-  const rows = [
-    ["DAS (total / reduzido)",             fmtBRL(s.dasTotal),      fmtBRL(s.dasRed)],
-    [`IBS (SN embutido / pleno ${fmtPct1(IBS)}%)`, fmtBRL(s.ibsNoDas),  fmtBRL(s.ibsSaida)],
-    [`CBS (SN embutida / plena ${fmtPct1(CBS)}%)`, fmtBRL(s.cbsNoDas),  fmtBRL(s.cbsSaida)],
-    ["− Crédito IBS entradas",             "—",                     "−"+fmtBRL(s.credIbs)],
-    ["− Crédito CBS entradas",             "—",                     "−"+fmtBRL(s.credCbs)],
-    ["CARGA TOTAL MENSAL",                 fmtBRL(s.cargaSN),       fmtBRL(s.cargaHib), true],
-    ["Carga % receita",                    fmtPct(s.aliqEf),        fmtPct(s.aliqHib), true],
-    ["Crédito p/ clientes B2B",            fmtBRL(s.credClienteSN), fmtBRL(s.credClienteHib)],
+  const rows=[
+    ["DAS (total / reduzido)",         brl(s.dasTotal),      brl(s.dasRed)],
+    [`IBS saídas (${pct1(ibsRef)})`,  brl(s.ibsNoDas),      brl(s.ibsSaida)],
+    [`CBS saídas (${pct1(cbsRef)})`,  brl(s.cbsNoDas),      brl(s.cbsSaida)],
+    ["− Crédito IBS entradas",          "—",                "−"+brl(s.credIbs)],
+    ["− Crédito CBS entradas",          "—",                "−"+brl(s.credCbs)],
+    ["IBS/CBS Líquido",                 brl(s.ibsNoDas+s.cbsNoDas), brl(s.ibsCbsLiq)],
+    ...(cppMensal>0 ? [["CPP separada (Anexo IV)", brl(cppMensal), brl(cppMensal)]] : []),
+    ...(isAtivo    ? [["Imposto Seletivo (2027+)", brl(isMensal), brl(isMensal)]] : []),
+    ["CARGA TOTAL MENSAL",              brl(s.cargaSN),       brl(s.cargaHib), true],
+    ["Carga % receita",                 pct(s.pctSN),         pct(s.pctHib),   true],
+    ["Crédito p/ clientes B2B",         brl(s.credCliSN),     brl(s.credCliHib)],
   ];
-  el("tabelaDet").innerHTML = rows.map(([l,sn,hib,bold]) => {
-    const snNum  = parseBRL(sn.replace("−",""));
-    const hibNum = parseBRL(hib.replace("−","").replace("—","0"));
-    const dif    = hib.includes("%") ? fmtPct(s.aliqHib - s.aliqEf) : fmtBRL(s.cargaHib - s.cargaSN);
-    const difColor = (s.cargaHib - s.cargaSN) > 0 ? "#dc2626" : "#059669";
-    return `<tr ${bold ? 'class="subtotal"' : ""}>
+  el("tabelaDet").innerHTML = rows.map(([l,sn,hib,bold])=>{
+    const difVal = (l.includes("%") ? pct(s.pctHib-s.pctSN) : (r.dif>=0?"+":"")+brl(s.cargaHib-s.cargaSN));
+    const difCor = (s.cargaHib-s.cargaSN)>0?"#dc2626":"#059669";
+    return `<tr${bold?' class="sub"':""}>
       <td>${l}</td>
-      <td class="num" style="color:#2563eb">${sn}</td>
-      <td class="num" style="color:#059669">${hib}</td>
-      <td class="num" style="color:${difColor}">${dif}</td>
+      <td class="n" style="color:#2563eb">${sn}</td>
+      <td class="n" style="color:#059669">${hib}</td>
+      <td class="n" style="color:${difCor}">${l.includes("Crédito p/")?"-":l.includes("Carga T")||l.includes("%")?difVal:"—"}</td>
     </tr>`;
   }).join("");
 }
 
-// ─── INIT ─────────────────────────────────────────────────────────────────────
-window.onload = calcular;
+// ── INIT ──
+window.onload = ()=>{ onAnexoChange(); };
 </script>
 </body>
 </html>
