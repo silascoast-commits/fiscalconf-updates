@@ -288,7 +288,7 @@ function calcEntry(f, entry){
     const dim=diasNoMes(mes,ano); // dias reais do mês vigente
     dt=prop?num(entry.diasTrab||0):dim;
     salProp=prop?(sal/dim)*num(entry.diasTrab||0):sal;
-    vh=sal/220;
+    vh=entry.vhManual&&num(entry.vhValor)>0 ? num(entry.vhValor) : sal/220;
   } else {
     dt=num(entry.diasTrab||0);
     salProp=sal*dt;
@@ -950,6 +950,13 @@ function folhaForm(f,eid,entry){
     <div class="fg4">
       <div class="ff"><label>H.E. 50% (horas)</label><input type="number" id="fHe50" min="0" step="0.5" placeholder="0" value="${entry.he50||''}" oninput="pvFolha('${f.id}','${eid}')" /></div>
       <div class="ff"><label>H.E. 100% (horas)</label><input type="number" id="fHe100" min="0" step="0.5" placeholder="0" value="${entry.he100||''}" oninput="pvFolha('${f.id}','${eid}')" /></div>
+      <div class="ff"><label>Valor hora</label>
+        <select id="fVhM" onchange="oVhM('${f.id}','${eid}');pvFolha('${f.id}','${eid}')">
+          <option value="0" ${!entry.vhManual?'selected':''}>Automático (÷ 220h)</option>
+          <option value="1" ${entry.vhManual?'selected':''}>Informar manualmente</option>
+        </select></div>
+      <div class="ff" id="fVhVW" style="${!entry.vhManual?'display:none':''}">
+        <label>Valor hora (R$)</label><input type="number" id="fVhV" min="0" step="0.01" placeholder="0,00" value="${entry.vhValor||''}" oninput="pvFolha('${f.id}','${eid}')" /></div>
       <div class="ff"><label>DSR</label>
         <select id="fDsrM" onchange="oDsrM();pvFolha('${f.id}','${eid}')">
           <option value="0" ${!entry.dsrManual?'selected':''}>Automático</option>
@@ -976,6 +983,7 @@ function folhaForm(f,eid,entry){
 }
 
 function oDsrM(){ const m=gv('fDsrM')==='1'; const w=document.getElementById('fDsrVW'); if(w)w.style.display=m?'':'none'; }
+function oVhM(fid,eid){ const m=gv('fVhM')==='1'; const w=document.getElementById('fVhVW'); if(w)w.style.display=m?'':'none'; }
 
 function folhaSnap(f){
   const isMens=f.tipoSalario==='mensalista'||!f.tipoSalario;
@@ -987,6 +995,7 @@ function folhaSnap(f){
     cargaHoraria: num(gv('fCh')||f.cargaHoraria||8),
     valorHora:  num(gv('fVh')),
     he50:       num(gv('fHe50')), he100:num(gv('fHe100')),
+    vhManual:   gv('fVhM')==='1', vhValor:num(gv('fVhV')),
     dsrManual:  gv('fDsrM')==='1', dsrValor:num(gv('fDsrV')),
     observacao: gv('fObsM'),
     extras: extrasTemp.filter(x=>num(x.valor)>0),
@@ -1150,8 +1159,8 @@ function tabelaCalc(r,f,entry){
         : `Salário mensal <span class="cbadge">${dim} dias</span>`
       : `Pagamento (${r.dt} ${f.tipoSalario==='horista'?'horas':'dias'} × ${brl(f.salarioBase)})`
     }</td><td>${brl(r.salProp)}</td></tr>
-    ${r.he50v>0?`<tr><td>H.E. 50% (${entry.he50}h × ${brl(r.vh)}/h <span class="cbadge">sal÷220h</span> × 1,5)</td><td>${brl(r.he50v)}</td></tr>`:''}
-    ${r.he100v>0?`<tr><td>H.E. 100% (${entry.he100}h × ${brl(r.vh)}/h <span class="cbadge">sal÷220h</span> × 2,0)</td><td>${brl(r.he100v)}</td></tr>`:''}
+    ${r.he50v>0?`<tr><td>H.E. 50% (${entry.he50}h × ${brl(r.vh)}/h <span class="cbadge">${entry.vhManual?'manual':'sal÷220h'}</span> × 1,5)</td><td>${brl(r.he50v)}</td></tr>`:''}
+    ${r.he100v>0?`<tr><td>H.E. 100% (${entry.he100}h × ${brl(r.vh)}/h <span class="cbadge">${entry.vhManual?'manual':'sal÷220h'}</span> × 2,0)</td><td>${brl(r.he100v)}</td></tr>`:''}
     ${r.dsr>0?`<tr><td>DSR ${entry.dsrManual?'(informado)':'(sobre H.E.)'}</td><td>${brl(r.dsr)}</td></tr>`:''}
     <tr class="csub"><td>Bruto do mês</td><td>${brl(r.bruto)}</td></tr>
     ${(entry.extras||[]).filter(x=>x.tipo==='credito'&&num(x.valor)>0).map(x=>`<tr><td style="color:var(--green)">+ ${esc(x.descricao||'Crédito')}</td><td style="color:var(--green)">${brl(x.valor)}</td></tr>`).join('')}
