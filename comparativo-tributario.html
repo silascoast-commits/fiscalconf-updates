@@ -1,890 +1,1395 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Comparativo Tributário — Simples Nacional Anexo I × Lucro Presumido</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <style>
-    :root {
-      --azul:   #1a3c6e;
-      --azul2:  #2563eb;
-      --verde:  #15803d;
-      --laranja:#c2410c;
-      --cinza:  #f1f5f9;
-      --borda:  #cbd5e1;
-      --texto:  #1e293b;
-      --branco: #ffffff;
-    }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Simulador Tributário — SN × Lucro Presumido × Lucro Real</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --az:#1a3c6e;--az2:#2563eb;--az3:#dbeafe;
+  --vd:#15803d;--vd2:#dcfce7;
+  --la:#c2410c;--la2:#ffedd5;
+  --ro:#7c3aed;--ro2:#f5f3ff;
+  --am:#b45309;--am2:#fef3c7;
+  --ci:#f1f5f9;--bd:#cbd5e1;--tx:#1e293b;--br:#fff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#e2e8f4;color:var(--tx);min-height:100vh}
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+/* HEADER */
+header{background:linear-gradient(135deg,var(--az) 0%,#1e4da0 100%);color:#fff;padding:22px 36px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+header h1{font-size:1.35rem;font-weight:800;line-height:1.2}
+header .sub{font-size:.78rem;opacity:.8;margin-top:4px}
+.hbadge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:8px 16px;font-size:.76rem;text-align:center;line-height:1.5}
 
-    body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background: #e8edf5;
-      color: var(--texto);
-      min-height: 100vh;
-    }
+/* NAV TABS */
+.tabs{background:var(--az);display:flex;gap:2px;padding:0 36px;flex-wrap:wrap}
+.tab{padding:10px 20px;cursor:pointer;font-size:.82rem;font-weight:600;color:rgba(255,255,255,.65);border-bottom:3px solid transparent;transition:.2s;user-select:none}
+.tab.ativo{color:#fff;border-bottom-color:#60a5fa}
+.tab:hover{color:#fff}
 
-    /* ── HEADER ── */
-    header {
-      background: linear-gradient(135deg, var(--azul) 0%, #2a5298 100%);
-      color: #fff;
-      padding: 28px 40px 22px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
-      box-shadow: 0 4px 18px rgba(0,0,0,.25);
-    }
-    header h1 { font-size: 1.45rem; font-weight: 700; line-height: 1.25; }
-    header .subtitle { font-size: .82rem; opacity: .82; margin-top: 4px; }
-    .badge {
-      background: rgba(255,255,255,.15);
-      border: 1px solid rgba(255,255,255,.3);
-      border-radius: 6px;
-      padding: 6px 14px;
-      font-size: .78rem;
-      text-align: center;
-      line-height: 1.4;
-    }
+/* MAIN */
+main{max-width:1260px;margin:0 auto;padding:28px 18px 60px}
 
-    /* ── LAYOUT ── */
-    main { max-width: 1180px; margin: 0 auto; padding: 32px 20px 60px; }
+/* CARD */
+.card{background:var(--br);border-radius:12px;box-shadow:0 2px 14px rgba(0,0,0,.07);padding:26px 30px;margin-bottom:24px}
+.card h2{font-size:1rem;color:var(--az);border-bottom:3px solid var(--az2);padding-bottom:9px;margin-bottom:20px;display:flex;align-items:center;gap:8px}
 
-    /* ── CARD ── */
-    .card {
-      background: var(--branco);
-      border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(0,0,0,.08);
-      padding: 28px 32px;
-      margin-bottom: 28px;
-    }
-    .card h2 {
-      font-size: 1.05rem;
-      color: var(--azul);
-      border-bottom: 3px solid var(--azul2);
-      padding-bottom: 10px;
-      margin-bottom: 22px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+/* SECTION */
+.secao{display:none}.secao.ativa{display:block}
 
-    /* ── INPUTS ── */
-    .input-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 20px;
-    }
-    .field label {
-      display: block;
-      font-size: .8rem;
-      font-weight: 600;
-      color: #475569;
-      margin-bottom: 6px;
-      text-transform: uppercase;
-      letter-spacing: .04em;
-    }
-    .field input, .field select {
-      width: 100%;
-      padding: 10px 14px;
-      border: 1.5px solid var(--borda);
-      border-radius: 8px;
-      font-size: .95rem;
-      color: var(--texto);
-      background: var(--cinza);
-      transition: border-color .2s;
-      outline: none;
-    }
-    .field input:focus, .field select:focus { border-color: var(--azul2); background: #fff; }
+/* GRID INPUTS */
+.ig{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:18px}
+.ig3{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:18px}
+label.lbl{display:block;font-size:.74rem;font-weight:700;color:#475569;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+input,select{width:100%;padding:10px 13px;border:1.5px solid var(--bd);border-radius:8px;font-size:.92rem;color:var(--tx);background:var(--ci);outline:none;transition:.2s}
+input:focus,select:focus{border-color:var(--az2);background:#fff}
+.hint{font-size:.72rem;color:#64748b;margin-top:4px}
 
-    .btn-calcular {
-      margin-top: 22px;
-      background: linear-gradient(90deg, var(--azul2), #1d4ed8);
-      color: #fff;
-      border: none;
-      border-radius: 9px;
-      padding: 14px 42px;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      letter-spacing: .03em;
-      box-shadow: 0 4px 14px rgba(37,99,235,.35);
-      transition: transform .15s, box-shadow .15s;
-    }
-    .btn-calcular:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37,99,235,.45); }
-    .btn-calcular:active { transform: translateY(0); }
+/* BTN */
+.btn{border:none;border-radius:9px;padding:13px 36px;font-size:.95rem;font-weight:700;cursor:pointer;letter-spacing:.02em;transition:.15s}
+.btn-calc{background:linear-gradient(90deg,var(--az2),#1d4ed8);color:#fff;box-shadow:0 4px 14px rgba(37,99,235,.35)}
+.btn-calc:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(37,99,235,.45)}
+.btn-hist{background:var(--ci);color:var(--az);border:1.5px solid var(--bd)}
+.btn-hist:hover{background:var(--az3)}
+.btn-print{background:#0f766e;color:#fff}
+.btn-print:hover{background:#0d6460}
 
-    /* ── RESULTADO RÁPIDO ── */
-    .cards-resumo {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-      gap: 18px;
-      margin-bottom: 28px;
-    }
-    .resumo-card {
-      border-radius: 10px;
-      padding: 20px 18px;
-      text-align: center;
-      border-left: 5px solid transparent;
-    }
-    .resumo-card.sn  { background: #eff6ff; border-color: var(--azul2); }
-    .resumo-card.lp  { background: #fff7ed; border-color: var(--laranja); }
-    .resumo-card.eco { background: #f0fdf4; border-color: var(--verde); }
-    .resumo-card .label { font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #64748b; }
-    .resumo-card .valor { font-size: 1.7rem; font-weight: 800; margin: 4px 0 2px; }
-    .resumo-card.sn  .valor { color: var(--azul2); }
-    .resumo-card.lp  .valor { color: var(--laranja); }
-    .resumo-card.eco .valor { color: var(--verde); }
-    .resumo-card .sub { font-size: .77rem; color: #64748b; }
+/* RESUMO CARDS */
+.rc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:24px}
+.rc{border-radius:10px;padding:18px 16px;text-align:center;border-left:5px solid transparent}
+.rc .rl{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#64748b}
+.rc .rv{font-size:1.6rem;font-weight:800;margin:3px 0 2px}
+.rc .rs{font-size:.72rem;color:#64748b}
+.rc.sn{background:#eff6ff;border-color:var(--az2)}.rc.sn .rv{color:var(--az2)}
+.rc.lp{background:#fff7ed;border-color:var(--la)}.rc.lp .rv{color:var(--la)}
+.rc.lr{background:#f0fdf4;border-color:var(--vd)}.rc.lr .rv{color:var(--vd)}
+.rc.eco{background:#f5f3ff;border-color:var(--ro)}.rc.eco .rv{color:var(--ro)}
+.rc.alerta{background:#fef2f2;border-color:#dc2626}.rc.alerta .rv{color:#dc2626}
 
-    /* ── TABELAS ── */
-    .tabela-wrapper { overflow-x: auto; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: .875rem;
-    }
-    th {
-      background: var(--azul);
-      color: #fff;
-      padding: 10px 14px;
-      text-align: center;
-      font-weight: 600;
-      font-size: .78rem;
-      text-transform: uppercase;
-      letter-spacing: .04em;
-    }
-    td {
-      padding: 9px 14px;
-      text-align: right;
-      border-bottom: 1px solid var(--borda);
-    }
-    td:first-child { text-align: left; }
-    tr:nth-child(even) { background: #f8fafc; }
-    tr:hover { background: #eff6ff; }
-    .destaque-verde td { background: #dcfce7 !important; font-weight: 700; }
-    .destaque-laranja td { background: #ffedd5 !important; font-weight: 700; }
+/* TABELAS */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.84rem}
+th{background:var(--az);color:#fff;padding:9px 13px;text-align:center;font-size:.74rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+td{padding:8px 13px;text-align:right;border-bottom:1px solid var(--bd)}
+td:first-child{text-align:left}
+tr:nth-child(even){background:#f8fafc}
+tr:hover{background:#eff6ff}
+.tr-total td{background:#1e3a5f!important;color:#fff!important;font-weight:800}
+.tr-sub td{background:#e0f2fe!important;font-weight:700;color:var(--az)}
+.tr-melhor td{background:#dcfce7!important;font-weight:700}
+.tr-ativo td{background:#dbeafe!important;font-weight:700}
+.tr-ruim td{background:#fee2e2!important}
 
-    /* ── FAIXAS SN ── */
-    .faixa-ativa td { background: #dbeafe !important; font-weight: 700; }
+/* DETALHE LADO A LADO */
+.dlg{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.db{border-radius:10px;overflow:hidden;border:1px solid var(--bd)}
+.db-titulo{padding:11px 16px;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.db.sn .db-titulo{background:var(--az2);color:#fff}
+.db.lp .db-titulo{background:var(--la);color:#fff}
+.db.lr .db-titulo{background:var(--vd);color:#fff}
+.db-linha{display:flex;justify-content:space-between;padding:7px 16px;border-bottom:1px solid var(--bd);font-size:.83rem}
+.db-linha .dn{color:#475569}
+.db-linha .dv{font-weight:600}
+.db-total{display:flex;justify-content:space-between;padding:11px 16px;font-weight:800;font-size:.92rem}
+.db.sn .db-total{background:#dbeafe;color:var(--az)}
+.db.lp .db-total{background:#ffedd5;color:var(--la)}
+.db.lr .db-total{background:#dcfce7;color:var(--vd)}
+.db-section{padding:5px 16px 2px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;background:#f8fafc}
 
-    /* ── GRID DETALHES ── */
-    .detalhe-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 28px;
-    }
-    @media (max-width: 700px) { .detalhe-grid { grid-template-columns: 1fr; } }
+/* CHARTS */
+.chg{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:700px){.chg{grid-template-columns:1fr}.dlg{grid-template-columns:1fr}}
+.chb{position:relative;height:290px}
 
-    .detalhe-box { border-radius: 10px; overflow: hidden; }
-    .detalhe-box .titulo {
-      padding: 12px 18px;
-      font-size: .82rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .05em;
-    }
-    .detalhe-box.sn .titulo  { background: var(--azul2); color: #fff; }
-    .detalhe-box.lp .titulo  { background: var(--laranja); color: #fff; }
-    .detalhe-box .linha {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px 18px;
-      border-bottom: 1px solid var(--borda);
-      font-size: .87rem;
-    }
-    .detalhe-box .linha:last-child { border-bottom: none; }
-    .detalhe-box .linha .nome { color: #475569; }
-    .detalhe-box .linha .num  { font-weight: 600; }
-    .detalhe-box .total-linha {
-      display: flex;
-      justify-content: space-between;
-      padding: 11px 18px;
-      font-weight: 800;
-      font-size: .95rem;
-    }
-    .detalhe-box.sn .total-linha { background: #dbeafe; color: var(--azul); }
-    .detalhe-box.lp .total-linha { background: #ffedd5; color: var(--laranja); }
+/* PILL */
+.pill{display:inline-block;border-radius:50px;padding:2px 9px;font-size:.7rem;font-weight:700}
+.pill.sn{background:#dbeafe;color:#1e40af}
+.pill.lp{background:#ffedd5;color:#9a3412}
+.pill.lr{background:#dcfce7;color:#166534}
+.pill.em{background:#f1f5f9;color:#475569}
+.pill.vd{background:#dcfce7;color:#166534}
+.pill.vm{background:#fee2e2;color:#991b1b}
 
-    /* ── CHARTS ── */
-    .charts-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-    }
-    @media (max-width: 700px) { .charts-grid { grid-template-columns: 1fr; } }
-    .chart-box { position: relative; height: 300px; }
+/* ACCORDION */
+.ac-item{border:1px solid var(--bd);border-radius:8px;margin-bottom:8px;overflow:hidden}
+.ac-head{padding:12px 18px;cursor:pointer;font-weight:600;font-size:.88rem;background:var(--ci);display:flex;justify-content:space-between;align-items:center;user-select:none}
+.ac-head:hover{background:var(--az3)}
+.ac-body{display:none;padding:14px 18px;font-size:.85rem;line-height:1.7;color:#334155;border-top:1px solid var(--bd)}
+.ac-body.open{display:block}
 
-    /* ── NOTA LEGAL ── */
-    .nota {
-      background: #fffbeb;
-      border: 1px solid #fbbf24;
-      border-radius: 8px;
-      padding: 14px 18px;
-      font-size: .8rem;
-      color: #78350f;
-      line-height: 1.55;
-    }
-    .nota strong { display: block; margin-bottom: 4px; }
+/* NOTA */
+.nota{background:#fffbeb;border:1px solid #fbbf24;border-radius:8px;padding:13px 17px;font-size:.77rem;color:#78350f;line-height:1.6}
+.nota strong{display:block;margin-bottom:3px}
 
-    /* ── INDICADOR MELHOR ── */
-    .pill {
-      display: inline-block;
-      border-radius: 50px;
-      padding: 3px 10px;
-      font-size: .72rem;
-      font-weight: 700;
-    }
-    .pill.sn  { background: #dbeafe; color: #1e40af; }
-    .pill.lp  { background: #ffedd5; color: #9a3412; }
-    .pill.emp { background: #f1f5f9; color: #475569; }
+/* BARRA */
+.barra-bg{background:#e2e8f0;border-radius:4px;height:8px;overflow:hidden;margin-top:3px}
+.barra-fill{height:100%;border-radius:4px}
 
-    /* ── ALÍQUOTA BARRA ── */
-    .barra-bg { background: #e2e8f0; border-radius: 4px; height: 10px; overflow: hidden; margin-top: 4px; }
-    .barra-fill { height: 100%; border-radius: 4px; }
+/* OBRIG */
+.ob-grid{display:grid;grid-template-columns:2fr repeat(3,1fr);gap:0}
+.ob-grid>div{padding:9px 14px;border-bottom:1px solid var(--bd);font-size:.82rem}
+.ob-head>div{background:var(--az);color:#fff;font-weight:700;font-size:.75rem;text-align:center;padding:10px 14px}
+.ob-cat{background:#f8fafc;font-weight:700;color:var(--az);font-size:.78rem}
+.ob-sim{color:var(--vd);font-weight:700;text-align:center}
+.ob-nao{color:#94a3b8;text-align:center}
+.ob-parc{color:var(--am);font-weight:600;text-align:center}
 
-    /* ── OCULTO ANTES DE CALCULAR ── */
-    .resultado { display: none; }
-    .resultado.visivel { display: block; }
+/* HIST */
+.hist-table-wrap{overflow-x:auto}
 
-    /* ── FOOTER ── */
-    footer {
-      text-align: center;
-      font-size: .76rem;
-      color: #94a3b8;
-      padding: 20px;
-      border-top: 1px solid var(--borda);
-      margin-top: 10px;
-    }
-  </style>
+/* PRINT */
+@media print{
+  header,footer,.tabs,.btn,.btn-calc,.btn-print,.btn-hist,.secao:not(.ativa),.nota{display:none!important}
+  .card{box-shadow:none;border:1px solid #ccc;break-inside:avoid}
+  body{background:#fff}
+}
+</style>
 </head>
 <body>
 
 <header>
   <div>
-    <h1>📊 Comparativo Tributário Empresarial</h1>
-    <div class="subtitle">Simples Nacional Anexo I (Comércio) × Lucro Presumido — Regime 2024</div>
+    <h1>📊 Simulador Tributário Empresarial</h1>
+    <div class="sub">Simples Nacional (Anexos I/II/III/V) · Lucro Presumido · Lucro Real — Lei 2024</div>
   </div>
-  <div class="badge">
-    ⚖️ Consultoria Fiscal<br/>
-    <strong>20+ anos de experiência</strong>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+    <div class="hbadge">⚖️ Consultoria Fiscal<br/><strong>20+ anos</strong></div>
+    <button class="btn btn-print" onclick="window.print()">🖨️ Imprimir / PDF</button>
   </div>
 </header>
 
+<div class="tabs">
+  <div class="tab ativo" onclick="irPara('parametros',this)">⚙️ Parâmetros</div>
+  <div class="tab" onclick="irPara('resultado',this)">📊 Resultado</div>
+  <div class="tab" onclick="irPara('faixas',this)">📋 Faixas SN</div>
+  <div class="tab" onclick="irPara('progressao',this)">📈 Progressão</div>
+  <div class="tab" onclick="irPara('obrigacoes',this)">📁 Obrigações</div>
+  <div class="tab" onclick="irPara('calendario',this)">📅 Calendário</div>
+  <div class="tab" onclick="irPara('historico',this)">🕓 Histórico</div>
+  <div class="tab" onclick="irPara('glossario',this)">📖 Glossário</div>
+</div>
+
 <main>
 
-  <!-- ── PARÂMETROS ── -->
+<!-- ═══════════════════════════════════════════
+     PARÂMETROS
+════════════════════════════════════════════ -->
+<div class="secao ativa" id="secao-parametros">
+
   <div class="card">
-    <h2>⚙️ Parâmetros da Empresa</h2>
-    <div class="input-grid">
-      <div class="field">
-        <label>Faturamento Bruto Anual (R$)</label>
-        <input type="text" id="faturamento" placeholder="Ex: 1.200.000,00" oninput="mascaraMoeda(this)" />
+    <h2>🏭 Perfil da Empresa</h2>
+    <div class="ig">
+      <div>
+        <label class="lbl">Atividade Principal</label>
+        <select id="setor" onchange="ajustarCampos()">
+          <option value="comercio">Comércio (Varejo/Atacado)</option>
+          <option value="confeccao">Confecção / Fabricação de Roupas</option>
+          <option value="industria">Indústria Geral</option>
+          <option value="servicos">Serviços em Geral</option>
+          <option value="servicos_adv">Serviços Especializados (ADV/MED/ENG)</option>
+        </select>
+        <div class="hint">Define anexo SN, presunção IRPJ/CSLL e ICMS aplicável</div>
       </div>
-      <div class="field">
-        <label>Faturamento Médio Últimos 12 Meses (RBT12) *</label>
-        <input type="text" id="rbt12" placeholder="Igual ao faturamento se estável" oninput="mascaraMoeda(this)" />
-      </div>
-      <div class="field">
-        <label>Estado / UF</label>
+      <div>
+        <label class="lbl">Estado / UF</label>
         <select id="uf">
-          <option value="SP">São Paulo — ICMS 12%</option>
-          <option value="RJ">Rio de Janeiro — ICMS 12%</option>
-          <option value="MG">Minas Gerais — ICMS 12%</option>
-          <option value="PR">Paraná — ICMS 12%</option>
-          <option value="SC">Santa Catarina — ICMS 12%</option>
-          <option value="RS">Rio Grande do Sul — ICMS 12%</option>
-          <option value="outros">Outros estados — ICMS 17%</option>
+          <optgroup label="ICMS Interno 12%">
+            <option value="12">SP, PR, SC, RS, ES — 12%</option>
+          </optgroup>
+          <optgroup label="ICMS Interno 17%">
+            <option value="17">GO, MT, MS, DF, PA, AM — 17%</option>
+          </optgroup>
+          <optgroup label="ICMS Interno 18%">
+            <option value="18">MG, RJ, BA, CE, PE, MA, PB, AL, RN, SE, PI — 18%</option>
+          </optgroup>
+          <optgroup label="ICMS Interno 19-20%">
+            <option value="19">AP, RO, TO — 19%</option>
+            <option value="20">AC — 20%</option>
+          </optgroup>
         </select>
       </div>
-      <div class="field">
-        <label>Pró-labore Mensal dos Sócios (R$)</label>
-        <input type="text" id="prolabore" placeholder="Ex: 5.000,00" oninput="mascaraMoeda(this)" />
-      </div>
-      <div class="field">
-        <label>Folha de Pagamento Anual (CLT) (R$)</label>
-        <input type="text" id="folha" placeholder="Ex: 120.000,00" oninput="mascaraMoeda(this)" />
-      </div>
-      <div class="field">
-        <label>Percentual de Exportações (%)</label>
-        <input type="number" id="exportacao" placeholder="0" min="0" max="100" value="0" />
+      <div>
+        <label class="lbl">Regime atual (opcional)</label>
+        <select id="regime_atual">
+          <option value="">Nenhum / Empresa nova</option>
+          <option value="sn">Simples Nacional</option>
+          <option value="lp">Lucro Presumido</option>
+          <option value="lr">Lucro Real</option>
+        </select>
       </div>
     </div>
-    <div style="margin-top:8px; font-size:.76rem; color:#64748b;">
-      * RBT12: Receita Bruta Total dos últimos 12 meses — usado para enquadramento de faixa no Simples Nacional.
-    </div>
-    <button class="btn-calcular" onclick="calcular()">🔍 Calcular e Comparar</button>
   </div>
 
-  <!-- ── RESULTADOS ── -->
-  <div class="resultado" id="resultado">
-
-    <!-- Resumo rápido -->
-    <div class="cards-resumo">
-      <div class="resumo-card sn">
-        <div class="label">Simples Nacional</div>
-        <div class="valor" id="sn-total-r">—</div>
-        <div class="sub">Total de impostos/ano</div>
+  <div class="card">
+    <h2>💰 Faturamento e Compras</h2>
+    <div class="ig">
+      <div>
+        <label class="lbl">Faturamento Bruto Anual — Vendas (R$)</label>
+        <input type="text" id="fat" placeholder="Ex: 1.200.000,00" oninput="mask(this)"/>
+        <div class="hint">Total de receita bruta prevista no ano</div>
       </div>
-      <div class="resumo-card lp">
-        <div class="label">Lucro Presumido</div>
-        <div class="valor" id="lp-total-r">—</div>
-        <div class="sub">Total de impostos/ano</div>
+      <div>
+        <label class="lbl">RBT12 — Receita Últimos 12 Meses (R$)</label>
+        <input type="text" id="rbt12" placeholder="Igual ao faturamento se estável" oninput="mask(this)"/>
+        <div class="hint">Usado para enquadramento na faixa do Simples Nacional</div>
       </div>
-      <div class="resumo-card eco">
-        <div class="label">Economia Anual</div>
-        <div class="valor" id="economia-r">—</div>
-        <div class="sub" id="economia-sub">regime mais vantajoso</div>
+      <div>
+        <label class="lbl">Total de Compras / Entradas Anuais (R$)</label>
+        <input type="text" id="compras" placeholder="Ex: 600.000,00" oninput="mask(this)"/>
+        <div class="hint">Mercadorias, matéria-prima, insumos — base para crédito de ICMS/PIS/COFINS</div>
       </div>
-      <div class="resumo-card" style="background:#f5f3ff;border-color:#7c3aed;">
-        <div class="label" style="color:#64748b;">Alíquota Efetiva SN</div>
-        <div class="valor" style="color:#7c3aed;" id="sn-aliq-ef">—</div>
-        <div class="sub">sobre faturamento bruto</div>
+      <div>
+        <label class="lbl">Alíquota ICMS nas Entradas (%)</label>
+        <input type="number" id="icms_entrada" placeholder="12" min="0" max="25" value="12"/>
+        <div class="hint">Alíquota paga nas compras (crédito a recuperar no LP/LR)</div>
       </div>
-      <div class="resumo-card" style="background:#fef2f2;border-color:#dc2626;">
-        <div class="label" style="color:#64748b;">Alíquota Efetiva LP</div>
-        <div class="valor" style="color:#dc2626;" id="lp-aliq-ef">—</div>
-        <div class="sub">sobre faturamento bruto</div>
+      <div>
+        <label class="lbl">Margem de Lucro Real (%) — para Lucro Real</label>
+        <input type="number" id="margem" placeholder="8" min="0" max="100" value="8"/>
+        <div class="hint">Lucro líquido real antes de IR/CS, como % do faturamento</div>
       </div>
-    </div>
-
-    <!-- Gráficos -->
-    <div class="card">
-      <h2>📈 Visualização Comparativa</h2>
-      <div class="charts-grid">
-        <div>
-          <div style="font-size:.82rem;font-weight:700;color:#475569;text-align:center;margin-bottom:8px;">Composição do Imposto por Regime</div>
-          <div class="chart-box"><canvas id="chartPizza"></canvas></div>
-        </div>
-        <div>
-          <div style="font-size:.82rem;font-weight:700;color:#475569;text-align:center;margin-bottom:8px;">Carga Tributária × Faturamento (Simulação)</div>
-          <div class="chart-box"><canvas id="chartLinha"></canvas></div>
-        </div>
+      <div>
+        <label class="lbl">% Exportação / Venda Interestadual</label>
+        <input type="number" id="exportacao" placeholder="0" min="0" max="100" value="0"/>
+        <div class="hint">Vendas isentas de ICMS (reduz base ICMS)</div>
       </div>
     </div>
+  </div>
 
-    <!-- Detalhamento lado a lado -->
-    <div class="card">
-      <h2>🔢 Detalhamento dos Tributos</h2>
-      <div class="detalhe-grid">
-
-        <!-- Simples Nacional -->
-        <div class="detalhe-box sn">
-          <div class="titulo">🔵 Simples Nacional — Anexo I (Comércio)</div>
-          <div class="linha"><span class="nome">Faixa enquadrada</span><span class="num" id="sn-faixa">—</span></div>
-          <div class="linha"><span class="nome">Alíquota nominal da faixa</span><span class="num" id="sn-aliq-nom">—</span></div>
-          <div class="linha"><span class="nome">Parcela a deduzir (PD)</span><span class="num" id="sn-pd">—</span></div>
-          <div class="linha"><span class="nome">Alíquota efetiva calculada</span><span class="num" id="sn-aliq-calc">—</span></div>
-          <div class="linha" style="background:#f0f9ff;"><span class="nome">IRPJ (incluso DAS)</span><span class="num" id="sn-irpj">—</span></div>
-          <div class="linha" style="background:#f0f9ff;"><span class="nome">CSLL (incluso DAS)</span><span class="num" id="sn-csll">—</span></div>
-          <div class="linha" style="background:#f0f9ff;"><span class="nome">COFINS (incluso DAS)</span><span class="num" id="sn-cofins">—</span></div>
-          <div class="linha" style="background:#f0f9ff;"><span class="nome">PIS (incluso DAS)</span><span class="num" id="sn-pis">—</span></div>
-          <div class="linha" style="background:#f0f9ff;"><span class="nome">CPP (incluso DAS)</span><span class="num" id="sn-cpp">—</span></div>
-          <div class="linha" style="background:#f0f9ff;"><span class="nome">ICMS (incluso DAS)</span><span class="num" id="sn-icms">—</span></div>
-          <div class="linha"><span class="nome">DAS Total (mensal)</span><span class="num" id="sn-das-mensal">—</span></div>
-          <div class="linha"><span class="nome">INSS Pró-labore (11%)</span><span class="num" id="sn-inss-pl">—</span></div>
-          <div class="linha"><span class="nome">INSS Folha CLT (20%+RAT+Terceiros)</span><span class="num" id="sn-inss-folha">—</span></div>
-          <div class="total-linha"><span>TOTAL ANUAL DE TRIBUTOS</span><span id="sn-total-det">—</span></div>
-        </div>
-
-        <!-- Lucro Presumido -->
-        <div class="detalhe-box lp">
-          <div class="titulo">🟠 Lucro Presumido — Comércio</div>
-          <div class="linha"><span class="nome">Base de presunção IRPJ (8%)</span><span class="num" id="lp-base-irpj">—</span></div>
-          <div class="linha"><span class="nome">Base de presunção CSLL (12%)</span><span class="num" id="lp-base-csll">—</span></div>
-          <div class="linha"><span class="nome">IRPJ (15% + adicional 10%)</span><span class="num" id="lp-irpj">—</span></div>
-          <div class="linha"><span class="nome">  ↳ Adicional IRPJ (10% s/ excedente)</span><span class="num" id="lp-adicional">—</span></div>
-          <div class="linha"><span class="nome">CSLL (9% s/ base presunção)</span><span class="num" id="lp-csll">—</span></div>
-          <div class="linha"><span class="nome">PIS Cumulativo (0,65%)</span><span class="num" id="lp-pis">—</span></div>
-          <div class="linha"><span class="nome">COFINS Cumulativo (3%)</span><span class="num" id="lp-cofins">—</span></div>
-          <div class="linha"><span class="nome">ICMS (conforme UF)</span><span class="num" id="lp-icms">—</span></div>
-          <div class="linha"><span class="nome">INSS Pró-labore (20%)</span><span class="num" id="lp-inss-pl">—</span></div>
-          <div class="linha"><span class="nome">INSS Folha CLT (20%+RAT+Terceiros)</span><span class="num" id="lp-inss-folha">—</span></div>
-          <div class="linha"><span class="nome">INSS Patronal estimado</span><span class="num" id="lp-inss-pat">—</span></div>
-          <div class="total-linha"><span>TOTAL ANUAL DE TRIBUTOS</span><span id="lp-total-det">—</span></div>
-        </div>
+  <div class="card">
+    <h2>👥 Pessoal e Pró-labore</h2>
+    <div class="ig">
+      <div>
+        <label class="lbl">Pró-labore Mensal por Sócio (R$)</label>
+        <input type="text" id="prolabore" placeholder="Ex: 5.000,00" oninput="mask(this)"/>
+        <div class="hint">Base para INSS dos sócios (11% SN / 20% LP)</div>
+      </div>
+      <div>
+        <label class="lbl">Número de Sócios</label>
+        <input type="number" id="socios" placeholder="1" min="1" max="20" value="1"/>
+      </div>
+      <div>
+        <label class="lbl">Total Folha CLT — Salários Brutos/Ano (R$)</label>
+        <input type="text" id="folha" placeholder="Ex: 120.000,00" oninput="mask(this)"/>
+        <div class="hint">Salários dos funcionários registrados</div>
+      </div>
+      <div>
+        <label class="lbl">RAT — Risco Ambiental do Trabalho (%)</label>
+        <select id="rat">
+          <option value="1">1% — Risco Mínimo (escritório/admin)</option>
+          <option value="2" selected>2% — Risco Médio (comércio/confecção)</option>
+          <option value="3">3% — Risco Grave (indústria pesada)</option>
+        </select>
+        <div class="hint">Influencia o INSS patronal</div>
       </div>
     </div>
+  </div>
 
-    <!-- Tabela de faixas SN -->
-    <div class="card">
-      <h2>📋 Tabela de Faixas — Simples Nacional Anexo I (2024)</h2>
-      <div class="tabela-wrapper">
-        <table id="tabela-faixas">
-          <thead>
-            <tr>
-              <th>Faixa</th>
-              <th>Receita Bruta (RBT12)</th>
-              <th>Alíq. Nominal</th>
-              <th>Parcela a Deduzir</th>
-              <th>Alíq. Efetiva*</th>
-              <th>DAS Anual (estimado)</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="tbody-faixas"></tbody>
-        </table>
+  <div class="card">
+    <h2>🔧 Configurações Avançadas</h2>
+    <div class="ig3">
+      <div>
+        <label class="lbl">PIS Crédito Entradas LP/LR (%)</label>
+        <input type="number" id="pis_cred_pct" placeholder="80" min="0" max="100" value="80"/>
+        <div class="hint">% das compras com direito a crédito de PIS não-cumulativo</div>
       </div>
-      <div style="font-size:.75rem;color:#64748b;margin-top:8px;">
-        * Alíquota efetiva calculada com base no RBT12 informado: (RBT12 × Aliq. Nominal − PD) / RBT12
+      <div>
+        <label class="lbl">COFINS Crédito Entradas LP/LR (%)</label>
+        <input type="number" id="cof_cred_pct" placeholder="80" min="0" max="100" value="80"/>
+        <div class="hint">% das compras com direito a crédito de COFINS</div>
       </div>
-    </div>
-
-    <!-- Comparativo por faixa vs LP -->
-    <div class="card">
-      <h2>⚖️ Comparativo Ano a Ano — Progressão de Faturamento</h2>
-      <div class="tabela-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Faturamento Anual</th>
-              <th>SN — Alíq. Efetiva</th>
-              <th>SN — Imposto</th>
-              <th>LP — Alíq. Efetiva</th>
-              <th>LP — Imposto</th>
-              <th>Diferença</th>
-              <th>Melhor Regime</th>
-            </tr>
-          </thead>
-          <tbody id="tbody-progressao"></tbody>
-        </table>
+      <div>
+        <label class="lbl">Despesas Dedutíveis IRPJ/LR (R$)</label>
+        <input type="text" id="desp_ded" placeholder="Ex: 50.000,00" oninput="mask(this)"/>
+        <div class="hint">Despesas operacionais dedutíveis no Lucro Real</div>
+      </div>
+      <div>
+        <label class="lbl">ISS Municipal (%) — Serviços</label>
+        <input type="number" id="iss" placeholder="3" min="2" max="5" value="3"/>
+        <div class="hint">Varia de 2% a 5% conforme município e serviço</div>
+      </div>
+      <div>
+        <label class="lbl">Anexo Simples Nacional</label>
+        <select id="anexo_sn">
+          <option value="I">Anexo I — Comércio</option>
+          <option value="II">Anexo II — Indústria / Confecção</option>
+          <option value="III">Anexo III — Serviços c/ CPP no DAS</option>
+          <option value="V">Anexo V — Serviços alta alíquota</option>
+        </select>
+        <div class="hint">Seleção automática pelo setor, ou ajuste manual</div>
       </div>
     </div>
-
-    <!-- Análise qualitativa -->
-    <div class="card">
-      <h2>🧠 Análise Técnica e Recomendação</h2>
-      <div id="analise-texto" style="font-size:.9rem;line-height:1.75;color:#334155;"></div>
+    <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap">
+      <button class="btn btn-calc" onclick="calcular()">🔍 Calcular e Comparar</button>
+      <button class="btn btn-hist" onclick="limparCampos()">🔄 Limpar</button>
     </div>
+  </div>
 
-    <!-- Nota legal -->
-    <div class="nota">
-      <strong>⚠️ Aviso Legal Importante</strong>
-      Este comparativo é elaborado com base na legislação vigente (LC 123/2006, RIR/2018, Instrução Normativa RFB),
-      alíquotas de 2024, e destina-se exclusivamente a fins informativos e de planejamento tributário preliminar.
-      Os valores calculados são estimativas e podem variar conforme benefícios fiscais estaduais, créditos de ICMS,
-      regimes especiais, dedutibilidade de despesas no IRPJ/CSLL, perfil específico de compras e vendas da empresa,
-      distribuição de lucros isentos, e outros fatores particulares.
-      <strong>Consulte sempre um contador ou advogado tributarista habilitado antes de tomar decisões societárias.</strong>
+</div><!-- /parametros -->
+
+<!-- ═══════════════════════════════════════════
+     RESULTADO
+════════════════════════════════════════════ -->
+<div class="secao" id="secao-resultado">
+
+  <div id="alerta-mei" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:14px 18px;margin-bottom:18px;font-size:.87rem;color:#78350f">
+    <strong>⚠️ Faturamento dentro do limite MEI (R$ 81.000/ano)!</strong>
+    Considere o MEI se a atividade for permitida — recolhimento fixo de apenas <strong>~R$ 70/mês</strong> (DAS-MEI).
+    Limite: 1 funcionário, sem sociedade, sem importação/exportação.
+  </div>
+
+  <!-- Resumo cards -->
+  <div class="rc-grid" id="rc-grid"></div>
+
+  <!-- Gráficos -->
+  <div class="card">
+    <h2>📈 Visualização Comparativa</h2>
+    <div class="chg">
+      <div>
+        <div style="text-align:center;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:8px">Composição Tributária — Simples Nacional</div>
+        <div class="chb"><canvas id="chPizza"></canvas></div>
+      </div>
+      <div>
+        <div style="text-align:center;font-size:.8rem;font-weight:700;color:#475569;margin-bottom:8px">Carga Tributária Efetiva × Faturamento</div>
+        <div class="chb"><canvas id="chLinha"></canvas></div>
+      </div>
     </div>
+  </div>
 
-  </div><!-- /resultado -->
+  <!-- Detalhes tributo a tributo -->
+  <div class="card">
+    <h2>🔢 Detalhamento Completo por Regime</h2>
+    <div class="dlg" id="dlg-detalhe"></div>
+  </div>
+
+  <!-- Tabela comparativa -->
+  <div class="card">
+    <h2>⚖️ Tabela Comparativa — Todos os Tributos</h2>
+    <div class="tw">
+      <table id="tb-comp">
+        <thead>
+          <tr>
+            <th style="text-align:left">Tributo / Encargo</th>
+            <th>Simples Nacional</th>
+            <th>Lucro Presumido</th>
+            <th>Lucro Real</th>
+            <th>Menor</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-comp"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Distribuição de lucros -->
+  <div class="card">
+    <h2>💸 Planejamento — Distribuição de Lucros (Isento de IR)</h2>
+    <div id="div-lucros" style="font-size:.88rem;line-height:1.8"></div>
+  </div>
+
+  <!-- Custo efetivo funcionário -->
+  <div class="card">
+    <h2>👷 Custo Efetivo do Funcionário por Regime</h2>
+    <div class="tw"><table id="tb-func"><thead><tr>
+      <th style="text-align:left">Item</th><th>Simples Nacional</th><th>Lucro Presumido</th><th>Lucro Real</th>
+    </tr></thead><tbody id="tbody-func"></tbody></table></div>
+    <div class="hint" style="margin-top:8px">* Baseado no salário bruto anual informado. FGTS 8%, INSS patronal, RAT e terceiros inclusos.</div>
+  </div>
+
+  <!-- Análise técnica -->
+  <div class="card">
+    <h2>🧠 Análise Técnica e Recomendação</h2>
+    <div id="div-analise" style="font-size:.88rem;line-height:1.75"></div>
+  </div>
+
+  <div class="nota">
+    <strong>⚠️ Aviso Legal</strong>
+    Estimativas com base na legislação 2024 (LC 123/2006, RIR/2018, IN RFB). Valores sujeitos a benefícios fiscais
+    estaduais, créditos específicos, regimes especiais, perfil real de compras e outros fatores.
+    Consulte um contador ou advogado tributarista habilitado antes de qualquer decisão.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     FAIXAS SN
+════════════════════════════════════════════ -->
+<div class="secao" id="secao-faixas">
+  <div class="card">
+    <h2>📋 Tabela de Faixas — Simples Nacional</h2>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+      <button class="btn btn-hist" onclick="renderFaixas('I')">Anexo I — Comércio</button>
+      <button class="btn btn-hist" onclick="renderFaixas('II')">Anexo II — Indústria</button>
+      <button class="btn btn-hist" onclick="renderFaixas('III')">Anexo III — Serviços</button>
+      <button class="btn btn-hist" onclick="renderFaixas('V')">Anexo V — Serviços Alto</button>
+    </div>
+    <div class="tw"><table id="tb-faixas">
+      <thead><tr>
+        <th>Faixa</th><th>Receita Bruta (RBT12)</th><th>Alíq. Nominal</th>
+        <th>Parcela a Deduzir</th><th>Alíq. Efetiva*</th><th>DAS Anual Estimado</th><th>Status</th>
+      </tr></thead>
+      <tbody id="tbody-faixas"></tbody>
+    </table></div>
+    <div class="hint" style="margin-top:8px">* Alíq. efetiva = (RBT12 × Aliq. − PD) / RBT12 · Pressione "Calcular" primeiro para destacar sua faixa</div>
+  </div>
+  <div class="card">
+    <h2>📊 Comparativo dos Anexos — Alíquota Efetiva</h2>
+    <div class="chb" style="height:320px"><canvas id="chAnexos"></canvas></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PROGRESSÃO
+════════════════════════════════════════════ -->
+<div class="secao" id="secao-progressao">
+  <div class="card">
+    <h2>📈 Progressão de Faturamento × Carga Tributária</h2>
+    <div class="tw"><table>
+      <thead><tr>
+        <th style="text-align:left">Faturamento/Ano</th>
+        <th>SN Alíq. Ef.</th><th>SN Imposto</th>
+        <th>LP Alíq. Ef.</th><th>LP Imposto</th>
+        <th>LR Alíq. Ef.</th><th>LR Imposto</th>
+        <th>Economia SN vs LP</th><th>Melhor Regime</th>
+      </tr></thead>
+      <tbody id="tbody-prog"></tbody>
+    </table></div>
+  </div>
+  <div class="card">
+    <h2>📌 Ponto de Equilíbrio entre Regimes</h2>
+    <div id="div-equilibrio" style="font-size:.88rem;line-height:1.9"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     OBRIGAÇÕES ACESSÓRIAS
+════════════════════════════════════════════ -->
+<div class="secao" id="secao-obrigacoes">
+  <div class="card">
+    <h2>📁 Obrigações Acessórias por Regime</h2>
+    <div class="tw">
+      <div class="ob-grid ob-head">
+        <div>Obrigação / Declaração</div><div>Simples Nacional</div><div>Lucro Presumido</div><div>Lucro Real</div>
+      </div>
+      <div id="div-obrig"></div>
+    </div>
+    <div class="hint" style="margin-top:12px">✅ Obrigatório · 🟡 Opcional/Situacional · ❌ Não se aplica</div>
+  </div>
+  <div class="card">
+    <h2>💼 Custo Estimado de Contabilidade (Mensal)</h2>
+    <div class="tw"><table>
+      <thead><tr><th style="text-align:left">Regime</th><th>Complexidade</th><th>Custo Estimado</th><th>Observação</th></tr></thead>
+      <tbody>
+        <tr><td>Simples Nacional</td><td><span class="pill vd">Baixa</span></td><td>R$ 350 – R$ 800/mês</td><td>PGDAS-D, DEFIS, DAS unificado</td></tr>
+        <tr><td>Lucro Presumido</td><td><span class="pill em">Média</span></td><td>R$ 800 – R$ 2.000/mês</td><td>SPED ECD, ECF, DCTF, EFD</td></tr>
+        <tr><td>Lucro Real</td><td><span class="pill vm">Alta</span></td><td>R$ 2.000 – R$ 5.000/mês</td><td>LALUR, E-LALUR, EFD-Contribuições</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     CALENDÁRIO FISCAL
+════════════════════════════════════════════ -->
+<div class="secao" id="secao-calendario">
+  <div class="card">
+    <h2>📅 Calendário de Vencimentos — Principais Obrigações 2024</h2>
+    <div class="tw"><table>
+      <thead><tr>
+        <th style="text-align:left">Obrigação</th><th>Regime</th><th>Periodicidade</th><th>Vencimento</th><th>Observação</th>
+      </tr></thead>
+      <tbody id="tbody-cal"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     HISTÓRICO
+════════════════════════════════════════════ -->
+<div class="secao" id="secao-historico">
+  <div class="card">
+    <h2>🕓 Histórico de Simulações</h2>
+    <div style="display:flex;gap:12px;margin-bottom:16px">
+      <button class="btn btn-hist" onclick="limparHistorico()">🗑️ Limpar Histórico</button>
+    </div>
+    <div class="hist-table-wrap">
+      <table>
+        <thead><tr>
+          <th style="text-align:left">Data/Hora</th><th>Faturamento</th><th>Setor</th>
+          <th>Total SN</th><th>Total LP</th><th>Total LR</th><th>Melhor</th>
+        </tr></thead>
+        <tbody id="tbody-hist"></tbody>
+      </table>
+    </div>
+    <div id="hist-vazio" style="text-align:center;color:#94a3b8;padding:30px;font-size:.88rem">
+      Nenhuma simulação salva ainda. Execute um cálculo para salvar automaticamente.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     GLOSSÁRIO
+════════════════════════════════════════════ -->
+<div class="secao" id="secao-glossario">
+  <div class="card">
+    <h2>📖 Glossário Tributário</h2>
+    <div id="div-glossario"></div>
+  </div>
+</div>
 
 </main>
-
-<footer>
-  Desenvolvido por especialista tributário fiscal — Legislação LC 123/2006 · RIR/2018 · IN RFB · PGDAS-D 2024
+<footer style="text-align:center;font-size:.74rem;color:#94a3b8;padding:18px;border-top:1px solid var(--bd);background:#f8fafc">
+  Simulador Tributário Empresarial — LC 123/2006 · RIR/2018 · IN RFB · PGDAS-D 2024 · Elaborado por especialista fiscal
 </footer>
 
+<!-- ══════════════════════════ JAVASCRIPT ══════════════════════════ -->
 <script>
-// ──────────────────────────────────────────────
-//  DADOS FIXOS
-// ──────────────────────────────────────────────
-const FAIXAS_SN = [
-  { faixa:1, min:0,         max:180000,    aliq:.04,  pd:0,       irpj:.055, csll:.035, cofins:.1215, pis:.026, cpp:.415, icms:.3475 },
-  { faixa:2, min:180000.01, max:360000,    aliq:.073, pd:5940,    irpj:.055, csll:.035, cofins:.1215, pis:.026, cpp:.415, icms:.3475 },
-  { faixa:3, min:360000.01, max:720000,    aliq:.095, pd:13860,   irpj:.055, csll:.035, cofins:.1215, pis:.026, cpp:.415, icms:.3475 },
-  { faixa:4, min:720000.01, max:1800000,   aliq:.107, pd:22500,   irpj:.055, csll:.035, cofins:.1215, pis:.026, cpp:.415, icms:.3475 },
-  { faixa:5, min:1800000.01,max:3600000,   aliq:.143, pd:87300,   irpj:.055, csll:.035, cofins:.1215, pis:.026, cpp:.415, icms:.3475 },
-  { faixa:6, min:3600000.01,max:4800000,   aliq:.19,  pd:378000,  irpj:.055, csll:.035, cofins:.1215, pis:.026, cpp:.415, icms:.3475 },
-];
-
-const ICMS_POR_UF = {
-  SP:.12, RJ:.12, MG:.12, PR:.12, SC:.12, RS:.12, outros:.17
+// ─── DADOS FIXOS ───────────────────────────────────────────────────
+const ANEXOS = {
+  I: {
+    nome:'Anexo I — Comércio', tributo:'ICMS',
+    faixas:[
+      {f:1,max:180000,   aliq:.04,  pd:0,      irpj:.055,csll:.035,cofins:.1215,pis:.026,cpp:.415,icms_iss:.3475},
+      {f:2,max:360000,   aliq:.073, pd:5940,   irpj:.055,csll:.035,cofins:.1215,pis:.026,cpp:.415,icms_iss:.3475},
+      {f:3,max:720000,   aliq:.095, pd:13860,  irpj:.055,csll:.035,cofins:.1215,pis:.026,cpp:.415,icms_iss:.3475},
+      {f:4,max:1800000,  aliq:.107, pd:22500,  irpj:.055,csll:.035,cofins:.1215,pis:.026,cpp:.415,icms_iss:.3475},
+      {f:5,max:3600000,  aliq:.143, pd:87300,  irpj:.055,csll:.035,cofins:.1215,pis:.026,cpp:.415,icms_iss:.3475},
+      {f:6,max:4800000,  aliq:.19,  pd:378000, irpj:.055,csll:.035,cofins:.1215,pis:.026,cpp:.415,icms_iss:.3475},
+    ]
+  },
+  II: {
+    nome:'Anexo II — Indústria/Confecção', tributo:'ICMS',
+    faixas:[
+      {f:1,max:180000,   aliq:.045, pd:0,      irpj:.055,csll:.035,cofins:.1215,pis:.026,cpp:.415,icms_iss:.3475},
+      {f:2,max:360000,   aliq:.078, pd:5940,   irpj:.055,csll:.035,cofins:.1215,pis:.026,cpp:.415,icms_iss:.3475},
+      {f:3,max:720000,   aliq:.10,  pd:13860,  irpj:.055,csll:.035,cofins:.1215,pis:.026,cpp:.415,icms_iss:.3475},
+      {f:4,max:1800000,  aliq:.112, pd:22500,  irpj:.055,csll:.035,cofins:.1215,pis:.026,cpp:.415,icms_iss:.3475},
+      {f:5,max:3600000,  aliq:.147, pd:85500,  irpj:.055,csll:.035,cofins:.1215,pis:.026,cpp:.415,icms_iss:.3475},
+      {f:6,max:4800000,  aliq:.30,  pd:720000, irpj:.055,csll:.035,cofins:.1215,pis:.026,cpp:.415,icms_iss:.3475},
+    ]
+  },
+  III: {
+    nome:'Anexo III — Serviços (ISS incluso)', tributo:'ISS',
+    faixas:[
+      {f:1,max:180000,   aliq:.06,  pd:0,      irpj:.04, csll:.035,cofins:.1215,pis:.026,cpp:.43,icms_iss:.335},
+      {f:2,max:360000,   aliq:.112, pd:9360,   irpj:.04, csll:.035,cofins:.1215,pis:.026,cpp:.43,icms_iss:.335},
+      {f:3,max:720000,   aliq:.135, pd:17640,  irpj:.04, csll:.035,cofins:.1215,pis:.026,cpp:.43,icms_iss:.335},
+      {f:4,max:1800000,  aliq:.16,  pd:35640,  irpj:.04, csll:.035,cofins:.1215,pis:.026,cpp:.43,icms_iss:.335},
+      {f:5,max:3600000,  aliq:.21,  pd:125640, irpj:.04, csll:.035,cofins:.1215,pis:.026,cpp:.43,icms_iss:.335},
+      {f:6,max:4800000,  aliq:.33,  pd:648000, irpj:.04, csll:.035,cofins:.1215,pis:.026,cpp:.43,icms_iss:.335},
+    ]
+  },
+  V: {
+    nome:'Anexo V — Serviços Alto Valor (ISS incluso)', tributo:'ISS',
+    faixas:[
+      {f:1,max:180000,   aliq:.155, pd:0,      irpj:.25, csll:.15, cofins:.14, pis:.03, cpp:0,   icms_iss:.25},
+      {f:2,max:360000,   aliq:.18,  pd:4500,   irpj:.25, csll:.15, cofins:.14, pis:.03, cpp:0,   icms_iss:.25},
+      {f:3,max:720000,   aliq:.195, pd:9900,   irpj:.25, csll:.15, cofins:.14, pis:.03, cpp:0,   icms_iss:.25},
+      {f:4,max:1800000,  aliq:.205, pd:17100,  irpj:.25, csll:.15, cofins:.14, pis:.03, cpp:0,   icms_iss:.25},
+      {f:5,max:3600000,  aliq:.23,  pd:62100,  irpj:.25, csll:.15, cofins:.14, pis:.03, cpp:0,   icms_iss:.25},
+      {f:6,max:4800000,  aliq:.305, pd:540000, irpj:.25, csll:.15, cofins:.14, pis:.03, cpp:0,   icms_iss:.25},
+    ]
+  }
 };
 
-// ──────────────────────────────────────────────
-//  UTILIDADES
-// ──────────────────────────────────────────────
-function mascaraMoeda(input) {
-  let v = input.value.replace(/\D/g,'');
-  v = (parseInt(v,10) / 100).toFixed(2);
-  v = v.replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
-  input.value = isNaN(parseFloat(v)) ? '' : v;
+const SETOR_PADRAO = {
+  comercio:'I', confeccao:'II', industria:'II', servicos:'III', servicos_adv:'V'
+};
+
+const OBRIGACOES = [
+  {cat:'Apuração Federal',nome:'DAS — Documento de Arrecadação do Simples',sn:'✅',lp:'❌',lr:'❌'},
+  {cat:'Apuração Federal',nome:'PGDAS-D — Declaração e Apuração SN',sn:'✅',lp:'❌',lr:'❌'},
+  {cat:'Apuração Federal',nome:'DCTF — Declaração Débitos e Créditos Tributos Federais',sn:'❌',lp:'✅',lr:'✅'},
+  {cat:'Apuração Federal',nome:'DEFIS — Declaração Econômico-Fiscal SN',sn:'✅',lp:'❌',lr:'❌'},
+  {cat:'Contabilidade',nome:'ECD — Escrituração Contábil Digital (SPED)',sn:'🟡',lp:'✅',lr:'✅'},
+  {cat:'Contabilidade',nome:'ECF — Escrituração Contábil Fiscal (IRPJ)',sn:'🟡',lp:'✅',lr:'✅'},
+  {cat:'Contabilidade',nome:'LALUR / e-LALUR',sn:'❌',lp:'❌',lr:'✅'},
+  {cat:'Contribuições',nome:'EFD-Contribuições (PIS/COFINS)',sn:'❌',lp:'✅',lr:'✅'},
+  {cat:'Contribuições',nome:'SPED Fiscal (ICMS/IPI)',sn:'🟡',lp:'✅',lr:'✅'},
+  {cat:'Contribuições',nome:'GIA — Guia Informação Apuração ICMS',sn:'❌',lp:'✅',lr:'✅'},
+  {cat:'Pessoal',nome:'eSocial — Folha e Encargos',sn:'✅',lp:'✅',lr:'✅'},
+  {cat:'Pessoal',nome:'REINF — Retenções e Informações',sn:'🟡',lp:'✅',lr:'✅'},
+  {cat:'Pessoal',nome:'GFIP / SEFIP',sn:'✅',lp:'✅',lr:'✅'},
+  {cat:'Pessoal',nome:'RAIS — Relação Anual Informações Sociais',sn:'✅',lp:'✅',lr:'✅'},
+  {cat:'Pessoal',nome:'CAGED — Admissões e Demissões',sn:'✅',lp:'✅',lr:'✅'},
+  {cat:'Declarações',nome:'DASN — Declaração Anual SN (ME/EPP)',sn:'✅',lp:'❌',lr:'❌'},
+  {cat:'Declarações',nome:'DIRF — Declaração Retenção Impostos Renda',sn:'🟡',lp:'✅',lr:'✅'},
+  {cat:'Declarações',nome:'DIMOB — Imóveis (se aplicável)',sn:'🟡',lp:'🟡',lr:'🟡'},
+  {cat:'Simples',nome:'MEI — DASN-SIMEI (se MEI)',sn:'🟡',lp:'❌',lr:'❌'},
+];
+
+const CALENDARIO = [
+  {ob:'DAS — Simples Nacional',reg:'Simples',per:'Mensal',venc:'Dia 20 do mês seguinte',obs:'Via PGDAS-D'},
+  {ob:'DARF IRPJ — Estimativa',reg:'Lucro Real',per:'Mensal',venc:'Último dia útil do mês',obs:'Estimativa mensal'},
+  {ob:'DARF CSLL — Estimativa',reg:'Lucro Real',per:'Mensal',venc:'Último dia útil do mês',obs:'Estimativa mensal'},
+  {ob:'DARF PIS',reg:'LP / LR',per:'Mensal',venc:'25º dia do mês seguinte',obs:''},
+  {ob:'DARF COFINS',reg:'LP / LR',per:'Mensal',venc:'25º dia do mês seguinte',obs:''},
+  {ob:'DARF IRPJ — Presumido',reg:'Lucro Presumido',per:'Trimestral',venc:'Último dia útil do 3º mês seguinte ao trimestre',obs:''},
+  {ob:'DARF CSLL — Presumido',reg:'Lucro Presumido',per:'Trimestral',venc:'Último dia útil do 3º mês seguinte ao trimestre',obs:''},
+  {ob:'GPS / eSocial — INSS Patronal',reg:'Todos',per:'Mensal',venc:'Dia 20 do mês seguinte',obs:''},
+  {ob:'FGTS',reg:'Todos',per:'Mensal',venc:'Até 7º dia do mês seguinte',obs:'8% sobre salários'},
+  {ob:'DCTF',reg:'LP / LR',per:'Mensal',venc:'Dia 15 do 2º mês seguinte',obs:''},
+  {ob:'ECF (IRPJ anual)',reg:'LP / LR',per:'Anual',venc:'Último dia útil de julho',obs:'Ano-base anterior'},
+  {ob:'ECD (SPED Contábil)',reg:'LP / LR',per:'Anual',venc:'31 de maio',obs:'Escrituração do ano anterior'},
+  {ob:'DEFIS — SN',reg:'Simples',per:'Anual',venc:'31 de março',obs:'Declaração econômico-fiscal'},
+  {ob:'DASN-SIMEI',reg:'MEI',per:'Anual',venc:'31 de maio',obs:''},
+  {ob:'RAIS',reg:'Todos',per:'Anual',venc:'Fevereiro (data varia)',obs:''},
+  {ob:'EFD-Contribuições (PIS/COFINS)',reg:'LP / LR',per:'Mensal',venc:'10º dia do 2º mês seguinte',obs:''},
+  {ob:'GIA — ICMS Estadual',reg:'LP / LR',per:'Mensal',venc:'Varia por UF (geralmente dia 10–15)',obs:''},
+  {ob:'REINF',reg:'LP / LR',per:'Mensal',venc:'Dia 15 do mês seguinte',obs:''},
+];
+
+const GLOSSARIO = [
+  {t:'DAS — Documento de Arrecadação do Simples',d:'Guia única de recolhimento mensal do Simples Nacional, que unifica 8 tributos (IRPJ, CSLL, PIS, COFINS, CPP, ICMS/ISS) em uma única guia, simplificando enormemente a vida fiscal da empresa.'},
+  {t:'RBT12 — Receita Bruta dos Últimos 12 Meses',d:'Base de cálculo utilizada para enquadramento na faixa do Simples Nacional. É a soma da receita bruta dos 12 meses anteriores ao período de apuração. Determinante para a alíquota efetiva.'},
+  {t:'Alíquota Efetiva (Simples Nacional)',d:'Calculada como: (RBT12 × Alíquota Nominal da Faixa − Parcela a Deduzir) ÷ RBT12. Representa a alíquota real que será aplicada sobre o faturamento do mês.'},
+  {t:'Parcela a Deduzir (PD)',d:'Valor fixo subtraído no cálculo da alíquota efetiva do Simples Nacional. Funciona como mecanismo progressivo que suaviza o salto entre faixas, evitando tributação excessiva na transição de faixa.'},
+  {t:'Presunção de Lucro — IRPJ',d:'No Lucro Presumido, a Receita Federal presume que o lucro é um percentual fixo do faturamento: 8% para comércio e indústria, 32% para serviços em geral, 1,6% para revenda de combustíveis. Sobre esse lucro presumido aplica-se 15% de IRPJ.'},
+  {t:'Adicional do IRPJ (10%)',d:'Incide sobre a parcela do lucro (base de cálculo) que exceder R$ 20.000 por mês (R$ 240.000/ano no Lucro Presumido ou Lucro Real). É uma alíquota adicional de 10% sobre o excedente.'},
+  {t:'CSLL — Contribuição Social sobre Lucro Líquido',d:'Tributo federal com alíquota de 9% para empresas em geral (15% para instituições financeiras). No LP, a presunção é de 12% do faturamento (comércio/indústria) ou 32% (serviços). Base constitucional: Art. 195, I, c, CF/88.'},
+  {t:'PIS/COFINS Cumulativo (LP)',d:'No Lucro Presumido: PIS 0,65% + COFINS 3% = 3,65% sobre o faturamento bruto, sem direito a créditos de entradas. Regime simples mas sem possibilidade de compensação.'},
+  {t:'PIS/COFINS Não-Cumulativo (LR)',d:'No Lucro Real: PIS 1,65% + COFINS 7,6% = 9,25%, porém com direito a crédito sobre compras, insumos, energia, depreciação, aluguéis. A carga líquida depende do volume de créditos aproveitados.'},
+  {t:'Crédito de ICMS',d:'No Lucro Presumido/Real, o ICMS pago nas compras (entradas) pode ser compensado com o ICMS das vendas (saídas), pagando-se apenas a diferença. No Simples Nacional, o ICMS é recolhido dentro do DAS sem crédito de entradas (exceto em algumas situações).'},
+  {t:'CPP — Contribuição Patronal Previdenciária',d:'Percentual do DAS destinado ao INSS patronal no Simples Nacional. Substitui o recolhimento de 20% sobre a folha para MEPPs. A proporção varia por faixa e anexo.'},
+  {t:'INSS Patronal (Lucro Presumido/Real)',d:'20% sobre o total da folha de salários + RAT (1 a 3% conforme risco da atividade) + terceiros (5,75% = SESI/SESC + SENAI/SENAC + SEBRAE + INCRA + Salário-Educação). Total médio: ~27,75% sobre a folha.'},
+  {t:'RAT — Risco Ambiental do Trabalho',d:'Alíquota de INSS patronal adicional que varia de 1% (risco mínimo) a 2% (médio) a 3% (grave), conforme o CNAE da atividade e o Fator Acidentário de Prevenção (FAP).'},
+  {t:'FGTS — Fundo de Garantia por Tempo de Serviço',d:'8% sobre o salário bruto de cada funcionário, depositado mensalmente na CEF. Não é tributo, mas é encargo obrigatório. Na demissão sem justa causa, acrescenta-se multa de 40% sobre o saldo.'},
+  {t:'Distribuição de Lucros (Isenção IR)',d:'Sócios podem retirar lucros da empresa isentos de IR quando: (a) no SN, a distribuição de lucros é amplamente isenta (art. 14 LC 123/2006); (b) no LP, é isento até o valor do lucro presumido; (c) no LR, isento até o lucro real apurado.'},
+  {t:'Substituição Tributária (ST) — ICMS',d:'Regime em que o fabricante ou importador recolhe antecipadamente o ICMS de toda a cadeia, inclusive do varejista. Muito comum no comércio varejista (bebidas, eletroeletrônicos, cosméticos, combustíveis). Impacta fortemente o Simples Nacional.'},
+  {t:'ECD — Escrituração Contábil Digital',d:'Componente do SPED que substitui os livros contábeis em papel (Diário, Razão, Balancetes). Obrigatória para LP e LR. Transmitida anualmente à Receita Federal até 31 de maio.'},
+  {t:'ECF — Escrituração Contábil Fiscal',d:'Substitui a antiga DIPJ. Contém o LALUR digital, apuração do IRPJ e CSLL, e demonstrações contábeis. Obrigatória para LP e LR, transmitida até o último dia útil de julho.'},
+  {t:'Lucro Real',d:'Regime em que o IRPJ e a CSLL são calculados sobre o lucro contábil efetivamente apurado, após adições e exclusões previstas na lei. Obrigatório para empresas com receita bruta acima de R$ 78M/ano, financeiras, factorings, entre outros. Permite aproveitamento de prejuízo fiscal.'},
+  {t:'Simples Nacional — Vedações',d:'Estão impedidas de optar pelo SN: empresas com receita bruta acima de R$ 4,8M/ano, S.A., com sócio PJ, com débitos em dívida ativa não parcelados, com atividades vedadas (advocacia, corretagem de imóveis, financeiras, produção de cigarros, entre outras).'},
+  {t:'DIFAL — Diferencial de Alíquota',d:'ICMS cobrado nas compras interestaduais pelo estado de destino, equivalente à diferença entre a alíquota interna do estado comprador e a alíquota interestadual. Desde 2022 (ADC 49), aplicado também nas operações ao consumidor final.'},
+];
+
+// ─── UTILS ────────────────────────────────────────────────────────
+function mask(input){
+  let v=input.value.replace(/\D/g,'');
+  v=(parseInt(v,10)/100).toFixed(2);
+  v=v.replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  input.value=isNaN(parseFloat(v))?'':v;
+}
+function pm(str){return parseFloat((str||'').replace(/\./g,'').replace(',','.'))||0;}
+function fmt(n){return'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function pct(n,d=2){return(n*100).toFixed(d).replace('.',',')+'%';}
+function melhorPill(sn,lp,lr){
+  const m=Math.min(sn,lp,lr);
+  if(m===sn)return'<span class="pill sn">🔵 SN</span>';
+  if(m===lp)return'<span class="pill lp">🟠 LP</span>';
+  return'<span class="pill lr">🟢 LR</span>';
 }
 
-function parseMoeda(str) {
-  if (!str) return 0;
-  return parseFloat(str.replace(/\./g,'').replace(',','.')) || 0;
+// ─── AJUSTE AUTOMÁTICO ANEXO / SETOR ────────────────────────────
+function ajustarCampos(){
+  const s=document.getElementById('setor').value;
+  document.getElementById('anexo_sn').value=SETOR_PADRAO[s]||'I';
 }
 
-function fmt(n) {
-  return 'R$ ' + n.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+// ─── NAVEGAÇÃO ────────────────────────────────────────────────────
+function irPara(id,el){
+  document.querySelectorAll('.secao').forEach(s=>s.classList.remove('ativa'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('ativo'));
+  document.getElementById('secao-'+id).classList.add('ativa');
+  if(el)el.classList.add('ativo');
 }
 
-function pct(n) {
-  return (n*100).toFixed(4).replace('.',',') + '%';
-}
-
-function pct2(n) {
-  return (n*100).toFixed(2).replace('.',',') + '%';
-}
-
-// ──────────────────────────────────────────────
-//  CÁLCULO SIMPLES NACIONAL
-// ──────────────────────────────────────────────
-function calcSN(fat, rbt12, prolaboreAnual, folhaAnual) {
-  const faixa = FAIXAS_SN.find(f => rbt12 >= f.min && rbt12 <= f.max) || FAIXAS_SN[5];
-  const aliqEf = (rbt12 * faixa.aliq - faixa.pd) / rbt12;
-  const das = fat * aliqEf;
-  const inssProLabore = prolaboreAnual * 0.11;  // 11% (teto 2024 ~R$908/mês)
-  const inssFolha = folhaAnual * 0.2775;         // 20% patronal + RAT 2% + Terceiros 5,75%
-  return {
-    faixa, aliqEf, das,
-    dasAnual: das,
-    dasMensal: das / 12,
-    inssProLabore,
-    inssFolha,
-    total: das + inssProLabore + inssFolha,
-    composicao: {
-      irpj:   das * faixa.irpj,
-      csll:   das * faixa.csll,
-      cofins: das * faixa.cofins,
-      pis:    das * faixa.pis,
-      cpp:    das * faixa.cpp,
-      icms:   das * faixa.icms,
+// ─── CÁLCULO SN ───────────────────────────────────────────────────
+function calcSN(fat,rbt12,anexo,prolaboreAnual,folhaAnual,rat,numSocios){
+  const fz=ANEXOS[anexo].faixas;
+  const rbtUse=Math.min(rbt12||fat,4800000);
+  const faixa=fz.find(f=>rbtUse<=f.max)||fz[5];
+  const aliqEf=Math.max(0,(rbtUse*faixa.aliq-faixa.pd)/rbtUse);
+  const das=fat*aliqEf;
+  // INSS sobre pró-labore: 11% (teto ~R$908/mês em 2024)
+  const tetoMensal=908.86; // teto INSS 2024 = R$908,86/mês por sócio
+  const inssPlMensal=Math.min(pm(document.getElementById('prolabore').value||'0')*0.11,tetoMensal);
+  const inssProLabore=inssPlMensal*12*numSocios;
+  const rat_pct=rat/100;
+  const inssFolha=folhaAnual*(0.20+rat_pct+0.0575+0.08); // patronal+RAT+terceiros+FGTS
+  const inssPatronal=folhaAnual*(0.20+rat_pct+0.0575);
+  const fgts=folhaAnual*0.08;
+  return{
+    faixa,aliqEf,das,
+    inssProLabore,inssFolha,inssPatronal,fgts,
+    total:das+inssProLabore+inssFolha,
+    comp:{
+      irpj:das*faixa.irpj,csll:das*faixa.csll,
+      cofins:das*faixa.cofins,pis:das*faixa.pis,
+      cpp:das*faixa.cpp,icms_iss:das*faixa.icms_iss,
     }
   };
 }
 
-// ──────────────────────────────────────────────
-//  CÁLCULO LUCRO PRESUMIDO
-// ──────────────────────────────────────────────
-function calcLP(fat, uf, prolaboreAnual, folhaAnual) {
-  const aliqIcms = ICMS_POR_UF[uf] || .12;
-
-  // IRPJ
-  const baseIrpj = fat * 0.08;
-  const irpjBasico = baseIrpj * 0.15;
-  const excedente = Math.max(0, baseIrpj - 240000);   // limite anual R$240k
-  const adicional = excedente * 0.10;
-  const irpj = irpjBasico + adicional;
-
-  // CSLL
-  const baseCsll = fat * 0.12;
-  const csll = baseCsll * 0.09;
-
-  // PIS / COFINS cumulativos
-  const pis = fat * 0.0065;
-  const cofins = fat * 0.03;
-
-  // ICMS (presumindo operações internas; simplificado)
-  const icms = fat * aliqIcms;
-
+// ─── CÁLCULO LP ───────────────────────────────────────────────────
+function calcLP(fat,uf,compras,icmsEntAliq,prolaboreAnual,folhaAnual,rat,setor,iss_pct,numSocios,pisCred,cofCred){
+  const aliqIcms=parseFloat(uf)/100;
+  const aliqIcmsEnt=parseFloat(icmsEntAliq)/100;
+  const isServico=setor==='servicos'||setor==='servicos_adv';
+  const pIrpj=isServico?0.32:0.08;
+  const pCsll=isServico?0.32:0.12;
+  const baseIrpj=fat*pIrpj;
+  const baseCsll=fat*pCsll;
+  const irpjBasico=baseIrpj*0.15;
+  const exc=Math.max(0,baseIrpj-240000);
+  const adicional=exc*0.10;
+  const irpj=irpjBasico+adicional;
+  const csll=baseCsll*0.09;
+  const pis=fat*0.0065;
+  const cofins=fat*0.03;
+  const icmsBruto=isServico?0:fat*(1-parseFloat(document.getElementById('exportacao').value||'0')/100)*aliqIcms;
+  const icmsCredito=isServico?0:compras*aliqIcmsEnt;
+  const icms=Math.max(0,icmsBruto-icmsCredito);
+  const issVal=isServico?fat*(iss_pct/100):0;
   // INSS
-  const inssProLabore = prolaboreAnual * 0.20;   // 20% no LP (não há redutor)
-  const inssFolha = folhaAnual * 0.2775;
-  const inssPatronal = fat * 0.002;              // estimativa conservadora outros encargos
-
-  const total = irpj + csll + pis + cofins + icms + inssProLabore + inssFolha + inssPatronal;
-
-  return {
-    baseIrpj, baseCsll,
-    irpjBasico, adicional, irpj, csll, pis, cofins,
-    icms, aliqIcms,
-    inssProLabore, inssFolha, inssPatronal,
-    total,
-    aliqEf: total / fat,
-    composicao: { irpj, csll, pis, cofins, icms }
+  const inssProLabore=prolaboreAnual*0.20;
+  const rat_pct=rat/100;
+  const inssFolha=folhaAnual*(0.20+rat_pct+0.0575+0.08);
+  const inssPatronal=folhaAnual*(0.20+rat_pct+0.0575);
+  const fgts=folhaAnual*0.08;
+  const total=irpj+csll+pis+cofins+icms+issVal+inssProLabore+inssFolha;
+  return{
+    pIrpj,pCsll,baseIrpj,baseCsll,irpjBasico,adicional,irpj,csll,
+    pis,cofins,icmsBruto,icmsCredito,icms,issVal,aliqIcms,
+    inssProLabore,inssFolha,inssPatronal,fgts,
+    total,aliqEf:total/fat,
+    comp:{irpj,csll,pis,cofins,icms:icms+issVal}
   };
 }
 
-// ──────────────────────────────────────────────
-//  CHARTS
-// ──────────────────────────────────────────────
-let chartPizza = null, chartLinha = null;
+// ─── CÁLCULO LR ───────────────────────────────────────────────────
+function calcLR(fat,uf,compras,icmsEntAliq,prolaboreAnual,folhaAnual,rat,margem_pct,setor,iss_pct,numSocios,pisCred,cofCred,despDed){
+  const aliqIcms=parseFloat(uf)/100;
+  const aliqIcmsEnt=parseFloat(icmsEntAliq)/100;
+  const isServico=setor==='servicos'||setor==='servicos_adv';
+  // Lucro real apurado
+  const lucroReal=fat*(margem_pct/100)-despDed;
+  const lucroBase=Math.max(0,lucroReal);
+  const irpjBasico=lucroBase*0.15;
+  const exc=Math.max(0,lucroBase-240000);
+  const adicional=exc*0.10;
+  const irpj=irpjBasico+adicional;
+  const csll=lucroBase*0.09;
+  // PIS/COFINS não-cumulativo
+  const pisBruto=fat*0.0165;
+  const cofBruto=fat*0.076;
+  const compCred=compras*(pisCred/100);
+  const pisCreditoVal=compCred*0.0165;
+  const cofCreditoVal=(compras*(cofCred/100))*0.076;
+  const pis=Math.max(0,pisBruto-pisCreditoVal);
+  const cofins=Math.max(0,cofBruto-cofCreditoVal);
+  // ICMS
+  const icmsBruto=isServico?0:fat*(1-parseFloat(document.getElementById('exportacao').value||'0')/100)*aliqIcms;
+  const icmsCredito=isServico?0:compras*aliqIcmsEnt;
+  const icms=Math.max(0,icmsBruto-icmsCredito);
+  const issVal=isServico?fat*(iss_pct/100):0;
+  // INSS
+  const inssProLabore=prolaboreAnual*0.20;
+  const rat_pct=rat/100;
+  const inssFolha=folhaAnual*(0.20+rat_pct+0.0575+0.08);
+  const inssPatronal=folhaAnual*(0.20+rat_pct+0.0575);
+  const fgts=folhaAnual*0.08;
+  const total=irpj+csll+pis+cofins+icms+issVal+inssProLabore+inssFolha;
+  return{
+    lucroReal,lucroBase,irpjBasico,adicional,irpj,csll,
+    pisBruto,pisCreditoVal,cofBruto,cofCreditoVal,pis,cofins,
+    icmsBruto,icmsCredito,icms,issVal,aliqIcms,
+    inssProLabore,inssFolha,inssPatronal,fgts,
+    total,aliqEf:total/fat,
+    comp:{irpj,csll,pis,cofins,icms:icms+issVal}
+  };
+}
 
-function renderCharts(sn, lp, fat) {
-  // Pizza / Donut lado a lado
-  if (chartPizza) chartPizza.destroy();
-  const ctxP = document.getElementById('chartPizza').getContext('2d');
-  chartPizza = new Chart(ctxP, {
-    type: 'doughnut',
-    data: {
-      labels: ['IRPJ','CSLL','PIS','COFINS','ICMS','CPP/INSS-Patr','INSS Pró-lab.','INSS Folha'],
-      datasets: [
-        {
-          label: 'Simples Nacional',
-          data: [
-            sn.composicao.irpj, sn.composicao.csll,
-            sn.composicao.pis, sn.composicao.cofins,
-            sn.composicao.icms, sn.composicao.cpp || 0,
-            sn.inssProLabore, sn.inssFolha
-          ],
-          backgroundColor: ['#1d4ed8','#7c3aed','#0891b2','#059669','#d97706','#64748b','#be123c','#0f766e'],
-        }
-      ]
+// ─── CHARTS ──────────────────────────────────────────────────────
+let chPizza=null,chLinha=null,chAnexos=null;
+
+function renderCharts(sn,lp,lr,fat,anexo,uf,setor,iss,rat,prolaboreA,folhaA,pisCred,cofCred,despDed,margem){
+  // Pizza — composição SN
+  if(chPizza)chPizza.destroy();
+  chPizza=new Chart(document.getElementById('chPizza').getContext('2d'),{
+    type:'doughnut',
+    data:{
+      labels:['IRPJ','CSLL','PIS','COFINS','CPP/ICMS/ISS','INSS Pró-lab.','INSS Folha CLT'],
+      datasets:[{
+        data:[sn.comp.irpj,sn.comp.csll,sn.comp.pis,sn.comp.cofins,
+              sn.comp.cpp+sn.comp.icms_iss,sn.inssProLabore,sn.inssPatronal],
+        backgroundColor:['#1d4ed8','#7c3aed','#0891b2','#059669','#d97706','#be123c','#0f766e'],
+      }]
     },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: {
-        legend: { position:'right', labels:{font:{size:10}, boxWidth:12} },
-        tooltip: {
-          callbacks: { label: ctx => ` ${fmt(ctx.raw)} (${((ctx.raw/sn.total)*100).toFixed(1)}%)` }
-        }
-      }
-    }
+    options:{responsive:true,maintainAspectRatio:false,plugins:{
+      legend:{position:'right',labels:{font:{size:10},boxWidth:12}},
+      tooltip:{callbacks:{label:ctx=>` ${fmt(ctx.raw)} (${((ctx.raw/sn.total)*100).toFixed(1)}%)`}}
+    }}
   });
 
-  // Linha: evolução por faturamento
-  if (chartLinha) chartLinha.destroy();
-  const ctxL = document.getElementById('chartLinha').getContext('2d');
-  const pontos = [180000, 360000, 600000, 900000, 1200000, 1800000, 2400000, 3600000, 4800000];
-  const rbt12Ref = fat;
-  const dataSnL = pontos.map(f => {
-    const s = calcSN(f, Math.min(f, 4800000), 0, 0);
-    return +(s.aliqEf * 100).toFixed(2);
+  // Linha — evolução por faturamento
+  if(chLinha)chLinha.destroy();
+  const pts=[100000,200000,400000,600000,900000,1200000,1800000,2400000,3600000,4800000];
+  const snL=pts.map(f=>{
+    const r=Math.min(f,4800000);
+    const s=calcSN(f,r,anexo,prolaboreA,folhaA,rat,1);
+    return+(s.aliqEf*100).toFixed(2);
   });
-  const dataLpL = pontos.map(f => {
-    const l = calcLP(f, document.getElementById('uf').value, 0, 0);
-    return +(l.aliqEf * 100).toFixed(2);
+  const lpL=pts.map(f=>{
+    const l=calcLP(f,uf,f*0.5,parseFloat(document.getElementById('icms_entrada').value)||12,
+                   prolaboreA,folhaA,rat,setor,iss,1,pisCred,cofCred);
+    return+(l.aliqEf*100).toFixed(2);
   });
-
-  chartLinha = new Chart(ctxL, {
+  const lrL=pts.map(f=>{
+    const l=calcLR(f,uf,f*0.5,parseFloat(document.getElementById('icms_entrada').value)||12,
+                   prolaboreA,folhaA,rat,margem,setor,iss,1,pisCred,cofCred,despDed);
+    return+(l.aliqEf*100).toFixed(2);
+  });
+  chLinha=new Chart(document.getElementById('chLinha').getContext('2d'),{
     type:'line',
     data:{
-      labels: pontos.map(p => 'R$ '+(p/1000).toFixed(0)+'k'),
+      labels:pts.map(p=>'R$'+(p/1000).toFixed(0)+'k'),
       datasets:[
-        {
-          label:'Simples Nacional (%)',
-          data: dataSnL,
-          borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,.08)',
-          tension:.3, fill:true, pointRadius:4,
-        },
-        {
-          label:'Lucro Presumido (%)',
-          data: dataLpL,
-          borderColor:'#c2410c', backgroundColor:'rgba(194,65,12,.08)',
-          tension:.3, fill:true, pointRadius:4,
-        }
+        {label:'Simples Nacional',data:snL,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.07)',tension:.3,fill:true,pointRadius:3},
+        {label:'Lucro Presumido', data:lpL,borderColor:'#c2410c',backgroundColor:'rgba(194,65,12,.07)',tension:.3,fill:true,pointRadius:3},
+        {label:'Lucro Real',      data:lrL,borderColor:'#15803d',backgroundColor:'rgba(21,128,61,.07)',tension:.3,fill:true,pointRadius:3},
       ]
     },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{position:'top'} },
-      scales:{
-        y:{ title:{display:true,text:'Carga (%)'},min:0 },
-        x:{ title:{display:true,text:'Faturamento Anual'} }
-      }
-    }
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},
+      scales:{y:{title:{display:true,text:'Carga (%)'},min:0},x:{title:{display:true,text:'Faturamento Anual'}}}}
   });
 }
 
-// ──────────────────────────────────────────────
-//  TABELA DE FAIXAS
-// ──────────────────────────────────────────────
-function renderFaixas(rbt12, faixaAtiva) {
-  const tbody = document.getElementById('tbody-faixas');
-  tbody.innerHTML = '';
-  FAIXAS_SN.forEach(f => {
-    const aliqEf = (rbt12 * f.aliq - f.pd) / rbt12;
-    const dasAnual = rbt12 * aliqEf;
-    const ativo = f.faixa === faixaAtiva.faixa;
-    const tr = document.createElement('tr');
-    if (ativo) tr.className = 'faixa-ativa';
-    tr.innerHTML = `
-      <td><strong>${f.faixa}ª Faixa</strong></td>
+function renderChartAnexos(){
+  if(chAnexos)chAnexos.destroy();
+  const pts=[90000,180000,360000,720000,1200000,1800000,3000000,4200000,4800000];
+  const dados=Object.entries(ANEXOS).map(([key,an])=>{
+    return{
+      label:an.nome.split('—')[0].trim(),
+      data:pts.map(f=>{
+        const r=Math.min(f,4800000);
+        const fz=an.faixas.find(ff=>r<=ff.max)||an.faixas[5];
+        const ae=Math.max(0,(r*fz.aliq-fz.pd)/r);
+        return+(ae*100).toFixed(2);
+      }),
+      borderColor:key==='I'?'#2563eb':key==='II'?'#7c3aed':key==='III'?'#059669':'#c2410c',
+      backgroundColor:'transparent',tension:.3,pointRadius:3,
+    };
+  });
+  chAnexos=new Chart(document.getElementById('chAnexos').getContext('2d'),{
+    type:'line',
+    data:{labels:pts.map(p=>'R$'+(p/1000).toFixed(0)+'k'),datasets:dados},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},
+      scales:{y:{title:{display:true,text:'Alíq. Efetiva (%)'},min:0},x:{title:{display:true,text:'RBT12'}}}}
+  });
+}
+
+// ─── TABELA FAIXAS ────────────────────────────────────────────────
+let _rbt12Atual=0,_faixaAtual=null,_anexoAtual='I';
+
+function renderFaixas(anx){
+  _anexoAtual=anx||_anexoAtual;
+  const an=ANEXOS[_anexoAtual];
+  const tbody=document.getElementById('tbody-faixas');
+  tbody.innerHTML='';
+  an.faixas.forEach(f=>{
+    const ae=_rbt12Atual>0?Math.max(0,(_rbt12Atual*f.aliq-f.pd)/_rbt12Atual):f.aliq;
+    const dasAn=_rbt12Atual>0?_rbt12Atual*ae:0;
+    const ativo=_faixaAtual&&f.f===_faixaAtual.f;
+    const tr=document.createElement('tr');
+    if(ativo)tr.className='tr-ativo';
+    tr.innerHTML=`
+      <td><strong>${f.f}ª</strong></td>
       <td>Até ${fmt(f.max)}</td>
-      <td>${pct2(f.aliq)}</td>
+      <td>${pct(f.aliq)}</td>
       <td>${fmt(f.pd)}</td>
-      <td><strong>${pct(aliqEf > 0 ? aliqEf : f.aliq)}</strong>
-          <div class="barra-bg"><div class="barra-fill" style="width:${Math.min(aliqEf*500,100)}%;background:#2563eb;"></div></div>
-      </td>
-      <td>${aliqEf > 0 ? fmt(dasAnual) : '—'}</td>
-      <td>${ativo ? '<span class="pill sn">✅ SUA FAIXA</span>' : '<span class="pill emp">—</span>'}</td>
-    `;
+      <td><strong>${pct(ae)}</strong>
+          <div class="barra-bg"><div class="barra-fill" style="width:${Math.min(ae*400,100)}%;background:#2563eb"></div></div></td>
+      <td>${dasAn>0?fmt(dasAn):'—'}</td>
+      <td>${ativo?'<span class="pill sn">✅ SUA FAIXA</span>':'<span class="pill em">—</span>'}</td>`;
     tbody.appendChild(tr);
   });
+  renderChartAnexos();
 }
 
-// ──────────────────────────────────────────────
-//  TABELA PROGRESSÃO
-// ──────────────────────────────────────────────
-function renderProgressao(uf, prolaboreAnual, folhaAnual) {
-  const faturamentos = [180000,360000,600000,900000,1200000,1500000,1800000,2400000,3600000,4800000];
-  const tbody = document.getElementById('tbody-progressao');
-  tbody.innerHTML = '';
-  faturamentos.forEach(f => {
-    const sn = calcSN(f, Math.min(f, 4800000), prolaboreAnual, folhaAnual);
-    const lp = calcLP(f, uf, prolaboreAnual, folhaAnual);
-    const diff = sn.total - lp.total;
-    const melhor = diff < 0 ? 'sn' : diff > 0 ? 'lp' : 'emp';
-    const tr = document.createElement('tr');
-    if (melhor === 'sn') tr.className = 'destaque-verde';
-    if (melhor === 'lp') tr.className = 'destaque-laranja';
-    tr.innerHTML = `
+// ─── TABELA PROGRESSÃO ────────────────────────────────────────────
+function renderProgressao(anexo,uf,setor,iss,rat,prolaboreA,folhaA,pisCred,cofCred,despDed,margem){
+  const fats=[100000,180000,360000,600000,900000,1200000,1500000,1800000,2400000,3000000,3600000,4800000];
+  const tbody=document.getElementById('tbody-prog');
+  tbody.innerHTML='';
+  fats.forEach(f=>{
+    const sn=calcSN(f,f,anexo,prolaboreA,folhaA,rat,1);
+    const lp=calcLP(f,uf,f*0.5,parseFloat(document.getElementById('icms_entrada').value)||12,prolaboreA,folhaA,rat,setor,iss,1,pisCred,cofCred);
+    const lr=calcLR(f,uf,f*0.5,parseFloat(document.getElementById('icms_entrada').value)||12,prolaboreA,folhaA,rat,margem,setor,iss,1,pisCred,cofCred,despDed);
+    const mn=Math.min(sn.total,lp.total,lr.total);
+    const eco=sn.total-lp.total;
+    const tr=document.createElement('tr');
+    if(mn===sn.total)tr.className='tr-melhor';
+    else if(mn===lr.total)tr.style.background='#f0fdf4';
+    tr.innerHTML=`
       <td>${fmt(f)}</td>
-      <td>${pct2(sn.aliqEf)}</td>
-      <td>${fmt(sn.total)}</td>
-      <td>${pct2(lp.aliqEf)}</td>
-      <td>${fmt(lp.total)}</td>
-      <td>${fmt(Math.abs(diff))}</td>
-      <td>
-        ${melhor==='sn' ? '<span class="pill sn">🔵 Simples</span>' :
-          melhor==='lp' ? '<span class="pill lp">🟠 Presumido</span>' :
-          '<span class="pill emp">Empate</span>'}
-      </td>
-    `;
+      <td>${pct(sn.aliqEf)}</td><td>${fmt(sn.total)}</td>
+      <td>${pct(lp.aliqEf)}</td><td>${fmt(lp.total)}</td>
+      <td>${pct(lr.aliqEf)}</td><td>${fmt(lr.total)}</td>
+      <td class="${eco<0?'':''}"><strong>${eco<0?'SN -'+fmt(Math.abs(eco)):'LP -'+fmt(Math.abs(eco))}</strong></td>
+      <td>${melhorPill(sn.total,lp.total,lr.total)}</td>`;
+    tbody.appendChild(tr);
+  });
+  // Ponto de equilíbrio
+  const eq=[];
+  for(let f=100000;f<=4800000;f+=10000){
+    const sn=calcSN(f,f,anexo,prolaboreA,folhaA,rat,1);
+    const lp=calcLP(f,uf,f*0.5,parseFloat(document.getElementById('icms_entrada').value)||12,prolaboreA,folhaA,rat,setor,iss,1,pisCred,cofCred);
+    if(lp.total<sn.total){eq.push(f);break;}
+  }
+  let eqLR=[];
+  for(let f=100000;f<=4800000;f+=10000){
+    const sn=calcSN(f,f,anexo,prolaboreA,folhaA,rat,1);
+    const lr=calcLR(f,uf,f*0.5,parseFloat(document.getElementById('icms_entrada').value)||12,prolaboreA,folhaA,rat,margem,setor,iss,1,pisCred,cofCred,despDed);
+    if(lr.total<sn.total){eqLR.push(f);break;}
+  }
+  const divEq=document.getElementById('div-equilibrio');
+  divEq.innerHTML=`
+    <div style="display:grid;gap:14px">
+      <div style="background:#eff6ff;border-radius:8px;padding:15px 18px;border-left:4px solid #2563eb">
+        <strong>🔵 SN → 🟠 LP:</strong> ${eq.length?`A partir de aproximadamente <strong>${fmt(eq[0])}/ano</strong>, o Lucro Presumido começa a ser mais vantajoso que o Simples Nacional com os parâmetros informados.`:'Com os parâmetros informados, o Simples Nacional é mais vantajoso em toda a faixa até R$ 4,8M/ano.'}
+      </div>
+      <div style="background:#f0fdf4;border-radius:8px;padding:15px 18px;border-left:4px solid #15803d">
+        <strong>🔵 SN → 🟢 LR:</strong> ${eqLR.length?`O Lucro Real supera o Simples Nacional a partir de <strong>${fmt(eqLR[0])}/ano</strong> (com margem de lucro real de ${margem}%).`:'O Lucro Real não demonstra vantagem sobre o Simples Nacional na faixa simulada com os parâmetros informados.'}
+      </div>
+      <div style="background:#fff7ed;border-radius:8px;padding:15px 18px;border-left:4px solid #c2410c">
+        <strong>⚠️ Atenção:</strong> O ponto de equilíbrio varia conforme pró-labore, folha de pagamento, créditos de ICMS/PIS/COFINS e margem de lucro real. Ajuste os parâmetros para uma análise mais precisa ao seu caso.
+      </div>
+    </div>`;
+}
+
+// ─── OBRIGAÇÕES ──────────────────────────────────────────────────
+function renderObrigacoes(){
+  const div=document.getElementById('div-obrig');
+  let html='';
+  let catAtual='';
+  OBRIGACOES.forEach(o=>{
+    if(o.cat!==catAtual){
+      catAtual=o.cat;
+      html+=`<div class="ob-grid"><div class="ob-cat" style="grid-column:1/-1">${o.cat}</div></div>`;
+    }
+    html+=`<div class="ob-grid">
+      <div style="padding:8px 14px;border-bottom:1px solid var(--bd);font-size:.82rem">${o.nome}</div>
+      <div class="ob-grid" style="grid-column:2/-1;display:contents">
+        <div class="${o.sn==='✅'?'ob-sim':o.sn==='❌'?'ob-nao':'ob-parc'}">${o.sn}</div>
+        <div class="${o.lp==='✅'?'ob-sim':o.lp==='❌'?'ob-nao':'ob-parc'}">${o.lp}</div>
+        <div class="${o.lr==='✅'?'ob-sim':o.lr==='❌'?'ob-nao':'ob-parc'}">${o.lr}</div>
+      </div>
+    </div>`;
+  });
+  div.innerHTML=html;
+}
+
+// ─── CALENDÁRIO ──────────────────────────────────────────────────
+function renderCalendario(){
+  const tbody=document.getElementById('tbody-cal');
+  tbody.innerHTML='';
+  CALENDARIO.forEach((c,i)=>{
+    const tr=document.createElement('tr');
+    if(i%2===0)tr.style.background='#f8fafc';
+    tr.innerHTML=`<td><strong>${c.ob}</strong></td><td style="text-align:center"><span class="pill em">${c.reg}</span></td><td style="text-align:center">${c.per}</td><td style="text-align:center;color:#c2410c;font-weight:600">${c.venc}</td><td style="color:#64748b;font-size:.8rem">${c.obs}</td>`;
     tbody.appendChild(tr);
   });
 }
 
-// ──────────────────────────────────────────────
-//  ANÁLISE TÉCNICA
-// ──────────────────────────────────────────────
-function renderAnalise(sn, lp, fat, prolaboreAnual, folhaAnual) {
-  const melhor = sn.total < lp.total ? 'SN' : 'LP';
-  const economia = Math.abs(sn.total - lp.total);
-  const pctEco = (economia / Math.max(sn.total, lp.total) * 100).toFixed(1);
-
-  let html = `<div style="display:grid;gap:14px;">`;
-
-  html += `
-    <div style="background:#f0fdf4;border-radius:8px;padding:16px 20px;border-left:4px solid #16a34a;">
-      <strong style="color:#15803d;font-size:.95rem;">📌 Diagnóstico Principal</strong><br/>
-      Com o faturamento informado de <strong>${fmt(fat)}</strong>/ano, o regime mais vantajoso é
-      o <strong>${melhor === 'SN' ? '🔵 Simples Nacional Anexo I' : '🟠 Lucro Presumido'}</strong>,
-      gerando uma <strong>economia de ${fmt(economia)} (${pctEco}%)</strong> em tributos anuais.
-    </div>`;
-
-  html += `
-    <div style="background:#eff6ff;border-radius:8px;padding:16px 20px;">
-      <strong style="color:#1e40af;">🔵 Simples Nacional — Pontos-chave</strong>
-      <ul style="margin-top:8px;padding-left:18px;line-height:1.9;font-size:.87rem;">
-        <li>Recolhimento unificado via DAS — simplifica obrigações acessórias.</li>
-        <li>INSS sobre pró-labore à alíquota de 11% (limitado ao teto).</li>
-        <li>Vedado para empresas com faturamento acima de R$ 4,8 milhões/ano.</li>
-        <li>Não permite aproveitamento de créditos de PIS/COFINS.</li>
-        <li>Alíquota efetiva calculada: <strong>${pct(sn.aliqEf)}</strong>.</li>
-        <li>Escrituração contábil simplificada — menor custo de conformidade.</li>
-        <li>Distribuição de lucros <strong>isenta de IR</strong> (art. 14 LC 123/2006).</li>
-      </ul>
-    </div>`;
-
-  html += `
-    <div style="background:#fff7ed;border-radius:8px;padding:16px 20px;">
-      <strong style="color:#9a3412;">🟠 Lucro Presumido — Pontos-chave</strong>
-      <ul style="margin-top:8px;padding-left:18px;line-height:1.9;font-size:.87rem;">
-        <li>Presunção de lucro: 8% IRPJ e 12% CSLL sobre receita bruta (comércio).</li>
-        <li>INSS sobre pró-labore à alíquota de <strong>20%</strong> (sem redutor) — impacto maior.</li>
-        <li>PIS 0,65% + COFINS 3% cumulativos — sem créditos de entradas.</li>
-        <li>Permite apuração de ICMS independente com crédito de entradas.</li>
-        <li>Distribuição de lucros além da presunção pode ser isenta (planejamento tributário).</li>
-        <li>Obrigações acessórias mais complexas: SPED Contábil, ECF, ECD.</li>
-        <li>IRPJ adicional de 10% sobre base que exceder R$ 240.000/ano na presunção.</li>
-      </ul>
-    </div>`;
-
-  // Aviso de limiar
-  const pontoEquilibrio = encontrarPontoEquilibrio(document.getElementById('uf').value, prolaboreAnual, folhaAnual);
-  if (pontoEquilibrio) {
-    html += `
-      <div style="background:#f5f3ff;border-radius:8px;padding:16px 20px;border-left:4px solid #7c3aed;">
-        <strong style="color:#6d28d9;">⚖️ Ponto de Equilíbrio Estimado</strong><br/>
-        <span style="font-size:.87rem;">A partir de aproximadamente <strong>${fmt(pontoEquilibrio)}</strong>/ano de faturamento,
-        o Lucro Presumido tende a ser mais vantajoso que o Simples Nacional Anexo I,
-        considerando os parâmetros de pró-labore e folha informados.</span>
-      </div>`;
-  }
-
-  html += `
-    <div style="background:#fef2f2;border-radius:8px;padding:16px 20px;">
-      <strong style="color:#b91c1c;">⚡ Fatores que podem inverter a análise</strong>
-      <ul style="margin-top:8px;padding-left:18px;line-height:1.9;font-size:.87rem;">
-        <li><strong>Crédito de ICMS nas entradas:</strong> no LP o crédito é aproveitado; no SN há substituição tributária.</li>
-        <li><strong>Margem de lucro real:</strong> se a margem real for inferior à presunção (8%), o Lucro Real pode ser mais vantajoso.</li>
-        <li><strong>Benefícios fiscais estaduais:</strong> ICMS reduzido por regime especial ou PRODEC/FUNDOPEM.</li>
-        <li><strong>Distribuição de lucros:</strong> planejamento com distribuição de lucros além da base presumida (isento de IR).</li>
-        <li><strong>Participação em licitações:</strong> exige Certidão Negativa e pode requerer estrutura LP/LR.</li>
-        <li><strong>Substituição tributária do ICMS:</strong> impacta o SN de forma significativa no comércio.</li>
-      </ul>
-    </div>`;
-
-  html += '</div>';
-  document.getElementById('analise-texto').innerHTML = html;
+// ─── GLOSSÁRIO ───────────────────────────────────────────────────
+function renderGlossario(){
+  const div=document.getElementById('div-glossario');
+  div.innerHTML=GLOSSARIO.map((g,i)=>`
+    <div class="ac-item">
+      <div class="ac-head" onclick="toggleAc(${i})">
+        <span>${g.t}</span><span id="ac-icone-${i}">▼</span>
+      </div>
+      <div class="ac-body" id="ac-body-${i}">${g.d}</div>
+    </div>`).join('');
+}
+function toggleAc(i){
+  const b=document.getElementById('ac-body-'+i);
+  const ic=document.getElementById('ac-icone-'+i);
+  b.classList.toggle('open');
+  ic.textContent=b.classList.contains('open')?'▲':'▼';
 }
 
-function encontrarPontoEquilibrio(uf, prolaboreAnual, folhaAnual) {
-  for (let f = 200000; f <= 4800000; f += 10000) {
-    const sn = calcSN(f, f, prolaboreAnual, folhaAnual);
-    const lp = calcLP(f, uf, prolaboreAnual, folhaAnual);
-    if (lp.total < sn.total) return f;
-  }
-  return null;
+// ─── HISTÓRICO ───────────────────────────────────────────────────
+function salvarHistorico(fat,setor,sn,lp,lr){
+  const hist=JSON.parse(localStorage.getItem('simTrib')||'[]');
+  hist.unshift({
+    dt:new Date().toLocaleString('pt-BR'),
+    fat,setor,snTotal:sn.total,lpTotal:lp.total,lrTotal:lr.total
+  });
+  if(hist.length>10)hist.pop();
+  localStorage.setItem('simTrib',JSON.stringify(hist));
+  renderHistorico();
+}
+function renderHistorico(){
+  const hist=JSON.parse(localStorage.getItem('simTrib')||'[]');
+  const tbody=document.getElementById('tbody-hist');
+  const vazio=document.getElementById('hist-vazio');
+  tbody.innerHTML='';
+  if(!hist.length){vazio.style.display='block';return;}
+  vazio.style.display='none';
+  hist.forEach(h=>{
+    const mn=Math.min(h.snTotal,h.lpTotal,h.lrTotal);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${h.dt}</td><td>${fmt(h.fat)}</td><td>${h.setor}</td>
+      <td>${fmt(h.snTotal)}</td><td>${fmt(h.lpTotal)}</td><td>${fmt(h.lrTotal)}</td>
+      <td>${mn===h.snTotal?'<span class="pill sn">SN</span>':mn===h.lpTotal?'<span class="pill lp">LP</span>':'<span class="pill lr">LR</span>'}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+function limparHistorico(){localStorage.removeItem('simTrib');renderHistorico();}
+function limparCampos(){
+  ['fat','rbt12','compras','prolabore','folha','desp_ded'].forEach(id=>{
+    document.getElementById(id).value='';
+  });
+  ['icms_entrada','margem','exportacao','iss'].forEach(id=>{
+    const defaults={icms_entrada:12,margem:8,exportacao:0,iss:3};
+    document.getElementById(id).value=defaults[id];
+  });
+  document.getElementById('socios').value=1;
+  document.getElementById('rat').value=2;
 }
 
-// ──────────────────────────────────────────────
-//  MAIN — CALCULAR
-// ──────────────────────────────────────────────
-function calcular() {
-  const fat = parseMoeda(document.getElementById('faturamento').value);
-  if (!fat || fat <= 0) { alert('Informe um faturamento válido.'); return; }
-  if (fat > 4800000 * 1.1) { alert('Faturamento acima de R$4,8 milhões/ano: empresa não enquadrável no Simples Nacional.'); }
-
-  const rbt12Raw = parseMoeda(document.getElementById('rbt12').value);
-  const rbt12 = rbt12Raw > 0 ? rbt12Raw : fat;
-  const uf = document.getElementById('uf').value;
-  const prolaboreMensal = parseMoeda(document.getElementById('prolabore').value);
-  const prolaboreAnual = prolaboreMensal * 12;
-  const folhaAnual = parseMoeda(document.getElementById('folha').value);
-
-  const sn = calcSN(fat, rbt12, prolaboreAnual, folhaAnual);
-  const lp = calcLP(fat, uf, prolaboreAnual, folhaAnual);
-
-  // Preencher resumo
-  document.getElementById('sn-total-r').textContent = fmt(sn.total);
-  document.getElementById('lp-total-r').textContent = fmt(lp.total);
-  const eco = Math.abs(sn.total - lp.total);
-  document.getElementById('economia-r').textContent = fmt(eco);
-  document.getElementById('economia-sub').textContent = sn.total < lp.total
-    ? '🔵 Simples é mais vantajoso' : '🟠 Presumido é mais vantajoso';
-  document.getElementById('sn-aliq-ef').textContent = pct2(sn.aliqEf);
-  document.getElementById('lp-aliq-ef').textContent = pct2(lp.aliqEf);
-
-  // Detalhes SN
-  document.getElementById('sn-faixa').textContent = sn.faixa.faixa + 'ª Faixa';
-  document.getElementById('sn-aliq-nom').textContent = pct2(sn.faixa.aliq);
-  document.getElementById('sn-pd').textContent = fmt(sn.faixa.pd);
-  document.getElementById('sn-aliq-calc').textContent = pct(sn.aliqEf);
-  document.getElementById('sn-irpj').textContent   = fmt(sn.composicao.irpj);
-  document.getElementById('sn-csll').textContent   = fmt(sn.composicao.csll);
-  document.getElementById('sn-cofins').textContent = fmt(sn.composicao.cofins);
-  document.getElementById('sn-pis').textContent    = fmt(sn.composicao.pis);
-  document.getElementById('sn-cpp').textContent    = fmt(sn.composicao.cpp);
-  document.getElementById('sn-icms').textContent   = fmt(sn.composicao.icms);
-  document.getElementById('sn-das-mensal').textContent = fmt(sn.dasMensal);
-  document.getElementById('sn-inss-pl').textContent    = fmt(sn.inssProLabore);
-  document.getElementById('sn-inss-folha').textContent = fmt(sn.inssFolha);
-  document.getElementById('sn-total-det').textContent  = fmt(sn.total);
-
-  // Detalhes LP
-  document.getElementById('lp-base-irpj').textContent  = fmt(lp.baseIrpj);
-  document.getElementById('lp-base-csll').textContent  = fmt(lp.baseCsll);
-  document.getElementById('lp-irpj').textContent       = fmt(lp.irpj);
-  document.getElementById('lp-adicional').textContent  = fmt(lp.adicional);
-  document.getElementById('lp-csll').textContent       = fmt(lp.csll);
-  document.getElementById('lp-pis').textContent        = fmt(lp.pis);
-  document.getElementById('lp-cofins').textContent     = fmt(lp.cofins);
-  document.getElementById('lp-icms').textContent       = fmt(lp.icms) + ' (' + pct2(lp.aliqIcms) + ')';
-  document.getElementById('lp-inss-pl').textContent    = fmt(lp.inssProLabore);
-  document.getElementById('lp-inss-folha').textContent = fmt(lp.inssFolha);
-  document.getElementById('lp-inss-pat').textContent   = fmt(lp.inssPatronal);
-  document.getElementById('lp-total-det').textContent  = fmt(lp.total);
-
-  renderFaixas(rbt12, sn.faixa);
-  renderProgressao(uf, prolaboreAnual, folhaAnual);
-  renderAnalise(sn, lp, fat, prolaboreAnual, folhaAnual);
-  renderCharts(sn, lp, fat);
-
-  document.getElementById('resultado').classList.add('visivel');
-  document.getElementById('resultado').scrollIntoView({ behavior:'smooth', block:'start' });
+// ─── DISTRIBUIÇÃO DE LUCROS ──────────────────────────────────────
+function renderLucros(fat,sn,lp,lr,setor){
+  const isServico=setor==='servicos'||setor==='servicos_adv';
+  const presunSN=(fat-sn.total)*0.80; // estimativa: 80% do lucro após impostos
+  const presunLP=fat*(isServico?0.32:0.08)-lp.irpj-lp.csll;
+  const lucroRealLR=Math.max(0,lr.lucroReal-lr.irpj-lr.csll);
+  document.getElementById('div-lucros').innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px">
+      <div style="background:#eff6ff;border-radius:10px;padding:18px">
+        <div style="font-weight:700;color:var(--az2);margin-bottom:8px">🔵 Simples Nacional</div>
+        <div style="font-size:.83rem;color:#475569;line-height:1.7">
+          Distribuição de lucros amplamente <strong>isenta de IR</strong> (art. 14 LC 123/2006).<br/>
+          Estimativa distribuível (lucro após DAS): <strong>${fmt(presunSN)}/ano</strong><br/>
+          Exige escrituração contábil regular para comprovar o lucro distribuível.
+        </div>
+      </div>
+      <div style="background:#fff7ed;border-radius:10px;padding:18px">
+        <div style="font-weight:700;color:var(--la);margin-bottom:8px">🟠 Lucro Presumido</div>
+        <div style="font-size:.83rem;color:#475569;line-height:1.7">
+          Isento de IR até o valor da base de presunção: <strong>${fmt(Math.max(0,presunLP))}/ano</strong><br/>
+          Excedente à presunção exige comprovação contábil (escrituração completa).<br/>
+          Presunção utilizada: <strong>${isServico?'32%':'8%'}</strong> do faturamento.
+        </div>
+      </div>
+      <div style="background:#f0fdf4;border-radius:10px;padding:18px">
+        <div style="font-weight:700;color:var(--vd);margin-bottom:8px">🟢 Lucro Real</div>
+        <div style="font-size:.83rem;color:#475569;line-height:1.7">
+          Isento até o lucro real apurado: <strong>${fmt(lucroRealLR)}/ano</strong><br/>
+          Exige escrituração contábil completa (ECD) como comprovação.<br/>
+          Permite distribuir o lucro excedente à presunção de forma isenta.
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:14px;font-size:.78rem;color:#64748b;line-height:1.6">
+      ⚠️ A isenção na distribuição de lucros depende de escrituração contábil regular, ausência de débitos com o Fisco e cumprimento dos requisitos legais. Consulte seu contador.
+    </div>`;
 }
 
-// Enter para calcular
-document.addEventListener('keydown', e => { if (e.key === 'Enter') calcular(); });
+// ─── CUSTO FUNCIONÁRIO ───────────────────────────────────────────
+function renderFuncionario(folhaAnual,rat){
+  const rat_pct=rat/100;
+  const snEnc=folhaAnual*(0.08);          // no SN, CPP incluso no DAS (substitui 20% patronal)
+  const snFgts=folhaAnual*0.08;
+  const snTotal=folhaAnual+snEnc+snFgts;  // encargo previdenciário patronal substituído pelo DAS
+  const lpPatronal=folhaAnual*(0.20+rat_pct+0.0575);
+  const lpFgts=folhaAnual*0.08;
+  const lpTotal=folhaAnual+lpPatronal+lpFgts;
+  const rows=[
+    ['Salário Bruto Anual',fmt(folhaAnual),fmt(folhaAnual),fmt(folhaAnual)],
+    ['INSS Patronal (20%)',`CPP no DAS`,fmt(folhaAnual*0.20),fmt(folhaAnual*0.20)],
+    [`RAT (${rat}%)`,`CPP no DAS`,fmt(folhaAnual*rat_pct),fmt(folhaAnual*rat_pct)],
+    ['Terceiros (5,75%)',`CPP no DAS`,fmt(folhaAnual*0.0575),fmt(folhaAnual*0.0575)],
+    ['FGTS (8%)',fmt(snFgts),fmt(lpFgts),fmt(lpFgts)],
+    ['Encargo adicional SN',`Incluso DAS`,'—','—'],
+    ['<strong>TOTAL CUSTO EMPRESA</strong>',`<strong>${fmt(snTotal)}</strong>`,`<strong>${fmt(lpTotal)}</strong>`,`<strong>${fmt(lpTotal)}</strong>`],
+    ['Custo por R$1 de salário',fmt(snTotal/folhaAnual),fmt(lpTotal/folhaAnual),fmt(lpTotal/folhaAnual)],
+  ];
+  const tbody=document.getElementById('tbody-func');
+  tbody.innerHTML=rows.map((r,i)=>{
+    const cls=i===rows.length-2?'tr-total':i===rows.length-1?'tr-sub':'';
+    return`<tr class="${cls}"><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`;
+  }).join('');
+}
+
+// ─── TABELA COMPARATIVA ───────────────────────────────────────────
+function renderTabelaComp(fat,sn,lp,lr){
+  const tbody=document.getElementById('tbody-comp');
+  const rows=[
+    {n:'IRPJ',sn:sn.comp.irpj,lp:lp.irpj,lr:lr.irpj},
+    {n:'Adicional IRPJ (10%)',sn:0,lp:lp.adicional,lr:lr.adicional},
+    {n:'CSLL',sn:sn.comp.csll,lp:lp.csll,lr:lr.csll},
+    {n:'PIS',sn:sn.comp.pis,lp:lp.pis,lr:lr.pis},
+    {n:'COFINS',sn:sn.comp.cofins,lp:lp.cofins,lr:lr.cofins},
+    {n:'ICMS / ISS',sn:sn.comp.icms_iss,lp:lp.icms+lp.issVal,lr:lr.icms+lr.issVal},
+    {n:'CPP / INSS Patronal (Empresa)',sn:sn.comp.cpp,lp:lp.inssPatronal,lr:lr.inssPatronal},
+    {n:'FGTS (8% sobre folha)',sn:sn.fgts,lp:lp.fgts,lr:lr.fgts},
+    {n:'INSS Pró-labore (Sócios)',sn:sn.inssProLabore,lp:lp.inssProLabore,lr:lr.inssProLabore},
+  ];
+  tbody.innerHTML=rows.map(r=>{
+    const mn=Math.min(r.sn,r.lp,r.lr);
+    const snC=r.sn===mn&&r.sn>0?'style="color:var(--vd);font-weight:700"':'';
+    const lpC=r.lp===mn&&r.lp>0?'style="color:var(--vd);font-weight:700"':'';
+    const lrC=r.lr===mn&&r.lr>0?'style="color:var(--vd);font-weight:700"':'';
+    return`<tr>
+      <td>${r.n}</td>
+      <td ${snC}>${fmt(r.sn)}</td>
+      <td ${lpC}>${fmt(r.lp)}</td>
+      <td ${lrC}>${fmt(r.lr)}</td>
+      <td>${r.sn===0&&r.lp===0&&r.lr===0?'—':melhorPill(r.sn||1e9,r.lp||1e9,r.lr||1e9)}</td>
+    </tr>`;
+  }).join('')+`
+    <tr class="tr-total">
+      <td>TOTAL GERAL</td>
+      <td>${fmt(sn.total)}</td><td>${fmt(lp.total)}</td><td>${fmt(lr.total)}</td>
+      <td>${melhorPill(sn.total,lp.total,lr.total)}</td>
+    </tr>
+    <tr class="tr-sub">
+      <td>Alíquota Efetiva</td>
+      <td>${pct(sn.aliqEf)}</td><td>${pct(lp.aliqEf)}</td><td>${pct(lr.aliqEf)}</td><td>—</td>
+    </tr>`;
+}
+
+// ─── DETALHES ────────────────────────────────────────────────────
+function renderDetalhe(sn,lp,lr,anexo,fat){
+  const an=ANEXOS[anexo];
+  document.getElementById('dlg-detalhe').innerHTML=`
+    <!-- SN -->
+    <div class="db sn">
+      <div class="db-titulo">🔵 ${an.nome}</div>
+      <div class="db-section">Enquadramento</div>
+      <div class="db-linha"><span class="dn">Faixa</span><span class="dv">${sn.faixa.f}ª — até ${fmt(sn.faixa.max)}</span></div>
+      <div class="db-linha"><span class="dn">Alíq. Nominal</span><span class="dv">${pct(sn.faixa.aliq)}</span></div>
+      <div class="db-linha"><span class="dn">Parcela a Deduzir</span><span class="dv">${fmt(sn.faixa.pd)}</span></div>
+      <div class="db-linha"><span class="dn">Alíq. Efetiva</span><span class="dv" style="color:var(--az2)">${pct(sn.aliqEf,4)}</span></div>
+      <div class="db-section">DAS — Composição</div>
+      <div class="db-linha"><span class="dn">IRPJ</span><span class="dv">${fmt(sn.comp.irpj)}</span></div>
+      <div class="db-linha"><span class="dn">CSLL</span><span class="dv">${fmt(sn.comp.csll)}</span></div>
+      <div class="db-linha"><span class="dn">COFINS</span><span class="dv">${fmt(sn.comp.cofins)}</span></div>
+      <div class="db-linha"><span class="dn">PIS</span><span class="dv">${fmt(sn.comp.pis)}</span></div>
+      <div class="db-linha"><span class="dn">CPP (INSS Patronal)</span><span class="dv">${fmt(sn.comp.cpp)}</span></div>
+      <div class="db-linha"><span class="dn">${an.tributo} (incluso DAS)</span><span class="dv">${fmt(sn.comp.icms_iss)}</span></div>
+      <div class="db-linha" style="background:#dbeafe"><span class="dn"><strong>DAS Total Anual</strong></span><span class="dv"><strong>${fmt(sn.das)}</strong></span></div>
+      <div class="db-linha" style="background:#dbeafe"><span class="dn">DAS Mensal</span><span class="dv">${fmt(sn.das/12)}</span></div>
+      <div class="db-section">Encargos Separados</div>
+      <div class="db-linha"><span class="dn">INSS Pró-labore (11%)</span><span class="dv">${fmt(sn.inssProLabore)}</span></div>
+      <div class="db-linha"><span class="dn">INSS+FGTS sobre folha CLT</span><span class="dv">${fmt(sn.inssFolha)}</span></div>
+      <div class="db-total"><span>TOTAL ANUAL</span><span>${fmt(sn.total)}</span></div>
+    </div>
+
+    <!-- LP -->
+    <div class="db lp">
+      <div class="db-titulo">🟠 Lucro Presumido</div>
+      <div class="db-section">Presunção de Lucro</div>
+      <div class="db-linha"><span class="dn">Presunção IRPJ (${pct(lp.pIrpj)})</span><span class="dv">${fmt(lp.baseIrpj)}</span></div>
+      <div class="db-linha"><span class="dn">Presunção CSLL (${pct(lp.pCsll)})</span><span class="dv">${fmt(lp.baseCsll)}</span></div>
+      <div class="db-section">Tributos Federais</div>
+      <div class="db-linha"><span class="dn">IRPJ Básico (15%)</span><span class="dv">${fmt(lp.irpjBasico)}</span></div>
+      <div class="db-linha"><span class="dn">Adicional IRPJ (10%)</span><span class="dv">${fmt(lp.adicional)}</span></div>
+      <div class="db-linha"><span class="dn">CSLL (9%)</span><span class="dv">${fmt(lp.csll)}</span></div>
+      <div class="db-linha"><span class="dn">PIS Cumulativo (0,65%)</span><span class="dv">${fmt(lp.pis)}</span></div>
+      <div class="db-linha"><span class="dn">COFINS Cumulativo (3%)</span><span class="dv">${fmt(lp.cofins)}</span></div>
+      <div class="db-section">Estadual / Municipal</div>
+      <div class="db-linha"><span class="dn">ICMS Bruto (${pct(lp.aliqIcms)})</span><span class="dv">${fmt(lp.icmsBruto)}</span></div>
+      <div class="db-linha"><span class="dn">(-) Crédito ICMS Entradas</span><span class="dv" style="color:var(--vd)">-${fmt(lp.icmsCredito)}</span></div>
+      <div class="db-linha" style="background:#ffedd5"><span class="dn"><strong>ICMS a Recolher</strong></span><span class="dv"><strong>${fmt(lp.icms)}</strong></span></div>
+      <div class="db-linha"><span class="dn">ISS Municipal</span><span class="dv">${fmt(lp.issVal)}</span></div>
+      <div class="db-section">Encargos sobre Pessoal</div>
+      <div class="db-linha"><span class="dn">INSS Pró-labore (20%)</span><span class="dv">${fmt(lp.inssProLabore)}</span></div>
+      <div class="db-linha"><span class="dn">INSS+FGTS sobre folha CLT</span><span class="dv">${fmt(lp.inssFolha)}</span></div>
+      <div class="db-total"><span>TOTAL ANUAL</span><span>${fmt(lp.total)}</span></div>
+    </div>
+
+    <!-- LR -->
+    <div class="db lr">
+      <div class="db-titulo">🟢 Lucro Real (Simplificado)</div>
+      <div class="db-section">Base de Cálculo</div>
+      <div class="db-linha"><span class="dn">Lucro Real Estimado</span><span class="dv">${fmt(lr.lucroReal)}</span></div>
+      <div class="db-section">Tributos Federais</div>
+      <div class="db-linha"><span class="dn">IRPJ Básico (15% s/ lucro real)</span><span class="dv">${fmt(lr.irpjBasico)}</span></div>
+      <div class="db-linha"><span class="dn">Adicional IRPJ (10%)</span><span class="dv">${fmt(lr.adicional)}</span></div>
+      <div class="db-linha"><span class="dn">CSLL (9% s/ lucro real)</span><span class="dv">${fmt(lr.csll)}</span></div>
+      <div class="db-linha"><span class="dn">PIS Bruto (1,65%)</span><span class="dv">${fmt(lr.pisBruto)}</span></div>
+      <div class="db-linha"><span class="dn">(-) Crédito PIS Entradas</span><span class="dv" style="color:var(--vd)">-${fmt(lr.pisCreditoVal)}</span></div>
+      <div class="db-linha"><span class="dn">COFINS Bruto (7,6%)</span><span class="dv">${fmt(lr.cofBruto)}</span></div>
+      <div class="db-linha"><span class="dn">(-) Crédito COFINS Entradas</span><span class="dv" style="color:var(--vd)">-${fmt(lr.cofCreditoVal)}</span></div>
+      <div class="db-section">Estadual / Municipal</div>
+      <div class="db-linha"><span class="dn">ICMS Bruto</span><span class="dv">${fmt(lr.icmsBruto)}</span></div>
+      <div class="db-linha"><span class="dn">(-) Crédito ICMS Entradas</span><span class="dv" style="color:var(--vd)">-${fmt(lr.icmsCredito)}</span></div>
+      <div class="db-linha" style="background:#dcfce7"><span class="dn"><strong>ICMS a Recolher</strong></span><span class="dv"><strong>${fmt(lr.icms)}</strong></span></div>
+      <div class="db-linha"><span class="dn">ISS Municipal</span><span class="dv">${fmt(lr.issVal)}</span></div>
+      <div class="db-section">Encargos sobre Pessoal</div>
+      <div class="db-linha"><span class="dn">INSS Pró-labore (20%)</span><span class="dv">${fmt(lr.inssProLabore)}</span></div>
+      <div class="db-linha"><span class="dn">INSS+FGTS sobre folha CLT</span><span class="dv">${fmt(lr.inssFolha)}</span></div>
+      <div class="db-total"><span>TOTAL ANUAL</span><span>${fmt(lr.total)}</span></div>
+    </div>`;
+}
+
+// ─── RESUMO CARDS ────────────────────────────────────────────────
+function renderResumoCads(fat,sn,lp,lr){
+  const mn=Math.min(sn.total,lp.total,lr.total);
+  const eco=Math.max(sn.total,lp.total,lr.total)-mn;
+  document.getElementById('rc-grid').innerHTML=`
+    <div class="rc sn">
+      <div class="rl">Simples Nacional</div>
+      <div class="rv">${fmt(sn.total)}</div>
+      <div class="rs">total anual · ${pct(sn.aliqEf)} efetivo</div>
+    </div>
+    <div class="rc lp">
+      <div class="rl">Lucro Presumido</div>
+      <div class="rv">${fmt(lp.total)}</div>
+      <div class="rs">total anual · ${pct(lp.aliqEf)} efetivo</div>
+    </div>
+    <div class="rc lr">
+      <div class="rl">Lucro Real</div>
+      <div class="rv">${fmt(lr.total)}</div>
+      <div class="rs">total anual · ${pct(lr.aliqEf)} efetivo</div>
+    </div>
+    <div class="rc eco">
+      <div class="rl">Economia Máxima</div>
+      <div class="rv">${fmt(eco)}</div>
+      <div class="rs">${melhorPill(sn.total,lp.total,lr.total)} mais vantajoso</div>
+    </div>
+    <div class="rc alerta">
+      <div class="rl">DAS Mensal (SN)</div>
+      <div class="rv">${fmt(sn.das/12)}</div>
+      <div class="rs">imposto unificado mensal</div>
+    </div>`;
+}
+
+// ─── ANÁLISE ─────────────────────────────────────────────────────
+function renderAnalise(fat,sn,lp,lr,setor,compras,uf){
+  const mn=Math.min(sn.total,lp.total,lr.total);
+  const melhor=mn===sn.total?'🔵 Simples Nacional':mn===lp.total?'🟠 Lucro Presumido':'🟢 Lucro Real';
+  const eco=Math.max(sn.total,lp.total,lr.total)-mn;
+  const pctEco=(eco/Math.max(sn.total,lp.total,lr.total)*100).toFixed(1);
+  const isConfec=setor==='confeccao';
+  const isServico=setor==='servicos'||setor==='servicos_adv';
+  document.getElementById('div-analise').innerHTML=`
+    <div style="display:grid;gap:14px">
+      <div style="background:#f0fdf4;border-radius:8px;padding:16px 20px;border-left:4px solid #16a34a">
+        <strong style="color:#15803d">📌 Diagnóstico Principal</strong><br/>
+        Faturamento de <strong>${fmt(fat)}/ano</strong>. Regime mais vantajoso: <strong>${melhor}</strong>,
+        com economia de <strong>${fmt(eco)} (${pctEco}%)</strong> em relação ao pior regime analisado.
+      </div>
+      ${isConfec?`<div style="background:#f5f3ff;border-radius:8px;padding:16px 20px;border-left:4px solid #7c3aed">
+        <strong style="color:#6d28d9">👗 Atenção — Confecção / Fabricação de Roupas</strong><br/>
+        <ul style="margin-top:6px;padding-left:16px;line-height:1.9;font-size:.85rem">
+          <li>Enquadrado no <strong>Anexo II do Simples Nacional</strong> — alíquotas de 4,5% a 30%.</li>
+          <li>IPI (Imposto sobre Produtos Industrializados) pode ser aplicável — verificar TIPI conforme produto.</li>
+          <li>ICMS Substituição Tributária: confecções estão sujeitas à ST em muitos estados — verificar protocolo ICMS.</li>
+          <li>No Lucro Presumido/Real, crédito de ICMS sobre matéria-prima (tecidos, aviamentos) é estratégico.</li>
+          <li>Benefícios: PRODIR/PRODIR estaduais para indústria têxtil — consultar SEFAZ do seu estado.</li>
+          <li>Exportação de confecções: imunidade de IPI, ICMS, PIS e COFINS — excelente oportunidade fiscal.</li>
+        </ul>
+      </div>`:''}
+      <div style="background:#eff6ff;border-radius:8px;padding:16px 20px">
+        <strong style="color:#1e40af">🔵 Simples Nacional — Análise</strong>
+        <ul style="margin-top:8px;padding-left:16px;line-height:1.9;font-size:.85rem">
+          <li>DAS unificado: <strong>${fmt(sn.das/12)}/mês</strong> — recolhimento simplificado.</li>
+          <li>INSS pró-labore reduzido (11%) — vantagem significativa com múltiplos sócios.</li>
+          <li><strong>Não há crédito de ICMS</strong> sobre entradas — desvantagem em atividades com muito insumo.</li>
+          <li>Vedado acima de R$ 4,8M/ano, para S.A., com débitos na dívida ativa, entre outros.</li>
+          <li>Alíquota efetiva calculada: <strong>${pct(sn.aliqEf,4)}</strong> (${sn.faixa.f}ª faixa).</li>
+        </ul>
+      </div>
+      <div style="background:#fff7ed;border-radius:8px;padding:16px 20px">
+        <strong style="color:#9a3412">🟠 Lucro Presumido — Análise</strong>
+        <ul style="margin-top:8px;padding-left:16px;line-height:1.9;font-size:.85rem">
+          <li>INSS pró-labore a 20% — pode encarecer significativamente com altos pró-labores.</li>
+          <li><strong>Crédito de ICMS entradas: ${fmt(lp.icmsCredito)}/ano</strong> — reduz ICMS a recolher para ${fmt(lp.icms)}.</li>
+          <li>PIS/COFINS cumulativos (3,65%) — sem crédito de entradas, mas alíquota menor que LR.</li>
+          <li>Presunção de ${pct(lp.pIrpj)} IRPJ / ${pct(lp.pCsll)} CSLL — vantajoso se margem real for maior.</li>
+          <li>Obrigações acessórias: ECD, ECF, SPED — custo contábil maior.</li>
+        </ul>
+      </div>
+      <div style="background:#f0fdf4;border-radius:8px;padding:16px 20px">
+        <strong style="color:#166534">🟢 Lucro Real — Análise</strong>
+        <ul style="margin-top:8px;padding-left:16px;line-height:1.9;font-size:.85rem">
+          <li>PIS/COFINS não-cumulativos: crédito de entradas de <strong>${fmt(lr.pisCreditoVal+lr.cofCreditoVal)}/ano</strong>.</li>
+          <li>IRPJ/CSLL sobre lucro real de ${pct(parseFloat(document.getElementById('margem').value)/100)} — vantajoso com margens baixas.</li>
+          <li>Permite compensação de prejuízo fiscal em anos subsequentes.</li>
+          <li>Obrigatório para receita bruta > R$ 78M, bancos, financeiras, seguradoras.</li>
+          <li>Maior custo de conformidade (LALUR, EFD, SPED completo).</li>
+        </ul>
+      </div>
+      <div style="background:#fef2f2;border-radius:8px;padding:16px 20px">
+        <strong style="color:#b91c1c">⚡ Fatores que podem inverter a análise</strong>
+        <ul style="margin-top:8px;padding-left:16px;line-height:1.9;font-size:.85rem">
+          <li><strong>Substituição Tributária ICMS:</strong> se seus produtos têm ST, o ICMS pode ser recolhido pelo fabricante/distribuidor, alterando o cálculo.</li>
+          <li><strong>Benefícios fiscais estaduais:</strong> PRODEC, FUNDES, ICMS reduzido por convênio.</li>
+          <li><strong>Margem real vs. presumida:</strong> se a margem real for muito inferior à presunção, o Lucro Real pode compensar.</li>
+          <li><strong>Volume de compras e créditos:</strong> empresa com alto volume de insumos (${fmt(compras)}/ano) ganha mais crédito no LP/LR.</li>
+          <li><strong>Pró-labore × Distribuição de lucros:</strong> reduzir pró-labore e aumentar distribuição de lucros (isenta) é planejamento tributário legal.</li>
+        </ul>
+      </div>
+    </div>`;
+}
+
+// ─── MAIN CALCULAR ────────────────────────────────────────────────
+function calcular(){
+  const fat=pm(document.getElementById('fat').value);
+  if(!fat||fat<=0){alert('Informe um faturamento válido.');return;}
+
+  const rbt12=pm(document.getElementById('rbt12').value)||fat;
+  const uf=document.getElementById('uf').value;
+  const setor=document.getElementById('setor').value;
+  const anexo=document.getElementById('anexo_sn').value;
+  const compras=pm(document.getElementById('compras').value);
+  const icmsEnt=parseFloat(document.getElementById('icms_entrada').value)||12;
+  const prolaboreMensal=pm(document.getElementById('prolabore').value);
+  const numSocios=parseInt(document.getElementById('socios').value)||1;
+  const prolaboreAnual=prolaboreMensal*12*numSocios;
+  const folhaAnual=pm(document.getElementById('folha').value);
+  const rat=parseInt(document.getElementById('rat').value)||2;
+  const margem=parseFloat(document.getElementById('margem').value)||8;
+  const iss=parseFloat(document.getElementById('iss').value)||3;
+  const pisCred=parseFloat(document.getElementById('pis_cred_pct').value)||80;
+  const cofCred=parseFloat(document.getElementById('cof_cred_pct').value)||80;
+  const despDed=pm(document.getElementById('desp_ded').value);
+
+  // Alertas
+  document.getElementById('alerta-mei').style.display=fat<=81000?'block':'none';
+
+  // Calcular
+  const sn=calcSN(fat,rbt12,anexo,prolaboreAnual,folhaAnual,rat,numSocios);
+  const lp=calcLP(fat,uf,compras,icmsEnt,prolaboreAnual,folhaAnual,rat,setor,iss,numSocios,pisCred,cofCred);
+  const lr=calcLR(fat,uf,compras,icmsEnt,prolaboreAnual,folhaAnual,rat,margem,setor,iss,numSocios,pisCred,cofCred,despDed);
+
+  // Guardar para faixas
+  _rbt12Atual=rbt12;
+  _faixaAtual=sn.faixa;
+  _anexoAtual=anexo;
+
+  // Renderizar tudo
+  renderResumoCads(fat,sn,lp,lr);
+  renderDetalhe(sn,lp,lr,anexo,fat);
+  renderTabelaComp(fat,sn,lp,lr);
+  renderLucros(fat,sn,lp,lr,setor);
+  renderFuncionario(folhaAnual||120000,rat);
+  renderAnalise(fat,sn,lp,lr,setor,compras,uf);
+  renderCharts(sn,lp,lr,fat,anexo,uf,setor,iss,rat,prolaboreAnual,folhaAnual,pisCred,cofCred,despDed,margem);
+  renderFaixas(anexo);
+  renderProgressao(anexo,uf,setor,iss,rat,prolaboreAnual,folhaAnual,pisCred,cofCred,despDed,margem);
+  renderObrigacoes();
+  renderCalendario();
+  salvarHistorico(fat,setor,sn,lp,lr);
+
+  // Ir para resultado
+  irPara('resultado',document.querySelectorAll('.tab')[1]);
+}
+
+// ─── INICIALIZAÇÃO ────────────────────────────────────────────────
+renderGlossario();
+renderHistorico();
+renderCalendario();
+renderObrigacoes();
+renderFaixas('I');
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName!=='SELECT')calcular();});
 </script>
 </body>
 </html>
