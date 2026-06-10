@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contabilidade de Custos — FiscalConf</title>
+<style>
+  :root {
+    --bg: #0c0e14;
+    --surface: #161923;
+    --surface2: #1e2333;
+    --border: #272d42;
+    --accent: #5b8dee;
+    --accent2: #8b5cf6;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --orange: #f97316;
+    --cyan: #06b6d4;
+    --text: #dde3f0;
+    --muted: #7b84a0;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; min-height: 100vh; }
+
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .logo { font-size: 17px; font-weight: 800; color: var(--accent); }
+  .logo span { color: var(--text); }
+  .logo small { font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 8px; }
+
+  .tabs { display: flex; gap: 2px; padding: 14px 24px 0; border-bottom: 1px solid var(--border); overflow-x: auto; background: var(--bg); }
+  .tab { padding: 8px 16px; cursor: pointer; border-radius: 8px 8px 0 0; color: var(--muted); font-size: 13px; font-weight: 600; white-space: nowrap; border: 1px solid transparent; border-bottom: none; transition: all .2s; user-select: none; }
+  .tab.active { background: var(--surface); color: var(--accent); border-color: var(--border); margin-bottom: -1px; }
+  .tab:hover:not(.active) { color: var(--text); background: rgba(255,255,255,.03); }
+
+  .content { padding: 24px; max-width: 1200px; margin: 0 auto; }
+  .panel { display: none; animation: fadeIn .2s; }
+  .panel.active { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(4px) } to { opacity:1; transform:none } }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+  .card-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 16px; }
+  .section-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .section-title::before { content:''; display:block; width:4px; height:18px; background: var(--accent); border-radius:2px; }
+  .section-sub { font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 4px; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media(max-width:800px){ .grid2,.grid3,.grid4 { grid-template-columns:1fr; } }
+
+  .field { margin-bottom: 12px; }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; font-weight: 600; }
+  input, select, textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 8px 12px; color: var(--text); font-size: 14px; outline: none; transition: border .15s; }
+  input:focus, select:focus { border-color: var(--accent); }
+  select option { background: var(--bg); }
+
+  .btn { padding: 9px 20px; border-radius: 7px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; transition: all .15s; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { filter: brightness(1.1); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+  .btn-danger { background: #2d1414; color: var(--red); border: 1px solid #4a1a1a; }
+  .btn-green { background: #0d2d1a; color: var(--green); border: 1px solid #1a4a2a; }
+
+  .kpi { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; }
+  .kpi-label { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+  .kpi-value { font-size: 20px; font-weight: 800; margin-top: 4px; }
+  .kpi-value.pos { color: var(--green); }
+  .kpi-value.neg { color: var(--red); }
+  .kpi-value.warn { color: var(--yellow); }
+  .kpi-value.blue { color: var(--accent); }
+  .kpi-value.purple { color: var(--accent2); }
+  .kpi-value.orange { color: var(--orange); }
+  .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(91,141,238,.04); }
+  .tr-total td { font-weight: 700; background: var(--surface2); font-size: 14px; }
+  .tr-sub td { background: rgba(255,255,255,.02); font-size: 12px; color: var(--muted); padding-left: 24px; }
+  .tr-header td { background: var(--surface2); font-weight: 700; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+
+  .td-r { text-align: right; font-variant-numeric: tabular-nums; }
+  .td-c { text-align: center; }
+  .td-pos { color: var(--green); }
+  .td-neg { color: var(--red); }
+  .td-warn { color: var(--yellow); }
+  .td-bold { font-weight: 700; }
+
+  .result-box { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-top: 12px; }
+  .rrow { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--border); }
+  .rrow:last-child { border-bottom: none; }
+  .rrow.total { font-weight: 700; font-size: 15px; padding-top: 10px; }
+  .rrow.indent { padding-left: 14px; }
+  .rrow .rl { color: var(--muted); font-size: 13px; }
+  .rrow .rv { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .badge-blue { background: #1a2d55; color: var(--accent); }
+  .badge-green { background: #0d2d1a; color: var(--green); }
+  .badge-red { background: #2d1414; color: var(--red); }
+  .badge-yellow { background: #2d2210; color: var(--yellow); }
+  .badge-purple { background: #1e1040; color: var(--accent2); }
+  .badge-orange { background: #2d1a08; color: var(--orange); }
+
+  .alert { padding: 11px 15px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; border-left: 3px solid; }
+  .alert-info { background: #0f1e40; border-color: var(--accent); color: #93c5fd; }
+  .alert-warn { background: #2d2210; border-color: var(--yellow); color: #fcd34d; }
+  .alert-success { background: #0a2018; border-color: var(--green); color: #86efac; }
+  .alert-purple { background: #1a1040; border-color: var(--accent2); color: #c4b5fd; }
+
+  .prog-wrap { background: var(--bg); border-radius: 4px; height: 7px; overflow: hidden; margin-top: 6px; }
+  .prog-bar { height: 100%; border-radius: 4px; transition: width .4s; }
+
+  .sep { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+  .flex { display: flex; } .gap8 { gap: 8px; } .gap4 { gap: 4px; }
+  .mt8 { margin-top: 8px; } .mt12 { margin-top: 12px; } .mt16 { margin-top: 16px; }
+  .hidden { display: none !important; }
+  .text-right { text-align: right; } .text-muted { color: var(--muted); } .fw700 { font-weight: 700; }
+  .text-green { color: var(--green); } .text-red { color: var(--red); } .text-yellow { color: var(--yellow); }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .chip { padding: 4px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; border: 1px solid var(--border); color: var(--muted); transition: all .15s; }
+  .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .inline-table { display: inline-grid; gap: 2px 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Fiscal<span>Conf</span> <small>— Contabilidade de Custos</small></div>
+  <div style="font-size:12px;color:var(--muted)">CFC/CPC 16 · NBC TG 02</div>
+</header>
+
+<div class="tabs">
+  <div class="tab active"  onclick="switchTab('absorção',  this)">Custeio Absorção</div>
+  <div class="tab"         onclick="switchTab('variavel',   this)">Custeio Variável</div>
+  <div class="tab"         onclick="switchTab('abc',        this)">Custeio ABC</div>
+  <div class="tab"         onclick="switchTab('ordem',      this)">Ordem de Produção</div>
+  <div class="tab"         onclick="switchTab('processo',   this)">Custeio por Processo</div>
+  <div class="tab"         onclick="switchTab('cvl',        this)">Análise CVL</div>
+  <div class="tab"         onclick="switchTab('depto',      this)">Departamentalização</div>
+  <div class="tab"         onclick="switchTab('estoque',    this)">Valoração de Estoque</div>
+</div>
+
+<div class="content">
+
+<!-- ============================================================ ABSORÇÃO -->
+<div class="panel active" id="tab-absorção">
+  <div class="section-title">Custeio por Absorção <span class="section-sub">— todos os custos de produção compõem o custo do produto</span></div>
+  <div class="grid2">
+    <div>
+      <div class="card">
+        <div class="card-title">Matérias-Primas (MP)</div>
+        <div class="grid2">
+          <div class="field"><label>MP Direta Unitária (R$)</label><input type="number" id="ab-mpd" value="35" oninput="calcAb()"></div>
+          <div class="field"><label>MP Indireta rateada/un (R$)</label><input type="number" id="ab-mpi" value="8" oninput="calcAb()"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Mão de Obra</div>
+        <div class="grid2">
+          <div class="field"><label>MOD Unitária (R$)</label><input type="number" id="ab-mod" value="22" oninput="calcAb()"></div>
+          <div class="field"><label>MOI rateada/un (R$)</label><input type="number" id="ab-moi" value="7" oninput="calcAb()"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Custos Indiretos de Fabricação (CIF)</div>
+        <div class="grid2">
+          <div class="field"><label>CIF Fixo Total (R$/mês)</label><input type="number" id="ab-ciff" value="30000" oninput="calcAb()"></div>
+          <div class="field"><label>CIF Variável/un (R$)</label><input type="number" id="ab-cifv" value="5" oninput="calcAb()"></div>
+          <div class="field"><label>Volume de Produção (un/mês)</label><input type="number" id="ab-vol" value="500" oninput="calcAb()"></div>
+          <div class="field"><label>Base de Rateio CIF</label>
+            <select id="ab-base" onchange="calcAb()">
+              <option value="vol">Horas-Máquina / Volume</option>
+              <option value="mod">Custo MOD</option>
+              <option value="mp">Custo MP</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Dados de Venda</div>
+        <div class="grid2">
+          <div class="field"><label>Preço de Venda (R$)</label><input type="number" id="ab-pv" value="150" oninput="calcAb()"></div>
+          <div class="field"><label>Volume Vendido (un/mês)</label><input type="number" id="ab-vend" value="480" oninput="calcAb()"></div>
+          <div class="field"><label>Estoque Inicial (un)</label><input type="number" id="ab-ei" value="20" oninput="calcAb()"></div>
+          <div class="field"><label>Despesas de Venda/Admin (R$)</label><input type="number" id="ab-desp" value="12000" oninput="calcAb()"></div>
+        </div>
+      </div>
+    </div>
+    <div id="ab-result"></div>
+  </div>
+</div>
+
+<!-- ============================================================ VARIÁVEL -->
+<div class="panel" id="tab-variavel">
+  <div class="section-title">Custeio Variável (Direto) <span class="section-sub">— apenas custos variáveis vão ao produto</span></div>
+  <div class="grid2">
+    <div>
+      <div class="card">
+        <div class="card-title">Custos do Produto</div>
+        <div class="field"><label>Custo Variável Total Unitário (R$)</label><input type="number" id="cv-cvu" value="70" oninput="calcCV()"></div>
+        <div class="field"><label>— do qual: MP Direta (R$)</label><input type="number" id="cv-mpd" value="35" oninput="calcCV()"></div>
+        <div class="field"><label>— do qual: MOD (R$)</label><input type="number" id="cv-mod" value="22" oninput="calcCV()"></div>
+        <div class="field"><label>— do qual: CIF Variável (R$)</label><input type="number" id="cv-cifv" value="8" oninput="calcCV()"></div>
+        <div class="field"><label>— do qual: Outros Var. (R$)</label><input type="number" id="cv-outros" value="5" oninput="calcCV()"></div>
+        <hr class="sep">
+        <div class="field"><label>Custos Fixos Totais (R$/mês)</label><input type="number" id="cv-cf" value="45000" oninput="calcCV()"></div>
+        <div class="field"><label>— do qual: CIF Fixo (R$)</label><input type="number" id="cv-ciff" value="30000" oninput="calcCV()"></div>
+        <div class="field"><label>— do qual: Despesas Fixas (R$)</label><input type="number" id="cv-despf" value="15000" oninput="calcCV()"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Dados de Venda</div>
+        <div class="field"><label>Preço de Venda Unitário (R$)</label><input type="number" id="cv-pv" value="150" oninput="calcCV()"></div>
+        <div class="field"><label>Volume Produzido (un/mês)</label><input type="number" id="cv-prod" value="500" oninput="calcCV()"></div>
+        <div class="field"><label>Volume Vendido (un/mês)</label><input type="number" id="cv-vend" value="480" oninput="calcCV()"></div>
+      </div>
+    </div>
+    <div id="cv-result"></div>
+  </div>
+  <div class="card mt16" id="cv-comp">
+    <div class="card-title">Comparativo: Absorção × Variável — Diferença no Resultado</div>
+    <div id="cv-comp-body"></div>
+  </div>
+</div>
+
+<!-- ============================================================ ABC -->
+<div class="panel" id="tab-abc">
+  <div class="section-title">Custeio Baseado em Atividades (ABC) <span class="section-sub">— direcionadores de custo por atividade</span></div>
+  <div class="grid2">
+    <div>
+      <div class="card">
+        <div class="card-title">Atividades e Seus Custos</div>
+        <div id="abc-ativ-lista"></div>
+        <div class="flex gap8 mt8">
+          <input type="text" id="abc-an" placeholder="Nome da atividade" style="flex:1">
+          <input type="number" id="abc-ac" placeholder="Custo R$" style="width:110px">
+          <input type="text" id="abc-ad" placeholder="Direcionador" style="width:130px">
+          <button class="btn btn-primary btn-sm" onclick="addAbcAtiv()">+</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Produtos e Consumo de Atividades</div>
+        <div id="abc-prod-lista"></div>
+        <div class="flex gap8 mt8">
+          <input type="text" id="abc-pn" placeholder="Nome produto" style="flex:1">
+          <input type="number" id="abc-pq" placeholder="Qtde produzida" style="width:130px">
+          <button class="btn btn-primary btn-sm" onclick="addAbcProd()">+</button>
+        </div>
+      </div>
+    </div>
+    <div id="abc-result"></div>
+  </div>
+</div>
+
+<!-- ============================================================ ORDEM -->
+<div class="panel" id="tab-ordem">
+  <div class="section-title">Custeio por Ordem de Produção (OP) <span class="section-sub">— ficha de custo individualizada por lote/pedido</span></div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Dados da Ordem</div>
+      <div class="field"><label>Nº / Identificação da OP</label><input type="text" id="op-num" value="OP-2024-001"></div>
+      <div class="field"><label>Produto / Serviço</label><input type="text" id="op-prod" value="Peça Usinada A"></div>
+      <div class="field"><label>Quantidade (un)</label><input type="number" id="op-qtd" value="100" oninput="calcOP()"></div>
+      <hr class="sep">
+      <div class="card-title">Matérias-Primas Consumidas</div>
+      <div id="op-mp-lista"></div>
+      <div class="flex gap8 mt8">
+        <input type="text" id="op-mpn" placeholder="Material" style="flex:1">
+        <input type="number" id="op-mpq" placeholder="Qtde" style="width:80px">
+        <input type="number" id="op-mpv" placeholder="Custo un" style="width:90px">
+        <button class="btn btn-primary btn-sm" onclick="addOpMP()">+</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Mão de Obra (Apontamentos)</div>
+      <div id="op-mo-lista"></div>
+      <div class="flex gap8 mt8">
+        <input type="text" id="op-mon" placeholder="Operação" style="flex:1">
+        <input type="number" id="op-moh" placeholder="Horas" style="width:80px">
+        <input type="number" id="op-mov" placeholder="R$/h" style="width:90px">
+        <button class="btn btn-primary btn-sm" onclick="addOpMO()">+</button>
+      </div>
+      <hr class="sep">
+      <div class="card-title">CIF — Taxa de Absorção</div>
+      <div class="field"><label>Taxa CIF (R$ por hora-MOD)</label><input type="number" id="op-taxa" value="45" oninput="calcOP()"></div>
+      <hr class="sep">
+      <div class="card-title">Outros Custos Diretos</div>
+      <div class="field"><label>Terceirização / Subcontratação (R$)</label><input type="number" id="op-terc" value="800" oninput="calcOP()"></div>
+      <div class="field"><label>Ferramental Específico (R$)</label><input type="number" id="op-ferr" value="200" oninput="calcOP()"></div>
+    </div>
+  </div>
+  <div id="op-result" class="mt16"></div>
+</div>
+
+<!-- ============================================================ PROCESSO -->
+<div class="panel" id="tab-processo">
+  <div class="section-title">Custeio por Processo <span class="section-sub">— produção contínua em departamentos/fases</span></div>
+  <div class="alert alert-info">Custos acumulados por fase de produção; unidades equivalentes calculadas pelo método da média ponderada.</div>
+  <div id="proc-deptos"></div>
+  <button class="btn btn-secondary btn-sm mt8" onclick="addProcDepto()">+ Adicionar Departamento</button>
+  <div id="proc-result" class="mt16"></div>
+</div>
+
+<!-- ============================================================ CVL -->
+<div class="panel" id="tab-cvl">
+  <div class="section-title">Análise Custo-Volume-Lucro (CVL) <span class="section-sub">— múltiplos produtos</span></div>
+  <div class="grid2">
+    <div>
+      <div class="card">
+        <div class="card-title">Produtos</div>
+        <div id="cvl-prod-lista"></div>
+        <div class="flex gap8 mt8">
+          <input type="text" id="cvl-pn" placeholder="Produto" style="flex:1">
+          <input type="number" id="cvl-pv" placeholder="Preço R$" style="width:90px">
+          <input type="number" id="cvl-cv" placeholder="CV unit" style="width:90px">
+          <input type="number" id="cvl-mix" placeholder="Mix %" style="width:70px">
+          <button class="btn btn-primary btn-sm" onclick="addCvlProd()">+</button>
+        </div>
+        <hr class="sep">
+        <div class="field"><label>Custos Fixos Totais (R$/mês)</label><input type="number" id="cvl-cf" value="60000" oninput="calcCVL()"></div>
+        <div class="field"><label>Impostos s/ Receita (%)</label><input type="number" id="cvl-imp" value="9" step="0.5" oninput="calcCVL()"></div>
+        <div class="field"><label>Meta de Lucro Mensal (R$)</label><input type="number" id="cvl-meta" value="20000" oninput="calcCVL()"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Simulador de Sensibilidade</div>
+        <div class="field"><label>Variação no Volume (%)</label><input type="range" id="cvl-sens-vol" min="-50" max="100" value="0" oninput="calcCVLSens()"><span id="cvl-sens-vol-lbl" style="color:var(--accent);font-weight:700;margin-left:8px">0%</span></div>
+        <div class="field"><label>Variação no Preço (%)</label><input type="range" id="cvl-sens-pv" min="-30" max="30" value="0" oninput="calcCVLSens()"><span id="cvl-sens-pv-lbl" style="color:var(--accent);font-weight:700;margin-left:8px">0%</span></div>
+        <div id="cvl-sens-result"></div>
+      </div>
+    </div>
+    <div id="cvl-result"></div>
+  </div>
+</div>
+
+<!-- ============================================================ DEPARTAMENTALIZAÇÃO -->
+<div class="panel" id="tab-depto">
+  <div class="section-title">Departamentalização de Custos <span class="section-sub">— centros de custo e rateio</span></div>
+  <div class="grid2">
+    <div>
+      <div class="card">
+        <div class="card-title">Departamentos Auxiliares</div>
+        <div id="dep-aux-lista"></div>
+        <div class="flex gap8 mt8">
+          <input type="text" id="dep-aux-n" placeholder="Departamento auxiliar" style="flex:1">
+          <input type="number" id="dep-aux-v" placeholder="Custo R$" style="width:110px">
+          <button class="btn btn-primary btn-sm" onclick="addDepAux()">+</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Departamentos Produtivos (receptores)</div>
+        <div id="dep-prod-lista"></div>
+        <div class="flex gap8 mt8">
+          <input type="text" id="dep-prod-n" placeholder="Departamento produtivo" style="flex:1">
+          <input type="number" id="dep-prod-v" placeholder="Custo próprio R$" style="width:110px">
+          <button class="btn btn-primary btn-sm" onclick="addDepProd()">+</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Critério de Rateio</div>
+        <div class="field"><label>Base de Rateio</label>
+          <select id="dep-base" onchange="calcDep()">
+            <option value="igual">Partes iguais</option>
+            <option value="personalizado">Percentuais personalizados</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div id="dep-result"></div>
+  </div>
+</div>
+
+<!-- ============================================================ ESTOQUE -->
+<div class="panel" id="tab-estoque">
+  <div class="section-title">Valoração de Estoque <span class="section-sub">— PEPS · UEPS · Média Ponderada</span></div>
+  <div class="grid2">
+    <div>
+      <div class="card">
+        <div class="card-title">Movimentações</div>
+        <div class="chip-row">
+          <span class="chip active" id="est-met-pm" onclick="setEstMet('pm',this)">Média Ponderada</span>
+          <span class="chip" id="est-met-peps" onclick="setEstMet('peps',this)">PEPS (FIFO)</span>
+          <span class="chip" id="est-met-ueps" onclick="setEstMet('ueps',this)">UEPS (LIFO)</span>
+        </div>
+        <div class="flex gap8">
+          <div class="field" style="flex:1"><label>Data</label><input type="date" id="est-data"></div>
+          <div class="field" style="flex:1"><label>Tipo</label>
+            <select id="est-tipo">
+              <option value="E">Entrada</option>
+              <option value="S">Saída</option>
+            </select>
+          </div>
+          <div class="field" style="width:90px"><label>Qtde</label><input type="number" id="est-qtd" value="100"></div>
+          <div class="field" style="width:90px"><label>Custo Un.</label><input type="number" id="est-custo" value="50"></div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="addEstoque()">Lançar Movimentação</button>
+        <button class="btn btn-secondary btn-sm mt8" onclick="clearEstoque()">Limpar</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Resumo do Período</div>
+        <div id="est-resumo"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Ficha de Controle de Estoque</div>
+      <div id="est-ficha"></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<script>
+// ============================================================ UTILS
+const fmt = (v,d=2) => isNaN(v)||v===null?'R$ 0,00':'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const pct = (v,d=2) => isNaN(v)?'0%':Number(v).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d})+'%';
+const n = id => parseFloat(document.getElementById(id)?.value)||0;
+const v = id => document.getElementById(id)?.value||'';
+const s = id => document.getElementById(id);
+const clr = val => val>0?'pos':val<0?'neg':'warn';
+
+function switchTab(id, el) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  s('tab-'+id).classList.add('active');
+}
+
+function kpiHtml(label, val, cls, sub='') {
+  return `<div class="kpi"><div class="kpi-label">${label}</div><div class="kpi-value ${cls}">${val}</div>${sub?`<div class="kpi-sub">${sub}</div>`:''}</div>`;
+}
+function rrow(label, val, cls='', indent=false, total=false) {
+  const fmtVal = typeof val==='number'?fmt(val):val;
+  const neg = typeof val==='number'&&val<0;
+  return `<div class="rrow${indent?' indent':''}${total?' total':''}">
+    <span class="rl">${label}</span>
+    <span class="rv ${neg?'td-neg':cls}">${fmtVal}</span>
+  </div>`;
+}
+
+// ============================================================ ABSORÇÃO
+function calcAb() {
+  const mpd=n('ab-mpd'), mpi=n('ab-mpi'), mod=n('ab-mod'), moi=n('ab-moi');
+  const ciff=n('ab-ciff'), cifv=n('ab-cifv'), vol=n('ab-vol');
+  const pv=n('ab-pv'), vend=n('ab-vend'), ei=n('ab-ei'), desp=n('ab-desp');
+
+  const ciffUn = vol>0?ciff/vol:0;
+  const custoUn = mpd+mpi+mod+moi+cifv+ciffUn;
+  const ef = vol+ei-vend; // estoque final
+  const cmv = custoUn*vend;
+  const recBruta = pv*vend;
+  const lb = recBruta-cmv;
+  const llq = lb-desp;
+  const mb = recBruta>0?lb/recBruta*100:0;
+  const ml = recBruta>0?llq/recBruta*100:0;
+
+  s('ab-result').innerHTML = `
+    <div class="grid4">
+      ${kpiHtml('Custo Total Unitário', fmt(custoUn), 'blue')}
+      ${kpiHtml('CMV Total', fmt(cmv), 'orange')}
+      ${kpiHtml('Lucro Bruto', fmt(lb), clr(lb), `Margem ${pct(mb)}`)}
+      ${kpiHtml('Lucro Líquido', fmt(llq), clr(llq), `Margem ${pct(ml)}`)}
+    </div>
+    <div class="card mt12">
+      <div class="card-title">Ficha de Custo Unitário — Absorção</div>
+      <table>
+        <thead><tr><th>Elemento de Custo</th><th class="td-r">Valor Un.</th><th class="td-r">% do Custo</th></tr></thead>
+        <tbody>
+          ${[['MP Direta',mpd],['MP Indireta (rateada)',mpi],['MOD',mod],['MOI (rateada)',moi],['CIF Variável',cifv],['CIF Fixo (rateado)',ciffUn]]
+            .map(([l,v])=>`<tr><td>${l}</td><td class="td-r">${fmt(v)}</td><td class="td-r text-muted">${custoUn>0?pct(v/custoUn*100):'-'}</td></tr>`).join('')}
+        </tbody>
+        <tfoot><tr class="tr-total"><td>CUSTO TOTAL UNITÁRIO</td><td class="td-r">${fmt(custoUn)}</td><td class="td-r">100%</td></tr></tfoot>
+      </table>
+    </div>
+    <div class="card mt12">
+      <div class="card-title">DRE pelo Custeio por Absorção</div>
+      <div class="result-box">
+        ${rrow('Receita Bruta de Vendas',recBruta)}
+        ${rrow(`CMV (${vend} un × ${fmt(custoUn)})`,-cmv,'',true)}
+        ${rrow('(=) Lucro Bruto',lb,'',false,false)}
+        ${rrow('Despesas do Período',-desp,'',true)}
+        ${rrow('(=) Lucro Líquido',llq,'',false,true)}
+      </div>
+    </div>
+    <div class="card mt12">
+      <div class="card-title">Posição de Estoque</div>
+      ${rrow('Estoque Inicial (un)',ei+' un')}
+      ${rrow('(+) Produzido',vol+' un')}
+      ${rrow('(−) Vendido',vend+' un')}
+      ${rrow('(=) Estoque Final',Math.max(0,ef)+' un')}
+      ${rrow('Valor do Estoque Final',fmt(Math.max(0,ef)*custoUn))}
+    </div>`;
+}
+
+// ============================================================ CUSTEIO VARIÁVEL
+function calcCV() {
+  const cvu=n('cv-cvu'), cf=n('cv-cf'), pv=n('cv-pv');
+  const prod=n('cv-prod'), vend=n('cv-vend');
+
+  const mc = pv-cvu;
+  const mcp = pv>0?mc/pv*100:0;
+  const mcTotal = mc*vend;
+  const resultado = mcTotal-cf;
+  const ef = prod-vend;
+
+  // Para comparação com absorção
+  const ciffUn = prod>0?n('cv-ciff')/prod:0;
+  const custoAbsUn = cvu + ciffUn;
+  const cmvAbs = custoAbsUn*vend;
+  const lbAbs = pv*vend - cmvAbs - n('cv-despf');
+  const lbVar = resultado;
+  const dif = lbVar - lbAbs;
+
+  s('cv-result').innerHTML = `
+    <div class="grid4">
+      ${kpiHtml('MC Unitária',fmt(mc),clr(mc))}
+      ${kpiHtml('% MC',pct(mcp),mcp>=40?'pos':mcp>=20?'warn':'neg')}
+      ${kpiHtml('MC Total',fmt(mcTotal),'blue')}
+      ${kpiHtml('Resultado',fmt(resultado),clr(resultado))}
+    </div>
+    <div class="card mt12">
+      <div class="card-title">DRE pelo Custeio Variável</div>
+      <div class="result-box">
+        ${rrow('Receita Bruta',pv*vend)}
+        ${rrow(`(−) CVT (${vend}un × ${fmt(cvu)})`,-cvu*vend,'',true)}
+        ${rrow('(=) Margem de Contribuição Total',mcTotal)}
+        ${rrow('(−) Custos e Despesas Fixos',-cf,'',true)}
+        ${rrow('(=) Resultado do Período',resultado,'',false,true)}
+      </div>
+    </div>
+    <div class="card mt12">
+      <div class="card-title">Composição do Custo Variável Unitário</div>
+      <table>
+        <thead><tr><th>Elemento</th><th class="td-r">R$/un</th><th class="td-r">%</th></tr></thead>
+        <tbody>
+          ${[['MP Direta',n('cv-mpd')],['MOD',n('cv-mod')],['CIF Variável',n('cv-cifv')],['Outros Variáveis',n('cv-outros')]]
+            .map(([l,vl])=>`<tr><td>${l}</td><td class="td-r">${fmt(vl)}</td><td class="td-r text-muted">${cvu>0?pct(vl/cvu*100):'-'}</td></tr>`).join('')}
+        </tbody>
+        <tfoot><tr class="tr-total"><td>Total CV Unitário</td><td class="td-r">${fmt(cvu)}</td><td class="td-r">100%</td></tr></tfoot>
+      </table>
+    </div>`;
+
+  s('cv-comp-body').innerHTML = `
+    <div class="alert alert-purple">
+      No Custeio por Absorção, parte dos CIF fixos fica "estocada" quando produção > vendas. No Custeio Variável, todos os fixos são despesas do período.
+    </div>
+    <table>
+      <thead><tr><th>Critério</th><th class="td-r">Custeio Variável</th><th class="td-r">Custeio Absorção</th><th class="td-r">Diferença</th></tr></thead>
+      <tbody>
+        <tr><td>Custo Unitário do Produto</td><td class="td-r">${fmt(cvu)}</td><td class="td-r">${fmt(cvu+ciffUn)}</td><td class="td-r ${dif>0?'td-pos':'td-neg'}">${fmt(dif)}</td></tr>
+        <tr><td>Estoque Final Valorado</td><td class="td-r">${fmt(ef*cvu)}</td><td class="td-r">${fmt(ef*(cvu+ciffUn))}</td><td class="td-r">${fmt(ef*ciffUn)}</td></tr>
+        <tr><td>Resultado do Período</td><td class="td-r ${lbVar>=0?'td-pos':'td-neg'}">${fmt(lbVar)}</td><td class="td-r ${lbAbs>=0?'td-pos':'td-neg'}">${fmt(lbAbs)}</td><td class="td-r">${fmt(dif)}</td></tr>
+      </tbody>
+    </table>
+    <div class="alert alert-info mt8">
+      Diferença = CIF Fixo por unidade (${fmt(ciffUn)}) × Estoque Final (${ef} un) = ${fmt(ef*ciffUn)}.
+      ${ef>0?'Absorção tem resultado maior porque CIF fixos ficam no estoque.':ef<0?'Variável tem resultado maior porque mais CIF fixos foram ao CMV.':'Produção = Vendas → resultados idênticos.'}
+    </div>`;
+}
+
+// ============================================================ ABC
+let abcAtivs = [
+  {nome:'Setup/Preparação',custo:12000,dir:'N° de setups'},
+  {nome:'Movimentação Materiais',custo:8000,dir:'Requisições'},
+  {nome:'Controle de Qualidade',custo:6000,dir:'Inspeções'},
+  {nome:'Engenharia',custo:10000,dir:'Horas-eng.'},
+];
+let abcProds = [
+  {nome:'Produto A',qtd:400,cons:[5,30,10,2]},
+  {nome:'Produto B',qtd:200,cons:[15,20,20,8]},
+];
+
+function renderAbcAtivs() {
+  s('abc-ativ-lista').innerHTML = abcAtivs.map((a,i)=>`
+    <div class="flex gap4 mt8" style="align-items:center">
+      <span style="flex:1;font-size:13px">${a.nome}</span>
+      <span class="badge badge-blue">${a.dir}</span>
+      <span style="width:90px;text-align:right">${fmt(a.custo)}</span>
+      <button class="btn btn-danger btn-sm" onclick="abcAtivs.splice(${i},1);renderAbcAtivs();calcABC()">×</button>
+    </div>`).join('');
+}
+function renderAbcProds() {
+  s('abc-prod-lista').innerHTML = abcProds.map((p,i)=>`
+    <div class="flex gap4 mt8" style="align-items:center">
+      <span style="flex:1">${p.nome}</span>
+      <span class="badge badge-green">${p.qtd} un</span>
+      <button class="btn btn-danger btn-sm" onclick="abcProds.splice(${i},1);renderAbcProds();calcABC()">×</button>
+    </div>
+    <div style="font-size:12px;color:var(--muted);padding-left:8px;margin-bottom:4px">Consumo: ${p.cons.map((c,j)=>abcAtivs[j]?`${abcAtivs[j].nome.split('/')[0]}: ${c}`:'').filter(Boolean).join(' · ')}</div>`).join('');
+}
+function addAbcAtiv() {
+  const nome=v('abc-an'),custo=parseFloat(s('abc-ac').value)||0,dir=v('abc-ad');
+  if(!nome||!custo) return;
+  abcAtivs.push({nome,custo,dir});
+  s('abc-an').value=''; s('abc-ac').value=''; s('abc-ad').value='';
+  renderAbcAtivs(); calcABC();
+}
+function addAbcProd() {
+  const nome=v('abc-pn'),qtd=parseFloat(s('abc-pq').value)||0;
+  if(!nome||!qtd) return;
+  const cons = abcAtivs.map(()=>10); // consumo default
+  abcProds.push({nome,qtd,cons});
+  s('abc-pn').value=''; s('abc-pq').value='';
+  renderAbcProds(); calcABC();
+}
+function calcABC() {
+  if(!abcAtivs.length||!abcProds.length){
+    s('abc-result').innerHTML=`<div class="alert alert-info">Adicione atividades e produtos para calcular.</div>`;
+    return;
+  }
+  // custo por direcionador para cada atividade
+  const rows = abcAtivs.map((a,i)=>{
+    const totalCons = abcProds.reduce((sum,p)=>sum+(p.cons[i]||0),0);
+    const custoPorDir = totalCons>0?a.custo/totalCons:0;
+    return {...a,totalCons,custoPorDir};
+  });
+
+  // custo total por produto
+  const prodCustos = abcProds.map(p=>{
+    let total=0;
+    const detalhes = abcAtivs.map((a,i)=>{
+      const cons=p.cons[i]||0;
+      const custo=rows[i].custoPorDir*cons;
+      total+=custo;
+      return {ativ:a.nome,cons,custo};
+    });
+    return {...p,total,custoPorUn:p.qtd>0?total/p.qtd:0,detalhes};
+  });
+
+  const totalCustos = abcAtivs.reduce((s,a)=>s+a.custo,0);
+
+  s('abc-result').innerHTML = `
+    <div class="card">
+      <div class="card-title">Custo Total por Atividade</div>
+      <table>
+        <thead><tr><th>Atividade</th><th>Direcionador</th><th class="td-r">Custo Total</th><th class="td-r">Custo/Dir.</th></tr></thead>
+        <tbody>
+          ${rows.map(r=>`<tr>
+            <td>${r.nome}</td>
+            <td><span class="badge badge-blue">${r.dir}</span></td>
+            <td class="td-r">${fmt(r.custo)}</td>
+            <td class="td-r text-muted">${fmt(r.custoPorDir)}</td>
+          </tr>`).join('')}
+        </tbody>
+        <tfoot><tr class="tr-total"><td colspan="2">TOTAL</td><td class="td-r">${fmt(totalCustos)}</td><td></td></tr></tfoot>
+      </table>
+    </div>
+    <div class="card mt12">
+      <div class="card-title">Custo Alocado por Produto</div>
+      <table>
+        <thead><tr><th>Produto</th><th class="td-r">Qtde</th><th class="td-r">Custo Total</th><th class="td-r">Custo/Un</th><th class="td-r">% do Total</th></tr></thead>
+        <tbody>
+          ${prodCustos.map(p=>`
+            <tr>
+              <td class="td-bold">${p.nome}</td>
+              <td class="td-r">${p.qtd}</td>
+              <td class="td-r">${fmt(p.total)}</td>
+              <td class="td-r text-yellow">${fmt(p.custoPorUn)}</td>
+              <td class="td-r">${pct(totalCustos>0?p.total/totalCustos*100:0)}</td>
+            </tr>
+            ${p.detalhes.map(d=>`<tr class="tr-sub"><td>↳ ${d.ativ} (${d.cons} dir.)</td><td class="td-r"></td><td class="td-r">${fmt(d.custo)}</td><td class="td-r"></td><td></td></tr>`).join('')}
+          `).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ============================================================ ORDEM DE PRODUÇÃO
+let opMP=[{n:'Aço SAE 1045',q:50,v:12},{n:'Parafusos M10',q:200,v:0.80}];
+let opMO=[{n:'Tornearia',h:8,v:55},{n:'Fresamento',h:4,v:60}];
+
+function renderOpListas() {
+  s('op-mp-lista').innerHTML = opMP.map((m,i)=>`
+    <div class="flex gap4 mt4" style="align-items:center;font-size:13px">
+      <span style="flex:1">${m.n}</span><span>${m.q} un</span><span style="width:90px;text-align:right">${fmt(m.q*m.v)}</span>
+      <button class="btn btn-danger btn-sm" onclick="opMP.splice(${i},1);renderOpListas();calcOP()">×</button>
+    </div>`).join('');
+  s('op-mo-lista').innerHTML = opMO.map((m,i)=>`
+    <div class="flex gap4 mt4" style="align-items:center;font-size:13px">
+      <span style="flex:1">${m.n}</span><span>${m.h}h × ${fmt(m.v)}/h</span>
+      <button class="btn btn-danger btn-sm" onclick="opMO.splice(${i},1);renderOpListas();calcOP()">×</button>
+    </div>`).join('');
+}
+function addOpMP() {
+  const n_=v('op-mpn'),q=parseFloat(s('op-mpq').value)||0,vl=parseFloat(s('op-mpv').value)||0;
+  if(!n_||!q||!vl) return;
+  opMP.push({n:n_,q,v:vl});
+  s('op-mpn').value=''; s('op-mpq').value=''; s('op-mpv').value='';
+  renderOpListas(); calcOP();
+}
+function addOpMO() {
+  const n_=v('op-mon'),h=parseFloat(s('op-moh').value)||0,vl=parseFloat(s('op-mov').value)||0;
+  if(!n_||!h||!vl) return;
+  opMO.push({n:n_,h,v:vl});
+  s('op-mon').value=''; s('op-moh').value=''; s('op-mov').value='';
+  renderOpListas(); calcOP();
+}
+function calcOP() {
+  const qtd=n('op-qtd')||1;
+  const totalMP = opMP.reduce((s,m)=>s+m.q*m.v,0);
+  const totalMO = opMO.reduce((s,m)=>s+m.h*m.v,0);
+  const totalHoras = opMO.reduce((s,m)=>s+m.h,0);
+  const cif = totalHoras*n('op-taxa');
+  const terc = n('op-terc');
+  const ferr = n('op-ferr');
+  const total = totalMP+totalMO+cif+terc+ferr;
+  const porUn = qtd>0?total/qtd:0;
+  const id = v('op-num'), prod = v('op-prod');
+
+  s('op-result').innerHTML = `
+    <div class="grid4">
+      ${kpiHtml('Total MP',fmt(totalMP),'orange')}
+      ${kpiHtml('Total MOD',fmt(totalMO),'blue')}
+      ${kpiHtml('CIF Absorvido',fmt(cif),'purple')}
+      ${kpiHtml('Custo/Unidade',fmt(porUn),'pos')}
+    </div>
+    <div class="card mt12">
+      <div class="card-title">Ficha de Custo — ${id}: ${prod}</div>
+      <table>
+        <thead><tr><th>Elemento</th><th>Detalhamento</th><th class="td-r">Total</th><th class="td-r">% do Custo</th></tr></thead>
+        <tbody>
+          <tr class="tr-header"><td colspan="4">MATÉRIAS-PRIMAS</td></tr>
+          ${opMP.map(m=>`<tr class="tr-sub"><td>${m.n}</td><td>${m.q} un × ${fmt(m.v)}</td><td class="td-r">${fmt(m.q*m.v)}</td><td class="td-r">${total>0?pct(m.q*m.v/total*100):'-'}</td></tr>`).join('')}
+          <tr><td class="td-bold">Subtotal MP</td><td></td><td class="td-r td-bold">${fmt(totalMP)}</td><td class="td-r">${total>0?pct(totalMP/total*100):'-'}</td></tr>
+          <tr class="tr-header"><td colspan="4">MÃO DE OBRA DIRETA</td></tr>
+          ${opMO.map(m=>`<tr class="tr-sub"><td>${m.n}</td><td>${m.h}h × ${fmt(m.v)}/h</td><td class="td-r">${fmt(m.h*m.v)}</td><td class="td-r">${total>0?pct(m.h*m.v/total*100):'-'}</td></tr>`).join('')}
+          <tr><td class="td-bold">Subtotal MOD</td><td></td><td class="td-r td-bold">${fmt(totalMO)}</td><td class="td-r">${total>0?pct(totalMO/total*100):'-'}</td></tr>
+          <tr class="tr-header"><td colspan="4">CIF E OUTROS</td></tr>
+          <tr><td>CIF (Taxa R$/h-MOD)</td><td>${totalHoras.toFixed(1)}h × ${fmt(n('op-taxa'))}/h</td><td class="td-r">${fmt(cif)}</td><td class="td-r">${total>0?pct(cif/total*100):'-'}</td></tr>
+          <tr><td>Terceirização</td><td></td><td class="td-r">${fmt(terc)}</td><td class="td-r">${total>0?pct(terc/total*100):'-'}</td></tr>
+          <tr><td>Ferramental</td><td></td><td class="td-r">${fmt(ferr)}</td><td class="td-r">${total>0?pct(ferr/total*100):'-'}</td></tr>
+        </tbody>
+        <tfoot>
+          <tr class="tr-total"><td>CUSTO TOTAL DA OP</td><td></td><td class="td-r">${fmt(total)}</td><td class="td-r">100%</td></tr>
+          <tr class="tr-total"><td>CUSTO POR UNIDADE</td><td>÷ ${qtd} un</td><td class="td-r text-green">${fmt(porUn)}</td><td></td></tr>
+        </tfoot>
+      </table>
+    </div>`;
+}
+
+// ============================================================ CUSTEIO POR PROCESSO
+let procDeptos = [
+  {nome:'Corte',ei:50,ep:200,ef:30,mp:8000,mo:5000,cif:3000,perc:0.6},
+  {nome:'Montagem',ei:30,ep:0,ef:20,mp:4000,mo:6000,cif:2000,perc:0.5},
+  {nome:'Acabamento',ei:10,ep:0,ef:15,mp:1000,mo:3000,cif:1500,perc:0.8},
+];
+
+function renderProcDeptos() {
+  s('proc-deptos').innerHTML = procDeptos.map((d,i)=>`
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="card-title" style="margin:0">${d.nome}</div>
+        <button class="btn btn-danger btn-sm" onclick="procDeptos.splice(${i},1);renderProcDeptos();calcProc()">Remover</button>
+      </div>
+      <div class="grid4">
+        <div class="field"><label>EI (un)</label><input type="number" value="${d.ei}" oninput="procDeptos[${i}].ei=+this.value;calcProc()"></div>
+        <div class="field"><label>Produção (un)</label><input type="number" value="${d.ep}" oninput="procDeptos[${i}].ep=+this.value;calcProc()"></div>
+        <div class="field"><label>EF (un)</label><input type="number" value="${d.ef}" oninput="procDeptos[${i}].ef=+this.value;calcProc()"></div>
+        <div class="field"><label>% Completo EF</label><input type="number" value="${d.perc*100}" min="0" max="100" oninput="procDeptos[${i}].perc=+this.value/100;calcProc()"></div>
+        <div class="field"><label>MP (R$)</label><input type="number" value="${d.mp}" oninput="procDeptos[${i}].mp=+this.value;calcProc()"></div>
+        <div class="field"><label>MOD (R$)</label><input type="number" value="${d.mo}" oninput="procDeptos[${i}].mo=+this.value;calcProc()"></div>
+        <div class="field"><label>CIF (R$)</label><input type="number" value="${d.cif}" oninput="procDeptos[${i}].cif=+this.value;calcProc()"></div>
+      </div>
+    </div>`).join('');
+}
+function addProcDepto() {
+  procDeptos.push({nome:`Fase ${procDeptos.length+1}`,ei:0,ep:200,ef:20,mp:5000,mo:4000,cif:2000,perc:0.5});
+  renderProcDeptos(); calcProc();
+}
+function calcProc() {
+  let custoAntTransf = 0;
+  const rows = procDeptos.map((d,i)=>{
+    const transf = d.ei+d.ep-d.ef;
+    const ueq = transf + d.ef*d.perc;
+    const custoTotal = (i===0?0:custoAntTransf) + d.mp + d.mo + d.cif;
+    const custoPorUE = ueq>0?custoTotal/ueq:0;
+    const custoTransf = custoPorUE*transf;
+    const custoEF = custoPorUE*d.ef*d.perc;
+    custoAntTransf = custoTransf;
+    return {...d,transf,ueq,custoTotal,custoPorUE,custoTransf,custoEF};
+  });
+
+  s('proc-result').innerHTML = `
+    <div class="card">
+      <div class="card-title">Relatório de Custeio por Processo — Média Ponderada</div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Departamento</th>
+              <th class="td-r">Transf. p/ próx.</th>
+              <th class="td-r">Unid. Equiv.</th>
+              <th class="td-r">Custo do Período</th>
+              <th class="td-r">Custo/UE</th>
+              <th class="td-r">Custo Transferido</th>
+              <th class="td-r">Custo EF</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r=>`
+              <tr>
+                <td class="td-bold">${r.nome}</td>
+                <td class="td-r">${r.transf}</td>
+                <td class="td-r">${r.ueq.toFixed(1)}</td>
+                <td class="td-r">${fmt(r.custoTotal)}</td>
+                <td class="td-r text-yellow">${fmt(r.custoPorUE)}</td>
+                <td class="td-r text-green">${fmt(r.custoTransf)}</td>
+                <td class="td-r text-muted">${fmt(r.custoEF)}</td>
+              </tr>
+              <tr class="tr-sub">
+                <td>EI:${r.ei} + Prod:${r.ep} − EF:${r.ef} (${pct(r.perc*100,0)} comp.) = UE: ${r.ueq.toFixed(1)}</td>
+                <td colspan="6" style="font-size:11px">MP:${fmt(r.mp)} · MOD:${fmt(r.mo)} · CIF:${fmt(r.cif)}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// ============================================================ CVL MÚLTIPLOS PRODUTOS
+let cvlProds = [
+  {n:'Produto A', pv:120, cv:55, mix:60},
+  {n:'Produto B', pv:200, cv:110, mix:40},
+];
+function renderCvlProds() {
+  s('cvl-prod-lista').innerHTML = cvlProds.map((p,i)=>`
+    <div class="flex gap4 mt6" style="align-items:center;font-size:13px">
+      <span style="flex:1;font-weight:600">${p.n}</span>
+      <span class="badge badge-blue">PV: ${fmt(p.pv)}</span>
+      <span class="badge badge-orange">CV: ${fmt(p.cv)}</span>
+      <span class="badge badge-green">Mix: ${p.mix}%</span>
+      <button class="btn btn-danger btn-sm" onclick="cvlProds.splice(${i},1);renderCvlProds();calcCVL()">×</button>
+    </div>`).join('') || '<div class="text-muted" style="font-size:12px">Nenhum produto</div>';
+}
+function addCvlProd() {
+  const n_=v('cvl-pn'), pv=parseFloat(s('cvl-pv').value)||0, cv_=parseFloat(s('cvl-cv').value)||0, mix=parseFloat(s('cvl-mix').value)||0;
+  if(!n_||!pv) return;
+  cvlProds.push({n:n_,pv,cv:cv_,mix});
+  ['cvl-pn','cvl-pv','cvl-cv','cvl-mix'].forEach(id=>s(id).value='');
+  renderCvlProds(); calcCVL();
+}
+function calcCVL() {
+  const cf=n('cvl-cf'), imp=n('cvl-imp')/100, meta=n('cvl-meta');
+  if(!cvlProds.length){ s('cvl-result').innerHTML=`<div class="alert alert-info">Adicione produtos para calcular.</div>`; return; }
+
+  const totalMix = cvlProds.reduce((s,p)=>s+p.mix,0)||1;
+  const prodNorm = cvlProds.map(p=>({...p, mixN:p.mix/totalMix}));
+
+  // MC ponderada
+  const mcMed = prodNorm.reduce((s,p)=>{
+    const mcUnit = p.pv*(1-imp) - p.cv;
+    return s + mcUnit*p.mixN;
+  },0);
+  const pvMed = prodNorm.reduce((s,p)=>s+p.pv*p.mixN,0);
+  const mcpMed = pvMed>0?mcMed/pvMed*100:0;
+
+  const peV = mcMed>0?cf/mcMed*pvMed:0;
+  const peQ = mcMed>0?Math.ceil(cf/mcMed):0;
+  const peMetaV = mcMed>0?(cf+meta)/mcMed*pvMed:0;
+  const peMetaQ = mcMed>0?Math.ceil((cf+meta)/mcMed):0;
+
+  s('cvl-result').innerHTML = `
+    <div class="grid4">
+      ${kpiHtml('MC Pond. Unitária',fmt(mcMed),clr(mcMed))}
+      ${kpiHtml('% MC Ponderada',pct(mcpMed),mcpMed>=40?'pos':mcpMed>=20?'warn':'neg')}
+      ${kpiHtml('PE em Valor',fmt(peV),'blue')}
+      ${kpiHtml('PE c/ Meta',fmt(peMetaV),'purple',`${peMetaQ.toLocaleString('pt-BR')} un mix`)}
+    </div>
+    <div class="card mt12">
+      <div class="card-title">Análise por Produto</div>
+      <table>
+        <thead><tr><th>Produto</th><th class="td-r">Preço</th><th class="td-r">CV Unit.</th><th class="td-r">MC Unit.</th><th class="td-r">% MC</th><th class="td-r">Mix</th></tr></thead>
+        <tbody>
+          ${prodNorm.map(p=>{
+            const mc=p.pv*(1-imp)-p.cv, mcp_=p.pv>0?mc/p.pv*100:0;
+            return `<tr>
+              <td class="td-bold">${p.n}</td>
+              <td class="td-r">${fmt(p.pv)}</td>
+              <td class="td-r td-neg">(${fmt(p.cv)})</td>
+              <td class="td-r ${mc>=0?'td-pos':'td-neg'}">${fmt(mc)}</td>
+              <td class="td-r">${pct(mcp_)}</td>
+              <td class="td-r"><span class="badge badge-blue">${pct(p.mixN*100,0)}</span></td>
+            </tr>`;
+          }).join('')}
+          <tr class="tr-total"><td>Ponderado</td><td class="td-r">${fmt(pvMed)}</td><td></td><td class="td-r">${fmt(mcMed)}</td><td class="td-r">${pct(mcpMed)}</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="result-box mt12">
+      ${rrow('Ponto de Equilíbrio (em valor)',fmt(peV))}
+      ${rrow('Ponto de Equilíbrio (em qtde mista)',peQ.toLocaleString('pt-BR')+' un')}
+      ${rrow('PE com Meta de Lucro (R$'+fmt(meta)+')',fmt(peMetaV))}
+    </div>`;
+}
+function calcCVLSens() {
+  const dv = n('cvl-sens-vol')/100, dp = n('cvl-sens-pv')/100;
+  s('cvl-sens-vol-lbl').textContent = (dv>=0?'+':'')+(dv*100).toFixed(0)+'%';
+  s('cvl-sens-pv-lbl').textContent  = (dp>=0?'+':'')+(dp*100).toFixed(0)+'%';
+  const cf=n('cvl-cf'), imp=n('cvl-imp')/100;
+  if(!cvlProds.length){ s('cvl-sens-result').innerHTML=''; return; }
+  const totalMix=cvlProds.reduce((s,p)=>s+p.mix,0)||1;
+  const base = cvlProds.reduce((s,p)=>{
+    const mc=(p.pv*(1-imp)-p.cv)*(p.mix/totalMix);
+    return s+mc;
+  },0);
+  const pvMed = cvlProds.reduce((s,p)=>s+p.pv*(p.mix/totalMix),0);
+  const peQ = base>0?Math.ceil(cf/base):0;
+  const nov_pv = pvMed*(1+dp), nov_mc = nov_pv*(1-imp)-cvlProds.reduce((s,p)=>s+p.cv*(p.mix/totalMix),0);
+  const nov_vol = peQ*(1+dv);
+  const resultado = nov_mc*nov_vol - cf;
+  s('cvl-sens-result').innerHTML = `
+    <div class="result-box mt8">
+      ${rrow('Volume Simulado',Math.round(nov_vol).toLocaleString('pt-BR')+' un')}
+      ${rrow('MC por unidade (c/ novo preço)',fmt(nov_mc))}
+      ${rrow('Resultado Simulado',fmt(resultado),'',false,true)}
+    </div>`;
+}
+
+// ============================================================ DEPARTAMENTALIZAÇÃO
+let depAux=[{n:'RH',v:8000},{n:'Manutenção',v:12000}];
+let depProd=[{n:'Usinagem',v:20000},{n:'Montagem',v:15000},{n:'Pintura',v:10000}];
+function renderDepListas() {
+  s('dep-aux-lista').innerHTML = depAux.map((d,i)=>`
+    <div class="flex gap4 mt4" style="align-items:center">
+      <span style="flex:1">${d.n}</span><span>${fmt(d.v)}</span>
+      <button class="btn btn-danger btn-sm" onclick="depAux.splice(${i},1);renderDepListas();calcDep()">×</button>
+    </div>`).join('');
+  s('dep-prod-lista').innerHTML = depProd.map((d,i)=>`
+    <div class="flex gap4 mt4" style="align-items:center">
+      <span style="flex:1">${d.n}</span><span>${fmt(d.v)}</span>
+      <button class="btn btn-danger btn-sm" onclick="depProd.splice(${i},1);renderDepListas();calcDep()">×</button>
+    </div>`).join('');
+}
+function addDepAux() { const n_=v('dep-aux-n'),vl=parseFloat(s('dep-aux-v').value)||0; if(!n_||!vl) return; depAux.push({n:n_,v:vl}); s('dep-aux-n').value=''; s('dep-aux-v').value=''; renderDepListas(); calcDep(); }
+function addDepProd() { const n_=v('dep-prod-n'),vl=parseFloat(s('dep-prod-v').value)||0; if(!n_) return; depProd.push({n:n_,v:vl}); s('dep-prod-n').value=''; s('dep-prod-v').value=''; renderDepListas(); calcDep(); }
+function calcDep() {
+  if(!depAux.length||!depProd.length){ s('dep-result').innerHTML=`<div class="alert alert-info">Adicione departamentos auxiliares e produtivos.</div>`; return; }
+  const totalAux = depAux.reduce((s,d)=>s+d.v,0);
+  const parcela = depProd.length>0?totalAux/depProd.length:0;
+  const prodFinal = depProd.map(d=>({...d,recebido:parcela,total:d.v+parcela}));
+  const totalGeral = prodFinal.reduce((s,d)=>s+d.total,0);
+  s('dep-result').innerHTML = `
+    <div class="card">
+      <div class="card-title">Rateio dos Departamentos Auxiliares → Produtivos</div>
+      <div class="alert alert-info" style="margin-bottom:12px">Base: partes iguais (${fmt(parcela)} cada dep. produtivo). Para rateios customizados, ajuste os percentuais manualmente.</div>
+      <table>
+        <thead><tr><th>Depto. Produtivo</th><th class="td-r">Custo Próprio</th><th class="td-r">Recebido Aux.</th><th class="td-r">CUSTO TOTAL</th><th class="td-r">% do Total</th></tr></thead>
+        <tbody>
+          ${prodFinal.map(d=>`<tr>
+            <td class="td-bold">${d.n}</td>
+            <td class="td-r">${fmt(d.v)}</td>
+            <td class="td-r td-pos">${fmt(d.recebido)}</td>
+            <td class="td-r td-bold">${fmt(d.total)}</td>
+            <td class="td-r">${pct(totalGeral>0?d.total/totalGeral*100:0)}</td>
+          </tr>`).join('')}
+        </tbody>
+        <tfoot><tr class="tr-total"><td>TOTAL</td><td class="td-r">${fmt(depProd.reduce((s,d)=>s+d.v,0))}</td><td class="td-r">${fmt(totalAux)}</td><td class="td-r">${fmt(totalGeral)}</td><td class="td-r">100%</td></tr></tfoot>
+      </table>
+      <div class="card mt12">
+        <div class="card-title">Departamentos Auxiliares — Custos a Ratear</div>
+        <table>
+          <thead><tr><th>Departamento</th><th class="td-r">Custo</th><th class="td-r">%</th></tr></thead>
+          <tbody>${depAux.map(d=>`<tr><td>${d.n}</td><td class="td-r">${fmt(d.v)}</td><td class="td-r">${pct(totalAux>0?d.v/totalAux*100:0)}</td></tr>`).join('')}</tbody>
+          <tfoot><tr class="tr-total"><td>Total</td><td class="td-r">${fmt(totalAux)}</td><td class="td-r">100%</td></tr></tfoot>
+        </table>
+      </div>
+    </div>`;
+}
+
+// ============================================================ VALORAÇÃO DE ESTOQUE
+let estMet = 'pm';
+let estMov = [];
+function setEstMet(m, el) {
+  estMet = m;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  calcEstoque();
+}
+function addEstoque() {
+  const data = v('est-data') || new Date().toISOString().slice(0,10);
+  const tipo = v('est-tipo'), qtd=n('est-qtd'), custo=n('est-custo');
+  if(!qtd) return;
+  estMov.push({data, tipo, qtd, custo});
+  estMov.sort((a,b)=>a.data.localeCompare(b.data));
+  calcEstoque();
+}
+function clearEstoque() { estMov=[]; calcEstoque(); }
+
+function calcEstoque() {
+  if(!estMov.length) {
+    s('est-ficha').innerHTML='<div class="text-muted" style="padding:16px;text-align:center">Nenhuma movimentação lançada</div>';
+    s('est-resumo').innerHTML='';
+    return;
+  }
+  let lotes=[], saldo=0, totalQtd=0, totalCusto=0;
+  let ficha=[];
+
+  if(estMet==='pm') {
+    let qtdAc=0, custoAc=0;
+    for(const m of estMov) {
+      if(m.tipo==='E') {
+        qtdAc+=m.qtd; custoAc+=m.qtd*m.custo;
+        const cpm=qtdAc>0?custoAc/qtdAc:0;
+        ficha.push({...m, cpm, saldo:qtdAc, valSaldo:qtdAc*cpm, cmv:0});
+      } else {
+        const cpm=qtdAc>0?custoAc/qtdAc:0;
+        const saida=Math.min(m.qtd,qtdAc);
+        const cmv=saida*cpm;
+        qtdAc-=saida; custoAc-=cmv;
+        ficha.push({...m, cpm, saldo:qtdAc, valSaldo:qtdAc*cpm, cmv});
+        totalCusto+=cmv; totalQtd+=saida;
+      }
+    }
+    saldo=qtdAc;
+  } else if(estMet==='peps') {
+    lotes=[];
+    for(const m of estMov) {
+      if(m.tipo==='E') {
+        lotes.push({qtd:m.qtd,custo:m.custo});
+        const valSaldo=lotes.reduce((s,l)=>s+l.qtd*l.custo,0);
+        const qtdSaldo=lotes.reduce((s,l)=>s+l.qtd,0);
+        ficha.push({...m,cpm:qtdSaldo>0?valSaldo/qtdSaldo:0,saldo:qtdSaldo,valSaldo,cmv:0});
+      } else {
+        let restante=m.qtd, cmv=0;
+        while(restante>0&&lotes.length>0) {
+          const l=lotes[0];
+          if(l.qtd<=restante){ cmv+=l.qtd*l.custo; restante-=l.qtd; lotes.shift(); }
+          else { cmv+=restante*l.custo; l.qtd-=restante; restante=0; }
+        }
+        const valSaldo=lotes.reduce((s,l)=>s+l.qtd*l.custo,0);
+        const qtdSaldo=lotes.reduce((s,l)=>s+l.qtd,0);
+        ficha.push({...m,cpm:qtdSaldo>0?valSaldo/qtdSaldo:0,saldo:qtdSaldo,valSaldo,cmv});
+        totalCusto+=cmv; totalQtd+=m.qtd-restante;
+      }
+    }
+    saldo=lotes.reduce((s,l)=>s+l.qtd,0);
+  } else { // ueps
+    lotes=[];
+    for(const m of estMov) {
+      if(m.tipo==='E') {
+        lotes.push({qtd:m.qtd,custo:m.custo});
+        const valSaldo=lotes.reduce((s,l)=>s+l.qtd*l.custo,0);
+        const qtdSaldo=lotes.reduce((s,l)=>s+l.qtd,0);
+        ficha.push({...m,cpm:qtdSaldo>0?valSaldo/qtdSaldo:0,saldo:qtdSaldo,valSaldo,cmv:0});
+      } else {
+        let restante=m.qtd, cmv=0;
+        while(restante>0&&lotes.length>0) {
+          const l=lotes[lotes.length-1];
+          if(l.qtd<=restante){ cmv+=l.qtd*l.custo; restante-=l.qtd; lotes.pop(); }
+          else { cmv+=restante*l.custo; l.qtd-=restante; restante=0; }
+        }
+        const valSaldo=lotes.reduce((s,l)=>s+l.qtd*l.custo,0);
+        const qtdSaldo=lotes.reduce((s,l)=>s+l.qtd,0);
+        ficha.push({...m,cpm:qtdSaldo>0?valSaldo/qtdSaldo:0,saldo:qtdSaldo,valSaldo,cmv});
+        totalCusto+=cmv; totalQtd+=m.qtd-restante;
+      }
+    }
+    saldo=lotes.reduce((s,l)=>s+l.qtd,0);
+  }
+
+  const valFinal = ficha[ficha.length-1]?.valSaldo||0;
+  const metLabel = {pm:'Média Ponderada',peps:'PEPS (FIFO)',ueps:'UEPS (LIFO)'}[estMet];
+
+  s('est-resumo').innerHTML = `
+    <div class="grid2">
+      ${kpiHtml('Saldo em Estoque',saldo.toLocaleString('pt-BR')+' un','blue')}
+      ${kpiHtml('Valor do Estoque',fmt(valFinal),clr(valFinal))}
+      ${kpiHtml('CMV Total',fmt(totalCusto),'orange')}
+      ${kpiHtml('Método',metLabel,'purple')}
+    </div>`;
+
+  s('est-ficha').innerHTML = `
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th><th>Tipo</th><th class="td-r">Qtde</th><th class="td-r">Custo Un.</th>
+            <th class="td-r">CMV / Valor</th><th class="td-r">Saldo (un)</th><th class="td-r">Valor Saldo</th><th class="td-r">Custo Médio</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${ficha.map(f=>`<tr>
+            <td>${f.data}</td>
+            <td><span class="badge ${f.tipo==='E'?'badge-green':'badge-red'}">${f.tipo==='E'?'Entrada':'Saída'}</span></td>
+            <td class="td-r">${f.qtd}</td>
+            <td class="td-r">${fmt(f.custo)}</td>
+            <td class="td-r ${f.tipo==='S'?'td-neg':''}">${f.tipo==='E'?fmt(f.qtd*f.custo):'('+fmt(f.cmv)+')'}</td>
+            <td class="td-r">${f.saldo}</td>
+            <td class="td-r">${fmt(f.valSaldo)}</td>
+            <td class="td-r text-muted">${fmt(f.cpm)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ============================================================ INIT
+window.onload = () => {
+  // Data default hoje
+  s('est-data').valueAsDate = new Date();
+  calcAb();
+  calcCV();
+  renderAbcAtivs(); renderAbcProds(); calcABC();
+  renderOpListas(); calcOP();
+  renderProcDeptos(); calcProc();
+  renderCvlProds(); calcCVL();
+  renderDepListas(); calcDep();
+  calcEstoque();
+};
+</script>
+</body>
+</html>
