@@ -1613,271 +1613,373 @@ function parseBr(s){return parseFloat((s||'').replace(/\./g,'').replace(',','.')
 const MNOM=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
 // ─── EXTRAÇÃO DE DADOS — PGDAS-D OFICIAL ─────────────────────────
-// Formato testado: PGDAS-D 2018 v2.2.x (MAD VESTUÁRIO LTDA 05/2026)
+// Calibrado para PGDAS-D 2018 v2.2.x — MAD VESTUÁRIO LTDA 05/2026
 function pdfExtrairDados(texto){
-  const dados={
-    cnpj:'', razaoSocial:'', competencias:[], rbt12:0,
-    totalAnual:0, totalDAS:0, anexo:'I', erros:[]
+  const d={
+    cnpj:'', cnpjCompleto:'', razaoSocial:'', pa:'',
+    rpa:0, rbt12:0, rba:0, rbaa:0,
+    uf:'SP', municipio:'',
+    atividades:[],      // [{desc,receita,anexo,trib:{irpj,csll,cofins,pis,cpp,icms,ipi,iss,total}}]
+    histMensalInt:{},   // {"MM/AAAA": valor}
+    das:{irpj:0,csll:0,cofins:0,pis:0,cpp:0,icms:0,ipi:0,iss:0,total:0},
+    vencimento:'', erros:[], anexoPrincipal:'II',
+    histOrdenado:[], totalAnual12:0
   };
 
-  // Normaliza texto
-  const t=texto.replace(/\s+/g,' ').replace(/ /g,' ');
+  const tf=texto.replace(/[ \t]+/g,' '); // preserva \n, comprime espaços
 
-  // ── CNPJ ──────────────────────────────────────────────────────
-  const cnpjM=t.match(/CNPJ[:\s]*(\d{2}[\.\s]?\d{3}[\.\s]?\d{3}[\\/\s]?\d{4}[\-\s]?\d{2})/i);
-  if(cnpjM) dados.cnpj=cnpjM[1].replace(/\D/g,'').replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5');
+  // 1. Nome Empresarial (campo do PGDAS-D usa "Nome Empresarial", não "Razão Social")
+  const mNome=tf.match(/Nome\s+Empresarial[:\s]+([A-Z][A-Z0-9 &.,'\-]{3,80}?)(?=\s{2,}|\nCNPJ|\nData|$)/im);
+  if(mNome) d.razaoSocial=mNome[1].trim().replace(/\s+/g,' ');
 
-  // ── RAZÃO SOCIAL ──────────────────────────────────────────────
-  const razaoM=t.match(/Raz[aã]o Social[:\s]+([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÜÇ][^\d\n]{4,60}?)(?=\s{2,}|CNPJ|Período)/i);
-  if(razaoM) dados.razaoSocial=razaoM[1].trim();
+  // 2. CNPJ Básico (sem filial): "46.370.822"
+  const mCB=tf.match(/CNPJ\s+B[áa]sico[:\s]+([\d.]{9,11})/i);
+  if(mCB) d.cnpj=mCB[1].trim();
 
-  // ── PADRÕES DE RECEITA BRUTA ──────────────────────────────────
-  // Padrão 1: PGDAS-D declaração — "Receita Bruta PA: R$ X.XXX,XX" ou similar
-  // Padrão 2: "01/2024 R$ 85.000,00"
-  // Padrão 3: "Janeiro/2024 85.000,00"
-  // Padrão 4: tabela com competência e valor
+  // 3. CNPJ Estabelecimento (com filial): "46.370.822/0001-65"
+  const mCE=tf.match(/CNPJ\s+Estabelecimento[:\s]+([\d]{2}[\.\s]?[\d]{3}[\.\s]?[\d]{3}[\/][\d]{4}[\-][\d]{2})/i);
+  if(mCE) d.cnpjCompleto=mCE[1].trim();
 
-  const meses=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez',
-               'janeiro','fevereiro','março','abril','maio','junho','julho','agosto',
-               'setembro','outubro','novembro','dezembro'];
+  // 4. Período de Apuração
+  const mPA=tf.match(/Per[íi]odo\s+de\s+Apura[çc][aã]o\s*\([Pp][Aa]\)[:\s]*(\d{2}\/\d{4})/i);
+  if(mPA) d.pa=mPA[1];
 
-  const mesesNum={'jan':1,'fev':2,'mar':3,'abr':4,'mai':5,'jun':6,
-                  'jul':7,'ago':8,'set':9,'out':10,'nov':11,'dez':12,
-                  'janeiro':1,'fevereiro':2,'março':3,'abril':4,'maio':5,'junho':6,
-                  'julho':7,'agosto':8,'setembro':9,'outubro':10,'novembro':11,'dezembro':12};
+  // 5. UF e Município
+  const mUF=tf.match(/\bUF[:\s]+([A-Z]{2})\b/);
+  if(mUF) d.uf=mUF[1];
+  const mMun=tf.match(/Munic[íi]pio[:\s]+([A-ZÁÉÍÓÚ ]+?)(?=\s{2,}|\nUF|\bUF)/i);
+  if(mMun) d.municipio=mMun[1].trim();
 
-  // Padrão MM/AAAA ou M/AAAA seguido de valor monetário
-  // Ex: "01/2024 R$ 125.000,00"
-  const regMesAnoBr=/(\d{1,2})[\/\-](\d{4})\s+(?:R\$\s*)?([\d\.]+,\d{2})/g;
-  let m;
-  while((m=regMesAnoBr.exec(t))!==null){
-    const mes=parseInt(m[1]);
-    const ano=parseInt(m[2]);
-    const val=parsePdfMoeda(m[3]);
-    if(mes>=1&&mes<=12&&ano>=2018&&ano<=2030&&val>0&&val<50000000){
-      adicionarCompetencia(dados,mes,ano,val,'MM/AAAA');
+  // 6. Receitas seção 2.1 — cada linha tem 3 valores: Interno Externo Total
+  // "Receita Bruta do PA (RPA) - Competência   374.393,78   0,00   374.393,78"
+  const mRPA=tf.match(/Receita\s+Bruta\s+do\s+PA\s*\(RPA\)[^\d]+([\d.]+,\d{2})\s+([\d.]+,\d{2})\s+([\d.]+,\d{2})/i);
+  if(mRPA) d.rpa=parseBr(mRPA[3]);
+
+  // "(RBT12)   2.701.050,36   0,00   2.701.050,36"
+  const mRBT=tf.match(/\(RBT12\)\s+([\d.]+,\d{2})\s+([\d.]+,\d{2})\s+([\d.]+,\d{2})/i);
+  if(mRBT) d.rbt12=parseBr(mRBT[3]);
+  // fallback: linha longa com "doze meses"
+  if(!d.rbt12){
+    const mRBT2=tf.match(/doze\s+meses\s+anteriores[^\d]+([\d.]+,\d{2})\s+([\d.]+,\d{2})\s+([\d.]+,\d{2})/i);
+    if(mRBT2) d.rbt12=parseBr(mRBT2[3]);
+  }
+
+  // RBA: "calendário corrente (RBA)   936.944,31   0,00   936.944,31"
+  const mRBA=tf.match(/calend[aá]rio\s+corrente[^\d]+([\d.]+,\d{2})\s+([\d.]+,\d{2})\s+([\d.]+,\d{2})/i);
+  if(mRBA) d.rba=parseBr(mRBA[3]);
+
+  // RBAA
+  const mRBAA=tf.match(/calend[aá]rio\s+anterior[^\d]+([\d.]+,\d{2})\s+([\d.]+,\d{2})\s+([\d.]+,\d{2})/i);
+  if(mRBAA) d.rbaa=parseBr(mRBAA[3]);
+
+  // 7. Histórico mensal seção 2.2.1 — pares "MM/AAAA VALUE" (4 por linha)
+  const i221=texto.indexOf('2.2.1)');
+  const i222=texto.indexOf('2.2.2)');
+  const i23 =texto.indexOf('2.3)');
+  if(i221>=0){
+    const fimInt=i222>i221?i222:i23>i221?i23:i221+4000;
+    const blocoInt=texto.substring(i221,fimInt);
+    const rgPar=/(\d{2})\/(\d{4})\s+([\d.]+,\d{2})/g;
+    let m;
+    while((m=rgPar.exec(blocoInt))!==null){
+      const mes=parseInt(m[1]),ano=parseInt(m[2]),val=parseBr(m[3]);
+      if(mes>=1&&mes<=12&&ano>=2015&&ano<=2035)
+        d.histMensalInt[`${m[1]}/${ano}`]=val;
     }
   }
 
-  // Padrão: "NomeMes/AAAA R$ X" ou "NomeMes de AAAA X"
-  const regNomeMes=new RegExp(
-    '('+meses.join('|')+')[\\s\\/](?:de\\s)?(\\d{4})\\s+(?:R\\$\\s*)?(\\d[\\d\\.]*,\\d{2})','gi'
-  );
-  while((m=regNomeMes.exec(t))!==null){
-    const mes=mesesNum[m[1].toLowerCase()];
-    const ano=parseInt(m[2]);
-    const val=parsePdfMoeda(m[3]);
-    if(mes&&ano>=2018&&ano<=2030&&val>0&&val<50000000){
-      adicionarCompetencia(dados,mes,ano,val,'NomeMes');
+  // 8. Atividades — cada bloco: "Valor do Débito por Tributo para a Atividade (R$):"
+  const blocos=[];
+  const rgBloco=/Valor\s+do\s+D[eé]bito\s+por\s+Tributo\s+para\s+a\s+Atividade/gi;
+  let mb;
+  const posicoes=[];
+  while((mb=rgBloco.exec(texto))!==null) posicoes.push(mb.index);
+
+  posicoes.forEach((ini,i)=>{
+    const fim=posicoes[i+1]||Math.min(texto.length,ini+3000);
+    const bloco=texto.substring(ini,fim);
+    const bf=bloco.replace(/[ \t]+/g,' ');
+
+    // Receita Bruta Informada
+    const mRec=bf.match(/Receita\s+Bruta\s+Informada[:\s]+R?\$?\s*([\d.]+,\d{2})/i);
+    if(!mRec) return;
+    const receita=parseBr(mRec[1]);
+
+    // Descrição da atividade (texto antes de "Receita Bruta Informada")
+    const idxRec=bf.indexOf('Receita Bruta Informada');
+    const descRaw=bf.substring(0,idxRec).replace(/Valor\s+do\s+D[eé]bito[^\n]+\n?/i,'').trim();
+    const desc=descRaw.replace(/\s+/g,' ').substring(0,160);
+
+    // Anexo: detecta pelo texto
+    let anexo='I';
+    if(/anexo\s+V\b/i.test(bf)) anexo='V';
+    else if(/anexo\s+III\b/i.test(bf)) anexo='III';
+    else if(/anexo\s+IV\b/i.test(bf)) anexo='IV';
+    else if(/anexo\s+II\b/i.test(bf)) anexo='II';
+    else if(/industriali[zs]|fabricaç|IPI\b/i.test(bf)) anexo='II';
+    else if(/servi[çc]o|ISS\b/i.test(bf)) anexo='III';
+
+    // Tributos: linha após cabeçalho "IRPJ CSLL COFINS PIS/Pasep INSS/CPP ICMS IPI ISS Total"
+    const trib={irpj:0,csll:0,cofins:0,pis:0,cpp:0,icms:0,ipi:0,iss:0,total:0};
+    const mTrib=bf.match(/IRPJ\s+CSLL\s+COFINS\s+PIS[^\n]*INSS[^\n]*ICMS\s+IPI\s+ISS\s+Total\s*([\d., \n]+)/i);
+    if(mTrib){
+      const nums=(mTrib[1].match(/([\d.]+,\d{2})/g)||[]);
+      [trib.irpj,trib.csll,trib.cofins,trib.pis,trib.cpp,trib.icms,trib.ipi,trib.iss,trib.total]
+        =nums.map(parseBr);
     }
-  }
-
-  // Padrão PGDAS-D específico: "Receita Bruta do Período de Apuração" ou "Receita Bruta Total PA"
-  const regPa=/Receita Bruta(?:\s+(?:do\s+)?(?:Per[íi]odo(?:\s+de\s+Apura[çc][aã]o)?|Total\s+(?:do\s+)?PA))?[:\s]+R?\$?\s*([\d\.]+,\d{2})/gi;
-  while((m=regPa.exec(t))!==null){
-    const val=parsePdfMoeda(m[1]);
-    if(val>0&&val<50000000){
-      // Tenta associar ao período mais próximo no texto
-      const ante=t.substring(Math.max(0,m.index-200),m.index);
-      const dataM=ante.match(/(\d{1,2})[\/\-](\d{4})/g);
-      if(dataM&&dataM.length>0){
-        const ultima=dataM[dataM.length-1];
-        const partes=ultima.split(/[\/\-]/);
-        adicionarCompetencia(dados,parseInt(partes[0]),parseInt(partes[1]),val,'PA');
-      }
-    }
-  }
-
-  // Padrão RBT12 — "Receita Bruta Acumulada 12 meses: R$ X"
-  const rbt12M=t.match(/Receita Bruta(?:\s+Acumulada)?(?:\s+(?:nos\s+)?[ÚU]ltimos)?\s+12\s+[Mm]eses[:\s]+R?\$?\s*([\d\.]+,\d{2})/i);
-  if(rbt12M) dados.rbt12=parsePdfMoeda(rbt12M[1]);
-
-  // Padrão alternativo RBT12
-  const rbt12M2=t.match(/RBT12[:\s]+R?\$?\s*([\d\.]+,\d{2})/i);
-  if(rbt12M2&&!dados.rbt12) dados.rbt12=parsePdfMoeda(rbt12M2[1]);
-
-  // Padrão DAS total
-  const dasM=t.match(/(?:Valor\s+do\s+)?DAS[:\s]+R?\$?\s*([\d\.]+,\d{2})/i);
-  if(dasM) dados.totalDAS=parsePdfMoeda(dasM[1]);
-
-  // Padrão Anexo
-  if(/anexo\s+II/i.test(t)) dados.anexo='II';
-  else if(/anexo\s+V/i.test(t)) dados.anexo='V';
-  else if(/anexo\s+III/i.test(t)) dados.anexo='III';
-  else if(/anexo\s+IV/i.test(t)) dados.anexo='IV';
-  else if(/anexo\s+I\b/i.test(t)) dados.anexo='I';
-
-  // Deduplica e ordena competências
-  dados.competencias=deduplicar(dados.competencias)
-    .sort((a,b)=>a.ano!==b.ano?a.ano-b.ano:a.mes-b.mes);
-
-  // Total anual
-  dados.totalAnual=dados.competencias.reduce((s,c)=>s+c.receita,0);
-
-  // RBT12: se não extraído, usa total dos últimos 12 meses
-  if(!dados.rbt12&&dados.competencias.length>0){
-    const ult12=dados.competencias.slice(-12);
-    dados.rbt12=ult12.reduce((s,c)=>s+c.receita,0);
-  }
-
-  // Enriquecer com faixa SN
-  const fzAtual=ANEXOS[dados.anexo]?.faixas||ANEXOS['I'].faixas;
-  dados.competencias=dados.competencias.map(c=>{
-    const rbt=dados.rbt12||dados.totalAnual;
-    const fz=fzAtual.find(f=>rbt<=f.max)||fzAtual[5];
-    const ae=rbt>0?Math.max(0,(rbt*fz.aliq-fz.pd)/rbt):fz.aliq;
-    return{...c,faixa:fz.f,aliqEf:ae,das:c.receita*ae};
+    d.atividades.push({desc,receita,anexo,trib});
   });
 
-  if(dados.competencias.length===0){
-    dados.erros.push('Nenhuma receita bruta identificada automaticamente. O PDF pode ter formatação não reconhecida.');
+  // 9. DAS seção 6 — "Principal 44.267,82"
+  const i6=texto.indexOf('\n6)');
+  const sec6=(i6>=0?texto.substring(i6,i6+2000):texto.substring(texto.length-2000))
+              .replace(/[ \t]+/g,' ');
+  [['irpj',/IRPJ\s+([\d.]+,\d{2})/],['csll',/CSLL\s+([\d.]+,\d{2})/],
+   ['cofins',/COFINS\s+([\d.]+,\d{2})/],['pis',/PIS\/PASEP\s+([\d.]+,\d{2})/i],
+   ['cpp',/INSS\/CPP\s+([\d.]+,\d{2})/i],['icms',/\bICMS\s+([\d.]+,\d{2})/],
+   ['ipi',/\bIPI\s+([\d.]+,\d{2})/],['iss',/\bISS\s+([\d.]+,\d{2})/],
+   ['total',/Principal\s+([\d.]+,\d{2})/]
+  ].forEach(([k,re])=>{const m2=sec6.match(re);if(m2)d.das[k]=parseBr(m2[1]);});
+
+  const mVenc=sec6.match(/Vencimento[:\s]+(\d{2}\/\d{2}\/\d{4})/i);
+  if(mVenc) d.vencimento=mVenc[1];
+
+  // 10. Consolidação
+  if(!d.rpa&&d.atividades.length>0)
+    d.rpa=d.atividades.reduce((s,a)=>s+a.receita,0);
+
+  // Adiciona PA corrente ao histórico
+  if(d.pa&&d.rpa>0){
+    const[mm,aa]=d.pa.split('/');
+    d.histMensalInt[`${mm}/${aa}`]=d.rpa;
   }
 
-  return dados;
-}
+  // Ordena histórico e calcula faixa/alíquota
+  d.atividades.sort((a,b)=>b.receita-a.receita);
+  d.anexoPrincipal=d.atividades[0]?.anexo||'II';
+  const fzP=(ANEXOS[d.anexoPrincipal]||ANEXOS['II']).faixas;
+  const rbtRef=d.rbt12||d.rpa*12||1;
 
-function adicionarCompetencia(dados,mes,ano,receita,fonte){
-  // Evita duplicata exata
-  const existe=dados.competencias.find(c=>c.mes===mes&&c.ano===ano);
-  if(!existe) dados.competencias.push({mes,ano,receita,fonte});
-}
+  d.histOrdenado=Object.entries(d.histMensalInt)
+    .map(([k,v])=>{const[mm,aa]=k.split('/');return{mes:parseInt(mm),ano:parseInt(aa),receita:v};})
+    .sort((a,b)=>a.ano!==b.ano?a.ano-b.ano:a.mes-b.mes)
+    .map(c=>{
+      const fz=fzP.find(f=>rbtRef<=f.max)||fzP[5];
+      const ae=Math.max(0,(rbtRef*fz.aliq-fz.pd)/rbtRef);
+      return{...c,faixa:fz.f,aliqEf:ae,dasEst:c.receita*ae};
+    });
 
-function deduplicar(arr){
-  const map={};
-  arr.forEach(c=>{
-    const k=`${c.mes}-${c.ano}`;
-    if(!map[k]||c.receita>map[k].receita) map[k]=c;
-  });
-  return Object.values(map);
-}
+  d.totalAnual12=d.histOrdenado.slice(-12).reduce((s,c)=>s+c.receita,0);
 
-function parsePdfMoeda(str){
-  if(!str) return 0;
-  return parseFloat(str.replace(/\./g,'').replace(',','.'))||0;
-}
+  if(!d.rpa&&!d.histOrdenado.length)
+    d.erros.push('Nenhuma receita identificada. O PDF pode estar em formato de imagem ou com senha.');
 
-const NOMES_MESES=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  return d;
+}
 
 // ─── RENDERIZAR RESULTADO ─────────────────────────────────────────
-function pdfRenderizar(dados, textoRaw){
-  const jaTemDados=dados.competencias.length>0;
+function pdfRenderizar(d, textoRaw){
+  const temDados=d.rpa>0||d.histOrdenado.length>0||d.atividades.length>0;
 
-  if(!jaTemDados){
+  if(!temDados){
     pdfStatus('erro',
-      '⚠️ Não foi possível identificar receitas brutas automaticamente neste PDF.<br/>'+
-      '<strong>Possíveis causas:</strong> PDF com imagem escaneada (sem texto), proteção de cópia, formato diferente do PGDAS-D padrão.<br/>'+
-      'Confira o texto extraído (seção "debug" abaixo) e preencha os campos manualmente.');
+      '⚠️ Receitas não identificadas.<br/>'+
+      '<strong>Causas:</strong> PDF escaneado (imagem), protegido por senha, ou formato diferente do PGDAS-D.<br/>'+
+      'Verifique o texto extraído abaixo e preencha os campos manualmente.');
     document.getElementById('pdfReceitas').classList.add('visivel');
     return;
   }
 
+  const misto=d.atividades.length>1;
+  const dasTotal=d.das.total||d.atividades.reduce((s,a)=>s+a.trib.total,0);
+
   pdfStatus('ok',
-    `✅ PDF processado com sucesso! <strong>${dados.competencias.length} competência(s)</strong> identificada(s).`+
-    (dados.cnpj?` CNPJ: <strong>${dados.cnpj}</strong>.`:'')+
-    (dados.razaoSocial?` Empresa: <strong>${dados.razaoSocial}</strong>.`:''));
+    (d.razaoSocial?`<strong>${d.razaoSocial}</strong> &nbsp;·&nbsp; `:'')
+    +(d.cnpjCompleto?`CNPJ ${d.cnpjCompleto} &nbsp;·&nbsp; `:'')
+    +`PA <strong>${d.pa}</strong> &nbsp;·&nbsp; RBT12 <strong>${fmt(d.rbt12)}</strong>`
+    +(misto?` &nbsp;<span style="background:#fef08a;color:#713f12;padding:2px 8px;border-radius:4px;font-size:.75rem;font-weight:800">⚠️ EMPRESA MISTA — ${d.atividades.map(a=>'Anexo '+a.anexo).join(' + ')}</span>`:'')
+    +' &nbsp;✅ PDF processado com sucesso');
 
-  // Resumo box
-  const totalDAS=dados.competencias.reduce((s,c)=>s+c.das,0);
+  // ── Resumo escuro ─────────────────────────────────────────────
   document.getElementById('pdfResumoBox').innerHTML=`
-    <div style="font-size:.85rem;font-weight:700;opacity:.7;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Resumo Extraído</div>
-    ${dados.cnpj?`<div class="pr-linha"><span>CNPJ</span><span>${dados.cnpj}</span></div>`:''}
-    ${dados.razaoSocial?`<div class="pr-linha"><span>Razão Social</span><span style="max-width:200px;text-align:right;font-size:.78rem">${dados.razaoSocial}</span></div>`:''}
-    <div class="pr-linha"><span>Competências lidas</span><span>${dados.competencias.length} mês(es)</span></div>
-    <div class="pr-linha"><span>Período</span><span>${dados.competencias.length?NOMES_MESES[dados.competencias[0].mes]+'/'+dados.competencias[0].ano+' → '+NOMES_MESES[dados.competencias[dados.competencias.length-1].mes]+'/'+dados.competencias[dados.competencias.length-1].ano:'—'}</span></div>
-    <div class="pr-linha"><span>Receita Bruta Total (período)</span><span>${fmt(dados.totalAnual)}</span></div>
-    <div class="pr-linha"><span>RBT12 (acumulado 12 meses)</span><span>${fmt(dados.rbt12)}</span></div>
-    <div class="pr-linha"><span>Anexo Identificado</span><span>Anexo ${dados.anexo}</span></div>
-    <div class="pr-total pr-linha"><span>DAS Estimado (período)</span><span>${fmt(totalDAS)}</span></div>`;
+    <div style="font-size:.78rem;font-weight:700;opacity:.6;margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em">📋 Dados Extraídos do PGDAS-D</div>
+    ${d.razaoSocial?`<div class="pr-linha"><span>Empresa</span><span>${d.razaoSocial}</span></div>`:''}
+    ${d.cnpjCompleto?`<div class="pr-linha"><span>CNPJ</span><span>${d.cnpjCompleto}</span></div>`
+     :d.cnpj?`<div class="pr-linha"><span>CNPJ Básico</span><span>${d.cnpj}</span></div>`:''}
+    <div class="pr-linha"><span>Período de Apuração (PA)</span><span>${d.pa||'—'}</span></div>
+    <div class="pr-linha"><span>Município / UF</span><span>${d.municipio||'—'} / ${d.uf||'—'}</span></div>
+    <div class="pr-linha"><span>Receita do PA (RPA)</span><span>${fmt(d.rpa)}</span></div>
+    <div class="pr-linha"><span>RBT12 — 12 meses anteriores</span><span>${fmt(d.rbt12)}</span></div>
+    <div class="pr-linha"><span>RBA — ano corrente</span><span>${fmt(d.rba)}</span></div>
+    <div class="pr-linha"><span>RBAA — ano anterior</span><span>${fmt(d.rbaa)}</span></div>
+    ${d.atividades.map((a,i)=>`
+    <div class="pr-linha"><span>Atividade ${i+1} — Anexo ${a.anexo}</span><span>${fmt(a.receita)}</span></div>`).join('')}
+    ${d.vencimento?`<div class="pr-linha"><span>Vencimento DAS</span><span style="color:#fca5a5;font-weight:700">${d.vencimento}</span></div>`:''}
+    <div class="pr-total pr-linha"><span>💰 DAS Total Declarado</span><span>${fmt(dasTotal)}</span></div>`;
 
-  // Cards por mês
-  const grid=document.getElementById('pdfMesGrid');
-  grid.innerHTML=dados.competencias.map(c=>`
-    <div class="pdf-mes-card ${c.receita===Math.max(...dados.competencias.map(x=>x.receita))?'ativo':''}">
-      <div class="mes">${NOMES_MESES[c.mes]}/${c.ano}</div>
-      <div class="val">${fmt(c.receita)}</div>
-      <div style="font-size:.72rem;color:#64748b;margin-top:2px">DAS ≈ ${fmt(c.das)} · ${(c.aliqEf*100).toFixed(2)}%</div>
-    </div>`).join('');
+  // ── Atividades mistas — cards lado a lado ───────────────────
+  if(d.atividades.length>0){
+    const cores=['var(--az2)','var(--ro)','var(--vd)'];
+    const divAtiv=document.createElement('div');
+    divAtiv.innerHTML=`
+      <div style="font-size:.8rem;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.05em;margin:18px 0 10px">
+        🏭 Detalhamento por Atividade — PA ${d.pa}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px">
+        ${d.atividades.map((a,i)=>`
+        <div style="border:1.5px solid var(--bd);border-radius:10px;overflow:hidden">
+          <div style="background:${cores[i%3]};color:#fff;padding:10px 16px;font-size:.78rem;font-weight:700">
+            Atividade ${i+1} — Simples Nacional Anexo ${a.anexo}
+          </div>
+          <div style="padding:9px 16px;font-size:.75rem;color:#64748b;border-bottom:1px solid var(--bd);line-height:1.5;background:#fafafa">
+            ${a.desc||'—'}
+          </div>
+          ${[
+            ['Receita Informada',fmt(a.receita),'#1e293b','800'],
+            ['IRPJ',fmt(a.trib.irpj),'#475569','400'],
+            ['CSLL',fmt(a.trib.csll),'#475569','400'],
+            ['COFINS',fmt(a.trib.cofins),'#475569','400'],
+            ['PIS/Pasep',fmt(a.trib.pis),'#475569','400'],
+            ['INSS/CPP',fmt(a.trib.cpp),'#1d4ed8','600'],
+            ['ICMS',fmt(a.trib.icms),'#7c3aed','600'],
+            ['IPI',fmt(a.trib.ipi),'#b45309','600'],
+            ['ISS',fmt(a.trib.iss),'#059669','600'],
+            ['DAS desta atividade',fmt(a.trib.total),'#1e293b','800'],
+          ].map(([n,v,c,w])=>`
+            <div style="display:flex;justify-content:space-between;padding:6px 16px;
+              border-bottom:1px solid #f1f5f9;font-size:.82rem;color:${c};font-weight:${w}">
+              <span>${n}</span><span>${v}</span>
+            </div>`).join('')}
+        </div>`).join('')}
+      </div>`;
+    document.getElementById('pdfResumoBox').after(divAtiv);
+  }
 
-  // Tabela detalhada
-  const tbody=document.getElementById('pdfTbody');
-  tbody.innerHTML=dados.competencias.map((c,i)=>{
-    const maxR=Math.max(...dados.competencias.map(x=>x.receita));
-    const cls=c.receita===maxR?'tr-sub':'';
-    return`<tr class="${cls}">
-      <td><strong>${NOMES_MESES[c.mes]}/${c.ano}</strong></td>
-      <td>${fmt(c.receita)}</td>
-      <td>${fmt(dados.rbt12)}</td>
-      <td>${c.faixa?c.faixa+'ª':'—'}</td>
-      <td>${(c.aliqEf*100).toFixed(4).replace('.',',')}%</td>
-      <td>${fmt(c.das)}</td>
-      <td><span class="pill ${c.receita>3600000?'vm':c.receita>1800000?'lp':'sn'}">${c.receita>4800000?'⛔ Acima limite':'✅ Enquadrado'}</span></td>
-    </tr>`;
-  }).join('');
+  // ── DAS total discriminado ────────────────────────────────────
+  if(d.das.total>0){
+    const destinos={icms:d.uf||'Estado',iss:d.municipio||'Município'};
+    const divDas=document.createElement('div');
+    divDas.innerHTML=`
+      <div style="font-size:.8rem;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.05em;margin:18px 0 8px">
+        🧾 DAS — Discriminação por Tributo
+      </div>
+      <div class="tw"><table>
+        <thead><tr>
+          <th style="text-align:left">Tributo</th><th>Valor</th><th>% do DAS</th><th>Destino</th>
+        </tr></thead>
+        <tbody>
+          ${['irpj','csll','cofins','pis','cpp','icms','ipi','iss'].filter(k=>d.das[k]>0).map(k=>`
+          <tr>
+            <td><strong>${k==='cpp'?'INSS/CPP':k==='pis'?'PIS/PASEP':k.toUpperCase()}</strong></td>
+            <td>${fmt(d.das[k])}</td>
+            <td>${((d.das[k]/d.das.total)*100).toFixed(1)}%</td>
+            <td><span class="pill em">${destinos[k]||'União'}</span></td>
+          </tr>`).join('')}
+          <tr class="tr-total"><td>TOTAL DAS</td><td>${fmt(d.das.total)}</td><td>100%</td><td>—</td></tr>
+        </tbody>
+      </table></div>`;
+    // Insere após o resumo box (ou após atividades se existirem)
+    const refEl=document.getElementById('pdfResumoBox').parentNode;
+    refEl.appendChild(divDas);
+  }
+
+  // ── Cards mensais ─────────────────────────────────────────────
+  const hist=d.histOrdenado;
+  const maxR=hist.length?Math.max(...hist.map(c=>c.receita)):0;
+  const gridEl=document.getElementById('pdfMesGrid');
+  gridEl.innerHTML=hist.length
+    ?hist.map(c=>`
+      <div class="pdf-mes-card ${c.receita>0&&c.receita===maxR?'ativo':''}">
+        <div class="mes">${MNOM[c.mes]}/${c.ano}</div>
+        <div class="val">${fmt(c.receita)}</div>
+        <div style="font-size:.7rem;color:#64748b;margin-top:2px">DAS≈${fmt(c.dasEst)} · ${(c.aliqEf*100).toFixed(2)}%</div>
+        <div class="barra-bg" style="margin-top:4px">
+          <div class="barra-fill" style="width:${maxR>0?Math.round(c.receita/maxR*100):0}%;background:${c.receita===maxR?'#2563eb':'#93c5fd'}"></div>
+        </div>
+      </div>`)
+      .join('')
+    :`<div style="grid-column:1/-1;color:#94a3b8;padding:14px;text-align:center;font-size:.85rem">
+      Histórico mensal não encontrado neste extrato. PA atual: ${d.pa} → ${fmt(d.rpa)}</div>`;
+
+  // ── Tabela detalhada ──────────────────────────────────────────
+  document.getElementById('pdfTbody').innerHTML=hist.length
+    ?hist.map(c=>{
+      const destaque=c.receita===maxR?'tr-sub':'';
+      return`<tr class="${destaque}">
+        <td><strong>${MNOM[c.mes]}/${c.ano}</strong></td>
+        <td>${fmt(c.receita)}</td>
+        <td>${fmt(d.rbt12)}</td>
+        <td>${c.faixa}ª faixa</td>
+        <td>${(c.aliqEf*100).toFixed(4).replace('.',',')}%</td>
+        <td>${fmt(c.dasEst)}</td>
+        <td><span class="pill ${c.receita>3600000?'vm':c.receita>1800000?'lp':'sn'}">${c.receita>4800000?'⛔ Limite':'✅ Regular'}</span></td>
+      </tr>`;}).join('')
+    :`<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:16px">
+      Competência ${d.pa}: ${fmt(d.rpa)}</td></tr>`;
 
   document.getElementById('pdfReceitas').classList.add('visivel');
 }
 
 // ─── APLICAR NO SIMULADOR ─────────────────────────────────────────
 function pdfAplicar(){
-  if(!_pdfDados||_pdfDados.competencias.length===0){
-    alert('Nenhum dado extraído para aplicar. Verifique se o PDF foi processado com sucesso.');
-    return;
-  }
-
+  if(!_pdfDados){alert('Processe um PDF primeiro.');return;}
   const d=_pdfDados;
 
-  // Faturamento: total do período ou anualizar se < 12 meses
-  let fat=d.totalAnual;
-  if(d.competencias.length>0&&d.competencias.length<12){
-    const media=fat/d.competencias.length;
-    fat=media*12;  // anualiza
+  // Faturamento anualizado
+  let fat=0;
+  if(d.rba>0&&d.pa){
+    const[mm]=d.pa.split('/').map(Number);
+    fat=mm>0?(d.rba/mm)*12:d.rba;
+  } else if(d.histOrdenado.length>0){
+    const u12=d.histOrdenado.slice(-12);
+    fat=u12.reduce((s,c)=>s+c.receita,0);
+    if(u12.length<12) fat=fat/u12.length*12;
+  } else {
+    fat=d.rpa*12;
   }
-
-  // RBT12
   const rbt12=d.rbt12||fat;
 
-  // Preenche campos
-  const setMask=id=>{
-    const el=document.getElementById(id);
-    let val=arguments[1];
-    val=val.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
-    el.value=val;
-  };
+  // Preenche campos com máscara
+  function setV(id,val){
+    const el=document.getElementById(id); if(!el)return;
+    el.value=val.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+    el.style.transition='background .5s,border-color .5s';
+    el.style.background='#dcfce7'; el.style.borderColor='#16a34a';
+    setTimeout(()=>{el.style.background='';el.style.borderColor='';},2500);
+  }
+  setV('fat',fat);
+  setV('rbt12',rbt12);
 
-  setMask('fat',fat);
-  setMask('rbt12',rbt12);
+  // Anexo principal
+  const anx=d.anexoPrincipal||'II';
+  if(ANEXOS[anx]) document.getElementById('anexo_sn').value=anx;
+  const setorMap={I:'comercio',II:'confeccao',III:'servicos',V:'servicos_adv'};
+  document.getElementById('setor').value=setorMap[anx]||'confeccao';
 
-  // Anexo
-  if(d.anexo&&ANEXOS[d.anexo]){
-    document.getElementById('anexo_sn').value=d.anexo;
-    // Ajusta setor conforme anexo
-    if(d.anexo==='II') document.getElementById('setor').value='confeccao';
-    else if(d.anexo==='III') document.getElementById('setor').value='servicos';
-    else if(d.anexo==='V') document.getElementById('setor').value='servicos_adv';
-    else document.getElementById('setor').value='comercio';
+  // UF → alíquota ICMS
+  const ufAliq={SP:'12',MG:'18',RJ:'18',PR:'12',SC:'12',RS:'12',ES:'12',
+                BA:'18',CE:'18',PE:'18',MA:'18',PB:'18',AL:'18',RN:'18',SE:'18',PI:'18',
+                GO:'17',MT:'17',MS:'17',DF:'17',PA:'17',AM:'17',AP:'19',RO:'17',TO:'17',AC:'20'};
+  if(d.uf&&ufAliq[d.uf]) document.getElementById('uf').value=ufAliq[d.uf];
+
+  // Aviso empresa mista
+  if(d.atividades.length>1){
+    const resumo=d.atividades.map(a=>
+      `• Anexo ${a.anexo}: ${fmt(a.receita)} (${((a.receita/d.rpa)*100).toFixed(0)}%)`).join('\n');
+    setTimeout(()=>alert(
+      `⚠️ EMPRESA MISTA detectada:\n${resumo}\n\n`+
+      `O simulador usa Anexo ${anx} (maior receita) como base de cálculo.\n`+
+      `Para análise precisa das duas atividades, consulte seu contador.`),500);
   }
 
-  // Vai para aba de parâmetros
+  // Navega e calcula
   irPara('parametros',document.querySelectorAll('.tab')[1]);
-
-  // Destaca campos preenchidos
-  ['fat','rbt12'].forEach(id=>{
-    const el=document.getElementById(id);
-    el.style.transition='background .4s';
-    el.style.background='#dcfce7';
-    el.style.borderColor='#16a34a';
-    setTimeout(()=>{el.style.background='';el.style.borderColor='';},2500);
-  });
-
-  // Calcula automaticamente após pequeno delay
   setTimeout(()=>{
     calcular();
-    // Retorna ao resultado
     setTimeout(()=>irPara('resultado',document.querySelectorAll('.tab')[2]),200);
-  },300);
+  },350);
 }
 
-// ─── TOGGLE RAW ───────────────────────────────────────────────────
 function toggleTextoRaw(){
   const el=document.getElementById('pdfTextoRaw');
   const ic=document.getElementById('rawIcone');
