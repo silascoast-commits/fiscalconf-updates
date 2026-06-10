@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FiscalConf — Calculadora Financeira & Tributária</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #4f8ef7;
+    --accent2: #7c5cbf;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #8b92a5;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; min-height: 100vh; }
+
+  /* HEADER */
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .logo { font-size: 18px; font-weight: 700; color: var(--accent); letter-spacing: -0.5px; }
+  .logo span { color: var(--text); }
+  .mode-toggle { display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .mode-btn { padding: 7px 20px; cursor: pointer; border: none; background: transparent; color: var(--muted); font-size: 13px; font-weight: 600; transition: all .2s; }
+  .mode-btn.active { background: var(--accent); color: #fff; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 4px; padding: 16px 24px 0; border-bottom: 1px solid var(--border); overflow-x: auto; }
+  .tab { padding: 9px 18px; cursor: pointer; border-radius: 8px 8px 0 0; color: var(--muted); font-size: 13px; font-weight: 600; white-space: nowrap; border: 1px solid transparent; border-bottom: none; transition: all .2s; }
+  .tab.active { background: var(--surface); color: var(--accent); border-color: var(--border); margin-bottom: -1px; }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  /* CONTENT */
+  .content { padding: 24px; max-width: 1100px; margin: 0 auto; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* CARDS */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+  .card-title { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 16px; }
+
+  /* GRID */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .grid4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+  @media (max-width: 700px) { .grid2, .grid3, .grid4 { grid-template-columns: 1fr; } }
+
+  /* FORM */
+  .field { margin-bottom: 12px; }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; font-weight: 600; }
+  input, select { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 9px 12px; color: var(--text); font-size: 14px; outline: none; transition: border .2s; }
+  input:focus, select:focus { border-color: var(--accent); }
+  select option { background: var(--bg); }
+
+  /* BUTTONS */
+  .btn { padding: 10px 22px; border-radius: 7px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; transition: all .2s; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #3b7de8; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent); }
+  .btn-sm { padding: 6px 14px; font-size: 12px; }
+  .btn-danger { background: #3d1515; color: var(--red); border: 1px solid #5a1e1e; }
+
+  /* KPI CARDS */
+  .kpi { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; }
+  .kpi-label { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+  .kpi-value { font-size: 22px; font-weight: 800; margin-top: 4px; }
+  .kpi-value.pos { color: var(--green); }
+  .kpi-value.neg { color: var(--red); }
+  .kpi-value.warn { color: var(--yellow); }
+  .kpi-value.neutral { color: var(--accent); }
+  .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; }
+  th { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  td { padding: 9px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(79,142,247,.04); }
+  .td-num { text-align: right; font-variant-numeric: tabular-nums; }
+  .td-pos { color: var(--green); }
+  .td-neg { color: var(--red); }
+  .td-bold { font-weight: 700; }
+
+  /* REGIME BADGE */
+  .badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .badge-green { background: #16432a; color: var(--green); }
+  .badge-blue { background: #1a2d4f; color: var(--accent); }
+  .badge-purple { background: #2d1a4f; color: #a78bfa; }
+
+  /* PROGRESS BAR */
+  .progress-wrap { background: var(--bg); border-radius: 4px; height: 8px; overflow: hidden; margin-top: 6px; }
+  .progress-bar { height: 100%; border-radius: 4px; transition: width .4s; }
+
+  /* SEPARATOR */
+  .sep { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+  /* RESULT BOX */
+  .result-box { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-top: 16px; }
+  .result-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .result-row:last-child { border-bottom: none; }
+  .result-row.total { font-weight: 700; font-size: 15px; padding-top: 10px; }
+  .result-row .label { color: var(--muted); font-size: 13px; }
+  .result-row .value { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+  /* ALERT */
+  .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; border-left: 3px solid; }
+  .alert-info { background: #1a2d4f; border-color: var(--accent); color: #93c5fd; }
+  .alert-warn { background: #3d2a0a; border-color: var(--yellow); color: #fcd34d; }
+  .alert-success { background: #0d2d1a; border-color: var(--green); color: #86efac; }
+
+  /* SECTION TITLE */
+  .section-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .section-title::before { content: ''; display: block; width: 4px; height: 18px; background: var(--accent); border-radius: 2px; }
+
+  /* ITEMS LIST */
+  .items-list { list-style: none; }
+  .items-list li { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .items-list li:last-child { border-bottom: none; }
+
+  /* TOOLTIP */
+  .tip { display: inline-block; width: 14px; height: 14px; background: var(--border); border-radius: 50%; text-align: center; line-height: 14px; font-size: 10px; color: var(--muted); cursor: help; margin-left: 4px; }
+
+  .hidden { display: none !important; }
+  .flex { display: flex; }
+  .gap8 { gap: 8px; }
+  .mt8 { margin-top: 8px; }
+  .mt16 { margin-top: 16px; }
+  .text-right { text-align: right; }
+  .text-green { color: var(--green); }
+  .text-red { color: var(--red); }
+  .text-yellow { color: var(--yellow); }
+  .text-muted { color: var(--muted); }
+  .fw700 { font-weight: 700; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Fiscal<span>Conf</span> <span style="font-size:12px;color:var(--muted);font-weight:400;margin-left:6px;">— Calculadora Financeira & Tributária</span></div>
+  <div class="mode-toggle">
+    <button class="mode-btn active" onclick="setMode('simples')" id="btn-simples">Simples</button>
+    <button class="mode-btn" onclick="setMode('completo')" id="btn-completo">Completo</button>
+  </div>
+</header>
+
+<!-- MODO SIMPLES -->
+<div id="modo-simples">
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('s-resumo', this)">Resumo</div>
+    <div class="tab" onclick="switchTab('s-regime', this)">Regime Tributário</div>
+    <div class="tab" onclick="switchTab('s-impostos', this)">Impostos Rápidos</div>
+    <div class="tab" onclick="switchTab('s-fluxo', this)">Fluxo de Caixa</div>
+  </div>
+
+  <div class="content">
+
+    <!-- RESUMO SIMPLES -->
+    <div class="panel active" id="s-resumo">
+      <div class="section-title">Visão Geral da Empresa</div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Dados do Período</div>
+          <div class="field"><label>Faturamento Bruto (R$)</label><input type="number" id="s-faturamento" value="50000" oninput="calcSimples()"></div>
+          <div class="field"><label>Custo dos Produtos/Serviços (CMV/CSV)</label><input type="number" id="s-cmv" value="20000" oninput="calcSimples()"></div>
+          <div class="field"><label>Despesas Operacionais</label><input type="number" id="s-despesas" value="8000" oninput="calcSimples()"></div>
+          <div class="field"><label>Regime Tributário</label>
+            <select id="s-regime-sel" onchange="calcSimples()">
+              <option value="simples">Simples Nacional</option>
+              <option value="presumido">Lucro Presumido</option>
+              <option value="real">Lucro Real</option>
+              <option value="mei">MEI</option>
+            </select>
+          </div>
+          <div class="field"><label>Atividade Principal</label>
+            <select id="s-atividade" onchange="calcSimples()">
+              <option value="comercio">Comércio</option>
+              <option value="servico">Serviço</option>
+              <option value="industria">Indústria</option>
+            </select>
+          </div>
+          <button class="btn btn-primary mt16" onclick="calcSimples()">Calcular</button>
+        </div>
+        <div>
+          <div class="grid2">
+            <div class="kpi"><div class="kpi-label">Receita Bruta</div><div class="kpi-value neutral" id="kpi-receita">R$ 50.000</div></div>
+            <div class="kpi"><div class="kpi-label">Lucro Bruto</div><div class="kpi-value pos" id="kpi-lucro-bruto">R$ 30.000</div></div>
+            <div class="kpi"><div class="kpi-label">Carga Tributária</div><div class="kpi-value warn" id="kpi-tributos">R$ 0</div></div>
+            <div class="kpi"><div class="kpi-label">Lucro Líquido</div><div class="kpi-value pos" id="kpi-lucro-liq">R$ 0</div></div>
+          </div>
+          <div class="card mt8">
+            <div class="card-title">DRE Simplificada</div>
+            <div id="dre-simples"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REGIME TRIBUTÁRIO SIMPLES -->
+    <div class="panel" id="s-regime">
+      <div class="section-title">Simulador de Regime Tributário</div>
+      <div class="alert alert-info">Compare os três principais regimes e descubra qual é mais vantajoso para sua empresa.</div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Dados para Simulação</div>
+          <div class="field"><label>Faturamento Anual (R$)</label><input type="number" id="reg-fat" value="600000" oninput="calcRegime()"></div>
+          <div class="field"><label>Folha de Pagamento Anual (R$)</label><input type="number" id="reg-folha" value="120000" oninput="calcRegime()"></div>
+          <div class="field"><label>Atividade</label>
+            <select id="reg-ativ" onchange="calcRegime()">
+              <option value="comercio">Comércio (Anexo I)</option>
+              <option value="servico">Serviço (Anexo III)</option>
+              <option value="industria">Indústria (Anexo II)</option>
+            </select>
+          </div>
+          <div class="field"><label>Lucro Estimado (% da Receita)</label><input type="number" id="reg-margem" value="15" min="1" max="100" oninput="calcRegime()"></div>
+        </div>
+        <div id="regime-result"></div>
+      </div>
+    </div>
+
+    <!-- IMPOSTOS RÁPIDOS -->
+    <div class="panel" id="s-impostos">
+      <div class="section-title">Calculadoras de Impostos Rápidos</div>
+      <div class="grid2">
+        <!-- SIMPLES NACIONAL -->
+        <div class="card">
+          <div class="card-title">Simples Nacional — Alíquota Efetiva</div>
+          <div class="field"><label>Faturamento dos últimos 12 meses (R$)</label><input type="number" id="sn-fat12" value="400000" oninput="calcSN()"></div>
+          <div class="field"><label>Faturamento do mês atual (R$)</label><input type="number" id="sn-fatmes" value="35000" oninput="calcSN()"></div>
+          <div class="field"><label>Anexo</label>
+            <select id="sn-anexo" onchange="calcSN()">
+              <option value="1">Anexo I — Comércio</option>
+              <option value="2">Anexo II — Indústria</option>
+              <option value="3">Anexo III — Serviços/Prof. Liberais</option>
+              <option value="5">Anexo V — Serviços (alta lucratividade)</option>
+            </select>
+          </div>
+          <div id="sn-result"></div>
+        </div>
+        <!-- IRRF/PF -->
+        <div class="card">
+          <div class="card-title">IRRF — Pessoa Física (Tabela 2024)</div>
+          <div class="field"><label>Rendimento Bruto Mensal (R$)</label><input type="number" id="irpf-base" value="5000" oninput="calcIRPF()"></div>
+          <div class="field"><label>Número de Dependentes</label><input type="number" id="irpf-dep" value="0" min="0" oninput="calcIRPF()"></div>
+          <div class="field"><label>INSS já descontado (R$)</label><input type="number" id="irpf-inss" value="550" oninput="calcIRPF()"></div>
+          <div id="irpf-result"></div>
+        </div>
+        <!-- INSS -->
+        <div class="card">
+          <div class="card-title">INSS Empregado (Tabela 2024)</div>
+          <div class="field"><label>Salário Bruto (R$)</label><input type="number" id="inss-sal" value="3000" oninput="calcINSS()"></div>
+          <div id="inss-result"></div>
+        </div>
+        <!-- ISS -->
+        <div class="card">
+          <div class="card-title">ISS — Imposto Sobre Serviços</div>
+          <div class="field"><label>Valor do Serviço (R$)</label><input type="number" id="iss-val" value="10000" oninput="calcISS()"></div>
+          <div class="field"><label>Alíquota ISS (%)</label><input type="number" id="iss-aliq" value="5" min="2" max="5" step="0.5" oninput="calcISS()"></div>
+          <div class="field"><label>PIS (%)</label><input type="number" id="iss-pis" value="0.65" step="0.01" oninput="calcISS()"></div>
+          <div class="field"><label>COFINS (%)</label><input type="number" id="iss-cof" value="3" step="0.01" oninput="calcISS()"></div>
+          <div id="iss-result"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FLUXO DE CAIXA -->
+    <div class="panel" id="s-fluxo">
+      <div class="section-title">Fluxo de Caixa Simplificado</div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Lançar Entrada/Saída</div>
+          <div class="field"><label>Descrição</label><input type="text" id="fc-desc" placeholder="Ex: Venda de produtos"></div>
+          <div class="field"><label>Valor (R$)</label><input type="number" id="fc-val" placeholder="0.00"></div>
+          <div class="field"><label>Tipo</label>
+            <select id="fc-tipo">
+              <option value="entrada">Entrada (+)</option>
+              <option value="saida">Saída (−)</option>
+            </select>
+          </div>
+          <div class="field"><label>Categoria</label>
+            <select id="fc-cat">
+              <option>Operacional</option>
+              <option>Financeiro</option>
+              <option>Investimento</option>
+              <option>Tributário</option>
+            </select>
+          </div>
+          <div class="flex gap8 mt8">
+            <button class="btn btn-primary" onclick="addFluxo()">Adicionar</button>
+            <button class="btn btn-secondary" onclick="clearFluxo()">Limpar</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Resumo do Fluxo</div>
+          <div class="grid2">
+            <div class="kpi"><div class="kpi-label">Total Entradas</div><div class="kpi-value pos" id="fc-total-ent">R$ 0,00</div></div>
+            <div class="kpi"><div class="kpi-label">Total Saídas</div><div class="kpi-value neg" id="fc-total-sai">R$ 0,00</div></div>
+          </div>
+          <div class="result-box mt8">
+            <div class="result-row total"><span class="label">Saldo do Período</span><span class="value" id="fc-saldo">R$ 0,00</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card mt16">
+        <div class="card-title">Extrato</div>
+        <table>
+          <thead><tr><th>Descrição</th><th>Categoria</th><th>Tipo</th><th class="text-right">Valor</th></tr></thead>
+          <tbody id="fc-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /content simples -->
+</div>
+
+<!-- MODO COMPLETO -->
+<div id="modo-completo" class="hidden">
+  <div class="tabs">
+    <div class="tab active" onclick="switchTabC('c-dre', this)">DRE</div>
+    <div class="tab" onclick="switchTabC('c-custos', this)">Análise de Custos</div>
+    <div class="tab" onclick="switchTabC('c-ponto', this)">Ponto de Equilíbrio</div>
+    <div class="tab" onclick="switchTabC('c-tributos', this)">Tributos Detalhados</div>
+    <div class="tab" onclick="switchTabC('c-precif', this)">Precificação</div>
+    <div class="tab" onclick="switchTabC('c-capital', this)">Capital de Giro</div>
+    <div class="tab" onclick="switchTabC('c-deprec', this)">Depreciação</div>
+  </div>
+
+  <div class="content">
+
+    <!-- DRE COMPLETA -->
+    <div class="panel active" id="c-dre">
+      <div class="section-title">DRE — Demonstração do Resultado do Exercício</div>
+      <div class="grid2">
+        <div>
+          <div class="card">
+            <div class="card-title">Receitas</div>
+            <div class="field"><label>Receita Bruta de Vendas (R$)</label><input type="number" id="dre-rbv" value="200000" oninput="calcDRE()"></div>
+            <div class="field"><label>Devoluções e Abatimentos (R$)</label><input type="number" id="dre-dev" value="2000" oninput="calcDRE()"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Deduções da Receita Bruta</div>
+            <div class="field"><label>ICMS sobre Vendas (%)</label><input type="number" id="dre-icms-p" value="12" step="0.5" oninput="calcDRE()"></div>
+            <div class="field"><label>PIS (%)</label><input type="number" id="dre-pis-p" value="1.65" step="0.01" oninput="calcDRE()"></div>
+            <div class="field"><label>COFINS (%)</label><input type="number" id="dre-cof-p" value="7.6" step="0.01" oninput="calcDRE()"></div>
+            <div class="field"><label>ISS (%)</label><input type="number" id="dre-iss-p" value="0" step="0.5" oninput="calcDRE()"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Custos e Despesas</div>
+            <div class="field"><label>CMV / CSV (R$)</label><input type="number" id="dre-cmv" value="80000" oninput="calcDRE()"></div>
+            <div class="field"><label>Despesas com Pessoal (R$)</label><input type="number" id="dre-pessoal" value="30000" oninput="calcDRE()"></div>
+            <div class="field"><label>Despesas Administrativas (R$)</label><input type="number" id="dre-admin" value="10000" oninput="calcDRE()"></div>
+            <div class="field"><label>Despesas Comerciais (R$)</label><input type="number" id="dre-comercial" value="8000" oninput="calcDRE()"></div>
+            <div class="field"><label>Depreciação e Amortização (R$)</label><input type="number" id="dre-depre" value="3000" oninput="calcDRE()"></div>
+            <div class="field"><label>Receitas/Despesas Financeiras líq. (R$)</label><input type="number" id="dre-fin" value="-2000" oninput="calcDRE()"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Imposto de Renda e CSLL</div>
+            <div class="field"><label>Regime</label>
+              <select id="dre-regime" onchange="calcDRE()">
+                <option value="presumido">Lucro Presumido</option>
+                <option value="real">Lucro Real</option>
+              </select>
+            </div>
+            <div class="field"><label>Atividade (para presunção)</label>
+              <select id="dre-ativ" onchange="calcDRE()">
+                <option value="comercio">Comércio/Indústria (8% IRPJ / 12% CSLL)</option>
+                <option value="servico">Serviço Geral (32% IRPJ / 32% CSLL)</option>
+                <option value="servico_simples">Serviço Específico (16% IRPJ / 12% CSLL)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="card" id="dre-resultado">
+            <div class="card-title">DRE Estruturada</div>
+            <div id="dre-output"></div>
+          </div>
+          <div class="grid2 mt16">
+            <div class="kpi"><div class="kpi-label">Margem Bruta</div><div class="kpi-value neutral" id="dre-mb">0%</div></div>
+            <div class="kpi"><div class="kpi-label">EBITDA</div><div class="kpi-value neutral" id="dre-ebitda">R$ 0</div></div>
+            <div class="kpi"><div class="kpi-label">Margem EBITDA</div><div class="kpi-value neutral" id="dre-mebitda">0%</div></div>
+            <div class="kpi"><div class="kpi-label">Margem Líquida</div><div class="kpi-value neutral" id="dre-ml">0%</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANÁLISE DE CUSTOS -->
+    <div class="panel" id="c-custos">
+      <div class="section-title">Análise de Custos — Fixos, Variáveis e Margem de Contribuição</div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Custos Fixos Mensais</div>
+          <div id="cf-lista"></div>
+          <div class="flex gap8 mt8">
+            <input type="text" id="cf-nome" placeholder="Descrição" style="flex:1">
+            <input type="number" id="cf-val" placeholder="R$" style="width:120px">
+            <button class="btn btn-primary btn-sm" onclick="addCF()">+</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Custos Variáveis (% sobre receita)</div>
+          <div id="cv-lista"></div>
+          <div class="flex gap8 mt8">
+            <input type="text" id="cv-nome" placeholder="Descrição" style="flex:1">
+            <input type="number" id="cv-val" placeholder="%" style="width:80px">
+            <button class="btn btn-primary btn-sm" onclick="addCV()">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="card mt16">
+        <div class="card-title">Produto / Serviço para Análise de MC</div>
+        <div class="grid3">
+          <div class="field"><label>Preço de Venda (R$)</label><input type="number" id="mc-pv" value="100" oninput="calcMC()"></div>
+          <div class="field"><label>Custo Variável Unitário (R$)</label><input type="number" id="mc-cvu" value="45" oninput="calcMC()"></div>
+          <div class="field"><label>Volume de Vendas (unid./mês)</label><input type="number" id="mc-vol" value="500" oninput="calcMC()"></div>
+        </div>
+        <div id="mc-result"></div>
+      </div>
+    </div>
+
+    <!-- PONTO DE EQUILÍBRIO -->
+    <div class="panel" id="c-ponto">
+      <div class="section-title">Ponto de Equilíbrio (Break-Even)</div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Dados</div>
+          <div class="field"><label>Custos Fixos Totais Mensais (R$)</label><input type="number" id="pe-cf" value="25000" oninput="calcPE()"></div>
+          <div class="field"><label>Preço de Venda Unitário (R$)</label><input type="number" id="pe-pv" value="100" oninput="calcPE()"></div>
+          <div class="field"><label>Custo Variável Unitário (R$)</label><input type="number" id="pe-cvu" value="45" oninput="calcPE()"></div>
+          <div class="field"><label>Impostos sobre Venda (%)</label><input type="number" id="pe-imp" value="9" step="0.5" oninput="calcPE()"></div>
+          <div class="field"><label>Comissão sobre Venda (%)</label><input type="number" id="pe-com" value="5" step="0.5" oninput="calcPE()"></div>
+          <div class="field"><label>Produção/Venda Atual (unid./mês)</label><input type="number" id="pe-vol" value="600" oninput="calcPE()"></div>
+        </div>
+        <div id="pe-result"></div>
+      </div>
+    </div>
+
+    <!-- TRIBUTOS DETALHADOS -->
+    <div class="panel" id="c-tributos">
+      <div class="section-title">Tributos Detalhados — Lucro Presumido & Real</div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Dados da Empresa</div>
+          <div class="field"><label>Regime</label>
+            <select id="trib-regime" onchange="calcTrib()">
+              <option value="presumido">Lucro Presumido</option>
+              <option value="real">Lucro Real</option>
+            </select>
+          </div>
+          <div class="field"><label>Faturamento Trimestral (R$)</label><input type="number" id="trib-fat" value="300000" oninput="calcTrib()"></div>
+          <div class="field"><label>Atividade</label>
+            <select id="trib-ativ" onchange="calcTrib()">
+              <option value="com">Comércio/Indústria</option>
+              <option value="serv">Serviço (32%)</option>
+              <option value="serv16">Serviço específico (16%)</option>
+              <option value="fin">Financeiro (40%)</option>
+            </select>
+          </div>
+          <div class="field"><label>Lucro Contábil (apenas Lucro Real) (R$)</label><input type="number" id="trib-lucro" value="45000" oninput="calcTrib()"></div>
+          <div class="field" id="trib-folha-field"><label>Folha Mensal Bruta (R$) — para INSS Patronal</label><input type="number" id="trib-folha" value="30000" oninput="calcTrib()"></div>
+        </div>
+        <div id="trib-result"></div>
+      </div>
+      <div class="card mt16">
+        <div class="card-title">Calculadora PIS/COFINS — Regime Não-Cumulativo</div>
+        <div class="grid3">
+          <div class="field"><label>Receita do Período (R$)</label><input type="number" id="nc-receita" value="100000" oninput="calcNC()"></div>
+          <div class="field"><label>Compras com Crédito (R$)</label><input type="number" id="nc-compras" value="40000" oninput="calcNC()"></div>
+          <div class="field"><label>Aluguel / Mão de Obra Contratada (R$)</label><input type="number" id="nc-outras" value="5000" oninput="calcNC()"></div>
+        </div>
+        <div id="nc-result"></div>
+      </div>
+    </div>
+
+    <!-- PRECIFICAÇÃO -->
+    <div class="panel" id="c-precif">
+      <div class="section-title">Formação de Preço de Venda (Markup)</div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Dados do Produto/Serviço</div>
+          <div class="field"><label>Custo de Aquisição / Produção (R$)</label><input type="number" id="mk-custo" value="50" oninput="calcMarkup()"></div>
+          <div class="field"><label>Impostos sobre Venda (ICMS + PIS + COFINS) (%)</label><input type="number" id="mk-imp" value="17" step="0.5" oninput="calcMarkup()"></div>
+          <div class="field"><label>Comissão de Vendas (%)</label><input type="number" id="mk-com" value="5" step="0.5" oninput="calcMarkup()"></div>
+          <div class="field"><label>Despesas Operacionais / Overhead (%)</label><input type="number" id="mk-over" value="10" step="0.5" oninput="calcMarkup()"></div>
+          <div class="field"><label>Margem de Lucro Desejada (%)</label><input type="number" id="mk-margem" value="20" step="0.5" oninput="calcMarkup()"></div>
+          <hr class="sep">
+          <div class="field"><label>Fretes e Embalagens (R$)</label><input type="number" id="mk-frete" value="2" oninput="calcMarkup()"></div>
+        </div>
+        <div id="mk-result"></div>
+      </div>
+    </div>
+
+    <!-- CAPITAL DE GIRO -->
+    <div class="panel" id="c-capital">
+      <div class="section-title">Necessidade de Capital de Giro (NCG)</div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Prazos do Ciclo Operacional</div>
+          <div class="field"><label>Prazo Médio de Estoque (dias)</label><input type="number" id="cg-estoque" value="30" oninput="calcCG()"></div>
+          <div class="field"><label>Prazo Médio de Recebimento (dias)</label><input type="number" id="cg-pmr" value="45" oninput="calcCG()"></div>
+          <div class="field"><label>Prazo Médio de Pagamento (dias)</label><input type="number" id="cg-pmp" value="30" oninput="calcCG()"></div>
+          <hr class="sep">
+          <div class="field"><label>Custo Diário Médio (R$)</label><input type="number" id="cg-custo-dia" value="3000" oninput="calcCG()"></div>
+          <div class="field"><label>Receita Diária Média (R$)</label><input type="number" id="cg-rec-dia" value="5000" oninput="calcCG()"></div>
+        </div>
+        <div id="cg-result"></div>
+      </div>
+    </div>
+
+    <!-- DEPRECIAÇÃO -->
+    <div class="panel" id="c-deprec">
+      <div class="section-title">Cálculo de Depreciação</div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Dados do Bem</div>
+          <div class="field"><label>Valor do Bem (R$)</label><input type="number" id="dep-val" value="100000" oninput="calcDep()"></div>
+          <div class="field"><label>Valor Residual (R$)</label><input type="number" id="dep-res" value="10000" oninput="calcDep()"></div>
+          <div class="field"><label>Vida Útil (anos)</label><input type="number" id="dep-vida" value="10" min="1" oninput="calcDep()"></div>
+          <div class="field"><label>Método</label>
+            <select id="dep-met" onchange="calcDep()">
+              <option value="linear">Linear (Linha Reta)</option>
+              <option value="sd">Soma dos Dígitos</option>
+              <option value="declinio">Declínio Duplo</option>
+            </select>
+          </div>
+          <div class="field"><label>Tipo de Bem (Receita Federal)</label>
+            <select id="dep-tipo" onchange="calcDep()">
+              <option value="custom">Personalizado</option>
+              <option value="edificio">Edifícios e Construções (25 anos)</option>
+              <option value="veiculo">Veículos (5 anos)</option>
+              <option value="maquina">Máquinas e Equipamentos (10 anos)</option>
+              <option value="computador">Computadores (5 anos)</option>
+              <option value="moveis">Móveis e Utensílios (10 anos)</option>
+            </select>
+          </div>
+        </div>
+        <div id="dep-result"></div>
+      </div>
+    </div>
+
+  </div><!-- /content completo -->
+</div>
+
+<script>
+// ==================== UTILITÁRIOS ====================
+const fmt = (v, d=2) => isNaN(v) ? 'R$ 0,00' : 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits: d, maximumFractionDigits: d});
+const pct = (v, d=2) => isNaN(v) ? '0%' : Number(v).toLocaleString('pt-BR', {minimumFractionDigits: d, maximumFractionDigits: d}) + '%';
+const n = id => parseFloat(document.getElementById(id)?.value) || 0;
+const v = id => document.getElementById(id)?.value || '';
+
+function colorVal(val, el) {
+  el.className = 'kpi-value ' + (val > 0 ? 'pos' : val < 0 ? 'neg' : 'warn');
+  el.textContent = fmt(val);
+}
+
+function setMode(mode) {
+  document.getElementById('modo-simples').classList.toggle('hidden', mode !== 'simples');
+  document.getElementById('modo-completo').classList.toggle('hidden', mode !== 'completo');
+  document.getElementById('btn-simples').classList.toggle('active', mode === 'simples');
+  document.getElementById('btn-completo').classList.toggle('active', mode === 'completo');
+}
+
+function switchTab(id, el) {
+  document.querySelectorAll('#modo-simples .tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#modo-simples .panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+function switchTabC(id, el) {
+  document.querySelectorAll('#modo-completo .tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#modo-completo .panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+function dreRow(label, value, cls='', indent=false, strong=false) {
+  const iStr = indent ? 'padding-left:16px;' : '';
+  const sStr = strong ? 'font-weight:700;font-size:15px;' : '';
+  const vCls = value < 0 ? 'td-neg' : value > 0 ? 'td-pos' : '';
+  return `<div class="result-row" style="${iStr}${sStr}">
+    <span class="label ${cls}">${label}</span>
+    <span class="value ${vCls}">${fmt(value)}</span>
+  </div>`;
+}
+
+// ==================== SIMPLES ====================
+function calcSimples() {
+  const fat = n('s-faturamento');
+  const cmv = n('s-cmv');
+  const desp = n('s-despesas');
+  const regime = v('s-regime-sel');
+  const ativ = v('s-atividade');
+
+  const lbr = fat - cmv;
+  let tributos = 0;
+
+  if (regime === 'mei') {
+    tributos = ativ === 'servico' ? 60.60 : ativ === 'comercio' ? 67.60 : 72.60;
+  } else if (regime === 'simples') {
+    const aliq = fat <= 180000 ? 0.04 : fat <= 360000 ? 0.073 : fat <= 720000 ? 0.095 : fat <= 1800000 ? 0.107 : 0.143;
+    tributos = fat * aliq;
+  } else if (regime === 'presumido') {
+    const pres = ativ === 'comercio' ? 0.08 : ativ === 'servico' ? 0.32 : 0.08;
+    const bc = fat * pres;
+    const irpj = bc * 0.15 + Math.max(0, bc * 3 / 3 - 20000) * 0.10;
+    const csll = fat * (ativ === 'comercio' ? 0.12 : 0.32) * 0.09;
+    const pis = fat * 0.0065;
+    const cofins = fat * 0.03;
+    tributos = irpj + csll + pis + cofins;
+  } else if (regime === 'real') {
+    const pis = fat * 0.0165;
+    const cofins = fat * 0.076;
+    const lucro = lbr - desp;
+    const irpj = Math.max(0, lucro) * 0.15 + Math.max(0, lucro - 20000) * 0.10;
+    const csll = Math.max(0, lucro) * 0.09;
+    tributos = pis + cofins + irpj + csll;
+  }
+
+  const llq = lbr - desp - tributos;
+
+  document.getElementById('kpi-receita').textContent = fmt(fat);
+  colorVal(lbr, document.getElementById('kpi-lucro-bruto'));
+  document.getElementById('kpi-tributos').textContent = fmt(tributos);
+  colorVal(llq, document.getElementById('kpi-lucro-liq'));
+
+  const dre = document.getElementById('dre-simples');
+  dre.innerHTML = `
+    ${dreRow('(+) Receita Bruta', fat)}
+    ${dreRow('(−) CMV / CSV', -cmv, 'text-muted', true)}
+    ${dreRow('(=) Lucro Bruto', lbr, '', false, true)}
+    ${dreRow('(−) Despesas Operacionais', -desp, 'text-muted', true)}
+    ${dreRow('(−) Tributos Estimados', -tributos, 'text-muted', true)}
+    ${dreRow('(=) Lucro Líquido', llq, '', false, true)}
+  `;
+}
+
+// ==================== REGIME ====================
+const SIMPLES_TAB = {
+  comercio: [{ate:180000,aliq:0.04,ded:0},{ate:360000,aliq:0.073,ded:5940},{ate:720000,aliq:0.095,ded:13860},{ate:1800000,aliq:0.107,ded:22500},{ate:3600000,aliq:0.143,ded:87300},{ate:4800000,aliq:0.19,ded:378000}],
+  servico:  [{ate:180000,aliq:0.06,ded:0},{ate:360000,aliq:0.112,ded:9360},{ate:720000,aliq:0.135,ded:17640},{ate:1800000,aliq:0.16,ded:35640},{ate:3600000,aliq:0.21,ded:125640},{ate:4800000,aliq:0.33,ded:648000}],
+  industria:[{ate:180000,aliq:0.045,ded:0},{ate:360000,aliq:0.078,ded:4500},{ate:720000,aliq:0.1,ded:9900},{ate:1800000,aliq:0.112,ded:17640},{ate:3600000,aliq:0.147,ded:85500},{ate:4800000,aliq:0.3,ded:720000}],
+};
+
+function calcAliqEfetivaSN(fat12, ativ) {
+  const tab = SIMPLES_TAB[ativ] || SIMPLES_TAB.comercio;
+  for (const fx of tab) if (fat12 <= fx.ate) return (fat12 * fx.aliq - fx.ded) / fat12;
+  return 0.33;
+}
+
+function calcRegime() {
+  const fat = n('reg-fat');
+  const folha = n('reg-folha');
+  const ativ = v('reg-ativ');
+  const margem = n('reg-margem') / 100;
+  const lucro = fat * margem;
+  const atv = ativ === 'comercio.Anexo I' ? 'comercio' : ativ === 'servico.Anexo III' ? 'servico' : ativ === 'industria.Anexo II' ? 'industria' : ativ.split(' ')[0].toLowerCase();
+  const atNorm = atv.includes('serv') ? 'servico' : atv.includes('ind') ? 'industria' : 'comercio';
+
+  // Simples Nacional
+  const aliqEf = calcAliqEfetivaSN(fat, atNorm);
+  const sn = fat * aliqEf;
+
+  // Lucro Presumido
+  const presIR = atNorm === 'servico' ? 0.32 : 0.08;
+  const presCSLL = atNorm === 'servico' ? 0.32 : 0.12;
+  const irpj_p = fat * presIR * 0.15 + Math.max(0, fat * presIR - 60000) * 0.10;
+  const csll_p = fat * presCSLL * 0.09;
+  const pis_p = fat * 0.0065;
+  const cof_p = fat * 0.03;
+  const inss_p = folha * 0.20 + folha * 0.029 + folha * 0.02;
+  const presumido = irpj_p + csll_p + pis_p + cof_p + inss_p;
+
+  // Lucro Real
+  const pis_r = fat * 0.0165;
+  const cof_r = fat * 0.076;
+  const irpj_r = Math.max(0, lucro) * 0.15 + Math.max(0, lucro - 60000) * 0.10;
+  const csll_r = Math.max(0, lucro) * 0.09;
+  const inss_r = folha * 0.20 + folha * 0.029 + folha * 0.02;
+  const real = pis_r + cof_r + irpj_r + csll_r + inss_r;
+
+  const melhor = Math.min(sn, presumido, real);
+  const badge = (v, label) => `<span class="badge ${v === melhor ? 'badge-green' : 'badge-blue'}">${v === melhor ? '★ Mais vantajoso' : label}</span>`;
+
+  document.getElementById('regime-result').innerHTML = `
+    <div class="card">
+      <div class="card-title">Comparativo de Regimes — Carga Tributária Anual</div>
+      <table>
+        <thead><tr><th>Regime</th><th class="text-right">Carga Tributária</th><th class="text-right">% da Receita</th><th>Indicação</th></tr></thead>
+        <tbody>
+          <tr><td>Simples Nacional</td><td class="td-num">${fmt(sn)}</td><td class="td-num">${pct(sn/fat*100)}</td><td>${badge(sn,'SN')}</td></tr>
+          <tr><td>Lucro Presumido</td><td class="td-num">${fmt(presumido)}</td><td class="td-num">${pct(presumido/fat*100)}</td><td>${badge(presumido,'LP')}</td></tr>
+          <tr><td>Lucro Real</td><td class="td-num">${fmt(real)}</td><td class="td-num">${pct(real/fat*100)}</td><td>${badge(real,'LR')}</td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-warn mt16">Simulação estimada. Contrate um contador para decisão definitiva sobre o regime.</div>
+    </div>`;
+}
+
+// ==================== SIMPLES NACIONAL ====================
+function calcSN() {
+  const fat12 = n('sn-fat12');
+  const fatmes = n('sn-fatmes');
+  const anexo = v('sn-anexo');
+  const atNorm = anexo === '1' ? 'comercio' : anexo === '2' ? 'industria' : 'servico';
+  const aliqEf = calcAliqEfetivaSN(fat12, atNorm);
+  const tributo = fatmes * aliqEf;
+  const cor = aliqEf < 0.06 ? 'text-green' : aliqEf < 0.12 ? 'text-yellow' : 'text-red';
+  document.getElementById('sn-result').innerHTML = `
+    <div class="result-box mt8">
+      <div class="result-row"><span class="label">Faturamento 12 meses</span><span class="value">${fmt(fat12)}</span></div>
+      <div class="result-row"><span class="label">Alíquota Efetiva</span><span class="value ${cor}">${pct(aliqEf*100)}</span></div>
+      <div class="result-row"><span class="label">DAS do Mês</span><span class="value">${fmt(tributo)}</span></div>
+      <div class="result-row total"><span class="label">Custo Tributário s/ Receita</span><span class="value ${cor}">${pct(tributo/fatmes*100)}</span></div>
+    </div>`;
+}
+
+// ==================== IRPF ====================
+const IRPF = [
+  {ate:2259.20, aliq:0, ded:0},
+  {ate:2826.65, aliq:0.075, ded:169.44},
+  {ate:3751.05, aliq:0.15, ded:381.44},
+  {ate:4664.68, aliq:0.225, ded:662.77},
+  {ate:Infinity,aliq:0.275, ded:896.00},
+];
+function calcIRPF() {
+  const bruto = n('irpf-base');
+  const dep = n('irpf-dep');
+  const inss = n('irpf-inss');
+  const dedDep = dep * 189.59;
+  const base = Math.max(0, bruto - inss - dedDep);
+  const fx = IRPF.find(f => base <= f.ate);
+  const ir = Math.max(0, base * fx.aliq - fx.ded);
+  const liq = bruto - inss - ir;
+  document.getElementById('irpf-result').innerHTML = `
+    <div class="result-box mt8">
+      <div class="result-row"><span class="label">Base de Cálculo</span><span class="value">${fmt(base)}</span></div>
+      <div class="result-row"><span class="label">Alíquota</span><span class="value">${pct(fx.aliq*100,0)}</span></div>
+      <div class="result-row"><span class="label">IRRF</span><span class="value text-red">${fmt(ir)}</span></div>
+      <div class="result-row"><span class="label">INSS</span><span class="value text-red">${fmt(inss)}</span></div>
+      <div class="result-row total"><span class="label">Salário Líquido</span><span class="value text-green">${fmt(liq)}</span></div>
+    </div>`;
+}
+
+// ==================== INSS ====================
+const INSS_FAX = [
+  {ate:1412.00, aliq:0.075},
+  {ate:2666.68, aliq:0.09},
+  {ate:4000.03, aliq:0.12},
+  {ate:7786.02, aliq:0.14},
+];
+function calcINSS() {
+  const sal = n('inss-sal');
+  let inss = 0;
+  let prev = 0;
+  for (const f of INSS_FAX) {
+    if (sal > f.ate) { inss += (f.ate - prev) * f.aliq; prev = f.ate; }
+    else { inss += (sal - prev) * f.aliq; break; }
+  }
+  const aliqEf = inss / sal * 100;
+  document.getElementById('inss-result').innerHTML = `
+    <div class="result-box mt8">
+      <div class="result-row"><span class="label">Salário Bruto</span><span class="value">${fmt(sal)}</span></div>
+      <div class="result-row"><span class="label">INSS (tabela progressiva)</span><span class="value text-red">${fmt(inss)}</span></div>
+      <div class="result-row"><span class="label">Alíquota Efetiva</span><span class="value">${pct(aliqEf)}</span></div>
+      <div class="result-row total"><span class="label">Salário Líquido</span><span class="value text-green">${fmt(sal - inss)}</span></div>
+    </div>`;
+}
+
+// ==================== ISS ====================
+function calcISS() {
+  const val = n('iss-val');
+  const iss = val * n('iss-aliq') / 100;
+  const pis = val * n('iss-pis') / 100;
+  const cof = val * n('iss-cof') / 100;
+  const total = iss + pis + cof;
+  document.getElementById('iss-result').innerHTML = `
+    <div class="result-box mt8">
+      <div class="result-row"><span class="label">ISS (${pct(n('iss-aliq'),2)})</span><span class="value">${fmt(iss)}</span></div>
+      <div class="result-row"><span class="label">PIS (${pct(n('iss-pis'),2)})</span><span class="value">${fmt(pis)}</span></div>
+      <div class="result-row"><span class="label">COFINS (${pct(n('iss-cof'),2)})</span><span class="value">${fmt(cof)}</span></div>
+      <div class="result-row total"><span class="label">Total de Impostos</span><span class="value text-red">${fmt(total)}</span></div>
+      <div class="result-row"><span class="label">Líquido Recebido</span><span class="value text-green">${fmt(val - total)}</span></div>
+    </div>`;
+}
+
+// ==================== FLUXO DE CAIXA ====================
+let fluxoItems = [];
+function addFluxo() {
+  const desc = document.getElementById('fc-desc').value;
+  const val = parseFloat(document.getElementById('fc-val').value) || 0;
+  const tipo = v('fc-tipo');
+  const cat = v('fc-cat');
+  if (!desc || !val) return;
+  fluxoItems.push({desc, val, tipo, cat});
+  document.getElementById('fc-desc').value = '';
+  document.getElementById('fc-val').value = '';
+  renderFluxo();
+}
+function removeFluxo(i) { fluxoItems.splice(i, 1); renderFluxo(); }
+function clearFluxo() { fluxoItems = []; renderFluxo(); }
+function renderFluxo() {
+  const ent = fluxoItems.filter(f => f.tipo === 'entrada').reduce((s,f) => s + f.val, 0);
+  const sai = fluxoItems.filter(f => f.tipo === 'saida').reduce((s,f) => s + f.val, 0);
+  const saldo = ent - sai;
+  document.getElementById('fc-total-ent').textContent = fmt(ent);
+  document.getElementById('fc-total-sai').textContent = fmt(sai);
+  const sEl = document.getElementById('fc-saldo');
+  sEl.textContent = fmt(saldo);
+  sEl.className = 'value ' + (saldo >= 0 ? 'text-green' : 'text-red');
+  const tbody = document.getElementById('fc-tbody');
+  if (!fluxoItems.length) { tbody.innerHTML = '<tr><td colspan="4" class="text-muted" style="padding:16px;text-align:center">Nenhum lançamento</td></tr>'; return; }
+  tbody.innerHTML = fluxoItems.map((f,i) => `
+    <tr>
+      <td>${f.desc}</td>
+      <td><span class="badge badge-blue">${f.cat}</span></td>
+      <td class="${f.tipo === 'entrada' ? 'td-pos' : 'td-neg'}">${f.tipo === 'entrada' ? 'Entrada' : 'Saída'}</td>
+      <td class="td-num ${f.tipo === 'entrada' ? 'td-pos' : 'td-neg'}">${f.tipo === 'saida' ? '−' : '+'}${fmt(f.val)}</td>
+    </tr>`).join('');
+}
+
+// ==================== DRE COMPLETA ====================
+function calcDRE() {
+  const rbv = n('dre-rbv');
+  const dev = n('dre-dev');
+  const rlb = rbv - dev;
+  const icms = rlb * n('dre-icms-p') / 100;
+  const pis = rlb * n('dre-pis-p') / 100;
+  const cof = rlb * n('dre-cof-p') / 100;
+  const iss = rlb * n('dre-iss-p') / 100;
+  const deducoes = icms + pis + cof + iss;
+  const rl = rlb - deducoes;
+  const cmv = n('dre-cmv');
+  const lb = rl - cmv;
+  const pessoal = n('dre-pessoal');
+  const admin = n('dre-admin');
+  const comercial = n('dre-comercial');
+  const depre = n('dre-depre');
+  const totalDesp = pessoal + admin + comercial + depre;
+  const ebit = lb - totalDesp;
+  const fin = n('dre-fin');
+  const lair = ebit + fin;
+  const ebitda = ebit + depre;
+
+  const regime = v('dre-regime');
+  const ativ = v('dre-ativ');
+  let irpj = 0, csll = 0;
+  if (regime === 'presumido') {
+    const pres = ativ === 'comercio' ? 0.08 : ativ === 'servico_simples' ? 0.16 : 0.32;
+    const presC = ativ === 'comercio' ? 0.12 : 0.32;
+    const bcIR = rbv * pres;
+    irpj = bcIR * 0.15 + Math.max(0, bcIR - 20000) * 0.10;
+    csll = rbv * presC * 0.09;
+  } else {
+    irpj = Math.max(0, lair) * 0.15 + Math.max(0, lair - 20000) * 0.10;
+    csll = Math.max(0, lair) * 0.09;
+  }
+  const ll = lair - irpj - csll;
+
+  document.getElementById('dre-output').innerHTML = `
+    <div class="result-row"><span class="label">(+) Receita Bruta de Vendas</span><span class="value">${fmt(rbv)}</span></div>
+    <div class="result-row"><span class="label" style="padding-left:12px;color:var(--muted)">(−) Devoluções/Abatimentos</span><span class="value td-neg">(${fmt(dev)})</span></div>
+    <div class="result-row"><span class="label" style="padding-left:12px;color:var(--muted)">(−) Impostos sobre Receita</span><span class="value td-neg">(${fmt(deducoes)})</span></div>
+    <div class="result-row" style="font-weight:700"><span class="label">(=) Receita Líquida</span><span class="value">${fmt(rl)}</span></div>
+    <div class="result-row"><span class="label" style="padding-left:12px;color:var(--muted)">(−) CMV / CSV</span><span class="value td-neg">(${fmt(cmv)})</span></div>
+    <div class="result-row" style="font-weight:700"><span class="label">(=) Lucro Bruto</span><span class="value ${lb>=0?'td-pos':'td-neg'}">${fmt(lb)}</span></div>
+    <div class="result-row"><span class="label" style="padding-left:12px;color:var(--muted)">(−) Desp. Pessoal</span><span class="value td-neg">(${fmt(pessoal)})</span></div>
+    <div class="result-row"><span class="label" style="padding-left:12px;color:var(--muted)">(−) Desp. Administrativas</span><span class="value td-neg">(${fmt(admin)})</span></div>
+    <div class="result-row"><span class="label" style="padding-left:12px;color:var(--muted)">(−) Desp. Comerciais</span><span class="value td-neg">(${fmt(comercial)})</span></div>
+    <div class="result-row"><span class="label" style="padding-left:12px;color:var(--muted)">(−) Depreciação/Amortização</span><span class="value td-neg">(${fmt(depre)})</span></div>
+    <div class="result-row" style="font-weight:700"><span class="label">(=) EBIT / Resultado Operacional</span><span class="value ${ebit>=0?'td-pos':'td-neg'}">${fmt(ebit)}</span></div>
+    <div class="result-row"><span class="label" style="padding-left:12px;color:var(--muted)">(±) Resultado Financeiro</span><span class="value ${fin>=0?'td-pos':'td-neg'}">${fmt(fin)}</span></div>
+    <div class="result-row" style="font-weight:700"><span class="label">(=) LAIR</span><span class="value ${lair>=0?'td-pos':'td-neg'}">${fmt(lair)}</span></div>
+    <div class="result-row"><span class="label" style="padding-left:12px;color:var(--muted)">(−) IRPJ</span><span class="value td-neg">(${fmt(irpj)})</span></div>
+    <div class="result-row"><span class="label" style="padding-left:12px;color:var(--muted)">(−) CSLL</span><span class="value td-neg">(${fmt(csll)})</span></div>
+    <div class="result-row" style="font-weight:800;font-size:15px;padding-top:8px"><span class="label">(=) Lucro Líquido</span><span class="value ${ll>=0?'td-pos':'td-neg'}">${fmt(ll)}</span></div>`;
+
+  const mb = rl > 0 ? lb / rl * 100 : 0;
+  const ml = rl > 0 ? ll / rl * 100 : 0;
+  const mebitda = rl > 0 ? ebitda / rl * 100 : 0;
+  document.getElementById('dre-mb').textContent = pct(mb);
+  document.getElementById('dre-mb').className = 'kpi-value ' + (mb > 30 ? 'pos' : mb > 10 ? 'warn' : 'neg');
+  document.getElementById('dre-ebitda').textContent = fmt(ebitda);
+  document.getElementById('dre-ebitda').className = 'kpi-value ' + (ebitda > 0 ? 'pos' : 'neg');
+  document.getElementById('dre-mebitda').textContent = pct(mebitda);
+  document.getElementById('dre-mebitda').className = 'kpi-value ' + (mebitda > 10 ? 'pos' : mebitda > 0 ? 'warn' : 'neg');
+  document.getElementById('dre-ml').textContent = pct(ml);
+  document.getElementById('dre-ml').className = 'kpi-value ' + (ml > 10 ? 'pos' : ml > 0 ? 'warn' : 'neg');
+}
+
+// ==================== CUSTOS + MC ====================
+let cfItens = [{nome:'Aluguel', val:3000},{nome:'Salários Fixos', val:15000},{nome:'Energia', val:1200}];
+let cvItens = [{nome:'ICMS/PIS/COFINS', val:12},{nome:'Comissão Vendas', val:5},{nome:'Frete', val:2}];
+
+function renderCF() {
+  document.getElementById('cf-lista').innerHTML = cfItens.map((i,idx) =>
+    `<div class="flex gap8" style="margin-bottom:6px;align-items:center">
+      <span style="flex:1">${i.nome}</span><span>${fmt(i.val)}</span>
+      <button class="btn btn-danger btn-sm" onclick="cfItens.splice(${idx},1);renderCF();calcMC()">×</button>
+    </div>`).join('') || '<div class="text-muted" style="font-size:12px">Nenhum custo fixo</div>';
+}
+function renderCV() {
+  document.getElementById('cv-lista').innerHTML = cvItens.map((i,idx) =>
+    `<div class="flex gap8" style="margin-bottom:6px;align-items:center">
+      <span style="flex:1">${i.nome}</span><span>${pct(i.val,1)}</span>
+      <button class="btn btn-danger btn-sm" onclick="cvItens.splice(${idx},1);renderCV();calcMC()">×</button>
+    </div>`).join('') || '<div class="text-muted" style="font-size:12px">Nenhum custo variável</div>';
+}
+function addCF() {
+  const nome = document.getElementById('cf-nome').value;
+  const val = parseFloat(document.getElementById('cf-val').value)||0;
+  if (!nome||!val) return;
+  cfItens.push({nome,val});
+  document.getElementById('cf-nome').value=''; document.getElementById('cf-val').value='';
+  renderCF(); calcMC();
+}
+function addCV() {
+  const nome = document.getElementById('cv-nome').value;
+  const val = parseFloat(document.getElementById('cv-val').value)||0;
+  if (!nome||!val) return;
+  cvItens.push({nome,val});
+  document.getElementById('cv-nome').value=''; document.getElementById('cv-val').value='';
+  renderCV(); calcMC();
+}
+function calcMC() {
+  const pv = n('mc-pv');
+  const cvu = n('mc-cvu');
+  const vol = n('mc-vol');
+  const totalCVp = cvItens.reduce((s,i) => s + i.val, 0);
+  const cvTotal = cvu + pv * totalCVp / 100;
+  const mc = pv - cvTotal;
+  const mcp = pv > 0 ? mc / pv * 100 : 0;
+  const totalCF = cfItens.reduce((s,i) => s + i.val, 0);
+  const mcTotal = mc * vol;
+  const resultado = mcTotal - totalCF;
+
+  document.getElementById('mc-result').innerHTML = `
+    <div class="grid4 mt16">
+      <div class="kpi"><div class="kpi-label">MC Unitária</div><div class="kpi-value ${mc>=0?'pos':'neg'}">${fmt(mc)}</div></div>
+      <div class="kpi"><div class="kpi-label">% MC</div><div class="kpi-value ${mcp>=30?'pos':mcp>=15?'warn':'neg'}">${pct(mcp)}</div></div>
+      <div class="kpi"><div class="kpi-label">MC Total</div><div class="kpi-value ${mcTotal>=0?'pos':'neg'}">${fmt(mcTotal)}</div></div>
+      <div class="kpi"><div class="kpi-label">Resultado Final</div><div class="kpi-value ${resultado>=0?'pos':'neg'}">${fmt(resultado)}</div></div>
+    </div>
+    <div class="result-box mt8">
+      <div class="result-row"><span class="label">Preço de Venda</span><span class="value">${fmt(pv)}</span></div>
+      <div class="result-row"><span class="label">Custo Variável Unitário (produção)</span><span class="value td-neg">(${fmt(cvu)})</span></div>
+      <div class="result-row"><span class="label">CV % (impostos, comissão, etc.) — ${pct(totalCVp,1)}</span><span class="value td-neg">(${fmt(pv*totalCVp/100)})</span></div>
+      <div class="result-row" style="font-weight:700"><span class="label">Margem de Contribuição Unitária</span><span class="value ${mc>=0?'td-pos':'td-neg'}">${fmt(mc)}</span></div>
+      <div class="result-row"><span class="label">Volume × ${vol} un.</span><span class="value">${fmt(mcTotal)}</span></div>
+      <div class="result-row"><span class="label">Custos Fixos Totais</span><span class="value td-neg">(${fmt(totalCF)})</span></div>
+      <div class="result-row total"><span class="label">Resultado do Período</span><span class="value ${resultado>=0?'td-pos':'td-neg'}">${fmt(resultado)}</span></div>
+    </div>`;
+}
+
+// ==================== PONTO DE EQUILÍBRIO ====================
+function calcPE() {
+  const cf = n('pe-cf');
+  const pv = n('pe-pv');
+  const cvu = n('pe-cvu');
+  const imp = n('pe-imp') / 100;
+  const com = n('pe-com') / 100;
+  const vol = n('pe-vol');
+  const cvTotal = cvu + pv * (imp + com);
+  const mc = pv - cvTotal;
+  if (mc <= 0) { document.getElementById('pe-result').innerHTML = `<div class="alert alert-warn">Margem de contribuição negativa — impossível calcular ponto de equilíbrio.</div>`; return; }
+  const mcp = mc / pv;
+  const peQ = Math.ceil(cf / mc);
+  const peV = cf / mcp;
+  const peFinQ = Math.ceil(cf * 1.0 / mc); // contábil = operacional simplificado
+  const folga = vol - peQ;
+  const ms = vol > 0 ? folga / vol * 100 : 0;
+  const lucroAtual = mc * vol - cf;
+  const cor = ms > 20 ? 'pos' : ms > 5 ? 'warn' : 'neg';
+
+  document.getElementById('pe-result').innerHTML = `
+    <div class="card">
+      <div class="card-title">Resultado do Ponto de Equilíbrio</div>
+      <div class="grid2">
+        <div class="kpi"><div class="kpi-label">PE em Qtde (un.)</div><div class="kpi-value neutral">${peQ.toLocaleString('pt-BR')}</div></div>
+        <div class="kpi"><div class="kpi-label">PE em Valor</div><div class="kpi-value neutral">${fmt(peV)}</div></div>
+        <div class="kpi"><div class="kpi-label">Margem de Segurança</div><div class="kpi-value ${cor}">${pct(ms)}</div></div>
+        <div class="kpi"><div class="kpi-label">Lucro com Vol. Atual</div><div class="kpi-value ${lucroAtual>=0?'pos':'neg'}">${fmt(lucroAtual)}</div></div>
+      </div>
+      <div class="result-box mt16">
+        <div class="result-row"><span class="label">Margem de Contribuição Unit.</span><span class="value">${fmt(mc)} (${pct(mcp*100)})</span></div>
+        <div class="result-row"><span class="label">Volume Atual</span><span class="value">${vol.toLocaleString('pt-BR')} un.</span></div>
+        <div class="result-row"><span class="label">PE em Qtde</span><span class="value">${peQ.toLocaleString('pt-BR')} un.</span></div>
+        <div class="result-row"><span class="label">Folga acima do PE</span><span class="value ${folga>=0?'td-pos':'td-neg'}">${folga.toLocaleString('pt-BR')} un.</span></div>
+        <div class="result-row total"><span class="label">Margem de Segurança</span><span class="value ${cor}">${pct(ms)}</span></div>
+      </div>
+      <div class="alert ${ms>20?'alert-success':ms>5?'alert-warn':'alert-info'} mt8">
+        ${ms>20?'Empresa com boa margem de segurança acima do ponto de equilíbrio.':ms>5?'Atenção: margem de segurança estreita. Monitore o volume de vendas.':'Alerta: volume atual próximo ou abaixo do ponto de equilíbrio.'}
+      </div>
+    </div>`;
+}
+
+// ==================== TRIBUTOS DETALHADOS ====================
+function calcTrib() {
+  const regime = v('trib-regime');
+  const fat = n('trib-fat');
+  const ativ = v('trib-ativ');
+  const lucro = n('trib-lucro');
+  const folhaMes = n('trib-folha');
+  const folha = folhaMes * 3;
+
+  const presMap = {com:{ir:0.08,cs:0.12}, serv:{ir:0.32,cs:0.32}, serv16:{ir:0.16,cs:0.32}, fin:{ir:0.40,cs:0.32}};
+  const pm = presMap[ativ] || presMap.com;
+
+  let irpj=0,csll=0,pis=0,cof=0;
+  if (regime === 'presumido') {
+    const bcIR = fat * pm.ir;
+    const bcCS = fat * pm.cs;
+    irpj = bcIR * 0.15 + Math.max(0, bcIR - 60000) * 0.10;
+    csll = bcCS * 0.09;
+    pis = fat * 0.0065;
+    cof = fat * 0.03;
+  } else {
+    irpj = Math.max(0, lucro) * 0.15 + Math.max(0, lucro - 60000) * 0.10;
+    csll = Math.max(0, lucro) * 0.09;
+    pis = fat * 0.0165;
+    cof = fat * 0.076;
+  }
+
+  const inssPatronal = folha * 0.20;
+  const rat = folha * 0.02;
+  const terceirosSesc = folha * 0.029;
+  const fgts = folha * 0.08;
+  const inssTotal = inssPatronal + rat + terceirosSesc + fgts;
+  const totalTrib = irpj + csll + pis + cof + inssTotal;
+
+  document.getElementById('trib-result').innerHTML = `
+    <div class="card">
+      <div class="card-title">Apuração Tributária — ${regime === 'presumido' ? 'Lucro Presumido' : 'Lucro Real'}</div>
+      <table>
+        <thead><tr><th>Tributo</th><th class="text-right">Base de Cálculo</th><th class="text-right">Valor</th></tr></thead>
+        <tbody>
+          <tr><td>IRPJ ${regime==='presumido'?`(presunção ${pct(pm.ir*100,0)})`:''}</td><td class="td-num">${regime==='presumido'?fmt(fat*pm.ir):fmt(lucro)}</td><td class="td-num td-neg">${fmt(irpj)}</td></tr>
+          <tr><td>CSLL ${regime==='presumido'?`(presunção ${pct(pm.cs*100,0)})`:''}</td><td class="td-num">${regime==='presumido'?fmt(fat*pm.cs):fmt(lucro)}</td><td class="td-num td-neg">${fmt(csll)}</td></tr>
+          <tr><td>PIS (${regime==='presumido'?'0,65%':'1,65%'})</td><td class="td-num">${fmt(fat)}</td><td class="td-num td-neg">${fmt(pis)}</td></tr>
+          <tr><td>COFINS (${regime==='presumido'?'3%':'7,6%'})</td><td class="td-num">${fmt(fat)}</td><td class="td-num td-neg">${fmt(cof)}</td></tr>
+          <tr style="border-top:1px solid var(--border)"><td colspan="3" style="padding-top:8px;font-size:11px;color:var(--muted);font-weight:700">ENCARGOS TRABALHISTAS (3 meses)</td></tr>
+          <tr><td>INSS Patronal (20%)</td><td class="td-num">${fmt(folha)}</td><td class="td-num td-neg">${fmt(inssPatronal)}</td></tr>
+          <tr><td>RAT (2%)</td><td class="td-num">${fmt(folha)}</td><td class="td-num td-neg">${fmt(rat)}</td></tr>
+          <tr><td>Terceiros SESC/SENAC (2,9%)</td><td class="td-num">${fmt(folha)}</td><td class="td-num td-neg">${fmt(terceirosSesc)}</td></tr>
+          <tr><td>FGTS (8%)</td><td class="td-num">${fmt(folha)}</td><td class="td-num td-neg">${fmt(fgts)}</td></tr>
+          <tr style="font-weight:800;font-size:14px"><td>TOTAL</td><td class="td-num">${fmt(fat)}</td><td class="td-num td-neg">${fmt(totalTrib)}</td></tr>
+          <tr><td colspan="2" style="color:var(--muted);font-size:12px">Carga % sobre faturamento</td><td class="td-num" style="color:var(--yellow)">${pct(totalTrib/fat*100)}</td></tr>
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ==================== PIS/COFINS NÃO-CUMULATIVO ====================
+function calcNC() {
+  const rec = n('nc-receita');
+  const comp = n('nc-compras');
+  const outras = n('nc-outras');
+  const pisDeb = rec * 0.0165;
+  const cofDeb = rec * 0.076;
+  const pisCred = (comp + outras) * 0.0165;
+  const cofCred = (comp + outras) * 0.076;
+  const pisLiq = Math.max(0, pisDeb - pisCred);
+  const cofLiq = Math.max(0, cofDeb - cofCred);
+  document.getElementById('nc-result').innerHTML = `
+    <div class="grid2 mt8">
+      <div class="result-box">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">PIS 1,65%</div>
+        <div class="result-row"><span class="label">Débito s/ Receita</span><span class="value td-neg">${fmt(pisDeb)}</span></div>
+        <div class="result-row"><span class="label">Crédito s/ Compras</span><span class="value td-pos">${fmt(pisCred)}</span></div>
+        <div class="result-row total"><span class="label">PIS a Recolher</span><span class="value">${fmt(pisLiq)}</span></div>
+      </div>
+      <div class="result-box">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">COFINS 7,6%</div>
+        <div class="result-row"><span class="label">Débito s/ Receita</span><span class="value td-neg">${fmt(cofDeb)}</span></div>
+        <div class="result-row"><span class="label">Crédito s/ Compras</span><span class="value td-pos">${fmt(cofCred)}</span></div>
+        <div class="result-row total"><span class="label">COFINS a Recolher</span><span class="value">${fmt(cofLiq)}</span></div>
+      </div>
+    </div>`;
+}
+
+// ==================== MARKUP ====================
+function calcMarkup() {
+  const custo = n('mk-custo');
+  const frete = n('mk-frete');
+  const imp = n('mk-imp') / 100;
+  const com = n('mk-com') / 100;
+  const over = n('mk-over') / 100;
+  const margem = n('mk-margem') / 100;
+  const totalDesc = imp + com + over + margem;
+  if (totalDesc >= 1) { document.getElementById('mk-result').innerHTML = `<div class="alert alert-warn mt8">Soma dos percentuais ≥ 100%. Revise os dados.</div>`; return; }
+  const markup = 1 / (1 - totalDesc);
+  const pv = (custo + frete) * markup;
+  const valorImp = pv * imp;
+  const valorCom = pv * com;
+  const valorOver = pv * over;
+  const lucroR = pv * margem;
+  document.getElementById('mk-result').innerHTML = `
+    <div class="card">
+      <div class="card-title">Resultado da Precificação</div>
+      <div class="kpi" style="margin-bottom:16px"><div class="kpi-label">Preço de Venda Sugerido</div><div class="kpi-value pos">${fmt(pv)}</div><div class="kpi-sub">Markup: ${markup.toFixed(4)}×</div></div>
+      <div class="result-box">
+        <div class="result-row"><span class="label">Custo + Frete</span><span class="value">${fmt(custo + frete)}</span></div>
+        <div class="result-row"><span class="label">Impostos (${pct(imp*100,1)})</span><span class="value td-neg">${fmt(valorImp)}</span></div>
+        <div class="result-row"><span class="label">Comissão (${pct(com*100,1)})</span><span class="value td-neg">${fmt(valorCom)}</span></div>
+        <div class="result-row"><span class="label">Overhead (${pct(over*100,1)})</span><span class="value td-neg">${fmt(valorOver)}</span></div>
+        <div class="result-row"><span class="label">Lucro (${pct(margem*100,1)})</span><span class="value td-pos">${fmt(lucroR)}</span></div>
+        <div class="result-row total"><span class="label">Preço de Venda</span><span class="value td-pos">${fmt(pv)}</span></div>
+      </div>
+      <div class="alert alert-info mt8">Markup divisor: 1 − (${pct(imp*100,1)} + ${pct(com*100,1)} + ${pct(over*100,1)} + ${pct(margem*100,1)}) = ${pct((1-totalDesc)*100,1)}</div>
+    </div>`;
+}
+
+// ==================== CAPITAL DE GIRO ====================
+function calcCG() {
+  const estoque = n('cg-estoque');
+  const pmr = n('cg-pmr');
+  const pmp = n('cg-pmp');
+  const custoDia = n('cg-custo-dia');
+  const recDia = n('cg-rec-dia');
+  const co = estoque + pmr; // ciclo operacional
+  const cf = co - pmp;     // ciclo financeiro
+  const ncg = cf * custoDia;
+  const cor = cf <= 0 ? 'pos' : cf <= 15 ? 'warn' : 'neg';
+
+  document.getElementById('cg-result').innerHTML = `
+    <div class="card">
+      <div class="card-title">Análise do Capital de Giro</div>
+      <div class="grid2">
+        <div class="kpi"><div class="kpi-label">Ciclo Operacional</div><div class="kpi-value neutral">${co} dias</div></div>
+        <div class="kpi"><div class="kpi-label">Ciclo Financeiro</div><div class="kpi-value ${cor}">${cf} dias</div></div>
+        <div class="kpi"><div class="kpi-label">NCG Estimada</div><div class="kpi-value ${ncg>0?'neg':'pos'}">${fmt(ncg)}</div></div>
+        <div class="kpi"><div class="kpi-label">Receita Mensal Est.</div><div class="kpi-value neutral">${fmt(recDia*30)}</div></div>
+      </div>
+      <div class="result-box mt16">
+        <div class="result-row"><span class="label">PME — Prazo Médio de Estoque</span><span class="value">${estoque} dias</span></div>
+        <div class="result-row"><span class="label">PMR — Prazo Médio de Recebimento</span><span class="value">${pmr} dias</span></div>
+        <div class="result-row"><span class="label">PMP — Prazo Médio de Pagamento</span><span class="value td-pos">${pmp} dias</span></div>
+        <div class="result-row total"><span class="label">Ciclo Financeiro (CO − PMP)</span><span class="value ${cor}">${cf} dias</span></div>
+        <div class="result-row"><span class="label">Custo por dia</span><span class="value">${fmt(custoDia)}</span></div>
+        <div class="result-row total"><span class="label">Capital de Giro Necessário</span><span class="value ${ncg>0?'td-neg':'td-pos'}">${fmt(ncg)}</span></div>
+      </div>
+      <div class="alert ${cf<=0?'alert-success':cf<=15?'alert-warn':'alert-info'} mt8">
+        ${cf<=0?'Excelente: fornecedores financiam o ciclo operacional (ciclo financeiro negativo).':cf<=15?'Ciclo financeiro curto. Bom controle do capital de giro.':'Ciclo financeiro longo. Analise a redução de estoques ou negocie prazos melhores.'}
+      </div>
+    </div>`;
+}
+
+// ==================== DEPRECIAÇÃO ====================
+const DEP_TIPOS = {edificio:25, veiculo:5, maquina:10, computador:5, moveis:10};
+function calcDep() {
+  const tipo = v('dep-tipo');
+  if (tipo !== 'custom') {
+    document.getElementById('dep-vida').value = DEP_TIPOS[tipo];
+  }
+  const val = n('dep-val');
+  const res = n('dep-res');
+  const vida = Math.max(1, n('dep-vida'));
+  const met = v('dep-met');
+  const base = val - res;
+  const taxaAnual = 1 / vida;
+
+  let tabela = [];
+  if (met === 'linear') {
+    const depAnual = base / vida;
+    let vl = val;
+    for (let a = 1; a <= Math.min(vida, 20); a++) {
+      vl -= depAnual;
+      tabela.push({ano:a, dep:depAnual, acum:base/vida*a, vl:Math.max(res,vl)});
+    }
+  } else if (met === 'sd') {
+    const soma = vida * (vida + 1) / 2;
+    let acum = 0, vl = val;
+    for (let a = 1; a <= Math.min(vida, 20); a++) {
+      const dep = base * (vida - a + 1) / soma;
+      acum += dep; vl -= dep;
+      tabela.push({ano:a, dep, acum, vl:Math.max(res,vl)});
+    }
+  } else {
+    const taxa = 2 / vida;
+    let vl = val, acum = 0;
+    for (let a = 1; a <= Math.min(vida, 20); a++) {
+      const dep = Math.min(vl - res, vl * taxa);
+      acum += dep; vl -= dep;
+      tabela.push({ano:a, dep, acum, vl:Math.max(res,vl)});
+    }
+  }
+
+  const depAnual1 = tabela[0]?.dep || 0;
+  const depMensal = depAnual1 / 12;
+  document.getElementById('dep-result').innerHTML = `
+    <div class="card">
+      <div class="card-title">Resultado da Depreciação</div>
+      <div class="grid2">
+        <div class="kpi"><div class="kpi-label">Dep. Anual (1º ano)</div><div class="kpi-value neutral">${fmt(depAnual1)}</div></div>
+        <div class="kpi"><div class="kpi-label">Dep. Mensal (1º ano)</div><div class="kpi-value neutral">${fmt(depMensal)}</div></div>
+        <div class="kpi"><div class="kpi-label">Taxa Anual (linear)</div><div class="kpi-value neutral">${pct(taxaAnual*100,2)}</div></div>
+        <div class="kpi"><div class="kpi-label">Valor Residual</div><div class="kpi-value neutral">${fmt(res)}</div></div>
+      </div>
+      <div style="margin-top:16px;overflow-x:auto">
+        <table>
+          <thead><tr><th>Ano</th><th class="text-right">Dep. do Ano</th><th class="text-right">Dep. Acumulada</th><th class="text-right">Valor Líquido</th></tr></thead>
+          <tbody>${tabela.map(r => `
+            <tr>
+              <td>${r.ano}</td>
+              <td class="td-num">${fmt(r.dep)}</td>
+              <td class="td-num">${fmt(r.acum)}</td>
+              <td class="td-num">${fmt(r.vl)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// ==================== INIT ====================
+window.onload = () => {
+  calcSimples();
+  calcRegime();
+  calcSN();
+  calcIRPF();
+  calcINSS();
+  calcISS();
+  renderFluxo();
+  calcDRE();
+  renderCF(); renderCV(); calcMC();
+  calcPE();
+  calcTrib();
+  calcNC();
+  calcMarkup();
+  calcCG();
+  calcDep();
+};
+</script>
+</body>
+</html>
