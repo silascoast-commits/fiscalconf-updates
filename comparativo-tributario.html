@@ -365,6 +365,11 @@ tr:hover{background:#eff6ff}
         <div class="hint">Alíquota paga nas compras (crédito a recuperar no LP/LR)</div>
       </div>
       <div>
+        <label class="lbl">% das Compras que Geram Crédito ICMS</label>
+        <input type="number" id="icms_cred_pct" placeholder="70" min="0" max="100" value="70"/>
+        <div class="hint">Nem toda compra gera crédito: fornecedores do SN, produtos isentos/ST, ativo fixo sem aproveitamento imediato</div>
+      </div>
+      <div>
         <label class="lbl">Margem de Lucro Real (%) — para Lucro Real</label>
         <input type="number" id="margem" placeholder="8" min="0" max="100" value="8"/>
         <div class="hint">Lucro líquido real antes de IR/CS, como % do faturamento</div>
@@ -842,7 +847,7 @@ function calcSN(fat,rbt12,anexo,prolaboreAnual,folhaAnual,rat,numSocios){
 }
 
 // ─── CÁLCULO LP ───────────────────────────────────────────────────
-function calcLP(fat,uf,compras,icmsEntAliq,prolaboreAnual,folhaAnual,rat,setor,iss_pct,numSocios,pisCred,cofCred){
+function calcLP(fat,uf,compras,icmsEntAliq,prolaboreAnual,folhaAnual,rat,setor,iss_pct,numSocios,pisCred,cofCred,icmsCreditoPct=70){
   const aliqIcms=parseFloat(uf)/100;
   const aliqIcmsEnt=parseFloat(icmsEntAliq)/100;
   const isServico=setor==='servicos'||setor==='servicos_adv';
@@ -858,7 +863,9 @@ function calcLP(fat,uf,compras,icmsEntAliq,prolaboreAnual,folhaAnual,rat,setor,i
   const pis=fat*0.0065;
   const cofins=fat*0.03;
   const icmsBruto=isServico?0:fat*(1-parseFloat(document.getElementById('exportacao').value||'0')/100)*aliqIcms;
-  const icmsCredito=isServico?0:compras*aliqIcmsEnt;
+  const comprasComCredLP=compras*(icmsCreditoPct/100);
+  const icmsCredito=isServico?0:comprasComCredLP*aliqIcmsEnt;
+  const icmsSemCred=isServico?0:(compras-comprasComCredLP)*aliqIcmsEnt;
   const icms=Math.max(0,icmsBruto-icmsCredito);
   const issVal=isServico?fat*(iss_pct/100):0;
   // INSS
@@ -870,7 +877,7 @@ function calcLP(fat,uf,compras,icmsEntAliq,prolaboreAnual,folhaAnual,rat,setor,i
   const total=irpj+csll+pis+cofins+icms+issVal+inssProLabore+inssFolha;
   return{
     pIrpj,pCsll,baseIrpj,baseCsll,irpjBasico,adicional,irpj,csll,
-    pis,cofins,icmsBruto,icmsCredito,icms,issVal,aliqIcms,
+    pis,cofins,icmsBruto,icmsCredito,icmsSemCred,icms,issVal,aliqIcms,
     inssProLabore,inssFolha,inssPatronal,fgts,
     total,aliqEf:total/fat,
     comp:{irpj,csll,pis,cofins,icms:icms+issVal}
@@ -878,7 +885,7 @@ function calcLP(fat,uf,compras,icmsEntAliq,prolaboreAnual,folhaAnual,rat,setor,i
 }
 
 // ─── CÁLCULO LR ───────────────────────────────────────────────────
-function calcLR(fat,uf,compras,icmsEntAliq,prolaboreAnual,folhaAnual,rat,margem_pct,setor,iss_pct,numSocios,pisCred,cofCred,despDed){
+function calcLR(fat,uf,compras,icmsEntAliq,prolaboreAnual,folhaAnual,rat,margem_pct,setor,iss_pct,numSocios,pisCred,cofCred,despDed,icmsCreditoPct=70){
   const aliqIcms=parseFloat(uf)/100;
   const aliqIcmsEnt=parseFloat(icmsEntAliq)/100;
   const isServico=setor==='servicos'||setor==='servicos_adv';
@@ -900,7 +907,9 @@ function calcLR(fat,uf,compras,icmsEntAliq,prolaboreAnual,folhaAnual,rat,margem_
   const cofins=Math.max(0,cofBruto-cofCreditoVal);
   // ICMS
   const icmsBruto=isServico?0:fat*(1-parseFloat(document.getElementById('exportacao').value||'0')/100)*aliqIcms;
-  const icmsCredito=isServico?0:compras*aliqIcmsEnt;
+  const comprasComCredLR=compras*(icmsCreditoPct/100);
+  const icmsCredito=isServico?0:comprasComCredLR*aliqIcmsEnt;
+  const icmsSemCred=isServico?0:(compras-comprasComCredLR)*aliqIcmsEnt;
   const icms=Math.max(0,icmsBruto-icmsCredito);
   const issVal=isServico?fat*(iss_pct/100):0;
   // INSS
@@ -913,7 +922,7 @@ function calcLR(fat,uf,compras,icmsEntAliq,prolaboreAnual,folhaAnual,rat,margem_
   return{
     lucroReal,lucroBase,irpjBasico,adicional,irpj,csll,
     pisBruto,pisCreditoVal,cofBruto,cofCreditoVal,pis,cofins,
-    icmsBruto,icmsCredito,icms,issVal,aliqIcms,
+    icmsBruto,icmsCredito,icmsSemCred,icms,issVal,aliqIcms,
     inssProLabore,inssFolha,inssPatronal,fgts,
     total,aliqEf:total/fat,
     comp:{irpj,csll,pis,cofins,icms:icms+issVal}
@@ -1164,7 +1173,7 @@ function limparCampos(){
     document.getElementById(id).value='';
   });
   ['icms_entrada','margem','exportacao','iss'].forEach(id=>{
-    const defaults={icms_entrada:12,margem:8,exportacao:0,iss:3};
+    const defaults={icms_entrada:12,margem:8,exportacao:0,iss:3,icms_cred_pct:70};
     document.getElementById(id).value=defaults[id];
   });
   document.getElementById('socios').value=1;
@@ -1314,7 +1323,8 @@ function renderDetalhe(sn,lp,lr,anexo,fat){
       <div class="db-linha"><span class="dn">COFINS Cumulativo (3%)</span><span class="dv">${fmt(lp.cofins)}</span></div>
       <div class="db-section">Estadual / Municipal</div>
       <div class="db-linha"><span class="dn">ICMS Bruto (${pct(lp.aliqIcms)})</span><span class="dv">${fmt(lp.icmsBruto)}</span></div>
-      <div class="db-linha"><span class="dn">(-) Crédito ICMS Entradas</span><span class="dv" style="color:var(--vd)">-${fmt(lp.icmsCredito)}</span></div>
+      <div class="db-linha"><span class="dn">(-) Crédito ICMS (${icmsCreditoPct}% das compras)</span><span class="dv" style="color:var(--vd)">-${fmt(lp.icmsCredito)}</span></div>
+      <div class="db-linha"><span class="dn" style="color:#94a3b8;font-size:.78rem">⚠ Compras s/ crédito (${100-icmsCreditoPct}%): ICMS não recuperável</span><span class="dv" style="color:#94a3b8;font-size:.78rem">${fmt(lp.icmsSemCred||0)}</span></div>
       <div class="db-linha" style="background:#ffedd5"><span class="dn"><strong>ICMS a Recolher</strong></span><span class="dv"><strong>${fmt(lp.icms)}</strong></span></div>
       <div class="db-linha"><span class="dn">ISS Municipal</span><span class="dv">${fmt(lp.issVal)}</span></div>
       <div class="db-section">Encargos sobre Pessoal</div>
@@ -1338,7 +1348,8 @@ function renderDetalhe(sn,lp,lr,anexo,fat){
       <div class="db-linha"><span class="dn">(-) Crédito COFINS Entradas</span><span class="dv" style="color:var(--vd)">-${fmt(lr.cofCreditoVal)}</span></div>
       <div class="db-section">Estadual / Municipal</div>
       <div class="db-linha"><span class="dn">ICMS Bruto</span><span class="dv">${fmt(lr.icmsBruto)}</span></div>
-      <div class="db-linha"><span class="dn">(-) Crédito ICMS Entradas</span><span class="dv" style="color:var(--vd)">-${fmt(lr.icmsCredito)}</span></div>
+      <div class="db-linha"><span class="dn">(-) Crédito ICMS (${icmsCreditoPct}% das compras)</span><span class="dv" style="color:var(--vd)">-${fmt(lr.icmsCredito)}</span></div>
+      <div class="db-linha"><span class="dn" style="color:#94a3b8;font-size:.78rem">⚠ Compras s/ crédito (${100-icmsCreditoPct}%): ICMS não recuperável</span><span class="dv" style="color:#94a3b8;font-size:.78rem">${fmt(lr.icmsSemCred||0)}</span></div>
       <div class="db-linha" style="background:#dcfce7"><span class="dn"><strong>ICMS a Recolher</strong></span><span class="dv"><strong>${fmt(lr.icms)}</strong></span></div>
       <div class="db-linha"><span class="dn">ISS Municipal</span><span class="dv">${fmt(lr.issVal)}</span></div>
       <div class="db-section">Encargos sobre Pessoal</div>
@@ -1470,14 +1481,15 @@ function calcular(){
   const pisCred=parseFloat(document.getElementById('pis_cred_pct').value)||80;
   const cofCred=parseFloat(document.getElementById('cof_cred_pct').value)||80;
   const despDed=pm(document.getElementById('desp_ded').value);
+  const icmsCreditoPct=parseFloat(document.getElementById('icms_cred_pct').value)||70;
 
   // Alertas
   document.getElementById('alerta-mei').style.display=fat<=81000?'block':'none';
 
   // Calcular
   const sn=calcSN(fat,rbt12,anexo,prolaboreAnual,folhaAnual,rat,numSocios);
-  const lp=calcLP(fat,uf,compras,icmsEnt,prolaboreAnual,folhaAnual,rat,setor,iss,numSocios,pisCred,cofCred);
-  const lr=calcLR(fat,uf,compras,icmsEnt,prolaboreAnual,folhaAnual,rat,margem,setor,iss,numSocios,pisCred,cofCred,despDed);
+  const lp=calcLP(fat,uf,compras,icmsEnt,prolaboreAnual,folhaAnual,rat,setor,iss,numSocios,pisCred,cofCred,icmsCreditoPct);
+  const lr=calcLR(fat,uf,compras,icmsEnt,prolaboreAnual,folhaAnual,rat,margem,setor,iss,numSocios,pisCred,cofCred,despDed,icmsCreditoPct);
 
   // Guardar para faixas
   _rbt12Atual=rbt12;
