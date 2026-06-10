@@ -1512,9 +1512,9 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName!=='
 
 // ═══════════════════════════════════════════════════════════════
 //  IMPORTADOR PDF — PGDAS-D / Simples Nacional
+//  Calibrado para o formato oficial PGDAS-D 2018 v2.2.x
 // ═══════════════════════════════════════════════════════════════
 
-// Configura worker do PDF.js (CDN)
 if(typeof pdfjsLib!=='undefined'){
   pdfjsLib.GlobalWorkerOptions.workerSrc=
     'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
@@ -1608,7 +1608,12 @@ async function pdfLer(file){
   }
 }
 
-// ─── EXTRAÇÃO DE DADOS ────────────────────────────────────────────
+// ─── HELPERS DE PARSE ────────────────────────────────────────────
+function parseBr(s){return parseFloat((s||'').replace(/\./g,'').replace(',','.'))||0;}
+const MNOM=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+// ─── EXTRAÇÃO DE DADOS — PGDAS-D OFICIAL ─────────────────────────
+// Formato testado: PGDAS-D 2018 v2.2.x (MAD VESTUÁRIO LTDA 05/2026)
 function pdfExtrairDados(texto){
   const dados={
     cnpj:'', razaoSocial:'', competencias:[], rbt12:0,
