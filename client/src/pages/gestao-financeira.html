@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="page-title">Gestão Financeira</title>
+<style>
+:root {
+  --bg:#0b0d13; --surface:#141720; --surface2:#1c2030; --surface3:#232840;
+  --border:#272d42; --accent:#4f8ef7; --accent2:#8b5cf6; --green:#22c55e;
+  --red:#ef4444; --yellow:#f59e0b; --orange:#f97316; --cyan:#06b6d4;
+  --text:#dde3f0; --muted:#6b7494; --radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+
+/* HEADER */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:13px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+.logo{font-size:17px;font-weight:800;color:var(--accent)}.logo span{color:var(--text)}
+.logo small{font-size:11px;color:var(--muted);font-weight:400;margin-left:8px}
+.header-info{display:flex;align-items:center;gap:16px;font-size:12px;color:var(--muted)}
+.empresa-nome{font-weight:700;color:var(--text);font-size:13px}
+
+/* NAV SIDEBAR */
+.layout{display:flex;min-height:calc(100vh - 49px)}
+.sidebar{width:200px;background:var(--surface);border-right:1px solid var(--border);padding:16px 0;flex-shrink:0;position:sticky;top:49px;height:calc(100vh - 49px);overflow-y:auto}
+.nav-section{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;padding:14px 16px 6px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 16px;cursor:pointer;color:var(--muted);font-size:13px;font-weight:500;transition:all .15s;border-left:3px solid transparent}
+.nav-item:hover{color:var(--text);background:rgba(79,142,247,.06)}
+.nav-item.active{color:var(--accent);background:rgba(79,142,247,.1);border-left-color:var(--accent)}
+.nav-icon{font-size:15px;width:18px;text-align:center}
+
+/* MAIN */
+.main{flex:1;padding:24px;overflow-x:hidden;max-width:calc(100vw - 200px)}
+.panel{display:none;animation:fadeIn .2s}
+.panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px}
+.card-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px}
+.section-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.section-title::before{content:'';display:block;width:4px;height:18px;background:var(--accent);border-radius:2px}
+
+/* GRID */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+@media(max-width:900px){.grid2,.grid3,.grid4,.grid5{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.grid2,.grid3,.grid4,.grid5{grid-template-columns:1fr}}
+
+/* KPI */
+.kpi{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px}
+.kpi-label{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.kpi-value{font-size:20px;font-weight:800;margin-top:4px}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:3px}
+.kpi-bar{height:3px;border-radius:2px;margin-top:8px;background:var(--border)}
+.kpi-bar-fill{height:100%;border-radius:2px}
+.pos{color:var(--green)} .neg{color:var(--red)} .warn{color:var(--yellow)} .blue{color:var(--accent)} .purple{color:var(--accent2)} .orange{color:var(--orange)}
+
+/* FORM */
+.field{margin-bottom:12px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600}
+input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:8px 11px;color:var(--text);font-size:13px;outline:none;transition:border .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+select option{background:var(--bg)}
+.form-row{display:flex;gap:10px;flex-wrap:wrap}
+.form-row .field{flex:1;min-width:120px}
+
+/* BUTTONS */
+.btn{padding:8px 18px;border-radius:7px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{filter:brightness(1.1)}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}.btn-secondary:hover{border-color:var(--accent)}
+.btn-success{background:#0d2d1a;color:var(--green);border:1px solid #1a4a2a}
+.btn-danger{background:#2d1414;color:var(--red);border:1px solid #4a1a1a}
+.btn-warn{background:#2d2210;color:var(--yellow);border:1px solid #4a3810}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn-xs{padding:3px 8px;font-size:11px;border-radius:5px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+
+/* TABLE */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--text)}
+td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(79,142,247,.04)}
+.td-r{text-align:right;font-variant-numeric:tabular-nums}
+.td-c{text-align:center}
+.td-bold{font-weight:700}
+.tfoot-row td{background:var(--surface2);font-weight:700;border-top:1px solid var(--border)}
+.tr-group td{background:var(--surface3);font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+
+/* BADGES / STATUS */
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.s-pago,.s-recebido{background:#0d2d1a;color:var(--green)}
+.s-pendente{background:#1a2d55;color:var(--accent)}
+.s-vencido{background:#2d1414;color:var(--red)}
+.s-parcial{background:#2d2210;color:var(--yellow)}
+.s-cancelado{background:#1e1e1e;color:var(--muted)}
+.cat-badge{padding:2px 8px;border-radius:5px;font-size:11px;font-weight:600;background:var(--surface3);color:var(--muted)}
+
+/* ALERT */
+.alert{padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px;border-left:3px solid}
+.alert-info{background:#0f1e40;border-color:var(--accent);color:#93c5fd}
+.alert-warn{background:#2d2210;border-color:var(--yellow);color:#fcd34d}
+.alert-success{background:#0a2018;border-color:var(--green);color:#86efac}
+.alert-danger{background:#2d1414;border-color:var(--red);color:#fca5a5}
+
+/* MISC */
+.sep{border:none;border-top:1px solid var(--border);margin:14px 0}
+.flex{display:flex}.gap8{gap:8px}.gap4{gap:4px}
+.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}
+.hidden{display:none!important}
+.text-muted{color:var(--muted)}.fw700{font-weight:700}
+.text-right{text-align:right}
+.chip-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.chip{padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid var(--border);color:var(--muted);transition:all .15s;user-select:none}
+.chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.progress-wrap{background:var(--border);border-radius:4px;height:6px;overflow:hidden}
+.progress-bar{height:100%;border-radius:4px;transition:width .4s}
+.empty-state{text-align:center;padding:40px;color:var(--muted);font-size:13px}
+.tag-input{display:flex;gap:4px}
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end}
+.filter-bar .field{margin-bottom:0}
+.ofx-drop{border:2px dashed var(--border);border-radius:var(--radius);padding:40px;text-align:center;cursor:pointer;transition:all .2s}
+.ofx-drop:hover,.ofx-drop.dragover{border-color:var(--accent);background:rgba(79,142,247,.05)}
+.ofx-drop svg{margin-bottom:12px}
+.ofx-rule{display:flex;gap:8px;align-items:center;padding:8px;background:var(--surface3);border-radius:7px;margin-bottom:6px}
+.ofx-rule input{flex:1}
+.mini-chart{display:flex;align-items:flex-end;gap:3px;height:60px;margin-top:8px}
+.mini-bar{flex:1;border-radius:3px 3px 0 0;min-height:2px;transition:height .3s}
+.mini-bar-in{background:var(--green);opacity:.8}
+.mini-bar-out{background:var(--red);opacity:.8}
+.chart-legend{display:flex;gap:12px;font-size:11px;margin-top:6px}
+.chart-legend span{display:flex;align-items:center;gap:4px}
+.chart-legend span::before{content:'';display:block;width:10px;height:10px;border-radius:2px}
+.leg-in::before{background:var(--green)} .leg-out::before{background:var(--red)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:flex;align-items:center;justify-content:center}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.modal-title button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1}
+.modal-title button:hover{color:var(--text)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo" id="hdr-logo">Fiscal<span>Conf</span> <small id="hdr-sistema">— Gestão Financeira</small></div>
+  <div class="header-info">
+    <span class="empresa-nome" id="hdr-empresa">Minha Empresa Ltda.</span>
+    <span id="hdr-data"></span>
+    <button class="btn btn-secondary btn-sm" onclick="openConfig()">⚙ Config</button>
+  </div>
+</header>
+
+<div class="layout">
+<nav class="sidebar">
+  <div class="nav-section">Principal</div>
+  <div class="nav-item active" onclick="go('dashboard')"><span class="nav-icon">📊</span>Dashboard</div>
+  <div class="nav-item" onclick="go('faturamento')"><span class="nav-icon">🧾</span>Faturamento</div>
+  <div class="nav-item" onclick="go('despesas')"><span class="nav-icon">💸</span>Despesas</div>
+  <div class="nav-section">Financeiro</div>
+  <div class="nav-item" onclick="go('receber')"><span class="nav-icon">📥</span>Contas a Receber</div>
+  <div class="nav-item" onclick="go('pagar')"><span class="nav-icon">📤</span>Contas a Pagar</div>
+  <div class="nav-item" onclick="go('fluxo')"><span class="nav-icon">📈</span>Fluxo de Caixa</div>
+  <div class="nav-section">Bancário</div>
+  <div class="nav-item" onclick="go('ofx')"><span class="nav-icon">🏦</span>Importar OFX</div>
+  <div class="nav-item" onclick="go('extrato')"><span class="nav-icon">📋</span>Extrato</div>
+  <div class="nav-section">Relatórios</div>
+  <div class="nav-item" onclick="go('relatorios')"><span class="nav-icon">📑</span>Relatórios</div>
+  <div class="nav-item" onclick="go('categorias')"><span class="nav-icon">🏷</span>Categorias</div>
+</nav>
+
+<div class="main">
+
+<!-- ===== DASHBOARD ===== -->
+<div class="panel active" id="panel-dashboard">
+  <div class="section-title">Dashboard Financeiro</div>
+  <div class="grid5" id="dash-kpis"></div>
+  <div class="grid2 mt16">
+    <div class="card">
+      <div class="card-title">Fluxo — Últimos 6 Meses</div>
+      <div class="mini-chart" id="dash-chart"></div>
+      <div class="chart-legend"><span class="leg-in">Entradas</span><span class="leg-out">Saídas</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Alertas e Pendências</div>
+      <div id="dash-alertas"></div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Últimas Entradas</div>
+      <div id="dash-ult-ent"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Últimas Saídas</div>
+      <div id="dash-ult-sai"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Top Categorias de Despesa (mês atual)</div>
+    <div id="dash-categ"></div>
+  </div>
+</div>
+
+<!-- ===== FATURAMENTO ===== -->
+<div class="panel" id="panel-faturamento">
+  <div class="section-title">Faturamento <span style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">— Notas e Receitas Emitidas</span></div>
+  <div class="card">
+    <div class="card-title">Nova Nota / Receita</div>
+    <div class="form-row">
+      <div class="field"><label>Nº Documento</label><input id="fat-num" placeholder="NF-001"></div>
+      <div class="field"><label>Cliente</label><input id="fat-cli" placeholder="Nome do cliente"></div>
+      <div class="field"><label>Data Emissão</label><input type="date" id="fat-emis"></div>
+      <div class="field"><label>Vencimento</label><input type="date" id="fat-venc"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Descrição / Serviço</label><input id="fat-desc" placeholder="Descrição do serviço ou produto"></div>
+      <div class="field" style="max-width:160px"><label>Valor (R$)</label><input type="number" id="fat-val" step="0.01"></div>
+      <div class="field" style="max-width:160px"><label>Categoria</label><select id="fat-cat"></select></div>
+      <div class="field" style="max-width:140px"><label>Status</label>
+        <select id="fat-status">
+          <option value="pendente">Pendente</option>
+          <option value="recebido">Recebido</option>
+          <option value="parcial">Parcial</option>
+          <option value="vencido">Vencido</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+      </div>
+    </div>
+    <div class="btns">
+      <button class="btn btn-primary" onclick="salvarFat()">Salvar</button>
+      <button class="btn btn-secondary" onclick="limparFat()">Limpar</button>
+    </div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="card-title" style="margin:0">Notas Emitidas</div>
+      <div class="filter-bar" style="margin:0">
+        <div class="field" style="margin:0"><input id="fat-busca" placeholder="🔍 Buscar..." style="width:180px" oninput="renderFat()"></div>
+        <select id="fat-fil-status" onchange="renderFat()" style="width:130px"><option value="">Todos status</option><option>pendente</option><option>recebido</option><option>vencido</option><option>parcial</option></select>
+        <select id="fat-fil-mes" onchange="renderFat()" style="width:150px"></select>
+      </div>
+    </div>
+    <div class="table-wrap"><table><thead><tr>
+      <th onclick="sortTable('fat','num')">Nº Doc</th>
+      <th onclick="sortTable('fat','cli')">Cliente</th>
+      <th onclick="sortTable('fat','desc')">Descrição</th>
+      <th onclick="sortTable('fat','emis')">Emissão</th>
+      <th onclick="sortTable('fat','venc')">Vencimento</th>
+      <th onclick="sortTable('fat','cat')">Categoria</th>
+      <th onclick="sortTable('fat','val')" class="td-r">Valor</th>
+      <th class="td-c">Status</th>
+      <th class="td-c">Ações</th>
+    </tr></thead><tbody id="fat-tbody"></tbody>
+    <tfoot><tr class="tfoot-row"><td colspan="6">Total</td><td class="td-r" id="fat-total"></td><td colspan="2"></td></tr></tfoot>
+    </table></div>
+  </div>
+</div>
+
+<!-- ===== DESPESAS ===== -->
+<div class="panel" id="panel-despesas">
+  <div class="section-title">Despesas</div>
+  <div class="card">
+    <div class="card-title">Lançar Despesa</div>
+    <div class="form-row">
+      <div class="field"><label>Descrição</label><input id="desp-desc" placeholder="Ex: Aluguel, Energia, Fornecedor..."></div>
+      <div class="field" style="max-width:140px"><label>Data</label><input type="date" id="desp-data"></div>
+      <div class="field" style="max-width:140px"><label>Vencimento</label><input type="date" id="desp-venc"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Fornecedor / Beneficiário</label><input id="desp-forn" placeholder="Nome"></div>
+      <div class="field" style="max-width:140px"><label>Valor (R$)</label><input type="number" id="desp-val" step="0.01"></div>
+      <div class="field" style="max-width:160px"><label>Categoria</label><select id="desp-cat"></select></div>
+      <div class="field" style="max-width:140px"><label>Centro de Custo</label><select id="desp-cc"></select></div>
+      <div class="field" style="max-width:140px"><label>Status</label>
+        <select id="desp-status">
+          <option value="pendente">Pendente</option>
+          <option value="pago">Pago</option>
+          <option value="vencido">Vencido</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+      </div>
+    </div>
+    <div class="btns">
+      <button class="btn btn-primary" onclick="salvarDesp()">Salvar</button>
+      <button class="btn btn-secondary" onclick="limparDesp()">Limpar</button>
+    </div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="card-title" style="margin:0">Lançamentos</div>
+      <div class="filter-bar" style="margin:0">
+        <input id="desp-busca" placeholder="🔍 Buscar..." style="width:180px;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text)" oninput="renderDesp()">
+        <select id="desp-fil-status" onchange="renderDesp()" style="width:130px"><option value="">Todos status</option><option>pendente</option><option>pago</option><option>vencido</option></select>
+        <select id="desp-fil-cat" onchange="renderDesp()" style="width:140px"><option value="">Todas categorias</option></select>
+        <select id="desp-fil-mes" onchange="renderDesp()" style="width:150px"></select>
+      </div>
+    </div>
+    <div class="table-wrap"><table><thead><tr>
+      <th onclick="sortTable('desp','desc')">Descrição</th>
+      <th onclick="sortTable('desp','forn')">Fornecedor</th>
+      <th onclick="sortTable('desp','data')">Data</th>
+      <th onclick="sortTable('desp','venc')">Vencimento</th>
+      <th onclick="sortTable('desp','cat')">Categoria</th>
+      <th onclick="sortTable('desp','cc')">Centro Custo</th>
+      <th onclick="sortTable('desp','val')" class="td-r">Valor</th>
+      <th class="td-c">Status</th>
+      <th class="td-c">Ações</th>
+    </tr></thead><tbody id="desp-tbody"></tbody>
+    <tfoot><tr class="tfoot-row"><td colspan="6">Total</td><td class="td-r" id="desp-total"></td><td colspan="2"></td></tr></tfoot>
+    </table></div>
+  </div>
+</div>
+
+<!-- ===== CONTAS A RECEBER ===== -->
+<div class="panel" id="panel-receber">
+  <div class="section-title">Contas a Receber</div>
+  <div class="grid3 mt8" id="cr-kpis"></div>
+  <div class="card mt16">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="card-title" style="margin:0">Títulos a Receber</div>
+      <div class="btns" style="margin:0">
+        <button class="btn btn-secondary btn-sm" onclick="openNovaCR()">+ Nova CR</button>
+        <select id="cr-fil-status" onchange="renderCR()" style="width:130px;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:6px 10px;color:var(--text)"><option value="">Todos</option><option>pendente</option><option>recebido</option><option>vencido</option><option>parcial</option></select>
+        <select id="cr-fil-mes" onchange="renderCR()" style="width:150px;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:6px 10px;color:var(--text)"></select>
+      </div>
+    </div>
+    <div class="table-wrap"><table><thead><tr>
+      <th>Doc / Referência</th><th>Cliente</th><th>Emissão</th><th>Vencimento</th>
+      <th class="td-r">Valor</th><th class="td-r">Recebido</th><th class="td-r">Saldo</th>
+      <th class="td-c">Status</th><th class="td-c">Ações</th>
+    </tr></thead><tbody id="cr-tbody"></tbody>
+    <tfoot><tr class="tfoot-row"><td colspan="4">Total</td><td class="td-r" id="cr-tot-val"></td><td class="td-r" id="cr-tot-rec"></td><td class="td-r" id="cr-tot-sal"></td><td colspan="2"></td></tr></tfoot>
+    </table></div>
+  </div>
+</div>
+
+<!-- ===== CONTAS A PAGAR ===== -->
+<div class="panel" id="panel-pagar">
+  <div class="section-title">Contas a Pagar</div>
+  <div class="grid3 mt8" id="cp-kpis"></div>
+  <div class="card mt16">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="card-title" style="margin:0">Títulos a Pagar</div>
+      <div class="btns" style="margin:0">
+        <button class="btn btn-secondary btn-sm" onclick="openNovaCP()">+ Nova CP</button>
+        <select id="cp-fil-status" onchange="renderCP()" style="width:130px;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:6px 10px;color:var(--text)"><option value="">Todos</option><option>pendente</option><option>pago</option><option>vencido</option></select>
+        <select id="cp-fil-mes" onchange="renderCP()" style="width:150px;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:6px 10px;color:var(--text)"></select>
+      </div>
+    </div>
+    <div class="table-wrap"><table><thead><tr>
+      <th>Doc / Referência</th><th>Fornecedor</th><th>Emissão</th><th>Vencimento</th>
+      <th class="td-r">Valor</th><th class="td-r">Pago</th><th class="td-r">Saldo</th>
+      <th class="td-c">Status</th><th class="td-c">Ações</th>
+    </tr></thead><tbody id="cp-tbody"></tbody>
+    <tfoot><tr class="tfoot-row"><td colspan="4">Total</td><td class="td-r" id="cp-tot-val"></td><td class="td-r" id="cp-tot-pag"></td><td class="td-r" id="cp-tot-sal"></td><td colspan="2"></td></tr></tfoot>
+    </table></div>
+  </div>
+</div>
+
+<!-- ===== FLUXO DE CAIXA ===== -->
+<div class="panel" id="panel-fluxo">
+  <div class="section-title">Fluxo de Caixa</div>
+  <div class="filter-bar">
+    <div class="field" style="margin:0"><label>Período</label>
+      <select id="fc-periodo" onchange="renderFluxo()">
+        <option value="3">3 meses</option>
+        <option value="6" selected>6 meses</option>
+        <option value="12">12 meses</option>
+      </select>
+    </div>
+    <div class="field" style="margin:0"><label>Saldo Inicial (R$)</label>
+      <input type="number" id="fc-saldo-ini" value="0" style="width:150px" oninput="renderFluxo()">
+    </div>
+    <div class="field" style="margin:0"><label>Tipo</label>
+      <select id="fc-tipo" onchange="renderFluxo()">
+        <option value="realizado">Realizado</option>
+        <option value="projetado">Realizado + Projetado</option>
+      </select>
+    </div>
+  </div>
+  <div id="fluxo-content"></div>
+</div>
+
+<!-- ===== IMPORTAR OFX ===== -->
+<div class="panel" id="panel-ofx">
+  <div class="section-title">Importar Extrato Bancário (OFX)</div>
+  <div class="grid2">
+    <div>
+      <div class="card">
+        <div class="card-title">Upload do Arquivo OFX</div>
+        <div class="ofx-drop" id="ofx-drop" onclick="s('ofx-file').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="handleOfxDrop(event)">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#4f8ef7" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <div style="color:var(--accent);font-weight:600;font-size:14px">Arraste o arquivo OFX aqui</div>
+          <div style="color:var(--muted);font-size:12px;margin-top:4px">ou clique para selecionar</div>
+          <div style="color:var(--muted);font-size:11px;margin-top:8px">Compatível com a maioria dos bancos brasileiros</div>
+        </div>
+        <input type="file" id="ofx-file" accept=".ofx,.qfx,.ofc" style="display:none" onchange="handleOfxFile(this)">
+        <div id="ofx-info" class="mt12"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Regras de Categorização Automática</div>
+        <div class="alert alert-info">Palavras-chave que, encontradas na descrição do lançamento OFX, atribuem categoria automaticamente.</div>
+        <div id="ofx-rules-lista"></div>
+        <div class="flex gap8 mt8">
+          <input type="text" id="rule-kw" placeholder="Palavra-chave (ex: MERCADO)" style="flex:1">
+          <select id="rule-cat" style="width:150px"></select>
+          <select id="rule-tipo" style="width:100px"><option value="">Qualquer</option><option value="E">Entrada</option><option value="S">Saída</option></select>
+          <button class="btn btn-primary btn-sm" onclick="addRule()">+</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card" id="ofx-preview-card" style="display:none">
+        <div class="card-title" id="ofx-preview-title">Prévia — Lançamentos Importados</div>
+        <div class="alert alert-warn" id="ofx-dup-alert" style="display:none"></div>
+        <div class="table-wrap" style="max-height:400px;overflow-y:auto">
+          <table><thead><tr>
+            <th><input type="checkbox" id="ofx-chk-all" onchange="toggleAllOfx(this)"></th>
+            <th>Data</th><th>Descrição OFX</th><th class="td-r">Valor</th><th>Tipo</th><th>Categoria</th>
+          </tr></thead><tbody id="ofx-preview-tbody"></tbody></table>
+        </div>
+        <div class="btns mt12">
+          <button class="btn btn-primary" onclick="importarOfx()">Importar Selecionados</button>
+          <button class="btn btn-secondary" onclick="cancelarOfx()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EXTRATO ===== -->
+<div class="panel" id="panel-extrato">
+  <div class="section-title">Extrato de Movimentações</div>
+  <div class="filter-bar">
+    <div class="field" style="margin:0"><label>De</label><input type="date" id="ext-de" style="width:140px"></div>
+    <div class="field" style="margin:0"><label>Até</label><input type="date" id="ext-ate" style="width:140px"></div>
+    <div class="field" style="margin:0"><label>Tipo</label>
+      <select id="ext-tipo" style="width:120px"><option value="">Todos</option><option value="E">Entradas</option><option value="S">Saídas</option></select>
+    </div>
+    <div class="field" style="margin:0"><label>Categoria</label><select id="ext-cat" style="width:150px"><option value="">Todas</option></select></div>
+    <div class="field" style="margin:0"><label>&nbsp;</label><button class="btn btn-primary btn-sm" onclick="renderExtrato()">Filtrar</button></div>
+    <div class="field" style="margin:0"><label>&nbsp;</label><button class="btn btn-secondary btn-sm" onclick="exportarCSV()">⬇ CSV</button></div>
+  </div>
+  <div class="grid3">
+    <div class="kpi"><div class="kpi-label">Entradas</div><div class="kpi-value pos" id="ext-ent">R$ 0</div></div>
+    <div class="kpi"><div class="kpi-label">Saídas</div><div class="kpi-value neg" id="ext-sai">R$ 0</div></div>
+    <div class="kpi"><div class="kpi-label">Saldo</div><div class="kpi-value blue" id="ext-sal">R$ 0</div></div>
+  </div>
+  <div class="card mt16">
+    <div class="table-wrap">
+      <table><thead><tr>
+        <th>Data</th><th>Descrição</th><th>Origem</th><th>Categoria</th><th>Centro Custo</th>
+        <th class="td-r">Entrada</th><th class="td-r">Saída</th><th class="td-r">Saldo</th>
+      </tr></thead><tbody id="ext-tbody"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RELATÓRIOS ===== -->
+<div class="panel" id="panel-relatorios">
+  <div class="section-title">Relatórios Gerenciais</div>
+  <div class="chip-row">
+    <span class="chip active" id="rel-chip-dre" onclick="showRel('dre',this)">DRE Gerencial</span>
+    <span class="chip" id="rel-chip-cp" onclick="showRel('cp',this)">Aging CP</span>
+    <span class="chip" id="rel-chip-cr" onclick="showRel('cr',this)">Aging CR</span>
+    <span class="chip" id="rel-chip-cat" onclick="showRel('cat',this)">Por Categoria</span>
+    <span class="chip" id="rel-chip-cc" onclick="showRel('cc',this)">Centro de Custo</span>
+  </div>
+  <div class="filter-bar">
+    <div class="field" style="margin:0"><label>Período</label><select id="rel-periodo" onchange="renderRel()" style="width:160px"></select></div>
+  </div>
+  <div id="rel-content"></div>
+</div>
+
+<!-- ===== CATEGORIAS ===== -->
+<div class="panel" id="panel-categorias">
+  <div class="section-title">Categorias e Centros de Custo</div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Categorias</div>
+      <div id="cat-lista"></div>
+      <div class="flex gap8 mt12">
+        <input id="cat-nova" placeholder="Nova categoria" style="flex:1">
+        <select id="cat-tipo-novo" style="width:110px"><option value="E">Entrada</option><option value="S">Saída</option><option value="A">Ambos</option></select>
+        <input id="cat-cor" type="color" value="#4f8ef7" style="width:40px;padding:2px;height:34px">
+        <button class="btn btn-primary btn-sm" onclick="addCategoria()">+</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Centros de Custo</div>
+      <div id="cc-lista"></div>
+      <div class="flex gap8 mt12">
+        <input id="cc-novo" placeholder="Novo centro de custo" style="flex:1">
+        <button class="btn btn-primary btn-sm" onclick="addCC()">+</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- MODAL GENÉRICO -->
+<div class="modal-overlay hidden" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal-body"></div>
+</div>
+
+<script>
+// ============================================================ STORAGE
+const DB_KEY = 'fc_gestao_v1';
+let DB = {
+  config: {empresa:'Minha Empresa Ltda.', cnpj:'', saldo_inicial:0, sistema_nome:'Gestão Financeira', sistema_logo:'💼', sistema_cor:'#4f8ef7'},
+  fat:[], desp:[], cr:[], cp:[], extrato:[],
+  categorias:[
+    {id:'c1',nome:'Vendas de Produtos',tipo:'E',cor:'#22c55e'},
+    {id:'c2',nome:'Prestação de Serviços',tipo:'E',cor:'#4f8ef7'},
+    {id:'c3',nome:'Outras Receitas',tipo:'E',cor:'#06b6d4'},
+    {id:'c4',nome:'Fornecedores',tipo:'S',cor:'#f97316'},
+    {id:'c5',nome:'Pessoal / Salários',tipo:'S',cor:'#ef4444'},
+    {id:'c6',nome:'Aluguel',tipo:'S',cor:'#8b5cf6'},
+    {id:'c7',nome:'Utilities (Energia/Água/Tel)',tipo:'S',cor:'#f59e0b'},
+    {id:'c8',nome:'Marketing',tipo:'S',cor:'#ec4899'},
+    {id:'c9',nome:'Impostos / Taxas',tipo:'S',cor:'#6366f1'},
+    {id:'c10',nome:'Manutenção',tipo:'S',cor:'#14b8a6'},
+    {id:'c11',nome:'Outros',tipo:'A',cor:'#9ca3af'},
+  ],
+  centros:['Administrativo','Comercial','Operacional','Financeiro','TI'],
+  ofx_rules:[
+    {kw:'SALARIO',cat:'c5',tipo:'S'},
+    {kw:'FOLHA',cat:'c5',tipo:'S'},
+    {kw:'ENERGIA',cat:'c7',tipo:'S'},
+    {kw:'MERCADO',cat:'c4',tipo:'S'},
+    {kw:'IMPOSTO',cat:'c9',tipo:'S'},
+    {kw:'ALUGUEL',cat:'c6',tipo:'S'},
+  ],
+  sorts:{}
+};
+let ofxData = [];
+let relAtual = 'dre';
+
+function save(){ try{ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }catch(e){} }
+function load(){
+  try{
+    const raw = localStorage.getItem(DB_KEY);
+    if(raw){ const d=JSON.parse(raw); DB={...DB,...d}; }
+  }catch(e){}
+}
+
+// ============================================================ UTILS
+const fmt=(v,d=2)=>'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const pct=(v,d=1)=>Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d})+'%';
+const uid=()=>Math.random().toString(36).slice(2,10);
+const today=()=>new Date().toISOString().slice(0,10);
+const s=id=>document.getElementById(id);
+const dateStr=d=>d?new Date(d+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+const isoToMonth=d=>d?d.slice(0,7):'';
+const monthLabel=ym=>{ const [y,m]=ym.split('-'); return ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][+m-1]+'/'+y.slice(2); };
+const nowMonth=()=>today().slice(0,7);
+function monthsBack(n){ const r=[]; let d=new Date(); for(let i=n-1;i>=0;i--){ let dd=new Date(d.getFullYear(),d.getMonth()-i,1); r.push(dd.toISOString().slice(0,7)); } return r; }
+function statusBadge(s){ const m={'pago':'s-pago','recebido':'s-recebido','pendente':'s-pendente','vencido':'s-vencido','parcial':'s-parcial','cancelado':'s-cancelado'}; return `<span class="badge ${m[s]||'s-pendente'}">${s}</span>`; }
+function catNome(id){ const c=DB.categorias.find(c=>c.id===id); return c?c.nome:'—'; }
+function catCor(id){ const c=DB.categorias.find(c=>c.id===id); return c?c.cor:'#9ca3af'; }
+
+// ============================================================ NAVIGATION
+function go(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  s('panel-'+id).classList.add('active');
+  const navs=[...document.querySelectorAll('.nav-item')];
+  const labels={dashboard:'Dashboard',faturamento:'Faturamento',despesas:'Despesas',receber:'Contas a Receber',pagar:'Contas a Pagar',fluxo:'Fluxo de Caixa',ofx:'Importar OFX',extrato:'Extrato',relatorios:'Relatórios',categorias:'Categorias'};
+  navs.find(n=>n.textContent.trim()===labels[id])?.classList.add('active');
+  const renders={dashboard:renderDashboard,faturamento:()=>{renderFat();},despesas:()=>{renderDesp();},receber:renderCR,pagar:renderCP,fluxo:renderFluxo,extrato:renderExtrato,relatorios:renderRel,categorias:renderCats,ofx:renderRules};
+  renders[id]?.();
+}
+
+// ============================================================ SELECTS HELPERS
+function fillSelect(id, opts, selected=''){
+  const el=s(id); if(!el)return;
+  el.innerHTML=opts.map(o=>`<option value="${o.v||o}" ${(o.v||o)===selected?'selected':''}>${o.l||o}</option>`).join('');
+}
+function fillCatSelect(id, tipo=''){
+  const el=s(id); if(!el)return;
+  const cats = DB.categorias.filter(c=>!tipo||c.tipo===tipo||c.tipo==='A');
+  el.innerHTML=`<option value="">Selecionar...</option>`+cats.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+}
+function fillMesSelect(id, campo, lista){
+  const el=s(id); if(!el)return;
+  const meses=[...new Set(lista.map(i=>isoToMonth(i[campo])))].filter(Boolean).sort().reverse();
+  el.innerHTML=`<option value="">Todos os meses</option>`+meses.map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join('');
+}
+function fillAllSelects(){
+  fillCatSelect('fat-cat','E'); fillCatSelect('desp-cat','S');
+  fillCatSelect('rule-cat','');
+  const ccOpts=[{v:'',l:'Selecionar...'},...DB.centros.map(c=>({v:c,l:c}))];
+  fillSelect('desp-cc',ccOpts);
+  const catOpts=[{v:'',l:'Todas categorias'},...DB.categorias.map(c=>({v:c.id,l:c.nome}))];
+  fillSelect('desp-fil-cat',catOpts);
+  const extCatOpts=[{v:'',l:'Todas'},...DB.categorias.map(c=>({v:c.id,l:c.nome}))];
+  fillSelect('ext-cat',extCatOpts);
+  fillMesSelect('fat-fil-mes','emis',DB.fat);
+  fillMesSelect('desp-fil-mes','data',DB.desp);
+  fillMesSelect('cr-fil-mes','venc',DB.cr);
+  fillMesSelect('cp-fil-mes','venc',DB.cp);
+}
+
+// ============================================================ AUTO-STATUS (vencimento)
+function autoStatus(item, statusPago='pago'){
+  if(item.status===statusPago||item.status==='cancelado') return item.status;
+  if(item.venc && item.venc < today()) return 'vencido';
+  return item.status||'pendente';
+}
+
+// ============================================================ FATURAMENTO
+let fatEditId=null;
+function salvarFat(){
+  const obj={
+    id: fatEditId||uid(), num:s('fat-num').value.trim()||'—',
+    cli:s('fat-cli').value.trim(), emis:s('fat-emis').value||today(),
+    venc:s('fat-venc').value, desc:s('fat-desc').value.trim(),
+    val:parseFloat(s('fat-val').value)||0, cat:s('fat-cat').value,
+    status:s('fat-status').value
+  };
+  if(!obj.cli||!obj.val){alert('Preencha cliente e valor.');return;}
+  if(fatEditId){ const i=DB.fat.findIndex(x=>x.id===fatEditId); if(i>=0)DB.fat[i]=obj; }
+  else DB.fat.push(obj);
+  save(); limparFat(); renderFat(); renderDashboard(); fillAllSelects();
+}
+function limparFat(){
+  fatEditId=null;
+  ['fat-num','fat-cli','fat-desc','fat-val'].forEach(id=>s(id).value='');
+  s('fat-emis').value=today(); s('fat-venc').value='';
+  s('fat-status').value='pendente';
+}
+function editFat(id){
+  const o=DB.fat.find(x=>x.id===id); if(!o)return;
+  fatEditId=id;
+  s('fat-num').value=o.num; s('fat-cli').value=o.cli; s('fat-emis').value=o.emis;
+  s('fat-venc').value=o.venc||''; s('fat-desc').value=o.desc;
+  s('fat-val').value=o.val; s('fat-cat').value=o.cat||'';
+  s('fat-status').value=o.status;
+  go('faturamento'); window.scrollTo(0,0);
+}
+function deleteFat(id){ if(!confirm('Excluir lançamento?'))return; DB.fat=DB.fat.filter(x=>x.id!==id); save(); renderFat(); renderDashboard(); }
+function marcarFat(id,st){ const o=DB.fat.find(x=>x.id===id); if(o){o.status=st;save();renderFat();renderDashboard();} }
+function renderFat(){
+  fillCatSelect('fat-cat','E');
+  fillMesSelect('fat-fil-mes','emis',DB.fat);
+  const busca=(s('fat-busca')?.value||'').toLowerCase();
+  const filSt=s('fat-fil-status')?.value||'';
+  const filMes=s('fat-fil-mes')?.value||'';
+  let lista=[...DB.fat].filter(o=>{
+    const txt=(o.num+o.cli+o.desc).toLowerCase();
+    const mes=isoToMonth(o.emis);
+    return(!busca||txt.includes(busca))&&(!filSt||autoStatus(o,'recebido')===filSt)&&(!filMes||mes===filMes);
+  });
+  const sortK=DB.sorts.fat||'emis', sortD=DB.sorts.fatDir||1;
+  lista.sort((a,b)=>sortD*(String(a[sortK]||'').localeCompare(String(b[sortK]||''))));
+  const total=lista.reduce((s,o)=>s+o.val,0);
+  s('fat-tbody').innerHTML=lista.map(o=>{
+    const st=autoStatus(o,'recebido');
+    return`<tr>
+      <td class="td-bold">${o.num}</td><td>${o.cli}</td><td>${o.desc}</td>
+      <td>${dateStr(o.emis)}</td><td>${dateStr(o.venc)}</td>
+      <td><span class="cat-badge">${catNome(o.cat)}</span></td>
+      <td class="td-r td-bold">${fmt(o.val)}</td>
+      <td class="td-c">${statusBadge(st)}</td>
+      <td class="td-c" style="white-space:nowrap">
+        <button class="btn btn-success btn-xs" onclick="marcarFat('${o.id}','recebido')" title="Marcar recebido">✓</button>
+        <button class="btn btn-warn btn-xs" onclick="editFat('${o.id}')" title="Editar">✎</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteFat('${o.id}')" title="Excluir">✕</button>
+      </td></tr>`;
+  }).join('')||'<tr><td colspan="9" class="empty-state">Nenhum lançamento encontrado</td></tr>';
+  s('fat-total').textContent=fmt(total);
+}
+
+// ============================================================ DESPESAS
+let despEditId=null;
+function salvarDesp(){
+  const obj={
+    id:despEditId||uid(), desc:s('desp-desc').value.trim(),
+    data:s('desp-data').value||today(), venc:s('desp-venc').value,
+    forn:s('desp-forn').value.trim(), val:parseFloat(s('desp-val').value)||0,
+    cat:s('desp-cat').value, cc:s('desp-cc').value, status:s('desp-status').value
+  };
+  if(!obj.desc||!obj.val){alert('Preencha descrição e valor.');return;}
+  if(despEditId){const i=DB.desp.findIndex(x=>x.id===despEditId);if(i>=0)DB.desp[i]=obj;}
+  else DB.desp.push(obj);
+  save(); limparDesp(); renderDesp(); renderDashboard(); fillAllSelects();
+}
+function limparDesp(){
+  despEditId=null;
+  ['desp-desc','desp-forn','desp-val'].forEach(id=>s(id).value='');
+  s('desp-data').value=today(); s('desp-venc').value='';
+  s('desp-status').value='pendente';
+}
+function editDesp(id){
+  const o=DB.desp.find(x=>x.id===id);if(!o)return;
+  despEditId=id;
+  s('desp-desc').value=o.desc; s('desp-data').value=o.data;
+  s('desp-venc').value=o.venc||''; s('desp-forn').value=o.forn;
+  s('desp-val').value=o.val; s('desp-cat').value=o.cat||'';
+  s('desp-cc').value=o.cc||''; s('desp-status').value=o.status;
+  go('despesas'); window.scrollTo(0,0);
+}
+function deleteDesp(id){if(!confirm('Excluir?'))return;DB.desp=DB.desp.filter(x=>x.id!==id);save();renderDesp();renderDashboard();}
+function marcarDesp(id,st){const o=DB.desp.find(x=>x.id===id);if(o){o.status=st;save();renderDesp();renderDashboard();}}
+function renderDesp(){
+  fillCatSelect('desp-cat','S');
+  fillMesSelect('desp-fil-mes','data',DB.desp);
+  const busca=(s('desp-busca')?.value||'').toLowerCase();
+  const filSt=s('desp-fil-status')?.value||'';
+  const filCat=s('desp-fil-cat')?.value||'';
+  const filMes=s('desp-fil-mes')?.value||'';
+  let lista=[...DB.desp].filter(o=>{
+    const txt=(o.desc+o.forn).toLowerCase();
+    return(!busca||txt.includes(busca))&&(!filSt||autoStatus(o)===filSt)&&(!filCat||o.cat===filCat)&&(!filMes||isoToMonth(o.data)===filMes);
+  });
+  const sortK=DB.sorts.desp||'data', sortD=DB.sorts.despDir||1;
+  lista.sort((a,b)=>sortD*(String(a[sortK]||'').localeCompare(String(b[sortK]||''))));
+  const total=lista.reduce((s,o)=>s+o.val,0);
+  s('desp-tbody').innerHTML=lista.map(o=>{
+    const st=autoStatus(o);
+    return`<tr>
+      <td>${o.desc}</td><td>${o.forn||'—'}</td><td>${dateStr(o.data)}</td><td>${dateStr(o.venc)}</td>
+      <td><span class="cat-badge">${catNome(o.cat)}</span></td>
+      <td><span class="text-muted" style="font-size:12px">${o.cc||'—'}</span></td>
+      <td class="td-r td-bold neg">${fmt(o.val)}</td>
+      <td class="td-c">${statusBadge(st)}</td>
+      <td class="td-c" style="white-space:nowrap">
+        <button class="btn btn-success btn-xs" onclick="marcarDesp('${o.id}','pago')" title="Marcar pago">✓</button>
+        <button class="btn btn-warn btn-xs" onclick="editDesp('${o.id}')" title="Editar">✎</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteDesp('${o.id}')" title="Excluir">✕</button>
+      </td></tr>`;
+  }).join('')||'<tr><td colspan="9" class="empty-state">Nenhum lançamento</td></tr>';
+  s('desp-total').textContent=fmt(total);
+}
+
+// ============================================================ SORT TABLE
+function sortTable(mod, campo){
+  const dir = DB.sorts[mod]===campo ? -(DB.sorts[mod+'Dir']||1) : 1;
+  DB.sorts[mod]=campo; DB.sorts[mod+'Dir']=dir;
+  if(mod==='fat')renderFat(); else if(mod==='desp')renderDesp();
+}
+
+// ============================================================ CONTAS A RECEBER
+function openNovaCR(){
+  const cats=DB.categorias.filter(c=>c.tipo==='E'||c.tipo==='A').map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  openModal(`
+    <div class="modal-title">Nova Conta a Receber <button onclick="closeModal()">×</button></div>
+    <div class="form-row"><div class="field"><label>Doc / Ref.</label><input id="m-num" placeholder="NF-001"></div><div class="field"><label>Cliente</label><input id="m-cli"></div></div>
+    <div class="form-row"><div class="field"><label>Emissão</label><input type="date" id="m-emis" value="${today()}"></div><div class="field"><label>Vencimento</label><input type="date" id="m-venc"></div></div>
+    <div class="form-row"><div class="field"><label>Valor (R$)</label><input type="number" id="m-val" step="0.01"></div><div class="field"><label>Já Recebido (R$)</label><input type="number" id="m-rec" value="0" step="0.01"></div></div>
+    <div class="field"><label>Categoria</label><select id="m-cat"><option value="">—</option>${cats}</select></div>
+    <div class="field"><label>Observação</label><input id="m-obs"></div>
+    <div class="btns mt12"><button class="btn btn-primary" onclick="salvarCR()">Salvar</button><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button></div>`);
+}
+function salvarCR(){
+  const obj={id:uid(),num:s('m-num').value||'—',cli:s('m-cli').value,emis:s('m-emis').value,venc:s('m-venc').value,val:parseFloat(s('m-val').value)||0,rec:parseFloat(s('m-rec').value)||0,cat:s('m-cat').value,obs:s('m-obs').value,status:'pendente'};
+  if(!obj.cli||!obj.val){alert('Preencha cliente e valor.');return;}
+  obj.status=obj.rec>=obj.val?'recebido':obj.rec>0?'parcial':'pendente';
+  DB.cr.push(obj); save(); closeModal(); renderCR(); renderDashboard();
+}
+function deleteCR(id){if(!confirm('Excluir?'))return;DB.cr=DB.cr.filter(x=>x.id!==id);save();renderCR();renderDashboard();}
+function baixarCR(id){
+  const o=DB.cr.find(x=>x.id===id);if(!o)return;
+  const v=prompt('Valor recebido:',o.val-o.rec);if(!v)return;
+  o.rec=Math.min(o.val,o.rec+(parseFloat(v)||0));
+  o.status=o.rec>=o.val?'recebido':o.rec>0?'parcial':'pendente';
+  save();renderCR();renderDashboard();
+}
+function renderCR(){
+  fillMesSelect('cr-fil-mes','venc',DB.cr);
+  const filSt=s('cr-fil-status')?.value||'';
+  const filMes=s('cr-fil-mes')?.value||'';
+  let lista=[...DB.cr].filter(o=>(!filSt||autoStatus(o,'recebido')===filSt)&&(!filMes||isoToMonth(o.venc)===filMes));
+  const totV=lista.reduce((s,o)=>s+o.val,0), totR=lista.reduce((s,o)=>s+o.rec,0), totS=totV-totR;
+  s('cr-kpis').innerHTML=`
+    <div class="kpi"><div class="kpi-label">Total a Receber</div><div class="kpi-value blue">${fmt(totV)}</div></div>
+    <div class="kpi"><div class="kpi-label">Já Recebido</div><div class="kpi-value pos">${fmt(totR)}</div></div>
+    <div class="kpi"><div class="kpi-label">Saldo Pendente</div><div class="kpi-value warn">${fmt(totS)}</div></div>`;
+  s('cr-tbody').innerHTML=lista.map(o=>{
+    const st=autoStatus(o,'recebido');
+    const sal=o.val-o.rec;
+    return`<tr>
+      <td class="td-bold">${o.num}</td><td>${o.cli}</td><td>${dateStr(o.emis)}</td>
+      <td class="${o.venc&&o.venc<today()&&st!=='recebido'?'neg':''}">${dateStr(o.venc)}</td>
+      <td class="td-r">${fmt(o.val)}</td>
+      <td class="td-r pos">${fmt(o.rec)}</td>
+      <td class="td-r warn">${fmt(sal)}</td>
+      <td class="td-c">${statusBadge(st)}</td>
+      <td class="td-c" style="white-space:nowrap">
+        <button class="btn btn-success btn-xs" onclick="baixarCR('${o.id}')" title="Baixar recebimento">↓ Baixar</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteCR('${o.id}')">✕</button>
+      </td></tr>`;
+  }).join('')||'<tr><td colspan="9" class="empty-state">Nenhum título</td></tr>';
+  s('cr-tot-val').textContent=fmt(totV);
+  s('cr-tot-rec').textContent=fmt(totR);
+  s('cr-tot-sal').textContent=fmt(totS);
+}
+
+// ============================================================ CONTAS A PAGAR
+function openNovaCP(){
+  const cats=DB.categorias.filter(c=>c.tipo==='S'||c.tipo==='A').map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  openModal(`
+    <div class="modal-title">Nova Conta a Pagar <button onclick="closeModal()">×</button></div>
+    <div class="form-row"><div class="field"><label>Doc / Ref.</label><input id="m-num" placeholder="FAT-001"></div><div class="field"><label>Fornecedor</label><input id="m-forn"></div></div>
+    <div class="form-row"><div class="field"><label>Emissão</label><input type="date" id="m-emis" value="${today()}"></div><div class="field"><label>Vencimento</label><input type="date" id="m-venc"></div></div>
+    <div class="form-row"><div class="field"><label>Valor (R$)</label><input type="number" id="m-val" step="0.01"></div><div class="field"><label>Já Pago (R$)</label><input type="number" id="m-pag" value="0" step="0.01"></div></div>
+    <div class="field"><label>Categoria</label><select id="m-cat"><option value="">—</option>${cats}</select></div>
+    <div class="field"><label>Centro de Custo</label><select id="m-cc"><option value="">—</option>${DB.centros.map(c=>`<option>${c}</option>`).join('')}</select></div>
+    <div class="btns mt12"><button class="btn btn-primary" onclick="salvarCP()">Salvar</button><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button></div>`);
+}
+function salvarCP(){
+  const obj={id:uid(),num:s('m-num').value||'—',forn:s('m-forn').value,emis:s('m-emis').value,venc:s('m-venc').value,val:parseFloat(s('m-val').value)||0,pag:parseFloat(s('m-pag').value)||0,cat:s('m-cat').value,cc:s('m-cc').value,status:'pendente'};
+  if(!obj.forn||!obj.val){alert('Preencha fornecedor e valor.');return;}
+  obj.status=obj.pag>=obj.val?'pago':obj.pag>0?'parcial':'pendente';
+  DB.cp.push(obj); save(); closeModal(); renderCP(); renderDashboard();
+}
+function deleteCP(id){if(!confirm('Excluir?'))return;DB.cp=DB.cp.filter(x=>x.id!==id);save();renderCP();renderDashboard();}
+function baixarCP(id){
+  const o=DB.cp.find(x=>x.id===id);if(!o)return;
+  const v=prompt('Valor pago:',o.val-o.pag);if(!v)return;
+  o.pag=Math.min(o.val,o.pag+(parseFloat(v)||0));
+  o.status=o.pag>=o.val?'pago':o.pag>0?'parcial':'pendente';
+  save();renderCP();renderDashboard();
+}
+function renderCP(){
+  fillMesSelect('cp-fil-mes','venc',DB.cp);
+  const filSt=s('cp-fil-status')?.value||'';
+  const filMes=s('cp-fil-mes')?.value||'';
+  let lista=[...DB.cp].filter(o=>(!filSt||autoStatus(o)===filSt)&&(!filMes||isoToMonth(o.venc)===filMes));
+  const totV=lista.reduce((s,o)=>s+o.val,0), totP=lista.reduce((s,o)=>s+o.pag,0), totS=totV-totP;
+  s('cp-kpis').innerHTML=`
+    <div class="kpi"><div class="kpi-label">Total a Pagar</div><div class="kpi-value orange">${fmt(totV)}</div></div>
+    <div class="kpi"><div class="kpi-label">Já Pago</div><div class="kpi-value pos">${fmt(totP)}</div></div>
+    <div class="kpi"><div class="kpi-label">Saldo Pendente</div><div class="kpi-value neg">${fmt(totS)}</div></div>`;
+  s('cp-tbody').innerHTML=lista.map(o=>{
+    const st=autoStatus(o);
+    const sal=o.val-o.pag;
+    return`<tr>
+      <td class="td-bold">${o.num}</td><td>${o.forn}</td><td>${dateStr(o.emis)}</td>
+      <td class="${o.venc&&o.venc<today()&&st!=='pago'?'neg':''}">${dateStr(o.venc)}</td>
+      <td class="td-r">${fmt(o.val)}</td>
+      <td class="td-r pos">${fmt(o.pag)}</td>
+      <td class="td-r neg">${fmt(sal)}</td>
+      <td class="td-c">${statusBadge(st)}</td>
+      <td class="td-c" style="white-space:nowrap">
+        <button class="btn btn-success btn-xs" onclick="baixarCP('${o.id}')" title="Registrar pagamento">↓ Pagar</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteCP('${o.id}')">✕</button>
+      </td></tr>`;
+  }).join('')||'<tr><td colspan="9" class="empty-state">Nenhum título</td></tr>';
+  s('cp-tot-val').textContent=fmt(totV);
+  s('cp-tot-pag').textContent=fmt(totP);
+  s('cp-tot-sal').textContent=fmt(totS);
+}
+
+// ============================================================ FLUXO DE CAIXA
+function renderFluxo(){
+  const meses=monthsBack(parseInt(s('fc-periodo')?.value||6));
+  let saldoAc=parseFloat(s('fc-saldo-ini')?.value||0);
+  const rows=meses.map(m=>{
+    const ent=DB.fat.filter(o=>isoToMonth(o.emis)===m&&(o.status==='recebido'||o.status==='parcial')).reduce((s,o)=>s+(o.status==='recebido'?o.val:o.rec||0),0)
+      +DB.cr.filter(o=>isoToMonth(o.emis)===m&&o.rec>0).reduce((s,o)=>s+o.rec,0)
+      +DB.extrato.filter(o=>isoToMonth(o.data)===m&&o.tipo==='E').reduce((s,o)=>s+o.val,0);
+    const sai=DB.desp.filter(o=>isoToMonth(o.data)===m&&o.status==='pago').reduce((s,o)=>s+o.val,0)
+      +DB.cp.filter(o=>isoToMonth(o.venc)===m&&o.pag>0).reduce((s,o)=>s+o.pag,0)
+      +DB.extrato.filter(o=>isoToMonth(o.data)===m&&o.tipo==='S').reduce((s,o)=>s+o.val,0);
+    saldoAc+=ent-sai;
+    return{m,ent,sai,liq:ent-sai,saldo:saldoAc};
+  });
+  s('fluxo-content').innerHTML=`
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Mês</th><th class="td-r">Entradas</th><th class="td-r">Saídas</th><th class="td-r">Resultado</th><th class="td-r">Saldo Acumulado</th></tr></thead>
+          <tbody>
+            ${rows.map(r=>`<tr>
+              <td class="td-bold">${monthLabel(r.m)}</td>
+              <td class="td-r pos">${fmt(r.ent)}</td>
+              <td class="td-r neg">${fmt(r.sai)}</td>
+              <td class="td-r ${r.liq>=0?'pos':'neg'} td-bold">${fmt(r.liq)}</td>
+              <td class="td-r ${r.saldo>=0?'blue':'neg'} td-bold">${fmt(r.saldo)}</td>
+            </tr>`).join('')}
+          </tbody>
+          <tfoot><tr class="tfoot-row">
+            <td>TOTAL</td>
+            <td class="td-r pos">${fmt(rows.reduce((s,r)=>s+r.ent,0))}</td>
+            <td class="td-r neg">${fmt(rows.reduce((s,r)=>s+r.sai,0))}</td>
+            <td class="td-r ${rows.reduce((s,r)=>s+r.liq,0)>=0?'pos':'neg'}">${fmt(rows.reduce((s,r)=>s+r.liq,0))}</td>
+            <td class="td-r blue">${fmt(rows[rows.length-1]?.saldo||0)}</td>
+          </tr></tfoot>
+        </table>
+      </div>
+    </div>
+    <div class="card mt16">
+      <div class="card-title">Gráfico de Barras — Entradas vs Saídas</div>
+      <div style="display:flex;gap:6px;align-items:flex-end;height:120px;padding:8px 0">
+        ${(()=>{
+          const maxV=Math.max(...rows.map(r=>Math.max(r.ent,r.sai)),1);
+          return rows.map(r=>`
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+              <div style="display:flex;gap:2px;align-items:flex-end;height:100px">
+                <div style="width:14px;background:var(--green);opacity:.8;height:${Math.round(r.ent/maxV*100)}px;border-radius:3px 3px 0 0;min-height:2px" title="${fmt(r.ent)}"></div>
+                <div style="width:14px;background:var(--red);opacity:.8;height:${Math.round(r.sai/maxV*100)}px;border-radius:3px 3px 0 0;min-height:2px" title="${fmt(r.sai)}"></div>
+              </div>
+              <div style="font-size:10px;color:var(--muted)">${monthLabel(r.m).split('/')[0]}</div>
+            </div>`).join('');
+        })()}
+      </div>
+      <div class="chart-legend"><span class="leg-in">Entradas</span><span class="leg-out">Saídas</span></div>
+    </div>`;
+}
+
+// ============================================================ OFX PARSER
+function parseOFX(text){
+  const clean=text.replace(/\r/g,'');
+  const body=clean.includes('<OFX>')?clean:clean.slice(clean.indexOf('<OFX>'));
+  const getTag=(t,s)=>{const m=s.match(new RegExp(`<${t}>([^<]*)`));return m?m[1].trim():''};
+  const trns=[...body.matchAll(/<STMTTRN>([\s\S]*?)<\/STMTTRN>/g)].map(m=>{
+    const t=m[1];
+    const dt=getTag('DTPOSTED',t).slice(0,8);
+    const date=dt?`${dt.slice(0,4)}-${dt.slice(4,6)}-${dt.slice(6,8)}`:'';
+    const amt=parseFloat(getTag('TRNAMT',t)||0);
+    const memo=getTag('MEMO',t)||getTag('NAME',t)||'';
+    const fitid=getTag('FITID',t)||uid();
+    const trntype=getTag('TRNTYPE',t);
+    const tipo=amt>0||trntype==='CREDIT'?'E':'S';
+    return{date,val:Math.abs(amt),memo,fitid,tipo};
+  });
+  return trns;
+}
+function handleOfxFile(input){
+  const file=input.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>processOFX(e.target.result, file.name);
+  reader.readAsText(file,'latin1');
+}
+function handleOfxDrop(e){
+  e.preventDefault(); s('ofx-drop').classList.remove('dragover');
+  const file=e.dataTransfer.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>processOFX(ev.target.result, file.name);
+  reader.readAsText(file,'latin1');
+}
+function processOFX(text, fname){
+  ofxData=parseOFX(text);
+  if(!ofxData.length){s('ofx-info').innerHTML=`<div class="alert alert-danger">Nenhuma transação encontrada no arquivo OFX. Verifique o formato.</div>`;return;}
+  const fitids=new Set(DB.extrato.map(e=>e.fitid).filter(Boolean));
+  const dups=ofxData.filter(o=>fitids.has(o.fitid)).length;
+  // aplicar regras
+  ofxData.forEach(o=>{ o.cat=autoCategoria(o.memo,o.tipo); o.selected=!fitids.has(o.fitid); o.dup=fitids.has(o.fitid); });
+  s('ofx-info').innerHTML=`<div class="alert alert-success">✓ ${fname} — ${ofxData.length} lançamentos encontrados${dups?` (${dups} já importados, marcados)`:''}</div>`;
+  s('ofx-preview-card').style.display='';
+  s('ofx-preview-title').textContent=`Prévia — ${ofxData.length} Lançamentos`;
+  if(dups) s('ofx-dup-alert').style.display='',s('ofx-dup-alert').textContent=`${dups} lançamento(s) já existem no extrato (marcados como duplicata). Desmarque para não reimportar.`;
+  renderOfxPreview();
+}
+function autoCategoria(memo,tipo){
+  const up=memo.toUpperCase();
+  for(const r of DB.ofx_rules){ if((!r.tipo||r.tipo===tipo)&&up.includes(r.kw.toUpperCase()))return r.cat; }
+  return '';
+}
+function renderOfxPreview(){
+  const cats=DB.categorias.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  s('ofx-preview-tbody').innerHTML=ofxData.map((o,i)=>`
+    <tr style="opacity:${o.dup?'.5':'1'}">
+      <td><input type="checkbox" ${o.selected?'checked':''} onchange="ofxData[${i}].selected=this.checked"></td>
+      <td>${dateStr(o.date)}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${o.memo}">${o.memo}${o.dup?'<span class="badge s-cancelado" style="margin-left:4px">DUP</span>':''}</td>
+      <td class="td-r ${o.tipo==='E'?'pos':'neg'} td-bold">${o.tipo==='E'?'+':'-'}${fmt(o.val)}</td>
+      <td><span class="badge ${o.tipo==='E'?'s-recebido':'s-vencido'}">${o.tipo==='E'?'Entrada':'Saída'}</span></td>
+      <td><select onchange="ofxData[${i}].cat=this.value" style="font-size:12px;padding:4px"><option value="">—</option>${cats}</select></td>
+    </tr>`).join('');
+}
+function toggleAllOfx(chk){ ofxData.forEach(o=>o.selected=chk.checked); renderOfxPreview(); }
+function importarOfx(){
+  const sel=ofxData.filter(o=>o.selected);
+  if(!sel.length){alert('Selecione ao menos um lançamento.');return;}
+  sel.forEach(o=>DB.extrato.push({id:uid(),fitid:o.fitid,data:o.date,desc:o.memo,val:o.val,tipo:o.tipo,cat:o.cat,origem:'OFX'}));
+  save();
+  s('ofx-preview-card').style.display='none';
+  s('ofx-info').innerHTML=`<div class="alert alert-success">✓ ${sel.length} lançamentos importados com sucesso!</div>`;
+  ofxData=[];
+  renderDashboard();
+}
+function cancelarOfx(){ s('ofx-preview-card').style.display='none'; ofxData=[]; }
+
+// REGRAS OFX
+function addRule(){
+  const kw=s('rule-kw').value.trim(), cat=s('rule-cat').value, tipo=s('rule-tipo').value;
+  if(!kw)return;
+  DB.ofx_rules.push({kw,cat,tipo}); save(); renderRules();
+  s('rule-kw').value='';
+}
+function renderRules(){
+  fillCatSelect('rule-cat','');
+  s('ofx-rules-lista').innerHTML=DB.ofx_rules.map((r,i)=>`
+    <div class="ofx-rule">
+      <span style="flex:1;font-weight:600;font-size:13px">${r.kw}</span>
+      <span class="badge badge-blue">${catNome(r.cat)||'Sem cat'}</span>
+      <span class="text-muted" style="font-size:12px">${r.tipo||'Qualquer'}</span>
+      <button class="btn btn-danger btn-xs" onclick="DB.ofx_rules.splice(${i},1);save();renderRules()">✕</button>
+    </div>`).join('');
+}
+
+// ============================================================ EXTRATO
+function renderExtrato(){
+  const de=s('ext-de')?.value||'', ate=s('ext-ate')?.value||today();
+  const tipo=s('ext-tipo')?.value||'', cat=s('ext-cat')?.value||'';
+  let lista=[];
+  // faturamento recebido
+  DB.fat.filter(o=>o.status==='recebido').forEach(o=>lista.push({data:o.emis,desc:o.desc+' — '+o.cli,val:o.val,tipo:'E',cat:o.cat,origem:'Faturamento',id:o.id}));
+  // despesas pagas
+  DB.desp.filter(o=>o.status==='pago').forEach(o=>lista.push({data:o.data,desc:o.desc,val:o.val,tipo:'S',cat:o.cat,cc:o.cc,origem:'Despesas',id:o.id}));
+  // extrato OFX
+  DB.extrato.forEach(o=>lista.push({...o,origem:'OFX/Banco'}));
+  // filtros
+  lista=lista.filter(o=>(!de||o.data>=de)&&(!ate||o.data<=ate)&&(!tipo||o.tipo===tipo)&&(!cat||o.cat===cat));
+  lista.sort((a,b)=>a.data.localeCompare(b.data));
+  let saldoAc=0;
+  const ent=lista.filter(o=>o.tipo==='E').reduce((s,o)=>s+o.val,0);
+  const sai=lista.filter(o=>o.tipo==='S').reduce((s,o)=>s+o.val,0);
+  s('ext-ent').textContent=fmt(ent); s('ext-sai').textContent=fmt(sai);
+  const sal=ent-sai; s('ext-sal').textContent=fmt(sal);
+  s('ext-sal').className='kpi-value '+(sal>=0?'blue':'neg');
+  s('ext-tbody').innerHTML=lista.map(o=>{
+    saldoAc+=o.tipo==='E'?o.val:-o.val;
+    return`<tr>
+      <td>${dateStr(o.data)}</td>
+      <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.desc}</td>
+      <td><span class="text-muted" style="font-size:12px">${o.origem||'—'}</span></td>
+      <td><span class="cat-badge">${catNome(o.cat)}</span></td>
+      <td style="font-size:12px;color:var(--muted)">${o.cc||'—'}</td>
+      <td class="td-r pos td-bold">${o.tipo==='E'?fmt(o.val):'—'}</td>
+      <td class="td-r neg td-bold">${o.tipo==='S'?fmt(o.val):'—'}</td>
+      <td class="td-r ${saldoAc>=0?'blue':'neg'}">${fmt(saldoAc)}</td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="8" class="empty-state">Nenhum lançamento no período</td></tr>';
+}
+
+// ============================================================ EXPORTAR CSV
+function exportarCSV(){
+  const de=s('ext-de')?.value||'', ate=s('ext-ate')?.value||today();
+  let lista=[];
+  DB.fat.filter(o=>o.status==='recebido').forEach(o=>lista.push([o.emis,o.desc+' '+o.cli,'E',o.val,catNome(o.cat),'Faturamento']));
+  DB.desp.filter(o=>o.status==='pago').forEach(o=>lista.push([o.data,o.desc,'S',o.val,catNome(o.cat),'Despesas']));
+  DB.extrato.forEach(o=>lista.push([o.data,o.desc,o.tipo,o.val,catNome(o.cat),'OFX']));
+  lista=lista.filter(o=>(!de||o[0]>=de)&&(!ate||o[0]<=ate)).sort((a,b)=>a[0].localeCompare(b[0]));
+  const csv='Data,Descrição,Tipo,Valor,Categoria,Origem\n'+lista.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('﻿'+csv);
+  a.download='extrato.csv'; a.click();
+}
+
+// ============================================================ RELATÓRIOS
+function showRel(id,el){
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active'); relAtual=id; renderRel();
+}
+function renderRel(){
+  const periodos=[...new Set([...DB.fat.map(o=>isoToMonth(o.emis)),...DB.desp.map(o=>isoToMonth(o.data)),...monthsBack(6)])].filter(Boolean).sort().reverse();
+  const periodoEl=s('rel-periodo');
+  if(periodoEl&&periodoEl.innerHTML===''){
+    periodoEl.innerHTML=periodos.map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join('');
+  }
+  const mes=periodoEl?.value||periodos[0]||nowMonth();
+  if(relAtual==='dre') renderRelDRE(mes);
+  else if(relAtual==='cp') renderRelAging('cp', mes);
+  else if(relAtual==='cr') renderRelAging('cr', mes);
+  else if(relAtual==='cat') renderRelCat(mes);
+  else if(relAtual==='cc') renderRelCC(mes);
+}
+function renderRelDRE(mes){
+  const fatMes=DB.fat.filter(o=>isoToMonth(o.emis)===mes);
+  const despMes=DB.desp.filter(o=>isoToMonth(o.data)===mes);
+  const extMes=DB.extrato.filter(o=>isoToMonth(o.data)===mes);
+  const recBruta=fatMes.reduce((s,o)=>s+o.val,0)+extMes.filter(o=>o.tipo==='E').reduce((s,o)=>s+o.val,0);
+  const totalDesp=despMes.reduce((s,o)=>s+o.val,0)+extMes.filter(o=>o.tipo==='S').reduce((s,o)=>s+o.val,0);
+  const lucro=recBruta-totalDesp;
+  // por categoria
+  const cats=DB.categorias.filter(c=>c.tipo==='S'||c.tipo==='A');
+  const catRows=cats.map(c=>{
+    const vl=despMes.filter(o=>o.cat===c.id).reduce((s,o)=>s+o.val,0);
+    return{...c,vl};
+  }).filter(c=>c.vl>0).sort((a,b)=>b.vl-a.vl);
+  s('rel-content').innerHTML=`
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">DRE Gerencial — ${monthLabel(mes)}</div>
+        <table>
+          <tbody>
+            <tr><td class="td-bold" style="color:var(--green)">(+) Receita Bruta</td><td class="td-r td-bold pos">${fmt(recBruta)}</td></tr>
+            ${DB.categorias.filter(c=>c.tipo==='E').map(c=>{const vl=fatMes.filter(o=>o.cat===c.id).reduce((s,o)=>s+o.val,0)+extMes.filter(o=>o.tipo==='E'&&o.cat===c.id).reduce((s,o)=>s+o.val,0);return vl>0?`<tr class="tr-sub"><td>${c.nome}</td><td class="td-r">${fmt(vl)}</td></tr>`:''}).join('')}
+            <tr><td class="td-bold" style="color:var(--red)">(−) Total Despesas</td><td class="td-r td-bold neg">${fmt(totalDesp)}</td></tr>
+            ${catRows.map(c=>`<tr class="tr-sub"><td>${c.nome}</td><td class="td-r">${fmt(c.vl)}</td></tr>`).join('')}
+            <tr style="border-top:2px solid var(--border)"><td class="td-bold" style="font-size:15px">(=) Resultado</td><td class="td-r td-bold ${lucro>=0?'pos':'neg'}" style="font-size:15px">${fmt(lucro)}</td></tr>
+            <tr><td class="text-muted" style="font-size:12px">Margem Líquida</td><td class="td-r ${lucro>=0?'pos':'neg'}">${recBruta>0?pct(lucro/recBruta*100):'—'}</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title">Participação por Categoria de Despesa</div>
+        ${catRows.map(c=>`
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px">
+              <span>${c.nome}</span><span class="fw700">${fmt(c.vl)}</span>
+            </div>
+            <div class="progress-wrap"><div class="progress-bar" style="width:${totalDesp>0?c.vl/totalDesp*100:0}%;background:${c.cor}"></div></div>
+          </div>`).join('')||'<div class="empty-state">Sem despesas no período</div>'}
+      </div>
+    </div>`;
+}
+function renderRelAging(tipo,mes){
+  const lista=tipo==='cp'?DB.cp:DB.cr;
+  const vencK=tipo==='cp'?'pag':'rec';
+  const hoje=today();
+  const faixas=[{l:'A vencer',fn:o=>o.venc>hoje},{l:'Vence hoje',fn:o=>o.venc===hoje},{l:'1-15 dias',fn:o=>daysDiff(hoje,o.venc)<=15&&daysDiff(hoje,o.venc)>0},{l:'16-30 dias',fn:o=>daysDiff(hoje,o.venc)>15&&daysDiff(hoje,o.venc)<=30},{l:'+30 dias',fn:o=>daysDiff(hoje,o.venc)>30}];
+  const pend=lista.filter(o=>o.status!=='pago'&&o.status!=='recebido'&&o.status!=='cancelado');
+  s('rel-content').innerHTML=`
+    <div class="card">
+      <div class="card-title">Aging — ${tipo==='cp'?'Contas a Pagar':'Contas a Receber'}</div>
+      <table>
+        <thead><tr><th>Faixa</th><th class="td-r">Qtde</th><th class="td-r">Valor Total</th><th class="td-r">% do Total</th></tr></thead>
+        <tbody>
+          ${faixas.map(f=>{
+            const its=pend.filter(o=>o.venc&&f.fn(o));
+            const tot=its.reduce((s,o)=>s+o.val-(o[vencK]||0),0);
+            const ttot=pend.reduce((s,o)=>s+o.val-(o[vencK]||0),0);
+            return`<tr><td>${f.l}</td><td class="td-r">${its.length}</td><td class="td-r ${tipo==='cp'?'neg':'warn'}">${fmt(tot)}</td><td class="td-r">${ttot>0?pct(tot/ttot*100):'—'}</td></tr>`;
+          }).join('')}
+          <tr class="tfoot-row"><td>TOTAL PENDENTE</td><td class="td-r">${pend.length}</td><td class="td-r ${tipo==='cp'?'neg':'warn'}">${fmt(pend.reduce((s,o)=>s+o.val-(o[vencK]||0),0))}</td><td class="td-r">100%</td></tr>
+        </tbody>
+      </table>
+    </div>`;
+}
+function daysDiff(a,b){ return Math.round((new Date(b)-new Date(a))/86400000); }
+function renderRelCat(mes){
+  const todos=[...DB.fat.filter(o=>isoToMonth(o.emis)===mes).map(o=>({...o,tipo:'E'})),
+    ...DB.desp.filter(o=>isoToMonth(o.data)===mes).map(o=>({...o,tipo:'S'})),
+    ...DB.extrato.filter(o=>isoToMonth(o.data)===mes)];
+  const catMap={};
+  todos.forEach(o=>{ const k=o.cat||'c11'; catMap[k]=(catMap[k]||{E:0,S:0}); catMap[k][o.tipo]+=o.val; });
+  s('rel-content').innerHTML=`
+    <div class="card">
+      <div class="card-title">Resumo por Categoria — ${monthLabel(mes)}</div>
+      <table>
+        <thead><tr><th>Categoria</th><th>Tipo</th><th class="td-r">Entradas</th><th class="td-r">Saídas</th><th class="td-r">Líquido</th></tr></thead>
+        <tbody>
+          ${Object.entries(catMap).sort((a,b)=>b[1].S-a[1].S).map(([cid,v])=>`
+            <tr><td>${catNome(cid)}</td><td><span class="badge badge-blue">${DB.categorias.find(c=>c.id===cid)?.tipo||'—'}</span></td>
+              <td class="td-r pos">${fmt(v.E)}</td><td class="td-r neg">${fmt(v.S)}</td>
+              <td class="td-r ${v.E-v.S>=0?'pos':'neg'}">${fmt(v.E-v.S)}</td></tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+function renderRelCC(mes){
+  const despMes=DB.desp.filter(o=>isoToMonth(o.data)===mes);
+  const ccMap={};
+  despMes.forEach(o=>{ const k=o.cc||'Sem CC'; ccMap[k]=(ccMap[k]||0)+o.val; });
+  const tot=Object.values(ccMap).reduce((s,v)=>s+v,0);
+  s('rel-content').innerHTML=`
+    <div class="card">
+      <div class="card-title">Despesas por Centro de Custo — ${monthLabel(mes)}</div>
+      ${Object.entries(ccMap).sort((a,b)=>b[1]-a[1]).map(([cc,vl])=>`
+        <div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px"><span class="fw700">${cc}</span><span class="neg">${fmt(vl)} (${pct(tot>0?vl/tot*100:0)})</span></div>
+        <div class="progress-wrap"><div class="progress-bar" style="width:${tot>0?vl/tot*100:0}%;background:var(--accent)"></div></div></div>`).join('')
+      ||'<div class="empty-state">Sem despesas com centro de custo definido</div>'}
+    </div>`;
+}
+
+// ============================================================ CATEGORIAS
+function addCategoria(){
+  const nome=s('cat-nova').value.trim(), tipo=s('cat-tipo-novo').value, cor=s('cat-cor').value;
+  if(!nome)return;
+  DB.categorias.push({id:'c'+uid(),nome,tipo,cor});
+  s('cat-nova').value=''; save(); renderCats(); fillAllSelects();
+}
+function addCC(){
+  const nome=s('cc-novo').value.trim(); if(!nome)return;
+  DB.centros.push(nome); s('cc-novo').value=''; save(); renderCats(); fillAllSelects();
+}
+function renderCats(){
+  s('cat-lista').innerHTML=DB.categorias.map((c,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+      <div style="width:12px;height:12px;border-radius:3px;background:${c.cor};flex-shrink:0"></div>
+      <span style="flex:1;font-size:13px">${c.nome}</span>
+      <span class="badge ${c.tipo==='E'?'badge-green':c.tipo==='S'?'badge-red':'badge-blue'}">${c.tipo==='E'?'Entrada':c.tipo==='S'?'Saída':'Ambos'}</span>
+      <button class="btn btn-danger btn-xs" onclick="DB.categorias.splice(${i},1);save();renderCats();fillAllSelects()">✕</button>
+    </div>`).join('');
+  s('cc-lista').innerHTML=DB.centros.map((c,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="flex:1;font-size:13px">${c}</span>
+      <button class="btn btn-danger btn-xs" onclick="DB.centros.splice(${i},1);save();renderCats();fillAllSelects()">✕</button>
+    </div>`).join('');
+}
+
+// ============================================================ DASHBOARD
+function renderDashboard(){
+  const hoje=today(), mesAtual=nowMonth();
+  const fatMes=DB.fat.filter(o=>isoToMonth(o.emis)===mesAtual);
+  const despMes=DB.desp.filter(o=>isoToMonth(o.data)===mesAtual);
+  const recBruta=fatMes.reduce((s,o)=>s+o.val,0);
+  const recebido=DB.fat.filter(o=>o.status==='recebido'&&isoToMonth(o.emis)===mesAtual).reduce((s,o)=>s+o.val,0);
+  const totalDesp=despMes.reduce((s,o)=>s+o.val,0);
+  const lucro=recebido-despMes.filter(o=>o.status==='pago').reduce((s,o)=>s+o.val,0);
+  const crVenc=DB.cr.filter(o=>autoStatus(o,'recebido')==='vencido').reduce((s,o)=>s+(o.val-o.rec),0);
+  const cpVenc=DB.cp.filter(o=>autoStatus(o)==='vencido').reduce((s,o)=>s+(o.val-o.pag),0);
+
+  s('dash-kpis').innerHTML=`
+    ${kpi('Faturamento Mês',fmt(recBruta),'blue',`Recebido: ${fmt(recebido)}`)}
+    ${kpi('Despesas Mês',fmt(totalDesp),'neg',`Pagas: ${fmt(despMes.filter(o=>o.status==='pago').reduce((s,o)=>s+o.val,0))}`)}
+    ${kpi('Resultado Mês',fmt(lucro),lucro>=0?'pos':'neg','Caixa realizado')}
+    ${kpi('CR Vencidos',fmt(crVenc),crVenc>0?'warn':'pos',crVenc>0?'Atenção!':'Em dia ✓')}
+    ${kpi('CP Vencidos',fmt(cpVenc),cpVenc>0?'neg':'pos',cpVenc>0?'Requer atenção':'Em dia ✓')}`;
+
+  // mini chart últimos 6 meses
+  const meses=monthsBack(6);
+  const maxV=Math.max(...meses.map(m=>{
+    const e=DB.fat.filter(o=>isoToMonth(o.emis)===m).reduce((s,o)=>s+o.val,0);
+    const sa=DB.desp.filter(o=>isoToMonth(o.data)===m).reduce((s,o)=>s+o.val,0);
+    return Math.max(e,sa);
+  }),1);
+  s('dash-chart').innerHTML=meses.map(m=>{
+    const e=DB.fat.filter(o=>isoToMonth(o.emis)===m).reduce((s,o)=>s+o.val,0);
+    const sa=DB.desp.filter(o=>isoToMonth(o.data)===m).reduce((s,o)=>s+o.val,0);
+    return`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+      <div style="display:flex;gap:2px;align-items:flex-end;height:50px">
+        <div style="width:12px;background:var(--green);opacity:.8;height:${Math.round(e/maxV*50)}px;border-radius:2px 2px 0 0;min-height:2px" title="${fmt(e)}"></div>
+        <div style="width:12px;background:var(--red);opacity:.8;height:${Math.round(sa/maxV*50)}px;border-radius:2px 2px 0 0;min-height:2px" title="${fmt(sa)}"></div>
+      </div>
+      <div style="font-size:9px;color:var(--muted)">${monthLabel(m).split('/')[0]}</div>
+    </div>`;
+  }).join('');
+
+  // alertas
+  const venc7=today_plus(7);
+  const crProx=DB.cr.filter(o=>o.venc&&o.venc<=venc7&&o.status!=='recebido');
+  const cpProx=DB.cp.filter(o=>o.venc&&o.venc<=venc7&&o.status!=='pago');
+  let alertas='';
+  if(crVenc>0) alertas+=`<div class="alert alert-warn">⚠ ${fmt(crVenc)} em contas a receber vencidas</div>`;
+  if(cpVenc>0) alertas+=`<div class="alert alert-danger">🔴 ${fmt(cpVenc)} em contas a pagar vencidas</div>`;
+  if(crProx.length>0) alertas+=`<div class="alert alert-info">📥 ${crProx.length} recebimento(s) vencem nos próximos 7 dias</div>`;
+  if(cpProx.length>0) alertas+=`<div class="alert alert-warn">📤 ${cpProx.length} pagamento(s) vence(m) nos próximos 7 dias</div>`;
+  if(!alertas) alertas=`<div class="alert alert-success">✓ Nenhum alerta crítico. Finanças em dia!</div>`;
+  s('dash-alertas').innerHTML=alertas;
+
+  // últimas entradas e saídas
+  const ultEnt=[...DB.fat].sort((a,b)=>b.emis.localeCompare(a.emis)).slice(0,5);
+  const ultSai=[...DB.desp].sort((a,b)=>b.data.localeCompare(a.data)).slice(0,5);
+  s('dash-ult-ent').innerHTML=ultEnt.map(o=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><span>${o.cli} — ${o.desc}</span><span class="pos fw700">${fmt(o.val)}</span></div>`).join('')||'<div class="empty-state">Nenhuma entrada</div>';
+  s('dash-ult-sai').innerHTML=ultSai.map(o=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><span>${o.desc}</span><span class="neg fw700">${fmt(o.val)}</span></div>`).join('')||'<div class="empty-state">Nenhuma saída</div>';
+
+  // top categorias despesa
+  const catMap={};
+  despMes.forEach(o=>{ catMap[o.cat||'c11']=(catMap[o.cat||'c11']||0)+o.val; });
+  const tot=Object.values(catMap).reduce((s,v)=>s+v,0)||1;
+  const top=Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  s('dash-categ').innerHTML=top.map(([cid,vl])=>`
+    <div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+      <span style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${catCor(cid)}"></span>${catNome(cid)}</span>
+      <span>${fmt(vl)} (${pct(vl/tot*100,0)})</span></div>
+    <div class="progress-wrap"><div class="progress-bar" style="width:${vl/tot*100}%;background:${catCor(cid)}"></div></div></div>`).join('')
+  ||'<div class="empty-state">Nenhuma despesa no mês atual</div>';
+}
+function kpi(label,value,cls,sub=''){return`<div class="kpi"><div class="kpi-label">${label}</div><div class="kpi-value ${cls}">${value}</div>${sub?`<div class="kpi-sub">${sub}</div>`:''}</div>`;}
+function today_plus(days){const d=new Date();d.setDate(d.getDate()+days);return d.toISOString().slice(0,10);}
+
+// ============================================================ MODAL
+function openModal(html){ s('modal-body').innerHTML=html; s('modal-overlay').classList.remove('hidden'); }
+function closeModal(){ s('modal-overlay').classList.add('hidden'); }
+
+// ============================================================ CONFIG
+function openConfig(){
+  openModal(`
+    <div class="modal-title">⚙ Configurações do Sistema <button onclick="closeModal()">×</button></div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Identidade do Sistema</div>
+    <div class="form-row">
+      <div class="field"><label>Nome do Sistema</label><input id="cfg-sist-nome" value="${DB.config.sistema_nome||'Gestão Financeira'}" placeholder="Ex: FinControl Pro"></div>
+      <div class="field" style="max-width:80px"><label>Emoji / Ícone</label><input id="cfg-sist-logo" value="${DB.config.sistema_logo||'💼'}" maxlength="4"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Cor Principal</label><input type="color" id="cfg-sist-cor" value="${DB.config.sistema_cor||'#4f8ef7'}" style="height:36px;padding:3px"></div>
+      <div class="field"><label>Prévia do Logo</label><div id="cfg-logo-preview" style="font-size:17px;font-weight:800;padding:8px 0;color:${DB.config.sistema_cor||'#4f8ef7'}">${DB.config.sistema_logo||'💼'} ${DB.config.sistema_nome||'Gestão Financeira'}</div></div>
+    </div>
+    <script>
+      s('cfg-sist-nome').oninput=s('cfg-sist-logo').oninput=s('cfg-sist-cor').oninput=()=>{
+        const el=document.getElementById('cfg-logo-preview');
+        el.textContent=(s('cfg-sist-logo').value||'💼')+' '+(s('cfg-sist-nome').value||'Sistema');
+        el.style.color=s('cfg-sist-cor').value;
+      };
+    <\/script>
+    <div class="sep"></div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Dados da Empresa</div>
+    <div class="field"><label>Nome da Empresa</label><input id="cfg-empresa" value="${DB.config.empresa}"></div>
+    <div class="form-row">
+      <div class="field"><label>CNPJ</label><input id="cfg-cnpj" value="${DB.config.cnpj||''}"></div>
+      <div class="field"><label>Saldo Inicial do Caixa (R$)</label><input type="number" id="cfg-saldo" value="${DB.config.saldo_inicial||0}"></div>
+    </div>
+    <div class="btns mt12">
+      <button class="btn btn-primary" onclick="salvarConfig()">Salvar Configurações</button>
+      <button class="btn btn-danger" onclick="if(confirm('Apagar TODOS os dados?')){localStorage.clear();location.reload()}">⚠ Resetar Dados</button>
+    </div>`);
+}
+function salvarConfig(){
+  DB.config.empresa=s('cfg-empresa').value;
+  DB.config.cnpj=s('cfg-cnpj').value;
+  DB.config.saldo_inicial=parseFloat(s('cfg-saldo').value)||0;
+  DB.config.sistema_nome=s('cfg-sist-nome').value||'Gestão Financeira';
+  DB.config.sistema_logo=s('cfg-sist-logo').value||'💼';
+  DB.config.sistema_cor=s('cfg-sist-cor').value||'#4f8ef7';
+  save(); applyBranding(); closeModal();
+}
+function applyBranding(){
+  const nome=DB.config.sistema_nome||'Gestão Financeira';
+  const logo=DB.config.sistema_logo||'💼';
+  const cor=DB.config.sistema_cor||'#4f8ef7';
+  document.getElementById('page-title').textContent=nome;
+  const hdrLogo=s('hdr-logo');
+  if(hdrLogo) hdrLogo.innerHTML=`${logo} <span style="color:var(--text)">${nome}</span>`;
+  document.documentElement.style.setProperty('--accent', cor);
+  s('hdr-empresa').textContent=DB.config.empresa;
+}
+
+// ============================================================ HEADER DATE
+function updateHeaderDate(){
+  const d=new Date();
+  s('hdr-data').textContent=d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+}
+
+// ============================================================ INIT
+window.onload=()=>{
+  load();
+  // default dates
+  s('fat-emis').value=today(); s('desp-data').value=today();
+  // extrato filtros default
+  const mm=nowMonth();
+  s('ext-de').value=mm+'-01';
+  s('ext-ate').value=today();
+  fillAllSelects();
+  applyBranding();
+  updateHeaderDate();
+  renderDashboard();
+  renderRules();
+  renderCats();
+};
+</script>
+</body>
+</html>
