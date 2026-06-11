@@ -173,6 +173,9 @@ tr:hover td{background:rgba(79,142,247,.04)}
   <div class="nav-section">Relatórios</div>
   <div class="nav-item" onclick="go('relatorios')"><span class="nav-icon">📑</span>Relatórios</div>
   <div class="nav-item" onclick="go('categorias')"><span class="nav-icon">🏷</span>Categorias</div>
+  <div class="nav-item" onclick="go('plano')"><span class="nav-icon">📒</span>Plano de Contas</div>
+  <div class="nav-section">Sistema</div>
+  <div class="nav-item" onclick="openBackup()"><span class="nav-icon">💾</span>Backup / Restore</div>
 </nav>
 
 <div class="main">
@@ -223,6 +226,7 @@ tr:hover td{background:rgba(79,142,247,.04)}
       <div class="field"><label>Descrição / Serviço</label><input id="fat-desc" placeholder="Descrição do serviço ou produto"></div>
       <div class="field" style="max-width:160px"><label>Valor (R$)</label><input type="number" id="fat-val" step="0.01"></div>
       <div class="field" style="max-width:160px"><label>Categoria</label><select id="fat-cat"></select></div>
+      <div class="field" style="max-width:220px"><label>Conta Contábil</label><select id="fat-conta"></select></div>
       <div class="field" style="max-width:140px"><label>Status</label>
         <select id="fat-status">
           <option value="pendente">Pendente</option>
@@ -278,6 +282,7 @@ tr:hover td{background:rgba(79,142,247,.04)}
       <div class="field" style="max-width:140px"><label>Valor (R$)</label><input type="number" id="desp-val" step="0.01"></div>
       <div class="field" style="max-width:160px"><label>Categoria</label><select id="desp-cat"></select></div>
       <div class="field" style="max-width:140px"><label>Centro de Custo</label><select id="desp-cc"></select></div>
+      <div class="field" style="max-width:220px"><label>Conta Contábil</label><select id="desp-conta"></select></div>
       <div class="field" style="max-width:140px"><label>Status</label>
         <select id="desp-status">
           <option value="pendente">Pendente</option>
@@ -504,6 +509,66 @@ tr:hover td{background:rgba(79,142,247,.04)}
   </div>
 </div>
 
+<!-- ===== PLANO DE CONTAS ===== -->
+<div class="panel" id="panel-plano">
+  <div class="section-title">Plano de Contas Contábil <span style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">— NBC TG / CFC</span></div>
+  <div class="grid2">
+    <div>
+      <div class="card">
+        <div class="card-title">Nova Conta</div>
+        <div class="form-row">
+          <div class="field" style="max-width:140px"><label>Código</label><input id="pc-cod" placeholder="6.3.4"></div>
+          <div class="field"><label>Nome da Conta</label><input id="pc-nome" placeholder="Ex: Despesas com Treinamento"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Grupo</label>
+            <select id="pc-tipo">
+              <option value="A">Ativo</option><option value="P">Passivo</option>
+              <option value="PL">Patrimônio Líquido</option><option value="R">Receita</option>
+              <option value="C">Custo</option><option value="D" selected>Despesa</option>
+            </select>
+          </div>
+          <div class="field"><label>Natureza</label>
+            <select id="pc-nat">
+              <option value="D">Devedora (Débito aumenta)</option>
+              <option value="C">Credora (Crédito aumenta)</option>
+            </select>
+          </div>
+          <div class="field" style="max-width:80px"><label>Nível</label>
+            <select id="pc-nivel"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4" selected>4</option></select>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="addConta()">+ Adicionar Conta</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Vincular Categoria → Conta Contábil</div>
+        <div class="alert alert-info">Vincule cada categoria gerencial a uma conta do plano para geração do razão e balancete.</div>
+        <div id="cat-conta-vinculos"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="card-title" style="margin:0">Plano de Contas</div>
+        <div class="flex gap8">
+          <select id="pc-fil-tipo" onchange="renderPlano()" style="width:130px;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:6px 10px;color:var(--text)">
+            <option value="">Todos grupos</option>
+            <option value="A">Ativo</option><option value="P">Passivo</option>
+            <option value="PL">Patrimônio Líquido</option><option value="R">Receita</option>
+            <option value="C">Custo</option><option value="D">Despesa</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" onclick="exportarPlanoCSV()">⬇ CSV</button>
+        </div>
+      </div>
+      <div class="table-wrap" style="max-height:600px;overflow-y:auto">
+        <table><thead><tr>
+          <th>Código</th><th>Nome da Conta</th><th class="td-c">Grupo</th>
+          <th class="td-c">Nat.</th><th class="td-c">Nível</th><th class="td-c">Ações</th>
+        </tr></thead><tbody id="pc-tbody"></tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+
 </div><!-- /main -->
 </div><!-- /layout -->
 
@@ -540,7 +605,111 @@ let DB = {
     {kw:'IMPOSTO',cat:'c9',tipo:'S'},
     {kw:'ALUGUEL',cat:'c6',tipo:'S'},
   ],
-  sorts:{}
+  sorts:{},
+  plano_contas:[
+    // ATIVO
+    {cod:'1',nome:'ATIVO',nivel:1,tipo:'A',natureza:'D'},
+    {cod:'1.1',nome:'Ativo Circulante',nivel:2,tipo:'A',natureza:'D'},
+    {cod:'1.1.1',nome:'Caixa e Equivalentes de Caixa',nivel:3,tipo:'A',natureza:'D'},
+    {cod:'1.1.1.01',nome:'Caixa',nivel:4,tipo:'A',natureza:'D'},
+    {cod:'1.1.1.02',nome:'Bancos Conta Corrente',nivel:4,tipo:'A',natureza:'D'},
+    {cod:'1.1.1.03',nome:'Aplicações Financeiras',nivel:4,tipo:'A',natureza:'D'},
+    {cod:'1.1.2',nome:'Clientes / Contas a Receber',nivel:3,tipo:'A',natureza:'D'},
+    {cod:'1.1.2.01',nome:'Clientes — Duplicatas a Receber',nivel:4,tipo:'A',natureza:'D'},
+    {cod:'1.1.2.02',nome:'(-) Provisão para Devedores Duvidosos',nivel:4,tipo:'A',natureza:'C'},
+    {cod:'1.1.3',nome:'Estoques',nivel:3,tipo:'A',natureza:'D'},
+    {cod:'1.1.3.01',nome:'Mercadorias para Revenda',nivel:4,tipo:'A',natureza:'D'},
+    {cod:'1.1.3.02',nome:'Matérias-Primas',nivel:4,tipo:'A',natureza:'D'},
+    {cod:'1.1.4',nome:'Outros Créditos Circulantes',nivel:3,tipo:'A',natureza:'D'},
+    {cod:'1.1.4.01',nome:'Adiantamentos a Fornecedores',nivel:4,tipo:'A',natureza:'D'},
+    {cod:'1.1.4.02',nome:'Impostos a Recuperar',nivel:4,tipo:'A',natureza:'D'},
+    {cod:'1.2',nome:'Ativo Não Circulante',nivel:2,tipo:'A',natureza:'D'},
+    {cod:'1.2.1',nome:'Realizável a Longo Prazo',nivel:3,tipo:'A',natureza:'D'},
+    {cod:'1.2.2',nome:'Investimentos',nivel:3,tipo:'A',natureza:'D'},
+    {cod:'1.2.3',nome:'Imobilizado',nivel:3,tipo:'A',natureza:'D'},
+    {cod:'1.2.3.01',nome:'Máquinas e Equipamentos',nivel:4,tipo:'A',natureza:'D'},
+    {cod:'1.2.3.02',nome:'Veículos',nivel:4,tipo:'A',natureza:'D'},
+    {cod:'1.2.3.03',nome:'Móveis e Utensílios',nivel:4,tipo:'A',natureza:'D'},
+    {cod:'1.2.3.04',nome:'(-) Depreciação Acumulada',nivel:4,tipo:'A',natureza:'C'},
+    {cod:'1.2.4',nome:'Intangível',nivel:3,tipo:'A',natureza:'D'},
+    // PASSIVO
+    {cod:'2',nome:'PASSIVO',nivel:1,tipo:'P',natureza:'C'},
+    {cod:'2.1',nome:'Passivo Circulante',nivel:2,tipo:'P',natureza:'C'},
+    {cod:'2.1.1',nome:'Fornecedores',nivel:3,tipo:'P',natureza:'C'},
+    {cod:'2.1.1.01',nome:'Fornecedores Nacionais',nivel:4,tipo:'P',natureza:'C'},
+    {cod:'2.1.2',nome:'Obrigações Fiscais',nivel:3,tipo:'P',natureza:'C'},
+    {cod:'2.1.2.01',nome:'ICMS a Recolher',nivel:4,tipo:'P',natureza:'C'},
+    {cod:'2.1.2.02',nome:'PIS/COFINS a Recolher',nivel:4,tipo:'P',natureza:'C'},
+    {cod:'2.1.2.03',nome:'IRPJ/CSLL a Recolher',nivel:4,tipo:'P',natureza:'C'},
+    {cod:'2.1.2.04',nome:'ISS a Recolher',nivel:4,tipo:'P',natureza:'C'},
+    {cod:'2.1.2.05',nome:'DAS / Simples Nacional a Recolher',nivel:4,tipo:'P',natureza:'C'},
+    {cod:'2.1.3',nome:'Obrigações Trabalhistas e Previdenciárias',nivel:3,tipo:'P',natureza:'C'},
+    {cod:'2.1.3.01',nome:'Salários a Pagar',nivel:4,tipo:'P',natureza:'C'},
+    {cod:'2.1.3.02',nome:'INSS a Recolher',nivel:4,tipo:'P',natureza:'C'},
+    {cod:'2.1.3.03',nome:'FGTS a Recolher',nivel:4,tipo:'P',natureza:'C'},
+    {cod:'2.1.3.04',nome:'Férias a Pagar',nivel:4,tipo:'P',natureza:'C'},
+    {cod:'2.1.4',nome:'Empréstimos e Financiamentos CP',nivel:3,tipo:'P',natureza:'C'},
+    {cod:'2.1.5',nome:'Outras Obrigações Circulantes',nivel:3,tipo:'P',natureza:'C'},
+    {cod:'2.2',nome:'Passivo Não Circulante',nivel:2,tipo:'P',natureza:'C'},
+    {cod:'2.2.1',nome:'Empréstimos e Financiamentos LP',nivel:3,tipo:'P',natureza:'C'},
+    // PATRIMÔNIO LÍQUIDO
+    {cod:'3',nome:'PATRIMÔNIO LÍQUIDO',nivel:1,tipo:'PL',natureza:'C'},
+    {cod:'3.1',nome:'Capital Social',nivel:2,tipo:'PL',natureza:'C'},
+    {cod:'3.1.01',nome:'Capital Social Integralizado',nivel:3,tipo:'PL',natureza:'C'},
+    {cod:'3.2',nome:'Reservas de Lucros',nivel:2,tipo:'PL',natureza:'C'},
+    {cod:'3.3',nome:'Lucros/Prejuízos Acumulados',nivel:2,tipo:'PL',natureza:'C'},
+    {cod:'3.4',nome:'Pró-Labore a Distribuir',nivel:2,tipo:'PL',natureza:'C'},
+    // RECEITAS
+    {cod:'4',nome:'RECEITAS',nivel:1,tipo:'R',natureza:'C'},
+    {cod:'4.1',nome:'Receita Bruta de Vendas',nivel:2,tipo:'R',natureza:'C'},
+    {cod:'4.1.1',nome:'Vendas de Mercadorias',nivel:3,tipo:'R',natureza:'C'},
+    {cod:'4.1.2',nome:'Prestação de Serviços',nivel:3,tipo:'R',natureza:'C'},
+    {cod:'4.1.3',nome:'Receita Industrial / Produção',nivel:3,tipo:'R',natureza:'C'},
+    {cod:'4.2',nome:'Deduções da Receita Bruta',nivel:2,tipo:'R',natureza:'D'},
+    {cod:'4.2.1',nome:'Devoluções e Abatimentos',nivel:3,tipo:'R',natureza:'D'},
+    {cod:'4.2.2',nome:'Impostos sobre Vendas',nivel:3,tipo:'R',natureza:'D'},
+    {cod:'4.3',nome:'Outras Receitas Operacionais',nivel:2,tipo:'R',natureza:'C'},
+    {cod:'4.3.1',nome:'Receitas Financeiras',nivel:3,tipo:'R',natureza:'C'},
+    {cod:'4.3.2',nome:'Variações Cambiais Ativas',nivel:3,tipo:'R',natureza:'C'},
+    {cod:'4.3.3',nome:'Ganho na Venda de Ativo',nivel:3,tipo:'R',natureza:'C'},
+    // CUSTOS
+    {cod:'5',nome:'CUSTOS',nivel:1,tipo:'C',natureza:'D'},
+    {cod:'5.1',nome:'Custo das Mercadorias Vendidas (CMV)',nivel:2,tipo:'C',natureza:'D'},
+    {cod:'5.2',nome:'Custo dos Serviços Prestados (CSP)',nivel:2,tipo:'C',natureza:'D'},
+    {cod:'5.2.1',nome:'Mão de Obra Direta',nivel:3,tipo:'C',natureza:'D'},
+    {cod:'5.2.2',nome:'Materiais Aplicados',nivel:3,tipo:'C',natureza:'D'},
+    {cod:'5.2.3',nome:'Subcontratações',nivel:3,tipo:'C',natureza:'D'},
+    {cod:'5.3',nome:'Custo de Produção Industrial',nivel:2,tipo:'C',natureza:'D'},
+    // DESPESAS
+    {cod:'6',nome:'DESPESAS',nivel:1,tipo:'D',natureza:'D'},
+    {cod:'6.1',nome:'Despesas com Pessoal',nivel:2,tipo:'D',natureza:'D'},
+    {cod:'6.1.1',nome:'Salários e Ordenados',nivel:3,tipo:'D',natureza:'D'},
+    {cod:'6.1.2',nome:'Encargos Sociais (INSS/FGTS)',nivel:3,tipo:'D',natureza:'D'},
+    {cod:'6.1.3',nome:'Benefícios (VT/VR/Plano Saúde)',nivel:3,tipo:'D',natureza:'D'},
+    {cod:'6.1.4',nome:'Pró-Labore',nivel:3,tipo:'D',natureza:'D'},
+    {cod:'6.2',nome:'Despesas Administrativas',nivel:2,tipo:'D',natureza:'D'},
+    {cod:'6.2.1',nome:'Aluguel',nivel:3,tipo:'D',natureza:'D'},
+    {cod:'6.2.2',nome:'Energia Elétrica',nivel:3,tipo:'D',natureza:'D'},
+    {cod:'6.2.3',nome:'Água e Saneamento',nivel:3,tipo:'D',natureza:'D'},
+    {cod:'6.2.4',nome:'Telefone e Internet',nivel:3,tipo:'D',natureza:'D'},
+    {cod:'6.2.5',nome:'Material de Escritório',nivel:3,tipo:'D',natureza:'D'},
+    {cod:'6.2.6',nome:'Serviços Contábeis e Jurídicos',nivel:3,tipo:'D',natureza:'D'},
+    {cod:'6.2.7',nome:'Seguros',nivel:3,tipo:'D',natureza:'D'},
+    {cod:'6.2.8',nome:'Depreciação e Amortização',nivel:3,tipo:'D',natureza:'D'},
+    {cod:'6.2.9',nome:'Manutenção e Conservação',nivel:3,tipo:'D',natureza:'D'},
+    {cod:'6.3',nome:'Despesas Comerciais e Marketing',nivel:2,tipo:'D',natureza:'D'},
+    {cod:'6.3.1',nome:'Comissões de Vendas',nivel:3,tipo:'D',natureza:'D'},
+    {cod:'6.3.2',nome:'Publicidade e Propaganda',nivel:3,tipo:'D',natureza:'D'},
+    {cod:'6.3.3',nome:'Fretes sobre Vendas',nivel:3,tipo:'D',natureza:'D'},
+    {cod:'6.4',nome:'Despesas Tributárias',nivel:2,tipo:'D',natureza:'D'},
+    {cod:'6.4.1',nome:'Impostos e Taxas (Simples/DAS)',nivel:3,tipo:'D',natureza:'D'},
+    {cod:'6.4.2',nome:'IPTU / IPVA',nivel:3,tipo:'D',natureza:'D'},
+    {cod:'6.5',nome:'Despesas Financeiras',nivel:2,tipo:'D',natureza:'D'},
+    {cod:'6.5.1',nome:'Juros Passivos',nivel:3,tipo:'D',natureza:'D'},
+    {cod:'6.5.2',nome:'Tarifas Bancárias',nivel:3,tipo:'D',natureza:'D'},
+    {cod:'6.5.3',nome:'Multas e Encargos',nivel:3,tipo:'D',natureza:'D'},
+    {cod:'6.6',nome:'Outras Despesas Operacionais',nivel:2,tipo:'D',natureza:'D'},
+  ]
 };
 let ofxData = [];
 let relAtual = 'dre';
@@ -574,9 +743,9 @@ function go(id){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   s('panel-'+id).classList.add('active');
   const navs=[...document.querySelectorAll('.nav-item')];
-  const labels={dashboard:'Dashboard',faturamento:'Faturamento',despesas:'Despesas',receber:'Contas a Receber',pagar:'Contas a Pagar',fluxo:'Fluxo de Caixa',ofx:'Importar OFX',extrato:'Extrato',relatorios:'Relatórios',categorias:'Categorias'};
+  const labels={dashboard:'Dashboard',faturamento:'Faturamento',despesas:'Despesas',receber:'Contas a Receber',pagar:'Contas a Pagar',fluxo:'Fluxo de Caixa',ofx:'Importar OFX',extrato:'Extrato',relatorios:'Relatórios',categorias:'Categorias',plano:'Plano de Contas'};
   navs.find(n=>n.textContent.trim()===labels[id])?.classList.add('active');
-  const renders={dashboard:renderDashboard,faturamento:()=>{renderFat();},despesas:()=>{renderDesp();},receber:renderCR,pagar:renderCP,fluxo:renderFluxo,extrato:renderExtrato,relatorios:renderRel,categorias:renderCats,ofx:renderRules};
+  const renders={dashboard:renderDashboard,faturamento:()=>{renderFat();},despesas:()=>{renderDesp();},receber:renderCR,pagar:renderCP,fluxo:renderFluxo,extrato:renderExtrato,relatorios:renderRel,categorias:renderCats,ofx:renderRules,plano:renderPlano};
   renders[id]?.();
 }
 
@@ -598,6 +767,7 @@ function fillMesSelect(id, campo, lista){
 function fillAllSelects(){
   fillCatSelect('fat-cat','E'); fillCatSelect('desp-cat','S');
   fillCatSelect('rule-cat','');
+  fillContaSelect('fat-conta',['R','A']); fillContaSelect('desp-conta',['D','C','P']);
   const ccOpts=[{v:'',l:'Selecionar...'},...DB.centros.map(c=>({v:c,l:c}))];
   fillSelect('desp-cc',ccOpts);
   const catOpts=[{v:'',l:'Todas categorias'},...DB.categorias.map(c=>({v:c.id,l:c.nome}))];
@@ -609,6 +779,13 @@ function fillAllSelects(){
   fillMesSelect('cr-fil-mes','venc',DB.cr);
   fillMesSelect('cp-fil-mes','venc',DB.cp);
 }
+function fillContaSelect(id, grupos=[]){
+  const el=s(id); if(!el) return;
+  const contas=DB.plano_contas.filter(c=>c.nivel>=3&&(!grupos.length||grupos.includes(c.tipo)));
+  el.innerHTML=`<option value="">— Sem vínculo contábil —</option>`+
+    contas.map(c=>`<option value="${c.cod}">${c.cod} — ${c.nome}</option>`).join('');
+}
+function contaNome(cod){ const c=DB.plano_contas.find(x=>x.cod===cod); return c?`${c.cod} ${c.nome}`:'—'; }
 
 // ============================================================ AUTO-STATUS (vencimento)
 function autoStatus(item, statusPago='pago'){
@@ -625,7 +802,7 @@ function salvarFat(){
     cli:s('fat-cli').value.trim(), emis:s('fat-emis').value||today(),
     venc:s('fat-venc').value, desc:s('fat-desc').value.trim(),
     val:parseFloat(s('fat-val').value)||0, cat:s('fat-cat').value,
-    status:s('fat-status').value
+    conta:s('fat-conta')?.value||'', status:s('fat-status').value
   };
   if(!obj.cli||!obj.val){alert('Preencha cliente e valor.');return;}
   if(fatEditId){ const i=DB.fat.findIndex(x=>x.id===fatEditId); if(i>=0)DB.fat[i]=obj; }
@@ -637,6 +814,7 @@ function limparFat(){
   ['fat-num','fat-cli','fat-desc','fat-val'].forEach(id=>s(id).value='');
   s('fat-emis').value=today(); s('fat-venc').value='';
   s('fat-status').value='pendente';
+  if(s('fat-conta')) s('fat-conta').value='';
 }
 function editFat(id){
   const o=DB.fat.find(x=>x.id===id); if(!o)return;
@@ -644,6 +822,7 @@ function editFat(id){
   s('fat-num').value=o.num; s('fat-cli').value=o.cli; s('fat-emis').value=o.emis;
   s('fat-venc').value=o.venc||''; s('fat-desc').value=o.desc;
   s('fat-val').value=o.val; s('fat-cat').value=o.cat||'';
+  if(s('fat-conta')) s('fat-conta').value=o.conta||'';
   s('fat-status').value=o.status;
   go('faturamento'); window.scrollTo(0,0);
 }
@@ -687,7 +866,8 @@ function salvarDesp(){
     id:despEditId||uid(), desc:s('desp-desc').value.trim(),
     data:s('desp-data').value||today(), venc:s('desp-venc').value,
     forn:s('desp-forn').value.trim(), val:parseFloat(s('desp-val').value)||0,
-    cat:s('desp-cat').value, cc:s('desp-cc').value, status:s('desp-status').value
+    cat:s('desp-cat').value, cc:s('desp-cc').value,
+    conta:s('desp-conta')?.value||'', status:s('desp-status').value
   };
   if(!obj.desc||!obj.val){alert('Preencha descrição e valor.');return;}
   if(despEditId){const i=DB.desp.findIndex(x=>x.id===despEditId);if(i>=0)DB.desp[i]=obj;}
@@ -699,6 +879,7 @@ function limparDesp(){
   ['desp-desc','desp-forn','desp-val'].forEach(id=>s(id).value='');
   s('desp-data').value=today(); s('desp-venc').value='';
   s('desp-status').value='pendente';
+  if(s('desp-conta')) s('desp-conta').value='';
 }
 function editDesp(id){
   const o=DB.desp.find(x=>x.id===id);if(!o)return;
@@ -706,7 +887,9 @@ function editDesp(id){
   s('desp-desc').value=o.desc; s('desp-data').value=o.data;
   s('desp-venc').value=o.venc||''; s('desp-forn').value=o.forn;
   s('desp-val').value=o.val; s('desp-cat').value=o.cat||'';
-  s('desp-cc').value=o.cc||''; s('desp-status').value=o.status;
+  s('desp-cc').value=o.cc||'';
+  if(s('desp-conta')) s('desp-conta').value=o.conta||'';
+  s('desp-status').value=o.status;
   go('despesas'); window.scrollTo(0,0);
 }
 function deleteDesp(id){if(!confirm('Excluir?'))return;DB.desp=DB.desp.filter(x=>x.id!==id);save();renderDesp();renderDashboard();}
@@ -1332,6 +1515,154 @@ function applyBranding(){
 function updateHeaderDate(){
   const d=new Date();
   s('hdr-data').textContent=d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+}
+
+// ============================================================ PLANO DE CONTAS
+const TIPO_LABEL={A:'Ativo',P:'Passivo',PL:'Patr. Líquido',R:'Receita',C:'Custo',D:'Despesa'};
+const TIPO_COR={A:'#4f8ef7',P:'#ef4444',PL:'#8b5cf6',R:'#22c55e',C:'#f97316',D:'#f59e0b'};
+
+function addConta(){
+  const cod=s('pc-cod').value.trim(), nome=s('pc-nome').value.trim();
+  const tipo=s('pc-tipo').value, nat=s('pc-nat').value, nivel=parseInt(s('pc-nivel').value)||4;
+  if(!cod||!nome){alert('Preencha código e nome.');return;}
+  if(DB.plano_contas.find(c=>c.cod===cod)){alert('Código já existe no plano de contas.');return;}
+  DB.plano_contas.push({cod,nome,tipo,natureza:nat,nivel});
+  DB.plano_contas.sort((a,b)=>a.cod.localeCompare(b.cod,undefined,{numeric:true}));
+  save(); s('pc-cod').value=''; s('pc-nome').value='';
+  renderPlano(); fillAllSelects();
+}
+
+function renderPlano(){
+  const fil=s('pc-fil-tipo')?.value||'';
+  const lista=DB.plano_contas.filter(c=>!fil||c.tipo===fil);
+  s('pc-tbody').innerHTML=lista.map(c=>{
+    const indent='padding-left:'+(c.nivel*12)+'px';
+    const isSintetica=c.nivel<4;
+    return`<tr style="${isSintetica?'background:var(--surface3)':''}">
+      <td style="font-family:monospace;font-size:12px;color:var(--muted)">${c.cod}</td>
+      <td class="${isSintetica?'td-bold':''}" style="${indent}">${isSintetica?'▶ ':''} ${c.nome}</td>
+      <td class="td-c"><span class="badge" style="background:${TIPO_COR[c.tipo]}22;color:${TIPO_COR[c.tipo]}">${TIPO_LABEL[c.tipo]||c.tipo}</span></td>
+      <td class="td-c"><span class="badge ${c.natureza==='D'?'badge-blue':'badge-red'}">${c.natureza==='D'?'D':'C'}</span></td>
+      <td class="td-c text-muted">${c.nivel}</td>
+      <td class="td-c">${!isSintetica?`<button class="btn btn-danger btn-xs" onclick="deleteConta('${c.cod.replace(/'/g,"\\'")}')">✕</button>`:'—'}</td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="6" class="empty-state">Nenhuma conta</td></tr>';
+  renderCatContaVinculos();
+}
+
+function deleteConta(cod){
+  if(!confirm('Excluir conta '+cod+'?'))return;
+  DB.plano_contas=DB.plano_contas.filter(c=>c.cod!==cod);
+  save(); renderPlano(); fillAllSelects();
+}
+
+function renderCatContaVinculos(){
+  const el=s('cat-conta-vinculos'); if(!el)return;
+  const contas=DB.plano_contas.filter(c=>c.nivel>=3);
+  el.innerHTML=DB.categorias.map((cat,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="flex:1;font-size:13px">${cat.nome}</span>
+      <select style="font-size:12px;padding:4px 8px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);width:200px"
+        onchange="DB.categorias[${i}].conta=this.value;save()">
+        <option value="">— Sem vínculo —</option>
+        ${contas.map(c=>`<option value="${c.cod}" ${cat.conta===c.cod?'selected':''}>${c.cod} — ${c.nome}</option>`).join('')}
+      </select>
+    </div>`).join('');
+}
+
+function exportarPlanoCSV(){
+  const csv='Código,Nome,Grupo,Natureza,Nível\n'+DB.plano_contas.map(c=>`"${c.cod}","${c.nome}","${TIPO_LABEL[c.tipo]}","${c.natureza==='D'?'Devedora':'Credora}","${c.nivel}"`).join('\n');
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('﻿'+csv);
+  a.download='plano_de_contas.csv'; a.click();
+}
+
+// ============================================================ BACKUP / RESTORE
+function openBackup(){
+  const tamanho=(JSON.stringify(DB).length/1024).toFixed(1);
+  openModal(`
+    <div class="modal-title">💾 Backup & Restore <button onclick="closeModal()">×</button></div>
+    <div class="alert alert-warn">O localStorage é volátil — limpar o cache apaga todos os dados. Faça backup regularmente.</div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 8px">Exportar Backup</div>
+    <div style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;font-size:13px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span>Tamanho atual dos dados</span><span class="fw700 blue">${tamanho} KB</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span>Faturamentos</span><span>${DB.fat.length} registros</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span>Despesas</span><span>${DB.desp.length} registros</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span>Contas a Receber</span><span>${DB.cr.length} registros</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span>Contas a Pagar</span><span>${DB.cp.length} registros</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span>Lançamentos OFX/Extrato</span><span>${DB.extrato.length} registros</span>
+      </div>
+    </div>
+    <div class="btns">
+      <button class="btn btn-primary" onclick="exportarBackup()">⬇ Baixar Backup JSON</button>
+      <button class="btn btn-secondary" onclick="exportarBackupCSV()">⬇ Exportar Dados CSV</button>
+    </div>
+    <div class="sep"></div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Restaurar Backup</div>
+    <div class="alert alert-danger">⚠ Importar um backup <strong>substitui todos os dados atuais</strong>. Esta ação não pode ser desfeita.</div>
+    <div class="field">
+      <label>Selecionar arquivo de backup (.json)</label>
+      <input type="file" id="bkp-file" accept=".json" style="padding:10px">
+    </div>
+    <div class="btns">
+      <button class="btn btn-danger" onclick="restaurarBackup()">↑ Restaurar Backup</button>
+    </div>`);
+}
+
+function exportarBackup(){
+  const payload={_versao:'1.0',_data:new Date().toISOString(),_app:'FiscalConf Gestão Financeira',...DB};
+  const json=JSON.stringify(payload,null,2);
+  const a=document.createElement('a');
+  const dt=new Date().toISOString().slice(0,10);
+  a.href='data:application/json;charset=utf-8,'+encodeURIComponent(json);
+  a.download=`backup_fiscalconf_${dt}.json`; a.click();
+}
+
+function exportarBackupCSV(){
+  // exporta todas as tabelas em múltiplos csvs num único zip-like via múltiplos downloads
+  const tabelas=[
+    {nome:'faturamento', data:DB.fat, cols:['id','num','cli','emis','venc','desc','val','cat','conta','status']},
+    {nome:'despesas',    data:DB.desp,cols:['id','desc','data','venc','forn','val','cat','cc','conta','status']},
+    {nome:'cr',          data:DB.cr,  cols:['id','num','cli','emis','venc','val','rec','cat','status']},
+    {nome:'cp',          data:DB.cp,  cols:['id','num','forn','emis','venc','val','pag','cat','cc','status']},
+    {nome:'extrato',     data:DB.extrato,cols:['id','data','desc','val','tipo','cat','origem']},
+  ];
+  tabelas.forEach((t,i)=>{
+    setTimeout(()=>{
+      const csv=t.cols.join(',')+'\n'+t.data.map(r=>t.cols.map(c=>`"${r[c]??''}"`).join(',')).join('\n');
+      const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('﻿'+csv);
+      a.download=`${t.nome}.csv`; a.click();
+    },i*400);
+  });
+}
+
+function restaurarBackup(){
+  const file=s('bkp-file')?.files[0]; if(!file){alert('Selecione um arquivo .json');return;}
+  if(!confirm('Substituir TODOS os dados atuais com os dados do backup?'))return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      // valida campos obrigatórios
+      if(!data.fat&&!data.desp){alert('Arquivo inválido — não parece um backup do FiscalConf.');return;}
+      const campos=['fat','desp','cr','cp','extrato','categorias','centros','config','ofx_rules','plano_contas','sorts'];
+      campos.forEach(k=>{ if(data[k]!==undefined) DB[k]=data[k]; });
+      save(); applyBranding(); fillAllSelects(); renderDashboard(); renderCats(); renderPlano();
+      closeModal();
+      alert('✓ Backup restaurado com sucesso! '+data.fat?.length+' faturamentos, '+data.desp?.length+' despesas.');
+    }catch(err){ alert('Erro ao ler o arquivo: '+err.message); }
+  };
+  reader.readAsText(file);
 }
 
 // ============================================================ INIT
