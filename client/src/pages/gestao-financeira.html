@@ -144,6 +144,45 @@ tr:hover td{background:rgba(79,142,247,.04)}
 .modal-title{font-size:15px;font-weight:700;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
 .modal-title button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1}
 .modal-title button:hover{color:var(--text)}
+
+/* SEARCH OVERLAY */
+.search-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:600;display:flex;flex-direction:column;align-items:center;padding-top:80px}
+.search-overlay.hidden{display:none}
+.search-box{width:600px;max-width:95vw;background:var(--surface);border:1px solid var(--accent);border-radius:12px;padding:14px 18px;display:flex;gap:10px;align-items:center}
+.search-box input{flex:1;background:none;border:none;color:var(--text);font-size:16px;outline:none}
+.search-results{width:600px;max-width:95vw;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-top:8px;max-height:400px;overflow-y:auto}
+.search-result-item{padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:10px}
+.search-result-item:hover{background:var(--surface2)}
+.search-result-item:last-child{border-bottom:none}
+.search-mod-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--surface3);color:var(--muted);white-space:nowrap}
+
+/* BACKUP ALERT BANNER */
+.backup-banner{background:#2d1414;border:1px solid var(--red);border-radius:8px;padding:10px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#fca5a5}
+
+/* RECORRENTES */
+.rec-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.rec-freq{font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;background:var(--surface3);color:var(--accent)}
+
+/* CONCILIAÇÃO */
+.conc-row{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
+.conc-item{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px;cursor:pointer;transition:border .15s}
+.conc-item:hover{border-color:var(--accent)}
+.conc-item.linked{border-color:var(--green);background:#0a2018}
+.conc-item.selected{border-color:var(--accent);background:rgba(79,142,247,.1)}
+
+/* CANVAS CHART */
+.canvas-wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.pie-legend{display:flex;flex-direction:column;gap:5px;font-size:12px}
+.pie-legend-item{display:flex;align-items:center;gap:6px}
+.pie-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* HISTORICO */
+.hist-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.hist-acao{font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px;text-transform:uppercase}
+.hist-criar{background:#0a2018;color:var(--green)}
+.hist-editar{background:#0f1e40;color:var(--accent)}
+.hist-excluir{background:#2d1414;color:var(--red)}
+.hist-gerar{background:#2d2210;color:var(--yellow)}
 </style>
 </head>
 <body>
@@ -153,6 +192,7 @@ tr:hover td{background:rgba(79,142,247,.04)}
   <div class="header-info">
     <span class="empresa-nome" id="hdr-empresa">Minha Empresa Ltda.</span>
     <span id="hdr-data"></span>
+    <button class="btn btn-secondary btn-sm" onclick="openSearchOverlay()">🔍 Busca</button>
     <button class="btn btn-secondary btn-sm" onclick="openConfig()">⚙ Config</button>
   </div>
 </header>
@@ -174,6 +214,10 @@ tr:hover td{background:rgba(79,142,247,.04)}
   <div class="nav-item" onclick="go('relatorios')"><span class="nav-icon">📑</span>Relatórios</div>
   <div class="nav-item" onclick="go('categorias')"><span class="nav-icon">🏷</span>Categorias</div>
   <div class="nav-item" onclick="go('plano')"><span class="nav-icon">📒</span>Plano de Contas</div>
+  <div class="nav-section">Avançado</div>
+  <div class="nav-item" onclick="go('recorrentes')"><span class="nav-icon">🔁</span>Recorrentes</div>
+  <div class="nav-item" onclick="go('conciliacao')"><span class="nav-icon">⚖</span>Conciliação</div>
+  <div class="nav-item" onclick="go('historico')"><span class="nav-icon">📜</span>Histórico</div>
   <div class="nav-section">Sistema</div>
   <div class="nav-item" onclick="openBackup()"><span class="nav-icon">💾</span>Backup / Restore</div>
 </nav>
@@ -183,6 +227,8 @@ tr:hover td{background:rgba(79,142,247,.04)}
 <!-- ===== DASHBOARD ===== -->
 <div class="panel active" id="panel-dashboard">
   <div class="section-title">Dashboard Financeiro</div>
+  <div id="dash-backup-warn"></div>
+  <div id="dash-rec-warn"></div>
   <div class="grid5" id="dash-kpis"></div>
   <div class="grid2 mt16">
     <div class="card">
@@ -197,17 +243,22 @@ tr:hover td{background:rgba(79,142,247,.04)}
   </div>
   <div class="grid2">
     <div class="card">
-      <div class="card-title">Últimas Entradas</div>
-      <div id="dash-ult-ent"></div>
+      <div class="card-title">Despesas por Categoria (mês atual)</div>
+      <div class="canvas-wrap" id="dash-categ-wrap">
+        <canvas id="dash-pie" width="160" height="160"></canvas>
+        <div class="pie-legend" id="dash-pie-legend"></div>
+      </div>
     </div>
-    <div class="card">
-      <div class="card-title">Últimas Saídas</div>
-      <div id="dash-ult-sai"></div>
+    <div class="grid2" style="display:flex;flex-direction:column;gap:16px">
+      <div class="card" style="margin:0">
+        <div class="card-title">Últimas Entradas</div>
+        <div id="dash-ult-ent"></div>
+      </div>
+      <div class="card" style="margin:0">
+        <div class="card-title">Últimas Saídas</div>
+        <div id="dash-ult-sai"></div>
+      </div>
     </div>
-  </div>
-  <div class="card">
-    <div class="card-title">Top Categorias de Despesa (mês atual)</div>
-    <div id="dash-categ"></div>
   </div>
 </div>
 
@@ -237,6 +288,7 @@ tr:hover td{background:rgba(79,142,247,.04)}
         </select>
       </div>
     </div>
+    <div class="field"><label>Observações</label><input id="fat-obs" placeholder="Referência, NF, nota..."></div>
     <div class="btns">
       <button class="btn btn-primary" onclick="salvarFat()">Salvar</button>
       <button class="btn btn-secondary" onclick="limparFat()">Limpar</button>
@@ -291,7 +343,17 @@ tr:hover td{background:rgba(79,142,247,.04)}
           <option value="cancelado">Cancelado</option>
         </select>
       </div>
+      <div class="field" style="max-width:110px"><label>Parcelar em</label>
+        <select id="desp-parcelas">
+          <option value="1">Sem parcelas</option>
+          <option value="2">2x</option><option value="3">3x</option>
+          <option value="4">4x</option><option value="5">5x</option>
+          <option value="6">6x</option><option value="10">10x</option>
+          <option value="12">12x</option><option value="24">24x</option>
+        </select>
+      </div>
     </div>
+    <div class="field"><label>Observações</label><input id="desp-obs" placeholder="NF, contato, referência..."></div>
     <div class="btns">
       <button class="btn btn-primary" onclick="salvarDesp()">Salvar</button>
       <button class="btn btn-secondary" onclick="limparDesp()">Limpar</button>
@@ -477,6 +539,7 @@ tr:hover td{background:rgba(79,142,247,.04)}
     <span class="chip" id="rel-chip-cr" onclick="showRel('cr',this)">Aging CR</span>
     <span class="chip" id="rel-chip-cat" onclick="showRel('cat',this)">Por Categoria</span>
     <span class="chip" id="rel-chip-cc" onclick="showRel('cc',this)">Centro de Custo</span>
+    <span class="chip" id="rel-chip-balancete" onclick="showRel('balancete',this)">Balancete</span>
   </div>
   <div class="filter-bar">
     <div class="field" style="margin:0"><label>Período</label><select id="rel-periodo" onchange="renderRel()" style="width:160px"></select></div>
@@ -569,8 +632,114 @@ tr:hover td{background:rgba(79,142,247,.04)}
   </div>
 </div>
 
+<!-- ===== RECORRENTES ===== -->
+<div class="panel" id="panel-recorrentes">
+  <div class="section-title">Lançamentos Recorrentes <span style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">— despesas e receitas fixas</span></div>
+  <div class="card">
+    <div class="card-title">Novo Lançamento Recorrente</div>
+    <div class="form-row">
+      <div class="field"><label>Descrição</label><input id="rec-desc" placeholder="Ex: Aluguel mensal, Assinatura..."></div>
+      <div class="field" style="max-width:120px"><label>Tipo</label>
+        <select id="rec-tipo"><option value="desp">Despesa</option><option value="fat">Receita</option></select>
+      </div>
+      <div class="field" style="max-width:130px"><label>Valor (R$)</label><input type="number" id="rec-val" step="0.01"></div>
+      <div class="field" style="max-width:150px"><label>Categoria</label><select id="rec-cat"></select></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Fornecedor / Cliente</label><input id="rec-forn" placeholder="Nome"></div>
+      <div class="field" style="max-width:140px"><label>Frequência</label>
+        <select id="rec-freq">
+          <option value="mensal">Mensal</option>
+          <option value="semanal">Semanal</option>
+          <option value="bimestral">Bimestral</option>
+          <option value="trimestral">Trimestral</option>
+          <option value="anual">Anual</option>
+        </select>
+      </div>
+      <div class="field" style="max-width:130px"><label>Dia do Mês</label><input type="number" id="rec-dia" value="1" min="1" max="31"></div>
+      <div class="field" style="max-width:140px"><label>Próxima Geração</label><input type="date" id="rec-proxima"></div>
+    </div>
+    <div class="btns">
+      <button class="btn btn-primary" onclick="salvarRecorrente()">Salvar Recorrente</button>
+    </div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="card-title" style="margin:0">Recorrentes Cadastrados</div>
+      <button class="btn btn-warn btn-sm" onclick="gerarTodosVencidos()">⚡ Gerar Todos Vencidos</button>
+    </div>
+    <div id="rec-lista"><div class="empty-state">Nenhum lançamento recorrente cadastrado</div></div>
+  </div>
+</div>
+
+<!-- ===== CONCILIAÇÃO ===== -->
+<div class="panel" id="panel-conciliacao">
+  <div class="section-title">Conciliação Bancária <span style="font-size:12px;color:var(--muted);font-weight:400;margin-left:4px">— OFX × Lançamentos</span></div>
+  <div class="alert alert-info">Confira os lançamentos importados do OFX com as entradas/saídas registradas. Marque como conciliado quando conferidos.</div>
+  <div class="filter-bar">
+    <div class="field" style="margin:0"><label>De</label><input type="date" id="conc-de" style="width:140px"></div>
+    <div class="field" style="margin:0"><label>Até</label><input type="date" id="conc-ate" style="width:140px"></div>
+    <div class="field" style="margin:0"><label>Mostrar</label>
+      <select id="conc-fil" style="width:160px">
+        <option value="pendente">Não conciliados</option>
+        <option value="todos">Todos</option>
+        <option value="conciliado">Conciliados</option>
+      </select>
+    </div>
+    <div class="field" style="margin:0"><label>&nbsp;</label><button class="btn btn-primary btn-sm" onclick="renderConciliacao()">Filtrar</button></div>
+    <div class="field" style="margin:0"><label>&nbsp;</label><button class="btn btn-secondary btn-sm" onclick="autoConciliar()">🤖 Auto-Conciliar</button></div>
+  </div>
+  <div class="grid2 mt8">
+    <div class="kpi"><div class="kpi-label">OFX Importados</div><div class="kpi-value blue" id="conc-total">0</div></div>
+    <div class="kpi"><div class="kpi-label">Conciliados</div><div class="kpi-value pos" id="conc-ok">0</div></div>
+  </div>
+  <div class="card mt16">
+    <div class="table-wrap">
+      <table><thead><tr>
+        <th>Data</th><th>Descrição OFX</th><th class="td-r">Valor</th><th>Tipo</th><th>Categoria</th>
+        <th class="td-c">Status</th><th class="td-c">Ações</th>
+      </tr></thead><tbody id="conc-tbody"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== HISTÓRICO ===== -->
+<div class="panel" id="panel-historico">
+  <div class="section-title">Histórico de Ações</div>
+  <div class="filter-bar">
+    <div class="field" style="margin:0"><label>Módulo</label>
+      <select id="hist-fil-mod" onchange="renderHistorico()" style="width:160px">
+        <option value="">Todos</option>
+        <option value="Faturamento">Faturamento</option>
+        <option value="Despesas">Despesas</option>
+        <option value="CR">Contas a Receber</option>
+        <option value="CP">Contas a Pagar</option>
+        <option value="OFX">OFX / Extrato</option>
+        <option value="Recorrente">Recorrentes</option>
+        <option value="Config">Configurações</option>
+      </select>
+    </div>
+    <div class="field" style="margin:0"><label>&nbsp;</label>
+      <button class="btn btn-danger btn-sm" onclick="if(confirm('Limpar histórico?')){DB.historico=[];save();renderHistorico()}">🗑 Limpar</button>
+    </div>
+  </div>
+  <div class="card">
+    <div id="hist-lista"><div class="empty-state">Nenhuma ação registrada</div></div>
+  </div>
+</div>
+
 </div><!-- /main -->
 </div><!-- /layout -->
+
+<!-- SEARCH OVERLAY -->
+<div class="search-overlay hidden" id="search-overlay" onclick="if(event.target===this)closeSearchOverlay()">
+  <div class="search-box">
+    <span style="font-size:18px">🔍</span>
+    <input id="search-input" placeholder="Buscar em faturamento, despesas, CR, CP, extrato..." oninput="doSearch(this.value)" autofocus>
+    <button onclick="closeSearchOverlay()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px">×</button>
+  </div>
+  <div class="search-results hidden" id="search-results"></div>
+</div>
 
 <!-- MODAL GENÉRICO -->
 <div class="modal-overlay hidden" id="modal-overlay" onclick="if(event.target===this)closeModal()">
@@ -606,6 +775,9 @@ let DB = {
     {kw:'ALUGUEL',cat:'c6',tipo:'S'},
   ],
   sorts:{},
+  recorrentes:[],
+  historico:[],
+  ultimo_backup:null,
   plano_contas:[
     // ATIVO
     {cod:'1',nome:'ATIVO',nivel:1,tipo:'A',natureza:'D'},
@@ -718,7 +890,12 @@ function save(){ try{ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }catch(e
 function load(){
   try{
     const raw = localStorage.getItem(DB_KEY);
-    if(raw){ const d=JSON.parse(raw); DB={...DB,...d}; }
+    if(raw){
+      const d=JSON.parse(raw);
+      DB={...DB,...d};
+      if(!DB.recorrentes) DB.recorrentes=[];
+      if(!DB.historico) DB.historico=[];
+    }
   }catch(e){}
 }
 
@@ -743,9 +920,9 @@ function go(id){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   s('panel-'+id).classList.add('active');
   const navs=[...document.querySelectorAll('.nav-item')];
-  const labels={dashboard:'Dashboard',faturamento:'Faturamento',despesas:'Despesas',receber:'Contas a Receber',pagar:'Contas a Pagar',fluxo:'Fluxo de Caixa',ofx:'Importar OFX',extrato:'Extrato',relatorios:'Relatórios',categorias:'Categorias',plano:'Plano de Contas'};
+  const labels={dashboard:'Dashboard',faturamento:'Faturamento',despesas:'Despesas',receber:'Contas a Receber',pagar:'Contas a Pagar',fluxo:'Fluxo de Caixa',ofx:'Importar OFX',extrato:'Extrato',relatorios:'Relatórios',categorias:'Categorias',plano:'Plano de Contas',recorrentes:'Recorrentes',conciliacao:'Conciliação',historico:'Histórico'};
   navs.find(n=>n.textContent.trim()===labels[id])?.classList.add('active');
-  const renders={dashboard:renderDashboard,faturamento:()=>{renderFat();},despesas:()=>{renderDesp();},receber:renderCR,pagar:renderCP,fluxo:renderFluxo,extrato:renderExtrato,relatorios:renderRel,categorias:renderCats,ofx:renderRules,plano:renderPlano};
+  const renders={dashboard:renderDashboard,faturamento:()=>{renderFat();},despesas:()=>{renderDesp();},receber:renderCR,pagar:renderCP,fluxo:renderFluxo,extrato:renderExtrato,relatorios:renderRel,categorias:renderCats,ofx:renderRules,plano:renderPlano,recorrentes:renderRecorrentes,conciliacao:renderConciliacao,historico:renderHistorico};
   renders[id]?.();
 }
 
@@ -802,16 +979,22 @@ function salvarFat(){
     cli:s('fat-cli').value.trim(), emis:s('fat-emis').value||today(),
     venc:s('fat-venc').value, desc:s('fat-desc').value.trim(),
     val:parseFloat(s('fat-val').value)||0, cat:s('fat-cat').value,
-    conta:s('fat-conta')?.value||'', status:s('fat-status').value
+    conta:s('fat-conta')?.value||'', status:s('fat-status').value,
+    obs:s('fat-obs')?.value||''
   };
   if(!obj.cli||!obj.val){alert('Preencha cliente e valor.');return;}
-  if(fatEditId){ const i=DB.fat.findIndex(x=>x.id===fatEditId); if(i>=0)DB.fat[i]=obj; }
-  else DB.fat.push(obj);
+  if(fatEditId){
+    const i=DB.fat.findIndex(x=>x.id===fatEditId); if(i>=0)DB.fat[i]=obj;
+    logAction('editar','Faturamento',obj.num+' — '+obj.cli+' '+fmt(obj.val));
+  } else {
+    DB.fat.push(obj);
+    logAction('criar','Faturamento',obj.num+' — '+obj.cli+' '+fmt(obj.val));
+  }
   save(); limparFat(); renderFat(); renderDashboard(); fillAllSelects();
 }
 function limparFat(){
   fatEditId=null;
-  ['fat-num','fat-cli','fat-desc','fat-val'].forEach(id=>s(id).value='');
+  ['fat-num','fat-cli','fat-desc','fat-val','fat-obs'].forEach(id=>{ if(s(id)) s(id).value=''; });
   s('fat-emis').value=today(); s('fat-venc').value='';
   s('fat-status').value='pendente';
   if(s('fat-conta')) s('fat-conta').value='';
@@ -826,7 +1009,12 @@ function editFat(id){
   s('fat-status').value=o.status;
   go('faturamento'); window.scrollTo(0,0);
 }
-function deleteFat(id){ if(!confirm('Excluir lançamento?'))return; DB.fat=DB.fat.filter(x=>x.id!==id); save(); renderFat(); renderDashboard(); }
+function deleteFat(id){
+  if(!confirm('Excluir lançamento?'))return;
+  const o=DB.fat.find(x=>x.id===id);
+  logAction('excluir','Faturamento',o?o.num+' '+o.cli:'');
+  DB.fat=DB.fat.filter(x=>x.id!==id); save(); renderFat(); renderDashboard();
+}
 function marcarFat(id,st){ const o=DB.fat.find(x=>x.id===id); if(o){o.status=st;save();renderFat();renderDashboard();} }
 function renderFat(){
   fillCatSelect('fat-cat','E');
@@ -862,24 +1050,40 @@ function renderFat(){
 // ============================================================ DESPESAS
 let despEditId=null;
 function salvarDesp(){
-  const obj={
-    id:despEditId||uid(), desc:s('desp-desc').value.trim(),
-    data:s('desp-data').value||today(), venc:s('desp-venc').value,
-    forn:s('desp-forn').value.trim(), val:parseFloat(s('desp-val').value)||0,
-    cat:s('desp-cat').value, cc:s('desp-cc').value,
-    conta:s('desp-conta')?.value||'', status:s('desp-status').value
+  const parcelas=parseInt(s('desp-parcelas')?.value||1);
+  const base={
+    desc:s('desp-desc').value.trim(), forn:s('desp-forn').value.trim(),
+    val:parseFloat(s('desp-val').value)||0, cat:s('desp-cat').value,
+    cc:s('desp-cc').value, conta:s('desp-conta')?.value||'',
+    status:s('desp-status').value, obs:s('desp-obs')?.value||''
   };
-  if(!obj.desc||!obj.val){alert('Preencha descrição e valor.');return;}
-  if(despEditId){const i=DB.desp.findIndex(x=>x.id===despEditId);if(i>=0)DB.desp[i]=obj;}
-  else DB.desp.push(obj);
+  if(!base.desc||!base.val){alert('Preencha descrição e valor.');return;}
+  const dataBase=s('desp-data').value||today(), vencBase=s('desp-venc').value;
+  if(despEditId){
+    const obj={id:despEditId,...base,data:dataBase,venc:vencBase};
+    const i=DB.desp.findIndex(x=>x.id===despEditId); if(i>=0) DB.desp[i]=obj;
+    logAction('editar','Despesas',base.desc+' '+fmt(base.val));
+  } else if(parcelas>1){
+    const vp=parseFloat((base.val/parcelas).toFixed(2));
+    for(let p=0;p<parcelas;p++){
+      const d=new Date((vencBase||dataBase)+'T12:00:00');
+      d.setMonth(d.getMonth()+p);
+      DB.desp.push({id:uid(),...base,val:vp,desc:`${base.desc} (${p+1}/${parcelas})`,data:dataBase,venc:d.toISOString().slice(0,10)});
+    }
+    logAction('criar','Despesas',base.desc+' '+parcelas+'x '+fmt(base.val/parcelas));
+  } else {
+    DB.desp.push({id:uid(),...base,data:dataBase,venc:vencBase});
+    logAction('criar','Despesas',base.desc+' '+fmt(base.val));
+  }
   save(); limparDesp(); renderDesp(); renderDashboard(); fillAllSelects();
 }
 function limparDesp(){
   despEditId=null;
-  ['desp-desc','desp-forn','desp-val'].forEach(id=>s(id).value='');
+  ['desp-desc','desp-forn','desp-val','desp-obs'].forEach(id=>{ if(s(id)) s(id).value=''; });
   s('desp-data').value=today(); s('desp-venc').value='';
   s('desp-status').value='pendente';
   if(s('desp-conta')) s('desp-conta').value='';
+  if(s('desp-parcelas')) s('desp-parcelas').value='1';
 }
 function editDesp(id){
   const o=DB.desp.find(x=>x.id===id);if(!o)return;
@@ -892,7 +1096,12 @@ function editDesp(id){
   s('desp-status').value=o.status;
   go('despesas'); window.scrollTo(0,0);
 }
-function deleteDesp(id){if(!confirm('Excluir?'))return;DB.desp=DB.desp.filter(x=>x.id!==id);save();renderDesp();renderDashboard();}
+function deleteDesp(id){
+  if(!confirm('Excluir?'))return;
+  const o=DB.desp.find(x=>x.id===id);
+  logAction('excluir','Despesas',o?o.desc:'');
+  DB.desp=DB.desp.filter(x=>x.id!==id);save();renderDesp();renderDashboard();
+}
 function marcarDesp(id,st){const o=DB.desp.find(x=>x.id===id);if(o){o.status=st;save();renderDesp();renderDashboard();}}
 function renderDesp(){
   fillCatSelect('desp-cat','S');
@@ -1258,6 +1467,7 @@ function renderRel(){
   else if(relAtual==='cr') renderRelAging('cr', mes);
   else if(relAtual==='cat') renderRelCat(mes);
   else if(relAtual==='cc') renderRelCC(mes);
+  else if(relAtual==='balancete') renderRelBalancete();
 }
 function renderRelDRE(mes){
   const fatMes=DB.fat.filter(o=>isoToMonth(o.emis)===mes);
@@ -1440,17 +1650,14 @@ function renderDashboard(){
   s('dash-ult-ent').innerHTML=ultEnt.map(o=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><span>${o.cli} — ${o.desc}</span><span class="pos fw700">${fmt(o.val)}</span></div>`).join('')||'<div class="empty-state">Nenhuma entrada</div>';
   s('dash-ult-sai').innerHTML=ultSai.map(o=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><span>${o.desc}</span><span class="neg fw700">${fmt(o.val)}</span></div>`).join('')||'<div class="empty-state">Nenhuma saída</div>';
 
-  // top categorias despesa
+  // pie chart categorias despesa
   const catMap={};
   despMes.forEach(o=>{ catMap[o.cat||'c11']=(catMap[o.cat||'c11']||0)+o.val; });
-  const tot=Object.values(catMap).reduce((s,v)=>s+v,0)||1;
-  const top=Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
-  s('dash-categ').innerHTML=top.map(([cid,vl])=>`
-    <div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
-      <span style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${catCor(cid)}"></span>${catNome(cid)}</span>
-      <span>${fmt(vl)} (${pct(vl/tot*100,0)})</span></div>
-    <div class="progress-wrap"><div class="progress-bar" style="width:${vl/tot*100}%;background:${catCor(cid)}"></div></div></div>`).join('')
-  ||'<div class="empty-state">Nenhuma despesa no mês atual</div>';
+  const pieData=Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([cid,val])=>({nome:catNome(cid),val,cor:catCor(cid)}));
+  drawPieChart('dash-pie','dash-pie-legend',pieData);
+
+  checkBackupAlert();
+  renderRecorrentes();
 }
 function kpi(label,value,cls,sub=''){return`<div class="kpi"><div class="kpi-label">${label}</div><div class="kpi-value ${cls}">${value}</div>${sub?`<div class="kpi-sub">${sub}</div>`:''}</div>`;}
 function today_plus(days){const d=new Date();d.setDate(d.getDate()+days);return d.toISOString().slice(0,10);}
@@ -1619,6 +1826,8 @@ function openBackup(){
 }
 
 function exportarBackup(){
+  DB.ultimo_backup=new Date().toISOString(); save();
+  logAction('criar','Config','Backup exportado'); save();
   const payload={_versao:'1.0',_data:new Date().toISOString(),_app:'FiscalConf Gestão Financeira',...DB};
   const json=JSON.stringify(payload,null,2);
   const a=document.createElement('a');
@@ -1664,15 +1873,301 @@ function restaurarBackup(){
   reader.readAsText(file);
 }
 
+// ============================================================ HISTÓRICO / AUDIT LOG
+function logAction(acao, modulo, desc){
+  if(!DB.historico) DB.historico=[];
+  DB.historico.unshift({id:uid(), ts:new Date().toISOString(), acao, modulo, desc});
+  if(DB.historico.length>200) DB.historico.length=200;
+}
+function renderHistorico(){
+  const fil=s('hist-fil-mod')?.value||'';
+  const lista=DB.historico.filter(h=>!fil||h.modulo===fil);
+  if(!lista.length){s('hist-lista').innerHTML='<div class="empty-state">Nenhuma ação registrada</div>';return;}
+  s('hist-lista').innerHTML=lista.map(h=>{
+    const dt=new Date(h.ts).toLocaleString('pt-BR');
+    const cls={'criar':'hist-criar','editar':'hist-editar','excluir':'hist-excluir','gerar':'hist-gerar'}[h.acao]||'hist-criar';
+    return`<div class="hist-row">
+      <span class="hist-acao ${cls}">${h.acao}</span>
+      <span class="badge badge-blue" style="background:var(--surface3);color:var(--muted)">${h.modulo}</span>
+      <span style="flex:1">${h.desc}</span>
+      <span class="text-muted" style="font-size:11px;white-space:nowrap">${dt}</span>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================ LANÇAMENTOS RECORRENTES
+function salvarRecorrente(){
+  const obj={
+    id:uid(), desc:s('rec-desc').value.trim(), tipo:s('rec-tipo').value,
+    val:parseFloat(s('rec-val').value)||0, cat:s('rec-cat').value,
+    forn:s('rec-forn').value.trim(), freq:s('rec-freq').value,
+    dia:parseInt(s('rec-dia').value)||1, proxima:s('rec-proxima').value||today(), ativa:true
+  };
+  if(!obj.desc||!obj.val){alert('Preencha descrição e valor.');return;}
+  DB.recorrentes.push(obj); save();
+  logAction('criar','Recorrente',obj.desc+' — '+fmt(obj.val)); save();
+  s('rec-desc').value=''; s('rec-val').value=''; s('rec-forn').value='';
+  renderRecorrentes();
+}
+function gerarRecorrente(id){
+  const r=DB.recorrentes.find(x=>x.id===id); if(!r)return;
+  const dataGer=r.proxima||today();
+  if(r.tipo==='desp'){
+    DB.desp.push({id:uid(),desc:r.desc,data:dataGer,venc:dataGer,forn:r.forn,val:r.val,cat:r.cat,cc:'',conta:'',status:'pendente',obs:'Gerado automaticamente'});
+  } else {
+    DB.fat.push({id:uid(),num:'REC-'+uid().slice(0,4),cli:r.forn,emis:dataGer,venc:dataGer,desc:r.desc,val:r.val,cat:r.cat,conta:'',status:'pendente',obs:'Gerado automaticamente'});
+  }
+  // calcular próxima
+  r.ultima=dataGer;
+  const d=new Date(dataGer+'T12:00:00');
+  if(r.freq==='semanal') d.setDate(d.getDate()+7);
+  else if(r.freq==='bimestral') d.setMonth(d.getMonth()+2);
+  else if(r.freq==='trimestral') d.setMonth(d.getMonth()+3);
+  else if(r.freq==='anual') d.setFullYear(d.getFullYear()+1);
+  else d.setMonth(d.getMonth()+1);
+  d.setDate(Math.min(r.dia,28));
+  r.proxima=d.toISOString().slice(0,10);
+  save(); logAction('gerar','Recorrente',r.desc+' — '+fmt(r.val)); save();
+  renderRecorrentes(); renderDashboard(); fillAllSelects();
+  alert('✓ Lançamento gerado! Próxima geração: '+dateStr(r.proxima));
+}
+function deleteRecorrente(id){
+  if(!confirm('Excluir recorrente?'))return;
+  const r=DB.recorrentes.find(x=>x.id===id);
+  logAction('excluir','Recorrente',r?r.desc:'');
+  DB.recorrentes=DB.recorrentes.filter(x=>x.id!==id); save(); renderRecorrentes();
+}
+function gerarTodosVencidos(){
+  const hoje=today();
+  const vencidos=DB.recorrentes.filter(r=>r.ativa&&r.proxima<=hoje);
+  if(!vencidos.length){alert('Nenhum recorrente vencido para gerar.');return;}
+  if(!confirm('Gerar '+vencidos.length+' lançamento(s) vencido(s)?'))return;
+  vencidos.forEach(r=>gerarRecorrente(r.id));
+}
+function renderRecorrentes(){
+  fillCatSelect('rec-cat','');
+  if(!DB.recorrentes||!DB.recorrentes.length){
+    s('rec-lista').innerHTML='<div class="empty-state">Nenhum lançamento recorrente cadastrado</div>';
+    return;
+  }
+  const hoje=today();
+  s('rec-lista').innerHTML=DB.recorrentes.map(r=>{
+    const vencido=r.proxima&&r.proxima<=hoje;
+    return`<div class="rec-card">
+      <span style="font-size:18px">${r.tipo==='desp'?'💸':'💰'}</span>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:13px">${r.desc}${r.forn?' — <span class="text-muted">'+r.forn+'</span>':''}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">
+          Próxima: <span class="${vencido?'neg':'blue'} fw700">${dateStr(r.proxima)}</span>
+          ${vencido?'<span class="badge s-vencido" style="margin-left:4px">VENCIDO</span>':''}
+        </div>
+      </div>
+      <span class="rec-freq">${r.freq}</span>
+      <span class="fw700 ${r.tipo==='desp'?'neg':'pos'}">${fmt(r.val)}</span>
+      <button class="btn btn-primary btn-sm" onclick="gerarRecorrente('${r.id}')">⚡ Gerar</button>
+      <button class="btn btn-danger btn-xs" onclick="deleteRecorrente('${r.id}')">✕</button>
+    </div>`;
+  }).join('');
+  // alerta no dashboard
+  const vencidos=DB.recorrentes.filter(r=>r.ativa&&r.proxima&&r.proxima<=hoje).length;
+  const warn=s('dash-rec-warn');
+  if(warn) warn.innerHTML=vencidos>0?`<div class="backup-banner" style="background:#1a2d15;border-color:var(--yellow);color:#fcd34d">🔁 ${vencidos} lançamento(s) recorrente(s) vencido(s) aguardando geração. <button class="btn btn-warn btn-sm" style="margin-left:8px" onclick="go('recorrentes')">Ver Recorrentes</button></div>`:'';
+}
+
+// ============================================================ CONCILIAÇÃO BANCÁRIA
+function renderConciliacao(){
+  const de=s('conc-de')?.value||'', ate=s('conc-ate')?.value||today();
+  const fil=s('conc-fil')?.value||'pendente';
+  let lista=DB.extrato.filter(o=>(!de||o.data>=de)&&(!ate||o.data<=ate));
+  if(fil==='pendente') lista=lista.filter(o=>!o.conciliado);
+  else if(fil==='conciliado') lista=lista.filter(o=>o.conciliado);
+  s('conc-total').textContent=DB.extrato.length;
+  s('conc-ok').textContent=DB.extrato.filter(o=>o.conciliado).length;
+  s('conc-tbody').innerHTML=lista.map(o=>`
+    <tr>
+      <td>${dateStr(o.data)}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${o.desc}">${o.desc}</td>
+      <td class="td-r ${o.tipo==='E'?'pos':'neg'} td-bold">${o.tipo==='E'?'+':'-'}${fmt(o.val)}</td>
+      <td><span class="badge ${o.tipo==='E'?'s-recebido':'s-vencido'}">${o.tipo==='E'?'Entrada':'Saída'}</span></td>
+      <td><span class="cat-badge">${catNome(o.cat)}</span></td>
+      <td class="td-c">${o.conciliado?'<span class="badge s-recebido">✓ Conciliado</span>':'<span class="badge s-pendente">Pendente</span>'}</td>
+      <td class="td-c">
+        ${!o.conciliado?`<button class="btn btn-success btn-xs" onclick="conciliarItem('${o.id}')">✓ Conciliar</button>`:`<button class="btn btn-secondary btn-xs" onclick="desconciliarItem('${o.id}')">↩ Desfazer</button>`}
+      </td>
+    </tr>`).join('')||'<tr><td colspan="7" class="empty-state">Nenhum lançamento no período</td></tr>';
+}
+function conciliarItem(id){
+  const o=DB.extrato.find(x=>x.id===id); if(!o)return;
+  o.conciliado=true; save(); renderConciliacao();
+  logAction('editar','OFX','Conciliado: '+o.desc); save();
+}
+function desconciliarItem(id){
+  const o=DB.extrato.find(x=>x.id===id); if(!o)return;
+  o.conciliado=false; save(); renderConciliacao();
+}
+function autoConciliar(){
+  const extrato=DB.extrato.filter(o=>!o.conciliado);
+  let count=0;
+  extrato.forEach(ofx=>{
+    // procura fat ou desp com valor igual e data próxima (±3 dias)
+    const d0=new Date(ofx.data+'T12:00:00');
+    const match=ofx.tipo==='E'
+      ? DB.fat.find(f=>f.status==='recebido'&&Math.abs(f.val-ofx.val)<0.01&&Math.abs(new Date(f.emis+'T12:00:00')-d0)<259200000)
+      : DB.desp.find(d=>d.status==='pago'&&Math.abs(d.val-ofx.val)<0.01&&Math.abs(new Date(d.data+'T12:00:00')-d0)<259200000);
+    if(match){ ofx.conciliado=true; count++; }
+  });
+  save(); renderConciliacao();
+  alert('✓ Auto-conciliação: '+count+' lançamento(s) conciliado(s) automaticamente.');
+}
+
+// ============================================================ BUSCA GLOBAL
+function openSearchOverlay(){
+  s('search-overlay').classList.remove('hidden');
+  setTimeout(()=>s('search-input')?.focus(),50);
+}
+function closeSearchOverlay(){
+  s('search-overlay').classList.add('hidden');
+  s('search-input').value='';
+  s('search-results').classList.add('hidden');
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSearchOverlay(); });
+function doSearch(q){
+  q=q.trim().toLowerCase();
+  if(q.length<2){s('search-results').classList.add('hidden');return;}
+  const results=[];
+  DB.fat.filter(o=>(o.cli+o.desc+o.num).toLowerCase().includes(q)).slice(0,5).forEach(o=>results.push({mod:'Faturamento',icon:'🧾',titulo:o.cli+' — '+o.desc,valor:fmt(o.val),nav:'faturamento'}));
+  DB.desp.filter(o=>(o.desc+o.forn).toLowerCase().includes(q)).slice(0,5).forEach(o=>results.push({mod:'Despesas',icon:'💸',titulo:o.desc+(o.forn?' ('+o.forn+')':''),valor:fmt(o.val),nav:'despesas'}));
+  DB.cr.filter(o=>(o.cli+o.num).toLowerCase().includes(q)).slice(0,3).forEach(o=>results.push({mod:'CR',icon:'📥',titulo:o.cli+' — '+o.num,valor:fmt(o.val),nav:'receber'}));
+  DB.cp.filter(o=>(o.forn+o.num).toLowerCase().includes(q)).slice(0,3).forEach(o=>results.push({mod:'CP',icon:'📤',titulo:o.forn+' — '+o.num,valor:fmt(o.val),nav:'pagar'}));
+  DB.extrato.filter(o=>o.desc.toLowerCase().includes(q)).slice(0,4).forEach(o=>results.push({mod:'Extrato',icon:'📋',titulo:o.desc,valor:(o.tipo==='E'?'+':'-')+fmt(o.val),nav:'extrato'}));
+  const el=s('search-results');
+  if(!results.length){el.classList.remove('hidden');el.innerHTML='<div style="padding:16px;text-align:center;color:var(--muted)">Nenhum resultado encontrado</div>';return;}
+  el.classList.remove('hidden');
+  el.innerHTML=results.map(r=>`
+    <div class="search-result-item" onclick="closeSearchOverlay();go('${r.nav}')">
+      <span style="font-size:16px">${r.icon}</span>
+      <span class="search-mod-badge">${r.mod}</span>
+      <span style="flex:1;font-size:13px">${r.titulo}</span>
+      <span class="fw700 blue">${r.valor}</span>
+    </div>`).join('');
+}
+
+// ============================================================ PIE CHART (Canvas)
+function drawPieChart(canvasId, legendId, data){
+  const canvas=document.getElementById(canvasId);
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const total=data.reduce((s,d)=>s+d.val,0);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(!total){
+    ctx.fillStyle='#272d42';
+    ctx.beginPath(); ctx.arc(80,80,70,0,Math.PI*2); ctx.fill();
+    return;
+  }
+  let start=-Math.PI/2;
+  const cx=80,cy=80,r=70;
+  data.forEach(d=>{
+    const angle=(d.val/total)*Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,start,start+angle);
+    ctx.closePath(); ctx.fillStyle=d.cor; ctx.fill();
+    start+=angle;
+  });
+  // donut hole
+  ctx.beginPath(); ctx.arc(cx,cy,35,0,Math.PI*2);
+  ctx.fillStyle='var(--surface)'; ctx.fill();
+  // legend
+  const leg=document.getElementById(legendId); if(!leg) return;
+  leg.innerHTML=data.slice(0,8).map(d=>`
+    <div class="pie-legend-item">
+      <div class="pie-legend-dot" style="background:${d.cor}"></div>
+      <span>${d.nome}</span>
+      <span class="fw700" style="margin-left:auto;padding-left:8px">${pct(d.val/total*100,0)}</span>
+    </div>`).join('');
+}
+
+// ============================================================ BALANCETE
+function renderRelBalancete(){
+  // agrupa lançamentos por conta via categoria→conta
+  const saldos={};
+  [...DB.fat, ...DB.desp, ...DB.extrato].forEach(o=>{
+    const cat=DB.categorias.find(c=>c.id===o.cat);
+    const cod=cat?.conta; if(!cod) return;
+    if(!saldos[cod]) saldos[cod]={deb:0,cred:0};
+    const tipo=o.tipo||(DB.fat.includes(o)?'E':'S');
+    if(tipo==='E') saldos[cod].cred+=o.val;
+    else saldos[cod].deb+=o.val;
+  });
+  DB.desp.filter(o=>o.conta).forEach(o=>{
+    if(!saldos[o.conta]) saldos[o.conta]={deb:0,cred:0};
+    saldos[o.conta].deb+=o.val;
+  });
+  DB.fat.filter(o=>o.conta).forEach(o=>{
+    if(!saldos[o.conta]) saldos[o.conta]={deb:0,cred:0};
+    saldos[o.conta].cred+=o.val;
+  });
+  const contas=DB.plano_contas.filter(c=>saldos[c.cod]);
+  const totDeb=Object.values(saldos).reduce((s,v)=>s+v.deb,0);
+  const totCred=Object.values(saldos).reduce((s,v)=>s+v.cred,0);
+  s('rel-content').innerHTML=`
+    <div class="card">
+      <div class="card-title">Balancete de Verificação</div>
+      ${!contas.length?'<div class="alert alert-info">Para gerar o balancete, vincule categorias a contas contábeis em Plano de Contas → Vincular Categoria.</div>':''}
+      <div class="table-wrap">
+        <table><thead><tr>
+          <th>Conta</th><th>Nome</th><th>Grupo</th>
+          <th class="td-r">Débitos</th><th class="td-r">Créditos</th><th class="td-r">Saldo</th>
+        </tr></thead>
+        <tbody>
+          ${contas.map(c=>{
+            const v=saldos[c.cod];
+            const nat=c.natureza==='D'?v.deb-v.cred:v.cred-v.deb;
+            return`<tr>
+              <td style="font-family:monospace;font-size:12px">${c.cod}</td>
+              <td>${c.nome}</td>
+              <td><span class="badge" style="background:${TIPO_COR[c.tipo]}22;color:${TIPO_COR[c.tipo]}">${TIPO_LABEL[c.tipo]}</span></td>
+              <td class="td-r">${fmt(v.deb)}</td>
+              <td class="td-r">${fmt(v.cred)}</td>
+              <td class="td-r ${nat>=0?'pos':'neg'} td-bold">${fmt(nat)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+        <tfoot><tr class="tfoot-row">
+          <td colspan="3">TOTAL</td>
+          <td class="td-r">${fmt(totDeb)}</td>
+          <td class="td-r">${fmt(totCred)}</td>
+          <td class="td-r ${Math.abs(totDeb-totCred)<0.01?'pos':'neg'}">${fmt(totDeb-totCred)}</td>
+        </tr></tfoot>
+        </table>
+      </div>
+    </div>`;
+}
+
+// ============================================================ BACKUP AUTO-ALERT
+function checkBackupAlert(){
+  const el=s('dash-backup-warn'); if(!el) return;
+  if(!DB.ultimo_backup){
+    el.innerHTML='<div class="backup-banner">💾 Nenhum backup realizado ainda. Recomendamos fazer backup regularmente. <button class="btn btn-danger btn-sm" style="margin-left:8px" onclick="openBackup()">Fazer Backup</button></div>';
+    return;
+  }
+  const dias=Math.floor((Date.now()-new Date(DB.ultimo_backup))/86400000);
+  if(dias>7){
+    el.innerHTML=`<div class="backup-banner">💾 Último backup há <strong>${dias} dias</strong>. Recomendamos backup semanal. <button class="btn btn-danger btn-sm" style="margin-left:8px" onclick="openBackup()">Fazer Backup Agora</button></div>`;
+  } else {
+    el.innerHTML='';
+  }
+}
+
 // ============================================================ INIT
 window.onload=()=>{
   load();
-  // default dates
   s('fat-emis').value=today(); s('desp-data').value=today();
-  // extrato filtros default
+  s('rec-proxima').value=today();
   const mm=nowMonth();
   s('ext-de').value=mm+'-01';
   s('ext-ate').value=today();
+  s('conc-de').value=mm+'-01';
+  s('conc-ate').value=today();
   fillAllSelects();
   applyBranding();
   updateHeaderDate();
