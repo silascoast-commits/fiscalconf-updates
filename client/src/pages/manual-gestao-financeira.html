@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual do Sistema — Gestão Financeira FiscalConf</title>
+<style>
+/* ===== FONTES & RESET ===== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px}
+body{font-family:'Inter',system-ui,sans-serif;color:#1a1f2e;background:#fff;line-height:1.6}
+
+/* ===== VARIÁVEIS ===== */
+:root{
+  --azul:#2563eb;--azul-claro:#eff6ff;--azul-borda:#bfdbfe;
+  --verde:#16a34a;--verde-claro:#f0fdf4;--verde-borda:#bbf7d0;
+  --amarelo:#d97706;--amarelo-claro:#fffbeb;--amarelo-borda:#fde68a;
+  --vermelho:#dc2626;--vermelho-claro:#fef2f2;--vermelho-borda:#fecaca;
+  --cinza1:#f8fafc;--cinza2:#f1f5f9;--cinza3:#e2e8f0;--cinza4:#94a3b8;--cinza5:#64748b;
+  --texto:#1e293b;--texto2:#475569;
+}
+
+/* ===== PÁGINA / IMPRESSÃO ===== */
+@media print{
+  .no-print{display:none!important}
+  .page-break{page-break-after:always}
+  body{font-size:13px}
+  .cover{min-height:100vh}
+}
+@page{margin:20mm 18mm;size:A4}
+
+/* ===== BOTÃO IMPRIMIR ===== */
+.print-btn{
+  position:fixed;bottom:28px;right:28px;z-index:999;
+  background:var(--azul);color:#fff;border:none;border-radius:50px;
+  padding:13px 24px;font-size:14px;font-weight:700;cursor:pointer;
+  box-shadow:0 4px 20px rgba(37,99,235,.4);display:flex;align-items:center;gap:8px;
+  font-family:'Inter',sans-serif;transition:all .2s;
+}
+.print-btn:hover{background:#1d4ed8;transform:translateY(-2px)}
+
+/* ===== CAPA ===== */
+.cover{
+  background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#0c4a6e 100%);
+  color:#fff;min-height:100vh;display:flex;flex-direction:column;
+  justify-content:center;padding:60px;position:relative;overflow:hidden;
+}
+.cover::before{
+  content:'';position:absolute;top:-100px;right:-100px;
+  width:500px;height:500px;border-radius:50%;
+  background:radial-gradient(circle,rgba(59,130,246,.3),transparent 70%);
+}
+.cover::after{
+  content:'';position:absolute;bottom:-80px;left:-80px;
+  width:400px;height:400px;border-radius:50%;
+  background:radial-gradient(circle,rgba(16,185,129,.2),transparent 70%);
+}
+.cover-badge{
+  display:inline-block;background:rgba(59,130,246,.2);border:1px solid rgba(59,130,246,.4);
+  color:#93c5fd;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;
+  letter-spacing:.5px;text-transform:uppercase;margin-bottom:28px;width:fit-content;
+}
+.cover h1{font-size:44px;font-weight:800;line-height:1.15;margin-bottom:16px;position:relative}
+.cover h1 span{color:#60a5fa}
+.cover-sub{font-size:18px;color:#94a3b8;margin-bottom:48px;font-weight:400;position:relative}
+.cover-divider{width:60px;height:4px;background:linear-gradient(90deg,#3b82f6,#10b981);border-radius:2px;margin-bottom:48px}
+.cover-info{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;position:relative;max-width:500px}
+.cover-info-item{text-align:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:16px 10px}
+.cover-info-item .num{font-size:28px;font-weight:800;color:#60a5fa}
+.cover-info-item .lbl{font-size:11px;color:#94a3b8;margin-top:4px;font-weight:500}
+.cover-footer{position:absolute;bottom:40px;left:60px;right:60px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#64748b;border-top:1px solid rgba(255,255,255,.1);padding-top:20px}
+
+/* ===== SUMÁRIO ===== */
+.toc{padding:50px 60px;background:#fff}
+.toc h2{font-size:24px;font-weight:800;color:var(--texto);margin-bottom:8px}
+.toc-sub{color:var(--cinza5);font-size:14px;margin-bottom:32px}
+.toc-item{display:flex;align-items:baseline;gap:8px;padding:9px 0;border-bottom:1px dashed var(--cinza3)}
+.toc-item:last-child{border-bottom:none}
+.toc-num{font-size:12px;font-weight:700;color:var(--azul);min-width:28px}
+.toc-title{font-size:14px;color:var(--texto);font-weight:500;flex:1}
+.toc-dots{flex:1;border-bottom:1px dashed var(--cinza3);margin:0 8px;position:relative;top:-4px}
+.toc-page{font-size:13px;color:var(--cinza4);font-weight:600}
+.toc-group{font-size:11px;font-weight:700;color:var(--cinza4);text-transform:uppercase;letter-spacing:.7px;margin:20px 0 8px}
+
+/* ===== SEÇÕES ===== */
+.section{padding:48px 60px;border-bottom:2px solid var(--cinza2)}
+.section:last-child{border-bottom:none}
+.section-num{font-size:11px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.section h2{font-size:26px;font-weight:800;color:var(--texto);margin-bottom:6px;line-height:1.2}
+.section-desc{font-size:15px;color:var(--texto2);margin-bottom:28px;border-left:3px solid var(--azul);padding-left:14px;background:var(--azul-claro);padding:10px 14px;border-radius:0 8px 8px 0}
+
+/* ===== PASSOS ===== */
+.steps{counter-reset:step}
+.step{display:flex;gap:18px;margin-bottom:24px;position:relative}
+.step-num{
+  counter-increment:step;
+  min-width:36px;height:36px;background:var(--azul);color:#fff;
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:800;flex-shrink:0;margin-top:2px;
+}
+.step-num::before{content:counter(step)}
+.step-body{flex:1}
+.step-title{font-size:15px;font-weight:700;color:var(--texto);margin-bottom:5px}
+.step-text{font-size:14px;color:var(--texto2);line-height:1.65}
+
+/* ===== NOTAS / DICAS ===== */
+.note{border-radius:8px;padding:13px 16px;margin:16px 0;font-size:13.5px;display:flex;gap:12px;align-items:flex-start}
+.note-icon{font-size:17px;line-height:1;flex-shrink:0;margin-top:1px}
+.note-body strong{display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.note.tip{background:var(--verde-claro);border:1px solid var(--verde-borda);color:#166534}
+.note.warn{background:var(--amarelo-claro);border:1px solid var(--amarelo-borda);color:#92400e}
+.note.info{background:var(--azul-claro);border:1px solid var(--azul-borda);color:#1e40af}
+.note.danger{background:var(--vermelho-claro);border:1px solid var(--vermelho-borda);color:#991b1b}
+
+/* ===== MOCKUP DE TELA ===== */
+.screen{
+  background:#0b0d13;border-radius:10px;padding:16px;margin:20px 0;
+  border:1px solid #272d42;font-family:'Courier New',monospace;
+  box-shadow:0 4px 20px rgba(0,0,0,.15);
+}
+.screen-bar{display:flex;gap:6px;margin-bottom:14px;align-items:center}
+.screen-dot{width:10px;height:10px;border-radius:50%}
+.screen-dot.r{background:#ef4444}.screen-dot.y{background:#f59e0b}.screen-dot.g{background:#22c55e}
+.screen-title{font-size:11px;color:#6b7494;margin-left:8px;font-family:'Inter',sans-serif}
+.screen-body{display:flex;gap:0}
+.screen-nav{width:130px;background:#141720;border-radius:7px;padding:10px 0;flex-shrink:0;margin-right:12px}
+.screen-nav-item{padding:6px 12px;font-size:11px;color:#6b7494;font-family:'Inter',sans-serif;border-left:3px solid transparent}
+.screen-nav-item.active{color:#4f8ef7;border-left-color:#4f8ef7;background:rgba(79,142,247,.1)}
+.screen-content{flex:1;background:#141720;border-radius:7px;padding:12px}
+.screen-kpi-row{display:flex;gap:6px;margin-bottom:10px}
+.screen-kpi{background:#1c2030;border-radius:6px;padding:8px 10px;flex:1;border:1px solid #272d42}
+.screen-kpi-label{font-size:9px;color:#6b7494;font-family:'Inter',sans-serif;text-transform:uppercase;letter-spacing:.4px}
+.screen-kpi-val{font-size:14px;font-weight:800;color:#22c55e;font-family:'Inter',sans-serif;margin-top:2px}
+.screen-kpi-val.b{color:#4f8ef7}.screen-kpi-val.r{color:#ef4444}.screen-kpi-val.y{color:#f59e0b}
+.screen-row{display:flex;gap:6px;padding:5px 0;border-bottom:1px solid #272d42;align-items:center}
+.screen-row:last-child{border-bottom:none}
+.screen-cell{font-size:10px;color:#dde3f0;font-family:'Inter',sans-serif;flex:1}
+.screen-cell.sm{flex:0.6;color:#6b7494}
+.screen-cell.r{text-align:right;color:#22c55e;font-weight:700}
+.screen-cell.rr{text-align:right;color:#ef4444;font-weight:700}
+.screen-badge{display:inline-block;padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700}
+.screen-badge.g{background:#0d2d1a;color:#22c55e}.screen-badge.b{background:#1a2d55;color:#4f8ef7}
+.screen-badge.red{background:#2d1414;color:#ef4444}
+.screen-form{background:#1c2030;border-radius:7px;padding:10px;border:1px solid #272d42}
+.screen-label{font-size:9px;color:#6b7494;font-family:'Inter',sans-serif;margin-bottom:3px;display:block}
+.screen-input{background:#0b0d13;border:1px solid #272d42;border-radius:4px;padding:4px 7px;color:#dde3f0;font-size:10px;font-family:'Inter',sans-serif;width:100%;margin-bottom:7px}
+.screen-btn{background:#4f8ef7;color:#fff;border:none;border-radius:5px;padding:5px 12px;font-size:10px;font-weight:700;font-family:'Inter',sans-serif;cursor:default;display:inline-block}
+.screen-th{font-size:9px;color:#6b7494;font-family:'Inter',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:4px 6px;border-bottom:1px solid #272d42}
+.screen-section-title{font-size:11px;color:#dde3f0;font-weight:700;font-family:'Inter',sans-serif;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.screen-section-title::before{content:'';display:block;width:3px;height:13px;background:#4f8ef7;border-radius:2px}
+
+/* ===== CAMPOS / ATALHOS ===== */
+.field-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:14px 0}
+.field-item{background:var(--cinza1);border:1px solid var(--cinza3);border-radius:8px;padding:12px}
+.field-name{font-size:12px;font-weight:700;color:var(--texto);margin-bottom:3px}
+.field-desc{font-size:12px;color:var(--texto2)}
+.field-req{font-size:10px;font-weight:700;color:var(--vermelho);background:var(--vermelho-claro);padding:1px 6px;border-radius:4px;display:inline-block;margin-left:6px}
+.field-opt{font-size:10px;font-weight:700;color:var(--cinza5);background:var(--cinza2);padding:1px 6px;border-radius:4px;display:inline-block;margin-left:6px}
+
+/* ===== TABELA ===== */
+.table-wrap{overflow:hidden;border-radius:8px;border:1px solid var(--cinza3);margin:16px 0}
+table{width:100%;border-collapse:collapse}
+thead{background:var(--cinza2)}
+th{padding:10px 14px;text-align:left;font-size:12px;font-weight:700;color:var(--texto2);text-transform:uppercase;letter-spacing:.4px}
+td{padding:10px 14px;font-size:13px;color:var(--texto);border-top:1px solid var(--cinza3)}
+tr:nth-child(even) td{background:var(--cinza1)}
+.td-code{font-family:'Courier New',monospace;font-size:12px;color:var(--azul);font-weight:700}
+
+/* ===== FLUXO / PROCESSO ===== */
+.flow{display:flex;align-items:center;gap:0;margin:20px 0;flex-wrap:wrap}
+.flow-step{background:var(--azul);color:#fff;padding:10px 18px;font-size:13px;font-weight:600;border-radius:6px;white-space:nowrap}
+.flow-arrow{color:var(--cinza4);font-size:18px;margin:0 8px}
+.flow-step.verde{background:var(--verde)}
+.flow-step.cinza{background:var(--cinza5)}
+.flow-step.amarelo{background:var(--amarelo)}
+
+/* ===== ATALHOS / TECLAS ===== */
+kbd{background:#f1f5f9;border:1px solid #cbd5e1;border-radius:4px;padding:2px 7px;font-size:12px;font-family:'Courier New',monospace;color:var(--texto);box-shadow:0 1px 0 #cbd5e1}
+
+/* ===== STATUS BADGES ===== */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700}
+.badge-pend{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.badge-rec{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+.badge-venc{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+.badge-parc{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+
+/* ===== HEADLINE DE MÓDULO ===== */
+.module-header{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.module-icon{width:48px;height:48px;border-radius:12px;background:var(--azul);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.module-icon.verde{background:var(--verde)}
+.module-icon.amarelo{background:var(--amarelo)}
+.module-icon.roxo{background:#7c3aed}
+.module-icon.laranja{background:#ea580c}
+.module-icon.ciano{background:#0891b2}
+.module-icon.rosa{background:#db2777}
+.module-title{font-size:22px;font-weight:800;color:var(--texto)}
+.module-sub{font-size:13px;color:var(--cinza5)}
+
+/* ===== SEPARADOR ===== */
+hr.sep{border:none;border-top:2px solid var(--cinza2);margin:32px 0}
+
+/* ===== GLOSSÁRIO ===== */
+.glossary dt{font-weight:700;color:var(--texto);margin-top:12px;font-size:14px}
+.glossary dd{color:var(--texto2);font-size:13.5px;margin-left:0;padding-left:14px;border-left:3px solid var(--cinza3)}
+
+/* ===== CHECKLIST ===== */
+.checklist{list-style:none;margin:12px 0}
+.checklist li{display:flex;align-items:flex-start;gap:10px;padding:6px 0;font-size:14px;color:var(--texto2)}
+.checklist li::before{content:'✓';color:var(--verde);font-weight:800;font-size:14px;flex-shrink:0;margin-top:1px}
+
+/* ===== GRID FUNCIONALIDADES ===== */
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}
+.feat-card{background:var(--cinza1);border:1px solid var(--cinza3);border-radius:8px;padding:14px}
+.feat-card-icon{font-size:20px;margin-bottom:8px}
+.feat-card-title{font-size:13px;font-weight:700;color:var(--texto);margin-bottom:4px}
+.feat-card-text{font-size:12px;color:var(--texto2);line-height:1.5}
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">
+  🖨 Salvar como PDF
+</button>
+
+<!-- ============================= CAPA ============================= -->
+<div class="cover page-break">
+  <div class="cover-badge">📘 Manual do Usuário — v1.0</div>
+  <h1>Sistema de <span>Gestão<br>Financeira</span></h1>
+  <div class="cover-sub">Guia completo passo a passo para uso do sistema</div>
+  <div class="cover-divider"></div>
+  <div class="cover-info">
+    <div class="cover-info-item"><div class="num">11</div><div class="lbl">Módulos</div></div>
+    <div class="cover-info-item"><div class="num">100%</div><div class="lbl">Offline</div></div>
+    <div class="cover-info-item"><div class="num">OFX</div><div class="lbl">Importação</div></div>
+  </div>
+  <div class="cover-footer">
+    <span>FiscalConf — Gestão Financeira</span>
+    <span>Gerado em: <script>document.write(new Date().toLocaleDateString('pt-BR'))</script></span>
+  </div>
+</div>
+
+<!-- ============================= SUMÁRIO ============================= -->
+<div class="toc page-break">
+  <h2>Sumário</h2>
+  <div class="toc-sub">Navegue pelos módulos do sistema</div>
+
+  <div class="toc-group">Introdução</div>
+  <div class="toc-item"><span class="toc-num">1</span><span class="toc-title">Visão Geral do Sistema</span><span class="toc-dots"></span><span class="toc-page">3</span></div>
+  <div class="toc-item"><span class="toc-num">2</span><span class="toc-title">Como Abrir e Começar</span><span class="toc-dots"></span><span class="toc-page">3</span></div>
+  <div class="toc-item"><span class="toc-num">3</span><span class="toc-title">Configurações Iniciais e Branding</span><span class="toc-dots"></span><span class="toc-page">4</span></div>
+
+  <div class="toc-group">Módulos Principais</div>
+  <div class="toc-item"><span class="toc-num">4</span><span class="toc-title">Dashboard — Visão Geral Financeira</span><span class="toc-dots"></span><span class="toc-page">5</span></div>
+  <div class="toc-item"><span class="toc-num">5</span><span class="toc-title">Faturamento — Notas e Receitas</span><span class="toc-dots"></span><span class="toc-page">6</span></div>
+  <div class="toc-item"><span class="toc-num">6</span><span class="toc-title">Despesas — Lançamentos de Saída</span><span class="toc-dots"></span><span class="toc-page">7</span></div>
+  <div class="toc-item"><span class="toc-num">7</span><span class="toc-title">Contas a Receber (CR)</span><span class="toc-dots"></span><span class="toc-page">8</span></div>
+  <div class="toc-item"><span class="toc-num">8</span><span class="toc-title">Contas a Pagar (CP)</span><span class="toc-dots"></span><span class="toc-page">9</span></div>
+  <div class="toc-item"><span class="toc-num">9</span><span class="toc-title">Fluxo de Caixa</span><span class="toc-dots"></span><span class="toc-page">10</span></div>
+
+  <div class="toc-group">Integração Bancária</div>
+  <div class="toc-item"><span class="toc-num">10</span><span class="toc-title">Importar Extrato OFX do Banco</span><span class="toc-dots"></span><span class="toc-page">11</span></div>
+  <div class="toc-item"><span class="toc-num">11</span><span class="toc-title">Extrato Consolidado</span><span class="toc-dots"></span><span class="toc-page">12</span></div>
+
+  <div class="toc-group">Relatórios e Contabilidade</div>
+  <div class="toc-item"><span class="toc-num">12</span><span class="toc-title">Relatórios Gerenciais</span><span class="toc-dots"></span><span class="toc-page">13</span></div>
+  <div class="toc-item"><span class="toc-num">13</span><span class="toc-title">Plano de Contas Contábil</span><span class="toc-dots"></span><span class="toc-page">14</span></div>
+  <div class="toc-item"><span class="toc-num">14</span><span class="toc-title">Categorias e Centros de Custo</span><span class="toc-dots"></span><span class="toc-page">15</span></div>
+  <div class="toc-item"><span class="toc-num">15</span><span class="toc-title">Backup e Restauração de Dados</span><span class="toc-dots"></span><span class="toc-page">16</span></div>
+</div>
+
+<!-- ============================= 1. VISÃO GERAL ============================= -->
+<div class="section">
+  <div class="section-num">Capítulo 1</div>
+  <h2>Visão Geral do Sistema</h2>
+  <div class="section-desc">O sistema de Gestão Financeira FiscalConf é uma aplicação completa que roda diretamente no navegador, sem necessidade de instalação ou servidor.</div>
+
+  <div class="feat-grid">
+    <div class="feat-card"><div class="feat-card-icon">🧾</div><div class="feat-card-title">Faturamento</div><div class="feat-card-text">Emita e controle notas fiscais e receitas, com status de recebimento.</div></div>
+    <div class="feat-card"><div class="feat-card-icon">💸</div><div class="feat-card-title">Despesas</div><div class="feat-card-text">Lance saídas categorizadas por centro de custo e conta contábil.</div></div>
+    <div class="feat-card"><div class="feat-card-icon">📥</div><div class="feat-card-title">Contas a Receber</div><div class="feat-card-text">Controle títulos com baixa parcial e acompanhe inadimplência.</div></div>
+    <div class="feat-card"><div class="feat-card-icon">📤</div><div class="feat-card-title">Contas a Pagar</div><div class="feat-card-text">Gerencie vencimentos e registre pagamentos de fornecedores.</div></div>
+    <div class="feat-card"><div class="feat-card-icon">🏦</div><div class="feat-card-title">Importação OFX</div><div class="feat-card-text">Importe o extrato bancário e categorize automaticamente.</div></div>
+    <div class="feat-card"><div class="feat-card-icon">📒</div><div class="feat-card-title">Plano de Contas</div><div class="feat-card-text">90+ contas NBC TG com vínculo a categorias gerenciais.</div></div>
+  </div>
+
+  <div class="note info">
+    <span class="note-icon">💾</span>
+    <div class="note-body"><strong>Armazenamento de Dados</strong>Todos os dados são salvos automaticamente no <strong>localStorage</strong> do seu navegador. Cada computador tem sua própria base independente. Use o <strong>Backup / Restore</strong> regularmente para não perder dados.</div>
+  </div>
+</div>
+
+<!-- ============================= 2. COMO ABRIR ============================= -->
+<div class="section">
+  <div class="section-num">Capítulo 2</div>
+  <h2>Como Abrir e Começar</h2>
+  <div class="section-desc">O sistema é um único arquivo HTML que funciona em qualquer navegador moderno, sem instalação.</div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Salve o arquivo no seu computador</div>
+        <div class="step-text">Salve o arquivo <strong>gestao-financeira.html</strong> em uma pasta de sua escolha. Recomendamos criar uma pasta dedicada, como <kbd>C:\Financeiro\</kbd> ou <kbd>Documentos/Financeiro/</kbd>.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Abra no navegador</div>
+        <div class="step-text">Clique duas vezes no arquivo — ele abrirá automaticamente no seu navegador padrão (Chrome, Edge, Firefox). Você também pode arrastar o arquivo para a janela do navegador.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Crie um atalho (recomendado)</div>
+        <div class="step-text">No navegador, pressione <kbd>Ctrl</kbd> + <kbd>D</kbd> para adicionar aos favoritos, ou crie um atalho na área de trabalho para acesso rápido.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Use sempre o mesmo navegador</div>
+        <div class="step-text">Os dados ficam salvos no localStorage do navegador. Use sempre o <strong>mesmo navegador no mesmo computador</strong> para acessar seus dados. Chrome ou Edge são recomendados.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note warn">
+    <span class="note-icon">⚠️</span>
+    <div class="note-body"><strong>Atenção</strong>Não limpe o histórico/cache do navegador sem antes fazer um backup. A opção "Limpar dados de navegação" apaga o localStorage e consequentemente todos os lançamentos.</div>
+  </div>
+</div>
+
+<!-- ============================= 3. CONFIGURAÇÕES ============================= -->
+<div class="section page-break">
+  <div class="section-num">Capítulo 3</div>
+  <h2>Configurações Iniciais e Branding</h2>
+  <div class="section-desc">Antes de começar a usar, configure o nome da sua empresa e personalize a identidade visual do sistema.</div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Acesse as configurações</div>
+        <div class="step-text">Clique no botão <strong>⚙ Config</strong> no canto superior direito da tela.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Defina a identidade do sistema</div>
+        <div class="step-text">Preencha os campos de identidade:</div>
+        <div class="field-grid">
+          <div class="field-item"><div class="field-name">Nome do Sistema <span class="field-req">obrigatório</span></div><div class="field-desc">Ex: "FinControl", "Finanças ABC Ltda", "GestFin". Aparece no topo da tela.</div></div>
+          <div class="field-item"><div class="field-name">Emoji / Ícone <span class="field-opt">opcional</span></div><div class="field-desc">Um emoji representativo como 💼, 💰, 🏢, 📊. Aparece antes do nome.</div></div>
+          <div class="field-item"><div class="field-name">Cor Principal <span class="field-opt">opcional</span></div><div class="field-desc">Escolha a cor de destaque do sistema. A prévia atualiza em tempo real.</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Preencha os dados da empresa</div>
+        <div class="step-text">Informe o <strong>Nome da Empresa</strong>, <strong>CNPJ</strong> e o <strong>Saldo Inicial de Caixa</strong> (caso já tenha saldo existente antes de começar a usar o sistema).</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Salve as configurações</div>
+        <div class="step-text">Clique em <strong>"Salvar Configurações"</strong>. O nome e a cor são aplicados imediatamente em todo o sistema.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note tip">
+    <span class="note-icon">💡</span>
+    <div class="note-body"><strong>Dica</strong>Você pode voltar às configurações a qualquer momento para alterar nome, ícone ou cor. As alterações não afetam os dados lançados.</div>
+  </div>
+</div>
+
+<!-- ============================= 4. DASHBOARD ============================= -->
+<div class="section page-break">
+  <div class="section-num">Capítulo 4</div>
+  <div class="module-header">
+    <div class="module-icon">📊</div>
+    <div><div class="module-title">Dashboard</div><div class="module-sub">Visão geral financeira do mês em tempo real</div></div>
+  </div>
+  <div class="section-desc">O Dashboard é a tela inicial. Ele consolida automaticamente todos os lançamentos e exibe os indicadores mais importantes da empresa.</div>
+
+  <div class="screen">
+    <div class="screen-bar"><div class="screen-dot r"></div><div class="screen-dot y"></div><div class="screen-dot g"></div><div class="screen-title">Dashboard Financeiro</div></div>
+    <div class="screen-kpi-row">
+      <div class="screen-kpi"><div class="screen-kpi-label">Faturamento Mês</div><div class="screen-kpi-val b">R$ 48.500</div></div>
+      <div class="screen-kpi"><div class="screen-kpi-label">Despesas Mês</div><div class="screen-kpi-val r">R$ 31.200</div></div>
+      <div class="screen-kpi"><div class="screen-kpi-label">Resultado Mês</div><div class="screen-kpi-val">R$ 17.300</div></div>
+      <div class="screen-kpi"><div class="screen-kpi-label">CR Vencidos</div><div class="screen-kpi-val y">R$ 3.800</div></div>
+      <div class="screen-kpi"><div class="screen-kpi-label">CP Vencidos</div><div class="screen-kpi-val r">R$ 1.200</div></div>
+    </div>
+  </div>
+
+  <h3 style="font-size:15px;font-weight:700;margin:20px 0 10px">O que cada indicador mostra:</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Indicador</th><th>O que é</th><th>Como interpretar</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Faturamento Mês</strong></td><td>Total emitido no mês (independente de recebimento)</td><td>Quanto a empresa gerou de receita</td></tr>
+        <tr><td><strong>Despesas Mês</strong></td><td>Total de despesas lançadas no mês</td><td>Quanto a empresa gastou</td></tr>
+        <tr><td><strong>Resultado Mês</strong></td><td>Receitas recebidas menos despesas pagas</td><td>Lucro/prejuízo efetivo do caixa</td></tr>
+        <tr><td><strong>CR Vencidos</strong></td><td>Valor total de recebíveis com prazo vencido</td><td>Quanto clientes devem além do prazo</td></tr>
+        <tr><td><strong>CP Vencidos</strong></td><td>Valor total de pagamentos em atraso</td><td>Quanto a empresa deve além do prazo</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note info">
+    <span class="note-icon">📈</span>
+    <div class="note-body"><strong>Gráfico e Alertas</strong>O gráfico de barras mostra entradas × saídas dos últimos 6 meses. Os alertas vermelhos/amarelos indicam títulos vencidos ou que vencem nos próximos 7 dias — sempre verifique esta seção ao abrir o sistema.</div>
+  </div>
+</div>
+
+<!-- ============================= 5. FATURAMENTO ============================= -->
+<div class="section page-break">
+  <div class="section-num">Capítulo 5</div>
+  <div class="module-header">
+    <div class="module-icon verde">🧾</div>
+    <div><div class="module-title">Faturamento</div><div class="module-sub">Registro de notas fiscais e receitas emitidas</div></div>
+  </div>
+  <div class="section-desc">Use este módulo para registrar toda nota fiscal ou receita emitida pela empresa. Cada lançamento representa um documento emitido para um cliente.</div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Clique em "Faturamento" no menu lateral</div>
+        <div class="step-text">O formulário de lançamento aparece no topo da tela.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Preencha os dados da nota / receita</div>
+        <div class="field-grid">
+          <div class="field-item"><div class="field-name">Nº Documento <span class="field-opt">opcional</span></div><div class="field-desc">Número da NF ou referência interna. Ex: NF-0042, REC-001</div></div>
+          <div class="field-item"><div class="field-name">Cliente <span class="field-req">obrigatório</span></div><div class="field-desc">Nome do cliente ou empresa pagadora</div></div>
+          <div class="field-item"><div class="field-name">Data de Emissão <span class="field-req">obrigatório</span></div><div class="field-desc">Data em que a nota foi emitida (preenchida automaticamente com hoje)</div></div>
+          <div class="field-item"><div class="field-name">Vencimento <span class="field-opt">opcional</span></div><div class="field-desc">Data limite para pagamento. Se vencer sem recebimento, o status vira "Vencido"</div></div>
+          <div class="field-item"><div class="field-name">Valor <span class="field-req">obrigatório</span></div><div class="field-desc">Valor total da nota em reais</div></div>
+          <div class="field-item"><div class="field-name">Categoria <span class="field-opt">opcional</span></div><div class="field-desc">Ex: Vendas de Produtos, Prestação de Serviços</div></div>
+          <div class="field-item"><div class="field-name">Conta Contábil <span class="field-opt">opcional</span></div><div class="field-desc">Conta do Plano de Contas para vínculo contábil (ex: 4.1.2 Prestação de Serviços)</div></div>
+          <div class="field-item"><div class="field-name">Status <span class="field-req">obrigatório</span></div><div class="field-desc">Pendente / Recebido / Parcial / Vencido / Cancelado</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Clique em "Salvar"</div>
+        <div class="step-text">O lançamento aparece imediatamente na lista abaixo. O Dashboard é atualizado automaticamente.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Marque como recebido quando o pagamento entrar</div>
+        <div class="step-text">Na lista, clique no botão verde <strong>✓</strong> ao lado do lançamento. O status muda para "Recebido" e o Dashboard atualiza o caixa realizado.</div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size:15px;font-weight:700;margin:20px 0 10px">Status dos Lançamentos:</h3>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+    <span class="badge badge-pend">Pendente</span> — emitido, aguardando pagamento
+    &nbsp;&nbsp;<span class="badge badge-rec">Recebido</span> — pago integralmente
+    &nbsp;&nbsp;<span class="badge badge-parc">Parcial</span> — pago em parte
+    &nbsp;&nbsp;<span class="badge badge-venc">Vencido</span> — prazo passou sem pagamento
+  </div>
+
+  <div class="note tip">
+    <span class="note-icon">💡</span>
+    <div class="note-body"><strong>Filtros e Busca</strong>Use a barra de busca para localizar por cliente ou descrição. Filtre por status ou mês usando os seletores acima da tabela. Clique nos cabeçalhos das colunas para ordenar.</div>
+  </div>
+</div>
+
+<!-- ============================= 6. DESPESAS ============================= -->
+<div class="section page-break">
+  <div class="section-num">Capítulo 6</div>
+  <div class="module-header">
+    <div class="module-icon amarelo">💸</div>
+    <div><div class="module-title">Despesas</div><div class="module-sub">Registro de todas as saídas de recursos da empresa</div></div>
+  </div>
+  <div class="section-desc">Registre aqui todas as despesas: aluguel, energia, fornecedores, salários, impostos, etc. Cada despesa pode ter categoria e centro de custo para análise gerencial.</div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Acesse "Despesas" no menu</div>
+        <div class="step-text">O formulário de lançamento de despesa aparece no topo.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Preencha os dados da despesa</div>
+        <div class="field-grid">
+          <div class="field-item"><div class="field-name">Descrição <span class="field-req">obrigatório</span></div><div class="field-desc">Nome da despesa. Ex: "Aluguel Julho", "Fatura Energia", "NF Fornecedor X"</div></div>
+          <div class="field-item"><div class="field-name">Fornecedor <span class="field-opt">opcional</span></div><div class="field-desc">Nome do beneficiário ou fornecedor do serviço/produto</div></div>
+          <div class="field-item"><div class="field-name">Data <span class="field-req">obrigatório</span></div><div class="field-desc">Data de competência da despesa (quando ela ocorreu)</div></div>
+          <div class="field-item"><div class="field-name">Vencimento <span class="field-opt">opcional</span></div><div class="field-desc">Data limite para pagamento. Controla o status automaticamente</div></div>
+          <div class="field-item"><div class="field-name">Categoria <span class="field-opt">opcional</span></div><div class="field-desc">Ex: Aluguel, Pessoal, Utilidades. Usada nos relatórios</div></div>
+          <div class="field-item"><div class="field-name">Centro de Custo <span class="field-opt">opcional</span></div><div class="field-desc">Setor responsável: Administrativo, Comercial, TI, etc.</div></div>
+          <div class="field-item"><div class="field-name">Conta Contábil <span class="field-opt">opcional</span></div><div class="field-desc">Vínculo com o Plano de Contas. Ex: 6.2.1 Aluguel</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Marque como pago quando efetuar o pagamento</div>
+        <div class="step-text">Clique no botão <strong>✓</strong> verde na linha da despesa. O status muda para "Pago" e o valor entra no caixa realizado do Dashboard.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note warn">
+    <span class="note-icon">⚠️</span>
+    <div class="note-body"><strong>Diferença entre Data e Vencimento</strong><br><strong>Data</strong> = quando a despesa ocorreu (competência). <strong>Vencimento</strong> = quando precisa ser paga. Uma despesa pode ter data em junho mas vencimento em julho. O sistema usa o vencimento para alertas de atraso.</div>
+  </div>
+</div>
+
+<!-- ============================= 7. CONTAS A RECEBER ============================= -->
+<div class="section page-break">
+  <div class="section-num">Capítulo 7</div>
+  <div class="module-header">
+    <div class="module-icon ciano">📥</div>
+    <div><div class="module-title">Contas a Receber</div><div class="module-sub">Controle de títulos e recebimentos parciais</div></div>
+  </div>
+  <div class="section-desc">Diferente do Faturamento, aqui você controla títulos financeiros com baixa parcial — ideal para notas parceladas ou com abatimento de multas.</div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Clique em "+ Nova CR" para criar um título</div>
+        <div class="step-text">Um painel lateral abrirá com os campos: Documento, Cliente, Emissão, Vencimento, Valor Total, Já Recebido, Categoria e Observação.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Monitore os KPIs no topo da tela</div>
+        <div class="step-text">O painel mostra automaticamente: <strong>Total a Receber</strong> (valor de todos os títulos), <strong>Já Recebido</strong> (soma dos recebimentos) e <strong>Saldo Pendente</strong> (o que ainda falta receber).</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Registre recebimentos parciais com "↓ Baixar"</div>
+        <div class="step-text">Clique no botão <strong>↓ Baixar</strong> na linha do título. Digite o valor recebido. O sistema calcula o saldo restante e atualiza o status para "Parcial" ou "Recebido" automaticamente.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Filtre por status ou mês</div>
+        <div class="step-text">Use os seletores no topo da tabela para ver apenas títulos "Vencidos", "Pendentes" ou de um mês específico.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note info">
+    <span class="note-icon">📋</span>
+    <div class="note-body"><strong>Relatório de Aging</strong>No módulo de Relatórios, o "Aging CR" mostra os títulos agrupados por faixa de vencimento (a vencer, hoje, 1-15 dias, 16-30 dias, +30 dias), ajudando a priorizar cobranças.</div>
+  </div>
+</div>
+
+<!-- ============================= 8. CONTAS A PAGAR ============================= -->
+<div class="section page-break">
+  <div class="section-num">Capítulo 8</div>
+  <div class="module-header">
+    <div class="module-icon laranja">📤</div>
+    <div><div class="module-title">Contas a Pagar</div><div class="module-sub">Controle de obrigações e pagamentos parciais</div></div>
+  </div>
+  <div class="section-desc">Gerencie todas as obrigações financeiras da empresa com controle de vencimentos, pagamentos parciais e saldo a pagar por título.</div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Clique em "+ Nova CP" para criar uma obrigação</div>
+        <div class="step-text">Preencha: Documento, Fornecedor, Emissão, Vencimento, Valor Total, Já Pago, Categoria e Centro de Custo.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Registre pagamentos com "↓ Pagar"</div>
+        <div class="step-text">Ao efetuar um pagamento, clique em <strong>↓ Pagar</strong> e informe o valor pago. O sistema acumula o total e atualiza o saldo automaticamente.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Acompanhe o KPI "CP Vencidos" no Dashboard</div>
+        <div class="step-text">Qualquer título com vencimento passado e status diferente de "Pago" aparece no KPI de CP Vencidos no Dashboard como alerta vermelho.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note danger">
+    <span class="note-icon">🔴</span>
+    <div class="note-body"><strong>Atenção a Vencimentos</strong>Configure o <strong>vencimento</strong> correto em cada título. O sistema verifica diariamente e muda o status para "Vencido" automaticamente quando a data passa. Isso permite identificar atrasos sem nenhuma ação manual.</div>
+  </div>
+</div>
+
+<!-- ============================= 9. FLUXO DE CAIXA ============================= -->
+<div class="section page-break">
+  <div class="section-num">Capítulo 9</div>
+  <div class="module-header">
+    <div class="module-icon roxo">📈</div>
+    <div><div class="module-title">Fluxo de Caixa</div><div class="module-sub">Análise de entradas, saídas e saldo acumulado por período</div></div>
+  </div>
+  <div class="section-desc">O Fluxo de Caixa consolida todos os lançamentos confirmados (recebidos/pagos) em uma visão cronológica com saldo acumulado.</div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Acesse "Fluxo de Caixa" no menu</div>
+        <div class="step-text">A tabela e o gráfico são gerados automaticamente com base nos lançamentos existentes.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Configure o período e saldo inicial</div>
+        <div class="step-text">Selecione o período desejado (3, 6 ou 12 meses). No campo <strong>Saldo Inicial</strong>, informe o saldo em caixa antes do início do período para que o acumulado seja correto.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Analise a tabela mês a mês</div>
+        <div class="step-text">Cada linha mostra: <strong>Entradas</strong> (faturamento recebido + OFX), <strong>Saídas</strong> (despesas pagas + OFX), <strong>Resultado</strong> (diferença) e <strong>Saldo Acumulado</strong> (saldo de caixa no final do mês).</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note tip">
+    <span class="note-icon">💡</span>
+    <div class="note-body"><strong>Saldo Acumulado Negativo</strong>Se o saldo acumulado ficar negativo (aparece em vermelho), a empresa está com déficit de caixa naquele mês — o que indica necessidade de capital de giro ou revisão de prazos de recebimento/pagamento.</div>
+  </div>
+</div>
+
+<!-- ============================= 10. OFX ============================= -->
+<div class="section page-break">
+  <div class="section-num">Capítulo 10</div>
+  <div class="module-header">
+    <div class="module-icon">🏦</div>
+    <div><div class="module-title">Importar Extrato OFX</div><div class="module-sub">Leia automaticamente o extrato do seu banco</div></div>
+  </div>
+  <div class="section-desc">O formato OFX é exportado pela maioria dos bancos brasileiros. Com ele, você importa todas as movimentações bancárias de uma vez, sem digitar uma por uma.</div>
+
+  <h3 style="font-size:15px;font-weight:700;margin:0 0 14px">Como baixar o OFX do banco:</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Banco</th><th>Caminho para Exportar OFX</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Itaú</strong></td><td>Internet Banking → Extrato → Exportar → Formato OFX</td></tr>
+        <tr><td><strong>Bradesco</strong></td><td>Net Empresa → Extrato → Baixar extrato → OFX</td></tr>
+        <tr><td><strong>Santander</strong></td><td>Internet Banking → Conta → Extrato → Exportar → OFX</td></tr>
+        <tr><td><strong>Banco do Brasil</strong></td><td>BB Online → Conta Corrente → Extrato → Salvar como OFX</td></tr>
+        <tr><td><strong>Caixa Econômica</strong></td><td>Internet Banking → Extratos → Exportar OFX</td></tr>
+        <tr><td><strong>Nubank / Inter</strong></td><td>App → Extrato → Exportar → OFX (ou CSV)</td></tr>
+        <tr><td><strong>Sicoob / Sicredi</strong></td><td>Internet Banking → Extrato → Download OFX</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="steps" style="margin-top:20px">
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Baixe o arquivo OFX no site do seu banco</div>
+        <div class="step-text">Selecione o período desejado (normalmente até 90 dias por exportação). O arquivo terá extensão <strong>.ofx</strong> ou <strong>.qfx</strong>.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Acesse "Importar OFX" no menu lateral</div>
+        <div class="step-text">Arraste o arquivo para a área tracejada <strong>"Arraste o arquivo OFX aqui"</strong>, ou clique na área para selecionar o arquivo.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Revise os lançamentos na prévia</div>
+        <div class="step-text">O sistema exibirá todos os lançamentos encontrados. Cada linha mostra: data, descrição, valor, tipo (Entrada/Saída) e categoria sugerida pelas <strong>regras automáticas</strong>. Lançamentos já importados aparecem marcados como <strong>DUP</strong>.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Ajuste as categorias se necessário</div>
+        <div class="step-text">Para cada linha, você pode alterar a categoria pelo seletor. Desmarque as linhas que não deseja importar (duplicatas ou lançamentos irrelevantes).</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Clique em "Importar Selecionados"</div>
+        <div class="step-text">Os lançamentos marcados são gravados no Extrato e refletem automaticamente no Fluxo de Caixa e Dashboard.</div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size:15px;font-weight:700;margin:20px 0 10px">Regras de Categorização Automática:</h3>
+  <p style="font-size:14px;color:var(--texto2);margin-bottom:12px">Configure palavras-chave para que o sistema categorize automaticamente os lançamentos do banco:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Palavra-chave no banco</th><th>Categoria automática</th><th>Exemplo</th></tr></thead>
+      <tbody>
+        <tr><td class="td-code">SALARIO</td><td>Pessoal / Salários</td><td>"PAG SALARIO FUNC" → Pessoal</td></tr>
+        <tr><td class="td-code">ENERGIA</td><td>Utilities</td><td>"COPEL ENERGIA" → Utilities</td></tr>
+        <tr><td class="td-code">ALUGUEL</td><td>Aluguel</td><td>"ALUGUEL IMOVEL" → Aluguel</td></tr>
+        <tr><td class="td-code">IMPOSTO</td><td>Impostos / Taxas</td><td>"DARF IMPOSTO" → Impostos</td></tr>
+        <tr><td class="td-code">MERCADO</td><td>Fornecedores</td><td>"MERCADO CENTRAL" → Fornecedores</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note tip" style="margin-top:12px">
+    <span class="note-icon">💡</span>
+    <div class="note-body"><strong>Adicione suas próprias regras</strong>No painel "Regras de Categorização", adicione palavras-chave específicas do seu banco. Ex: se o seu fornecedor principal aparece como "DIST ABC LTDA", adicione "DIST ABC" → Categoria "Fornecedores".</div>
+  </div>
+</div>
+
+<!-- ============================= 11. EXTRATO ============================= -->
+<div class="section page-break">
+  <div class="section-num">Capítulo 11</div>
+  <div class="module-header">
+    <div class="module-icon rosa">📋</div>
+    <div><div class="module-title">Extrato Consolidado</div><div class="module-sub">Visão unificada de todas as movimentações</div></div>
+  </div>
+  <div class="section-desc">O Extrato reúne numa única tela todos os lançamentos confirmados: faturamentos recebidos, despesas pagas e movimentações importadas via OFX.</div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Defina o período com os campos "De" e "Até"</div>
+        <div class="step-text">Por padrão, o extrato abre com o mês atual. Altere as datas para ver períodos anteriores.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Use os filtros de Tipo e Categoria</div>
+        <div class="step-text">Filtre por <strong>Entradas</strong> ou <strong>Saídas</strong> e por categoria específica para análises detalhadas.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Exporte para CSV</div>
+        <div class="step-text">Clique em <strong>"⬇ CSV"</strong> para baixar o extrato filtrado em formato planilha (Excel/Google Sheets). O arquivo contém: Data, Descrição, Tipo, Valor, Categoria e Origem.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note info">
+    <span class="note-icon">ℹ️</span>
+    <div class="note-body"><strong>Coluna "Saldo"</strong>A coluna de saldo no extrato é calculada de forma acumulada — começa do zero e soma/subtrai cada lançamento na ordem cronológica. Para que reflita o saldo real da conta, defina o <strong>Saldo Inicial</strong> no módulo Fluxo de Caixa.</div>
+  </div>
+</div>
+
+<!-- ============================= 12. RELATÓRIOS ============================= -->
+<div class="section page-break">
+  <div class="section-num">Capítulo 12</div>
+  <div class="module-header">
+    <div class="module-icon">📑</div>
+    <div><div class="module-title">Relatórios Gerenciais</div><div class="module-sub">DRE, Aging, Categorias e Centro de Custo</div></div>
+  </div>
+  <div class="section-desc">O módulo de relatórios oferece cinco visões gerenciais para análise do desempenho financeiro da empresa.</div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Relatório</th><th>O que mostra</th><th>Quando usar</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>DRE Gerencial</strong></td>
+          <td>Receita bruta, despesas por categoria, resultado e margem líquida do mês</td>
+          <td>Fechamento mensal, reunião com sócios</td>
+        </tr>
+        <tr>
+          <td><strong>Aging CR</strong></td>
+          <td>Títulos a receber agrupados por faixa de vencimento (hoje, 1-15, 16-30, +30 dias)</td>
+          <td>Gestão de inadimplência e cobrança</td>
+        </tr>
+        <tr>
+          <td><strong>Aging CP</strong></td>
+          <td>Obrigações a pagar agrupadas por urgência de vencimento</td>
+          <td>Planejamento de pagamentos semanais</td>
+        </tr>
+        <tr>
+          <td><strong>Por Categoria</strong></td>
+          <td>Entradas e saídas agrupadas por categoria, com saldo líquido</td>
+          <td>Análise de onde vai o dinheiro</td>
+        </tr>
+        <tr>
+          <td><strong>Centro de Custo</strong></td>
+          <td>Despesas distribuídas por departamento/setor com barra de participação</td>
+          <td>Controle orçamentário por área</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="steps" style="margin-top:20px">
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Selecione o relatório desejado nos chips no topo</div>
+        <div class="step-text">Clique em "DRE Gerencial", "Aging CP", "Aging CR", "Por Categoria" ou "Centro de Custo".</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Selecione o período no filtro</div>
+        <div class="step-text">Use o seletor de período para escolher o mês a analisar. O sistema lista os meses com lançamentos existentes.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Use o botão de impressão do navegador para exportar</div>
+        <div class="step-text">Pressione <kbd>Ctrl</kbd> + <kbd>P</kbd> e selecione "Salvar como PDF" para exportar qualquer relatório.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= 13. PLANO DE CONTAS ============================= -->
+<div class="section page-break">
+  <div class="section-num">Capítulo 13</div>
+  <div class="module-header">
+    <div class="module-icon">📒</div>
+    <div><div class="module-title">Plano de Contas Contábil</div><div class="module-sub">Estrutura NBC TG / CFC com 90+ contas pré-cadastradas</div></div>
+  </div>
+  <div class="section-desc">O Plano de Contas é a espinha dorsal da contabilidade. Ele organiza todas as contas em grupos hierárquicos e permite vincular os lançamentos gerenciais à contabilidade formal.</div>
+
+  <h3 style="font-size:15px;font-weight:700;margin:0 0 12px">Estrutura do Plano de Contas:</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Grupo</th><th>Código</th><th>Natureza</th><th>Exemplos</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Ativo</strong></td><td class="td-code">1.x.x.x</td><td>Devedora</td><td>Caixa, Bancos, Clientes, Estoque, Imobilizado</td></tr>
+        <tr><td><strong>Passivo</strong></td><td class="td-code">2.x.x.x</td><td>Credora</td><td>Fornecedores, Obrigações Fiscais, Empréstimos</td></tr>
+        <tr><td><strong>Patrimônio Líquido</strong></td><td class="td-code">3.x.x.x</td><td>Credora</td><td>Capital Social, Reservas, Lucros Acumulados</td></tr>
+        <tr><td><strong>Receita</strong></td><td class="td-code">4.x.x.x</td><td>Credora</td><td>Vendas, Serviços, Receitas Financeiras</td></tr>
+        <tr><td><strong>Custo</strong></td><td class="td-code">5.x.x.x</td><td>Devedora</td><td>CMV, CSP, Mão de Obra Direta</td></tr>
+        <tr><td><strong>Despesa</strong></td><td class="td-code">6.x.x.x</td><td>Devedora</td><td>Pessoal, Aluguel, Marketing, Financeiras</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="steps" style="margin-top:20px">
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Acesse "Plano de Contas" no menu lateral</div>
+        <div class="step-text">O sistema já vem com mais de 90 contas pré-cadastradas nos 6 grupos. Você pode usar como está ou personalizar.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Adicione contas específicas da sua empresa</div>
+        <div class="step-text">No painel esquerdo, informe: <strong>Código</strong> (seguindo a hierarquia, ex: 6.2.10), <strong>Nome</strong>, <strong>Grupo</strong>, <strong>Natureza</strong> (Devedora/Credora) e <strong>Nível</strong> (3 ou 4 para contas analíticas).</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Vincule suas categorias gerenciais às contas contábeis</div>
+        <div class="step-text">No painel <strong>"Vincular Categoria → Conta Contábil"</strong>, selecione para cada categoria gerencial (ex: "Aluguel") a conta correspondente do plano (ex: <code>6.2.1 Aluguel</code>). Isso permite relatórios no padrão contábil.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Use o campo "Conta Contábil" nos lançamentos</div>
+        <div class="step-text">Ao criar um faturamento ou despesa, selecione a conta contábil correspondente. Isso possibilita que seu contador exporte os dados já classificados.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note tip">
+    <span class="note-icon">💡</span>
+    <div class="note-body"><strong>Exportar para o Contador</strong>Use <strong>"⬇ CSV"</strong> no plano de contas para exportar toda a estrutura. Use o <strong>Backup</strong> para passar os dados lançados ao contador. Combine os dois para facilitar a entrega mensal das informações.</div>
+  </div>
+</div>
+
+<!-- ============================= 14. CATEGORIAS ============================= -->
+<div class="section page-break">
+  <div class="section-num">Capítulo 14</div>
+  <div class="module-header">
+    <div class="module-icon verde">🏷</div>
+    <div><div class="module-title">Categorias e Centros de Custo</div><div class="module-sub">Personalize a classificação dos lançamentos</div></div>
+  </div>
+  <div class="section-desc">Categorias organizam os lançamentos por natureza financeira. Centros de Custo identificam o departamento ou área responsável pela despesa.</div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Acesse "Categorias" no menu lateral</div>
+        <div class="step-text">O sistema já vem com 11 categorias padrão (Vendas, Serviços, Pessoal, Aluguel, Impostos, etc.).</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Adicione categorias específicas do seu negócio</div>
+        <div class="step-text">Digite o nome, selecione o tipo (<strong>Entrada</strong>, <strong>Saída</strong> ou <strong>Ambos</strong>), escolha uma cor de identificação e clique em <strong>"+"</strong>.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Adicione Centros de Custo</div>
+        <div class="step-text">No painel "Centros de Custo", adicione os departamentos da sua empresa. Ex: "Jurídico", "Logística", "P&D". Esses centros aparecem nos lançamentos de despesa e no relatório de Centro de Custo.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note info">
+    <span class="note-icon">ℹ️</span>
+    <div class="note-body"><strong>Boas práticas de categorização</strong>Mantenha as categorias em número razoável (8 a 15). Categorias demais dificultam a análise. Use categorias amplas como "Despesas Operacionais" quando não precisar de granularidade maior.</div>
+  </div>
+</div>
+
+<!-- ============================= 15. BACKUP ============================= -->
+<div class="section page-break">
+  <div class="section-num">Capítulo 15</div>
+  <div class="module-header">
+    <div class="module-icon">💾</div>
+    <div><div class="module-title">Backup e Restauração</div><div class="module-sub">Proteja seus dados contra perda acidental</div></div>
+  </div>
+  <div class="section-desc">O sistema salva os dados no localStorage do navegador. O Backup permite exportar todos os dados para um arquivo seguro e restaurá-los quando necessário.</div>
+
+  <h3 style="font-size:15px;font-weight:700;margin:0 0 14px">Como fazer o Backup:</h3>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Clique em "Backup / Restore" no menu lateral</div>
+        <div class="step-text">O painel exibe um resumo: tamanho dos dados, quantidade de registros por módulo.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Clique em "⬇ Baixar Backup JSON"</div>
+        <div class="step-text">Um arquivo <strong>backup_fiscalconf_YYYY-MM-DD.json</strong> será baixado. Este arquivo contém 100% dos dados: lançamentos, categorias, plano de contas, configurações e regras OFX.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Guarde o arquivo em local seguro</div>
+        <div class="step-text">Salve em pasta no Google Drive, OneDrive, pen drive ou e-mail. Recomendamos fazer backup <strong>semanalmente</strong> ou após grandes volumes de lançamento.</div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size:15px;font-weight:700;margin:20px 0 14px">Como Restaurar o Backup:</h3>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Acesse o painel de Backup / Restore</div>
+        <div class="step-text">Na seção "Restaurar Backup", clique em <strong>"Selecionar arquivo de backup (.json)"</strong>.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Selecione o arquivo .json do backup</div>
+        <div class="step-text">Escolha o arquivo de backup salvo anteriormente.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num"></div>
+      <div class="step-body">
+        <div class="step-title">Clique em "↑ Restaurar Backup"</div>
+        <div class="step-text">Uma confirmação será solicitada. Após confirmar, todos os dados atuais são <strong>substituídos</strong> pelos do backup. O sistema recarrega automaticamente.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note danger">
+    <span class="note-icon">🔴</span>
+    <div class="note-body"><strong>Cuidado ao Restaurar</strong>A restauração substitui permanentemente todos os dados atuais. Antes de restaurar, faça um backup dos dados presentes, caso queira preservar os dois conjuntos de dados.</div>
+  </div>
+
+  <h3 style="font-size:15px;font-weight:700;margin:20px 0 12px">Exportar Dados em CSV (por módulo):</h3>
+  <p style="font-size:14px;color:var(--texto2);margin-bottom:12px">Além do backup completo em JSON, você pode exportar os dados em planilhas separadas:</p>
+  <ul class="checklist">
+    <li>Clique em <strong>"⬇ Exportar Dados CSV"</strong> no painel de backup</li>
+    <li>5 arquivos serão baixados automaticamente: faturamento.csv, despesas.csv, cr.csv, cp.csv, extrato.csv</li>
+    <li>Abra no Excel ou Google Sheets para análises personalizadas ou migração de dados</li>
+  </ul>
+</div>
+
+<!-- ============================= GLOSSÁRIO ============================= -->
+<div class="section page-break">
+  <div class="section-num">Apêndice</div>
+  <h2>Glossário de Termos</h2>
+
+  <dl class="glossary">
+    <dt>Competência vs Caixa</dt>
+    <dd>Regime de Competência registra a despesa/receita quando ocorre. Regime de Caixa registra quando o dinheiro efetivamente entra ou sai. O sistema usa competência para lançamento e caixa para o fluxo.</dd>
+
+    <dt>CMV / CSV</dt>
+    <dd>Custo das Mercadorias Vendidas / Custo dos Serviços Prestados. Custo diretamente ligado à produção do produto ou execução do serviço vendido.</dd>
+
+    <dt>Contas a Receber (CR)</dt>
+    <dd>Direitos que a empresa tem a receber de clientes por vendas ou serviços já realizados mas ainda não pagos.</dd>
+
+    <dt>Contas a Pagar (CP)</dt>
+    <dd>Obrigações financeiras da empresa com fornecedores, funcionários, fisco ou credores, com vencimento futuro.</dd>
+
+    <dt>Aging</dt>
+    <dd>Análise de envelhecimento de títulos — agrupa os recebíveis/pagáveis por faixa de vencimento para identificar inadimplência e urgências.</dd>
+
+    <dt>DRE — Demonstração do Resultado do Exercício</dt>
+    <dd>Relatório que apura o lucro ou prejuízo de um período, partindo da receita bruta e deduzindo custos e despesas até chegar ao resultado líquido.</dd>
+
+    <dt>EBITDA</dt>
+    <dd>Lucro antes de juros, impostos, depreciação e amortização. Indica a geração de caixa operacional da empresa.</dd>
+
+    <dt>Fluxo de Caixa</dt>
+    <dd>Demonstrativo das entradas e saídas de dinheiro ao longo do tempo, mostrando o saldo disponível em cada período.</dd>
+
+    <dt>localStorage</dt>
+    <dd>Área de armazenamento do navegador onde o sistema salva os dados. É específico por navegador e por dispositivo.</dd>
+
+    <dt>OFX — Open Financial Exchange</dt>
+    <dd>Formato de arquivo padrão exportado por bancos para transferência de dados de extratos bancários entre sistemas.</dd>
+
+    <dt>Plano de Contas</dt>
+    <dd>Estrutura hierárquica de todas as contas contábeis da empresa, organizado conforme as normas brasileiras (NBC TG / CFC).</dd>
+
+    <dt>Natureza Devedora / Credora</dt>
+    <dd>Natureza Devedora: o saldo normal da conta aumenta a débito (ex: despesas, ativos). Natureza Credora: o saldo normal aumenta a crédito (ex: receitas, passivos).</dd>
+  </dl>
+</div>
+
+<!-- ============================= RODAPÉ ============================= -->
+<div style="background:var(--cinza2);padding:32px 60px;border-top:2px solid var(--cinza3);text-align:center">
+  <div style="font-size:20px;font-weight:800;color:var(--azul);margin-bottom:6px">FiscalConf — Gestão Financeira</div>
+  <div style="font-size:13px;color:var(--cinza5);margin-bottom:16px">Manual do Usuário v1.0 — Todos os direitos reservados</div>
+  <div style="font-size:12px;color:var(--cinza4)">Este sistema é um arquivo HTML standalone que funciona offline em qualquer navegador moderno.<br>Faça backup regularmente para proteger seus dados.</div>
+</div>
+
+</body>
+</html>
