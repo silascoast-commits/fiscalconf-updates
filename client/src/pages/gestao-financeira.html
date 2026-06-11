@@ -1465,20 +1465,13 @@ function openConfig(){
     <div class="modal-title">⚙ Configurações do Sistema <button onclick="closeModal()">×</button></div>
     <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Identidade do Sistema</div>
     <div class="form-row">
-      <div class="field"><label>Nome do Sistema</label><input id="cfg-sist-nome" value="${DB.config.sistema_nome||'Gestão Financeira'}" placeholder="Ex: FinControl Pro"></div>
-      <div class="field" style="max-width:80px"><label>Emoji / Ícone</label><input id="cfg-sist-logo" value="${DB.config.sistema_logo||'💼'}" maxlength="4"></div>
+      <div class="field"><label>Nome do Sistema</label><input id="cfg-sist-nome" value="${DB.config.sistema_nome||'Gestão Financeira'}" placeholder="Ex: FinControl Pro" oninput="atualizarPreviaLogo()"></div>
+      <div class="field" style="max-width:80px"><label>Emoji / Ícone</label><input id="cfg-sist-logo" value="${DB.config.sistema_logo||'💼'}" maxlength="4" oninput="atualizarPreviaLogo()"></div>
     </div>
     <div class="form-row">
-      <div class="field"><label>Cor Principal</label><input type="color" id="cfg-sist-cor" value="${DB.config.sistema_cor||'#4f8ef7'}" style="height:36px;padding:3px"></div>
+      <div class="field"><label>Cor Principal</label><input type="color" id="cfg-sist-cor" value="${DB.config.sistema_cor||'#4f8ef7'}" style="height:36px;padding:3px" oninput="atualizarPreviaLogo()"></div>
       <div class="field"><label>Prévia do Logo</label><div id="cfg-logo-preview" style="font-size:17px;font-weight:800;padding:8px 0;color:${DB.config.sistema_cor||'#4f8ef7'}">${DB.config.sistema_logo||'💼'} ${DB.config.sistema_nome||'Gestão Financeira'}</div></div>
     </div>
-    <script>
-      s('cfg-sist-nome').oninput=s('cfg-sist-logo').oninput=s('cfg-sist-cor').oninput=()=>{
-        const el=document.getElementById('cfg-logo-preview');
-        el.textContent=(s('cfg-sist-logo').value||'💼')+' '+(s('cfg-sist-nome').value||'Sistema');
-        el.style.color=s('cfg-sist-cor').value;
-      };
-    <\/script>
     <div class="sep"></div>
     <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Dados da Empresa</div>
     <div class="field"><label>Nome da Empresa</label><input id="cfg-empresa" value="${DB.config.empresa}"></div>
@@ -1490,6 +1483,12 @@ function openConfig(){
       <button class="btn btn-primary" onclick="salvarConfig()">Salvar Configurações</button>
       <button class="btn btn-danger" onclick="if(confirm('Apagar TODOS os dados?')){localStorage.clear();location.reload()}">⚠ Resetar Dados</button>
     </div>`);
+}
+function atualizarPreviaLogo(){
+  const el=document.getElementById('cfg-logo-preview');
+  if(!el) return;
+  el.textContent=(document.getElementById('cfg-sist-logo')?.value||'💼')+' '+(document.getElementById('cfg-sist-nome')?.value||'Sistema');
+  el.style.color=document.getElementById('cfg-sist-cor')?.value||'#4f8ef7';
 }
 function salvarConfig(){
   DB.config.empresa=s('cfg-empresa').value;
@@ -1571,7 +1570,7 @@ function renderCatContaVinculos(){
 }
 
 function exportarPlanoCSV(){
-  const csv='Código,Nome,Grupo,Natureza,Nível\n'+DB.plano_contas.map(c=>`"${c.cod}","${c.nome}","${TIPO_LABEL[c.tipo]}","${c.natureza==='D'?'Devedora':'Credora}","${c.nivel}"`).join('\n');
+  const csv='Código,Nome,Grupo,Natureza,Nível\n'+DB.plano_contas.map(c=>{const nat=c.natureza==='D'?'Devedora':'Credora';return`"${c.cod}","${c.nome}","${TIPO_LABEL[c.tipo]||c.tipo}","${nat}","${c.nivel}"`;}).join('\n');
   const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('﻿'+csv);
   a.download='plano_de_contas.csv'; a.click();
 }
