@@ -214,6 +214,40 @@ tr:nth-child(even) td{background:#f8fafc}
   </table>
 
   <div class="tip"><span class="box-icon">💡</span><div>O item ativo na sidebar é destacado com a cor principal. Ao navegar entre módulos, o sistema recarrega apenas o painel central — a sidebar e o header permanecem fixos.</div></div>
+
+  <h3>Compatibilidade de Navegadores</h3>
+  <table>
+    <thead><tr><th>Navegador</th><th>Suporte</th><th>Observação</th></tr></thead>
+    <tbody>
+      <tr><td>Google Chrome (v90+)</td><td><span class="badge-mock b-green">✓ Recomendado</span></td><td>Melhor desempenho e impressão PDF</td></tr>
+      <tr><td>Microsoft Edge (v90+)</td><td><span class="badge-mock b-green">✓ Recomendado</span></td><td>Excelente suporte a impressão A4</td></tr>
+      <tr><td>Mozilla Firefox (v88+)</td><td><span class="badge-mock b-blue">✓ Suportado</span></td><td>Funciona bem; ajuste as margens na impressão</td></tr>
+      <tr><td>Safari (macOS)</td><td><span class="badge-mock b-blue">✓ Suportado</span></td><td>Funciona; exportação CSV pode variar</td></tr>
+      <tr><td>Internet Explorer</td><td><span class="badge-mock b-red">✕ Não suportado</span></td><td>Utilize Edge ou Chrome</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Atalhos de Teclado Gerais</h3>
+  <table>
+    <thead><tr><th>Atalho</th><th>Ação</th></tr></thead>
+    <tbody>
+      <tr><td><kbd style="background:#f1f5f9;padding:2px 6px;border-radius:3px;border:1px solid #cbd5e1;font-size:12px">Ctrl+P</kbd></td><td>Abrir diálogo de impressão / Salvar como PDF</td></tr>
+      <tr><td><kbd style="background:#f1f5f9;padding:2px 6px;border-radius:3px;border:1px solid #cbd5e1;font-size:12px">Esc</kbd></td><td>Fechar modais, busca global ou formulários abertos</td></tr>
+      <tr><td><kbd style="background:#f1f5f9;padding:2px 6px;border-radius:3px;border:1px solid #cbd5e1;font-size:12px">Ctrl+Z</kbd></td><td>Desfazer último preenchimento em campos de texto</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Primeira Utilização — Configuração Inicial</h3>
+  <p>Ao abrir o sistema pela primeira vez, recomendamos seguir esta sequência:</p>
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div class="step-body">Clique em <strong>⚙ Config</strong> e preencha os dados da empresa: nome, CNPJ e saldo inicial.</div></div>
+    <div class="step"><div class="step-n">2</div><div class="step-body">Acesse <strong>Categorias</strong> e crie as categorias que fazem sentido para o seu negócio (ou use as padrão).</div></div>
+    <div class="step"><div class="step-n">3</div><div class="step-body">Se utilizar contabilidade, acesse <strong>Plano de Contas</strong> e vincule categorias às contas contábeis.</div></div>
+    <div class="step"><div class="step-n">4</div><div class="step-body">Comece a lançar em <strong>Faturamento</strong> e <strong>Despesas</strong>.</div></div>
+    <div class="step"><div class="step-n">5</div><div class="step-body">Após a primeira semana de uso, faça o primeiro backup em <strong>Sistema → Backup</strong>.</div></div>
+  </div>
+
+  <div class="info"><span class="box-icon">ℹ</span><div>O sistema salva as alterações automaticamente — não existe botão "Salvar tudo". Cada operação (adicionar, editar, excluir) é persistida imediatamente no localStorage.</div></div>
 </div>
 
 <!-- ===== CAP 2 ===== -->
@@ -253,6 +287,34 @@ tr:nth-child(even) td{background:#f8fafc}
   </div>
 
   <div class="danger"><span class="box-icon">🔴</span><div>O botão <strong>"⚠ Resetar Dados"</strong> apaga <em>todos</em> os dados do sistema (faturamentos, despesas, extrato, etc.) de forma irreversível. Use somente para reiniciar do zero.</div></div>
+
+  <h3>Passo a Passo — Alterar a Cor Principal</h3>
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div class="step-body">Clique em <strong>⚙ Config</strong> no header.</div></div>
+    <div class="step"><div class="step-n">2</div><div class="step-body">Na seção <em>Identidade do Sistema</em>, clique no seletor de cor ao lado de <strong>"Cor Principal"</strong>.</div></div>
+    <div class="step"><div class="step-n">3</div><div class="step-body">Selecione a cor desejada — a prévia atualiza instantaneamente no modal.</div></div>
+    <div class="step"><div class="step-n">4</div><div class="step-body">Clique em <strong>Salvar Configurações</strong>. O sistema aplicará a nova cor em toda a interface.</div></div>
+  </div>
+
+  <h3>Mockup da Tela de Configurações</h3>
+  <div class="mockup">
+    <div class="mockup-bar">⚙ Configurações do Sistema</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div class="mockup-field"><div class="mockup-label">Nome do Sistema</div><div class="mockup-input">Gestão Financeira</div></div>
+      <div class="mockup-field"><div class="mockup-label">Emoji / Ícone</div><div class="mockup-input">💼</div></div>
+      <div class="mockup-field"><div class="mockup-label">Cor Principal</div><div style="display:flex;align-items:center;gap:6px"><div style="width:28px;height:28px;background:#4f8ef7;border-radius:4px;border:1px solid #e2e8f0"></div><div class="mockup-input">#4f8ef7</div></div></div>
+      <div class="mockup-field"><div class="mockup-label">Prévia do Logo</div><div style="background:#f1f5f9;padding:6px 10px;border-radius:4px;font-weight:700;font-size:13px">💼 Gestão Financeira</div></div>
+      <div class="mockup-field"><div class="mockup-label">Nome da Empresa</div><div class="mockup-input">Minha Empresa Ltda.</div></div>
+      <div class="mockup-field"><div class="mockup-label">CNPJ</div><div class="mockup-input">00.000.000/0001-00</div></div>
+    </div>
+    <div class="mockup-field"><div class="mockup-label">Saldo Inicial do Caixa (R$)</div><div class="mockup-input">0,00</div></div>
+    <div style="margin-top:12px;display:flex;justify-content:space-between">
+      <span class="mockup-btn mockup-btn-sec" style="color:#dc2626;background:#fee2e2">⚠ Resetar Dados</span>
+      <span class="mockup-btn">Salvar Configurações</span>
+    </div>
+  </div>
+
+  <div class="tip"><span class="box-icon">💡</span><div>Para empresas com identidade visual, escolha a cor principal que corresponda à cor predominante do logotipo. O sistema aplicará essa cor em botões, destaques de menu e gráficos.</div></div>
 </div>
 
 <!-- ===== CAP 3 ===== -->
@@ -301,6 +363,44 @@ tr:nth-child(even) td{background:#f8fafc}
       <tr><td><span class="badge-mock b-green">✓ Em dia</span></td><td>Nenhum alerta crítico — finanças em dia</td></tr>
     </tbody>
   </table>
+
+  <h3>Seção — Últimas Entradas e Saídas</h3>
+  <p>Na parte inferior do Dashboard, o sistema exibe dois painéis lado a lado com os <strong>5 lançamentos mais recentes</strong> de entradas (faturamentos recebidos) e saídas (despesas pagas). Cada linha mostra:</p>
+  <ul>
+    <li><strong>Data:</strong> data do lançamento ou recebimento</li>
+    <li><strong>Descrição:</strong> nome do cliente ou da despesa</li>
+    <li><strong>Valor:</strong> montante em R$</li>
+    <li><strong>Categoria:</strong> badge colorido com a categoria</li>
+  </ul>
+
+  <h3>Exemplo de Dashboard — Visão Completa</h3>
+  <div class="mockup">
+    <div class="mockup-bar">📊 Dashboard — Junho 2026</div>
+    <div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:8px 12px;font-size:12px;margin-bottom:10px">
+      🔁 <strong>2 lançamentos recorrentes vencidos</strong> aguardando geração. <span style="color:#2563eb;text-decoration:underline;cursor:pointer">Ver Recorrentes</span>
+    </div>
+    <div class="mockup-row" style="margin-bottom:12px">
+      <div class="mockup-kpi"><div class="mockup-kpi-label">Faturamento Mês</div><div class="mockup-kpi-val">R$ 32.500</div><div style="font-size:10px;color:#64748b">Recebido: R$ 28.000</div></div>
+      <div class="mockup-kpi"><div class="mockup-kpi-label">Despesas Mês</div><div class="mockup-kpi-val" style="color:#dc2626">R$ 18.200</div><div style="font-size:10px;color:#64748b">Pagas: R$ 15.000</div></div>
+      <div class="mockup-kpi"><div class="mockup-kpi-label">Resultado</div><div class="mockup-kpi-val" style="color:#16a34a">R$ 12.800</div><div style="font-size:10px;color:#64748b">Realizado</div></div>
+      <div class="mockup-kpi"><div class="mockup-kpi-label">CR Vencidos</div><div class="mockup-kpi-val" style="color:#ea580c">R$ 4.500</div></div>
+      <div class="mockup-kpi"><div class="mockup-kpi-label">CP Vencidos</div><div class="mockup-kpi-val" style="color:#dc2626">R$ 1.200</div></div>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px">Últimas Entradas</div>
+    <div style="border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;font-size:11px">
+      <div style="display:grid;grid-template-columns:80px 1fr 80px 90px;padding:5px 8px;background:#f8fafc;font-weight:700;color:#64748b">
+        <span>Data</span><span>Descrição</span><span>Valor</span><span>Categoria</span>
+      </div>
+      <div style="display:grid;grid-template-columns:80px 1fr 80px 90px;padding:5px 8px;border-top:1px solid #e2e8f0">
+        <span>10/06</span><span>NF-0042 — Cliente A</span><span>R$ 8.000</span><span><span class="badge-mock b-green">Serviços</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:80px 1fr 80px 90px;padding:5px 8px;border-top:1px solid #e2e8f0;background:#f8fafc">
+        <span>08/06</span><span>NF-0041 — Cliente B</span><span>R$ 5.500</span><span><span class="badge-mock b-blue">Vendas</span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="warn"><span class="box-icon">⚠</span><div>Os valores do Dashboard refletem o <strong>mês atual</strong>. Não é possível filtrar o Dashboard por período — use o módulo <strong>Relatórios → DRE Gerencial</strong> para análises de outros meses.</div></div>
 </div>
 
 <!-- ===== CAP 4 ===== -->
@@ -347,6 +447,47 @@ tr:nth-child(even) td{background:#f8fafc}
   </ul>
 
   <div class="tip"><span class="box-icon">💡</span><div>Clique nos cabeçalhos das colunas para ordenar a tabela. Clicar duas vezes inverte a ordem.</div></div>
+
+  <h3>Passo a Passo — Lançar um Faturamento</h3>
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div class="step-body">Acesse <strong>Faturamento</strong> na sidebar.</div></div>
+    <div class="step"><div class="step-n">2</div><div class="step-body">O formulário de novo lançamento fica na parte superior da tela. Preencha ao menos os campos obrigatórios: <strong>Cliente</strong>, <strong>Data Emissão</strong>, <strong>Valor</strong> e <strong>Status</strong>.</div></div>
+    <div class="step"><div class="step-n">3</div><div class="step-body">Para vincular à contabilidade, selecione a <strong>Conta Contábil</strong> correspondente (ex: "4.1.1 — Receita de Serviços").</div></div>
+    <div class="step"><div class="step-n">4</div><div class="step-body">Clique em <strong>💾 Salvar</strong>. O lançamento aparece instantaneamente na tabela abaixo.</div></div>
+    <div class="step"><div class="step-n">5</div><div class="step-body">Para limpar o formulário sem salvar, clique em <strong>🔄 Limpar</strong>.</div></div>
+  </div>
+
+  <h3>Mockup — Formulário de Faturamento</h3>
+  <div class="mockup">
+    <div class="mockup-bar">📄 Faturamento — Novo Lançamento</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px">
+      <div class="mockup-field"><div class="mockup-label">Nº Documento</div><div class="mockup-input">NF-0043</div></div>
+      <div class="mockup-field"><div class="mockup-label">Cliente ✱</div><div class="mockup-input">Empresa ABC Ltda.</div></div>
+      <div class="mockup-field"><div class="mockup-label">Data Emissão ✱</div><div class="mockup-input">11/06/2026</div></div>
+      <div class="mockup-field"><div class="mockup-label">Vencimento</div><div class="mockup-input">25/06/2026</div></div>
+      <div class="mockup-field"><div class="mockup-label">Valor (R$) ✱</div><div class="mockup-input">12.500,00</div></div>
+      <div class="mockup-field"><div class="mockup-label">Status ✱</div><div class="mockup-input">Pendente</div></div>
+      <div class="mockup-field"><div class="mockup-label">Categoria</div><div class="mockup-input">Serviços de TI</div></div>
+      <div class="mockup-field"><div class="mockup-label">Conta Contábil</div><div class="mockup-input">4.1.2 — Serviços</div></div>
+    </div>
+    <div class="mockup-field"><div class="mockup-label">Observações</div><div class="mockup-input" style="min-height:36px">Ref. contrato 2026/0012 — 2ª parcela</div></div>
+    <div style="margin-top:10px;display:flex;gap:6px">
+      <span class="mockup-btn">💾 Salvar</span>
+      <span class="mockup-btn mockup-btn-sec">🔄 Limpar</span>
+    </div>
+  </div>
+
+  <h3>Entendendo os Status</h3>
+  <table>
+    <thead><tr><th>Status</th><th>Quando usar</th><th>Efeito nos KPIs</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge-mock b-orange">Pendente</span></td><td>NF emitida, pagamento não confirmado</td><td>Conta no KPI "Faturamento Mês" mas não em "Já Recebido"</td></tr>
+      <tr><td><span class="badge-mock b-green">Recebido</span></td><td>Pagamento confirmado e registrado</td><td>Conta em "Faturamento Mês" e em "Já Recebido"</td></tr>
+      <tr><td><span class="badge-mock b-blue">Parcial</span></td><td>Recebimento parcial do valor</td><td>Valor total no faturamento, valor recebido separado</td></tr>
+      <tr><td><span class="badge-mock b-red">Vencido</span></td><td>Prazo passou sem recebimento</td><td>Aparece no KPI "CR Vencidos" do Dashboard</td></tr>
+      <tr><td><span class="badge-mock" style="background:#f1f5f9;color:#64748b">Cancelado</span></td><td>NF cancelada</td><td>Excluído dos totais e gráficos</td></tr>
+    </tbody>
+  </table>
 </div>
 
 <!-- ===== CAP 5 ===== -->
@@ -384,6 +525,38 @@ tr:nth-child(even) td{background:#f8fafc}
     <div class="step"><div class="step-n">3</div><div class="step-body">Clique em <strong>Salvar</strong>. O sistema cria automaticamente N despesas com a descrição "Nome da Despesa (1/N)", "(2/N)", etc., adicionando 1 mês a cada vencimento.</div></div>
   </div>
   <div class="info"><span class="box-icon">ℹ</span><div>O valor de cada parcela é o total dividido igualmente. Exemplo: R$ 1.200 em 6x = 6 lançamentos de R$ 200,00 cada.</div></div>
+
+  <h3>Exemplo Prático de Parcelamento</h3>
+  <p>Uma despesa de <strong>R$ 3.000,00 em 3x</strong> com vencimento em 05/07/2026 gera os seguintes lançamentos automáticos:</p>
+  <div class="mockup">
+    <div style="border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;font-size:12px">
+      <div style="display:grid;grid-template-columns:3fr 80px 100px 80px;padding:6px 10px;background:#f8fafc;font-weight:700;font-size:11px;color:#64748b;text-transform:uppercase">
+        <span>Descrição</span><span>Parcela</span><span>Vencimento</span><span>Valor</span>
+      </div>
+      <div style="display:grid;grid-template-columns:3fr 80px 100px 80px;padding:6px 10px;border-top:1px solid #e2e8f0">
+        <span>Software XYZ (1/3)</span><span>1ª</span><span>05/07/2026</span><span>R$ 1.000</span>
+      </div>
+      <div style="display:grid;grid-template-columns:3fr 80px 100px 80px;padding:6px 10px;border-top:1px solid #e2e8f0;background:#f8fafc">
+        <span>Software XYZ (2/3)</span><span>2ª</span><span>05/08/2026</span><span>R$ 1.000</span>
+      </div>
+      <div style="display:grid;grid-template-columns:3fr 80px 100px 80px;padding:6px 10px;border-top:1px solid #e2e8f0">
+        <span>Software XYZ (3/3)</span><span>3ª</span><span>05/09/2026</span><span>R$ 1.000</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>Filtros e Busca em Despesas</h3>
+  <table>
+    <thead><tr><th>Filtro</th><th>Descrição</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Busca livre</strong></td><td>Pesquisa em tempo real em Descrição e Fornecedor</td></tr>
+      <tr><td><strong>Status</strong></td><td>Pendente / Pago / Vencido / Cancelado</td></tr>
+      <tr><td><strong>Categoria</strong></td><td>Filtra por uma categoria específica</td></tr>
+      <tr><td><strong>Mês</strong></td><td>Filtra pela data do lançamento</td></tr>
+    </tbody>
+  </table>
+
+  <div class="warn"><span class="box-icon">⚠</span><div>Ao excluir uma despesa parcelada, apenas a parcela selecionada é removida. As demais parcelas permanecem. Para cancelar todas as parcelas de uma vez, exclua cada uma individualmente ou altere o status para "Cancelado".</div></div>
 </div>
 
 <!-- ===== CAP 6 ===== -->
@@ -419,6 +592,45 @@ tr:nth-child(even) td{background:#f8fafc}
   </div>
 
   <div class="tip"><span class="box-icon">💡</span><div>Títulos com vencimento anterior à data atual e status diferente de "Recebido" são exibidos com a data em vermelho, indicando atraso.</div></div>
+
+  <h3>Campos da Conta a Receber</h3>
+  <table>
+    <thead><tr><th>Campo</th><th>Descrição</th><th></th></tr></thead>
+    <tbody>
+      <tr><td><strong>Doc / Ref</strong></td><td>Número do documento, nota ou referência interna</td><td class="opt">Opcional</td></tr>
+      <tr><td><strong>Cliente</strong></td><td>Nome do cliente devedor</td><td class="req">✱ Obrigatório</td></tr>
+      <tr><td><strong>Data Emissão</strong></td><td>Data de emissão ou origem do título</td><td class="req">✱ Obrigatório</td></tr>
+      <tr><td><strong>Vencimento</strong></td><td>Data limite para pagamento</td><td class="req">✱ Obrigatório</td></tr>
+      <tr><td><strong>Valor (R$)</strong></td><td>Valor total do título</td><td class="req">✱ Obrigatório</td></tr>
+      <tr><td><strong>Já Recebido (R$)</strong></td><td>Valor já recebido (para títulos com baixa parcial prévia)</td><td class="opt">Opcional</td></tr>
+      <tr><td><strong>Categoria</strong></td><td>Categoria financeira do recebimento</td><td class="opt">Opcional</td></tr>
+      <tr><td><strong>Observação</strong></td><td>Notas livres sobre o título (boleto, contato do cliente)</td><td class="opt">Opcional</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Mockup — Tabela de Contas a Receber</h3>
+  <div class="mockup">
+    <div class="mockup-bar">📥 Contas a Receber</div>
+    <div class="mockup-row" style="margin-bottom:12px">
+      <div class="mockup-kpi"><div class="mockup-kpi-label">Total a Receber</div><div class="mockup-kpi-val">R$ 45.000</div></div>
+      <div class="mockup-kpi"><div class="mockup-kpi-label">Já Recebido</div><div class="mockup-kpi-val" style="color:#16a34a">R$ 30.000</div></div>
+      <div class="mockup-kpi"><div class="mockup-kpi-label">Saldo Pendente</div><div class="mockup-kpi-val" style="color:#ea580c">R$ 15.000</div></div>
+    </div>
+    <div style="font-size:12px;display:flex;gap:8px;margin-bottom:8px">
+      <span class="mockup-btn">+ Nova CR</span>
+    </div>
+    <div style="border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;font-size:11px">
+      <div style="display:grid;grid-template-columns:70px 1fr 80px 80px 60px 70px;padding:6px 10px;background:#f8fafc;font-weight:700;color:#64748b;text-transform:uppercase;font-size:10px">
+        <span>Doc</span><span>Cliente</span><span>Vencimento</span><span>Valor</span><span>Status</span><span>Ação</span>
+      </div>
+      <div style="display:grid;grid-template-columns:70px 1fr 80px 80px 60px 70px;padding:6px 10px;border-top:1px solid #e2e8f0;align-items:center">
+        <span>CR-001</span><span>Empresa ABC</span><span style="color:#dc2626">05/06/2026</span><span>R$ 5.000</span><span><span class="badge-mock b-red">Vencido</span></span><span><span class="mockup-btn" style="font-size:10px;padding:3px 8px">↓ Baixar</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:70px 1fr 80px 80px 60px 70px;padding:6px 10px;border-top:1px solid #e2e8f0;background:#f8fafc;align-items:center">
+        <span>CR-002</span><span>Cliente XYZ</span><span>30/06/2026</span><span>R$ 10.000</span><span><span class="badge-mock b-orange">Pendente</span></span><span><span class="mockup-btn" style="font-size:10px;padding:3px 8px">↓ Baixar</span></span>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ===== CAP 7 ===== -->
@@ -449,6 +661,32 @@ tr:nth-child(even) td{background:#f8fafc}
   </div>
 
   <div class="warn"><span class="box-icon">⚠</span><div>Títulos vencidos e não pagos aparecem destacados em vermelho no Dashboard (KPI "CP Vencidos") e nos alertas de pendência.</div></div>
+
+  <h3>Campos da Conta a Pagar</h3>
+  <table>
+    <thead><tr><th>Campo</th><th>Descrição</th><th></th></tr></thead>
+    <tbody>
+      <tr><td><strong>Doc / Ref</strong></td><td>Número da NF de compra, boleto ou referência</td><td class="opt">Opcional</td></tr>
+      <tr><td><strong>Fornecedor</strong></td><td>Nome do fornecedor a receber o pagamento</td><td class="req">✱ Obrigatório</td></tr>
+      <tr><td><strong>Data Emissão</strong></td><td>Data de origem do título ou emissão da NF</td><td class="req">✱ Obrigatório</td></tr>
+      <tr><td><strong>Vencimento</strong></td><td>Data limite de pagamento do título</td><td class="req">✱ Obrigatório</td></tr>
+      <tr><td><strong>Valor (R$)</strong></td><td>Valor total da obrigação</td><td class="req">✱ Obrigatório</td></tr>
+      <tr><td><strong>Já Pago (R$)</strong></td><td>Valor já quitado (para pagamentos parciais registrados anteriormente)</td><td class="opt">Opcional</td></tr>
+      <tr><td><strong>Categoria</strong></td><td>Categoria da despesa vinculada</td><td class="opt">Opcional</td></tr>
+      <tr><td><strong>Observação</strong></td><td>Dados do boleto, chave PIX, protocolo</td><td class="opt">Opcional</td></tr>
+    </tbody>
+  </table>
+
+  <h3>KPIs de Contas a Pagar</h3>
+  <div class="mockup">
+    <div class="mockup-row">
+      <div class="mockup-kpi"><div class="mockup-kpi-label">Total a Pagar</div><div class="mockup-kpi-val" style="color:#dc2626">R$ 28.000</div></div>
+      <div class="mockup-kpi"><div class="mockup-kpi-label">Já Pago</div><div class="mockup-kpi-val" style="color:#16a34a">R$ 18.500</div></div>
+      <div class="mockup-kpi"><div class="mockup-kpi-label">Saldo Devedor</div><div class="mockup-kpi-val" style="color:#ea580c">R$ 9.500</div></div>
+    </div>
+  </div>
+
+  <div class="tip"><span class="box-icon">💡</span><div>Integre o módulo de Contas a Pagar com o Fluxo de Caixa utilizando o modo <strong>"Realizado + Projetado"</strong>. Os títulos pendentes serão incluídos como saídas futuras, permitindo planejar a disponibilidade financeira.</div></div>
 </div>
 
 <!-- ===== CAP 8 ===== -->
@@ -495,6 +733,46 @@ tr:nth-child(even) td{background:#f8fafc}
   </table>
 
   <div class="tip"><span class="box-icon">💡</span><div>O Dashboard exibe um banner amarelo quando há recorrentes vencidos aguardando geração. Clique em "Ver Recorrentes" para ir direto ao módulo.</div></div>
+
+  <h3>Frequências Disponíveis e Cálculo da Próxima Data</h3>
+  <table>
+    <thead><tr><th>Frequência</th><th>Intervalo</th><th>Exemplo</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Semanal</strong></td><td>7 dias</td><td>Gerado em 11/06 → próxima em 18/06</td></tr>
+      <tr><td><strong>Mensal</strong></td><td>1 mês (mesmo dia)</td><td>Gerado em 05/06 → próxima em 05/07</td></tr>
+      <tr><td><strong>Bimestral</strong></td><td>2 meses</td><td>Gerado em 01/06 → próxima em 01/08</td></tr>
+      <tr><td><strong>Trimestral</strong></td><td>3 meses</td><td>Gerado em 01/03 → próxima em 01/06</td></tr>
+      <tr><td><strong>Anual</strong></td><td>12 meses</td><td>Gerado em 01/01/2026 → próxima em 01/01/2027</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Exemplos de Uso</h3>
+  <ul>
+    <li><strong>Aluguel mensal:</strong> Tipo=Despesa, Valor=R$ 3.500, Frequência=Mensal, Dia=5</li>
+    <li><strong>Prolabore dos sócios:</strong> Tipo=Despesa, Valor=R$ 8.000, Frequência=Mensal, Dia=25</li>
+    <li><strong>Receita de contrato fixo:</strong> Tipo=Receita, Valor=R$ 5.000, Frequência=Mensal, Dia=1</li>
+    <li><strong>IPTU anual:</strong> Tipo=Despesa, Valor=R$ 2.400, Frequência=Anual, Dia=31</li>
+    <li><strong>Revisão trimestral de equipamentos:</strong> Tipo=Despesa, Valor=R$ 600, Frequência=Trimestral, Dia=15</li>
+  </ul>
+
+  <h3>Mockup — Lista de Recorrentes</h3>
+  <div class="mockup">
+    <div class="mockup-bar">🔁 Lançamentos Recorrentes</div>
+    <div style="margin-bottom:10px"><span class="mockup-btn" style="background:#ea580c">⚡ Gerar Todos Vencidos (2)</span></div>
+    <div style="border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;font-size:11px">
+      <div style="display:grid;grid-template-columns:2fr 60px 80px 60px 90px 70px;padding:6px 10px;background:#f8fafc;font-weight:700;color:#64748b;text-transform:uppercase;font-size:10px">
+        <span>Descrição</span><span>Tipo</span><span>Frequência</span><span>Valor</span><span>Próxima Geração</span><span>Ação</span>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 60px 80px 60px 90px 70px;padding:6px 10px;border-top:1px solid #e2e8f0;align-items:center;background:#fef3c7">
+        <span>Aluguel Comercial</span><span><span class="badge-mock b-red">Desp.</span></span><span>Mensal</span><span>R$ 3.500</span><span style="color:#dc2626">05/06/2026 ⚠</span><span><span class="mockup-btn" style="font-size:10px;padding:3px 8px;background:#ea580c">⚡ Gerar</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 60px 80px 60px 90px 70px;padding:6px 10px;border-top:1px solid #e2e8f0;align-items:center">
+        <span>Contrato SaaS</span><span><span class="badge-mock b-green">Rec.</span></span><span>Mensal</span><span>R$ 5.000</span><span>01/07/2026</span><span><span class="mockup-btn" style="font-size:10px;padding:3px 8px">⚡ Gerar</span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="info"><span class="box-icon">ℹ</span><div>O botão <strong>⚡ Gerar</strong> fica disponível mesmo antes da data de vencimento. Isso permite gerar antecipadamente um lançamento quando necessário. A data de próxima geração avança normalmente após a geração.</div></div>
 </div>
 
 <!-- ===== CAP 9 ===== -->
@@ -529,6 +807,35 @@ tr:nth-child(even) td{background:#f8fafc}
   </table>
 
   <div class="info"><span class="box-icon">ℹ</span><div>O gráfico de barras abaixo da tabela exibe visualmente Entradas (verde) × Saídas (vermelho) por mês, facilitando a identificação de meses críticos.</div></div>
+
+  <h3>Passo a Passo — Visualizar o Fluxo de Caixa</h3>
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div class="step-body">Acesse <strong>Financeiro → Fluxo de Caixa</strong> na sidebar.</div></div>
+    <div class="step"><div class="step-n">2</div><div class="step-body">Selecione o <strong>Período</strong> (3, 6 ou 12 meses).</div></div>
+    <div class="step"><div class="step-n">3</div><div class="step-body">Informe o <strong>Saldo Inicial</strong> (valor em caixa no início do período, geralmente igual ao da Config).</div></div>
+    <div class="step"><div class="step-n">4</div><div class="step-body">Escolha o <strong>Tipo</strong>: <em>Realizado</em> (apenas lançamentos confirmados) ou <em>Realizado + Projetado</em> (inclui pendentes).</div></div>
+    <div class="step"><div class="step-n">5</div><div class="step-body">Clique em <strong>Atualizar</strong> para recalcular a tabela e o gráfico.</div></div>
+  </div>
+
+  <h3>Exemplo de Tabela — Fluxo de Caixa (6 meses)</h3>
+  <div class="mockup">
+    <div style="border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;font-size:12px">
+      <div style="display:grid;grid-template-columns:80px 1fr 1fr 1fr 1fr;padding:7px 10px;background:#f8fafc;font-weight:700;font-size:11px;color:#64748b;text-transform:uppercase">
+        <span>Mês</span><span>Entradas</span><span>Saídas</span><span>Resultado</span><span>Saldo Acum.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:80px 1fr 1fr 1fr 1fr;padding:7px 10px;border-top:1px solid #e2e8f0">
+        <span>Jan/26</span><span style="color:#16a34a">R$ 28.000</span><span style="color:#dc2626">R$ 21.000</span><span style="color:#16a34a">+R$ 7.000</span><span style="font-weight:700">R$ 12.000</span>
+      </div>
+      <div style="display:grid;grid-template-columns:80px 1fr 1fr 1fr 1fr;padding:7px 10px;border-top:1px solid #e2e8f0;background:#f8fafc">
+        <span>Fev/26</span><span style="color:#16a34a">R$ 22.000</span><span style="color:#dc2626">R$ 25.000</span><span style="color:#dc2626">−R$ 3.000</span><span style="font-weight:700">R$ 9.000</span>
+      </div>
+      <div style="display:grid;grid-template-columns:80px 1fr 1fr 1fr 1fr;padding:7px 10px;border-top:1px solid #e2e8f0">
+        <span>Mar/26</span><span style="color:#16a34a">R$ 35.000</span><span style="color:#dc2626">R$ 19.500</span><span style="color:#16a34a">+R$ 15.500</span><span style="font-weight:700">R$ 24.500</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="warn"><span class="box-icon">⚠</span><div>O modo <strong>"Realizado + Projetado"</strong> inclui lançamentos com status "Pendente" e "Vencido". Use com cautela: esses valores ainda não foram confirmados no caixa real. Para uma análise conservadora, utilize somente o modo "Realizado".</div></div>
 </div>
 
 <!-- ===== CAP 10 ===== -->
@@ -563,6 +870,38 @@ tr:nth-child(even) td{background:#f8fafc}
     </div>
   </div>
   <p>As regras padrão incluem: SALARIO, FOLHA, ENERGIA, MERCADO, IMPOSTO, ALUGUEL. Você pode adicionar ou remover regras.</p>
+
+  <h3>Regras de Categorização Padrão</h3>
+  <table>
+    <thead><tr><th>Palavra-chave</th><th>Categoria Automática</th><th>Tipo</th></tr></thead>
+    <tbody>
+      <tr><td>SALARIO, FOLHA, HOLERITE</td><td>Pessoal / RH</td><td>Saída</td></tr>
+      <tr><td>ENERGIA, LUZ, CEMIG, COPEL, CELESC</td><td>Utilities (Energia/Água/Tel)</td><td>Saída</td></tr>
+      <tr><td>ALUGUEL, LOCACAO</td><td>Aluguel / Imóvel</td><td>Saída</td></tr>
+      <tr><td>IMPOSTO, DARF, SIMPLES, IRPJ, CSLL</td><td>Impostos e Taxas</td><td>Saída</td></tr>
+      <tr><td>MERCADO, SUPERMERCADO, COMPRAS</td><td>Despesas Diversas</td><td>Saída</td></tr>
+      <tr><td>CLIENTE, PIX, TED, DOC</td><td>Receita de Clientes</td><td>Entrada</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Detecção de Duplicatas</h3>
+  <p>O sistema verifica automaticamente se um lançamento OFX já foi importado anteriormente, usando o ID único do lançamento OFX (<code>FITID</code>). Lançamentos duplicados são sinalizados com:</p>
+  <div style="display:flex;gap:8px;margin:10px 0">
+    <span class="badge-mock b-red">DUP</span>
+    <span style="font-size:13px;color:var(--muted)">— Este lançamento já foi importado anteriormente. Recomenda-se desmarcá-lo antes de importar.</span>
+  </div>
+
+  <div class="tip"><span class="box-icon">💡</span><div>Para importar apenas transações de um período específico, ajuste o intervalo de datas ao exportar o arquivo OFX no Internet Banking. Isso reduz duplicatas e facilita a revisão.</div></div>
+
+  <h3>Formatos de Arquivo Suportados</h3>
+  <table>
+    <thead><tr><th>Extensão</th><th>Descrição</th><th>Compatibilidade</th></tr></thead>
+    <tbody>
+      <tr><td><strong>.ofx</strong></td><td>Open Financial Exchange (padrão)</td><td>Todos os bancos maiores</td></tr>
+      <tr><td><strong>.qfx</strong></td><td>Quicken Financial Exchange</td><td>Bancos americanos, alguns brasileiros</td></tr>
+      <tr><td><strong>.ofc</strong></td><td>Open Financial Connect (legado)</td><td>Bancos mais antigos</td></tr>
+    </tbody>
+  </table>
 </div>
 
 <!-- ===== CAP 11 ===== -->
@@ -601,6 +940,46 @@ tr:nth-child(even) td{background:#f8fafc}
   </table>
 
   <div class="tip"><span class="box-icon">💡</span><div>Para desfazer uma conciliação, use o botão <strong>↩ Desfazer</strong> que aparece nas linhas já conciliadas.</div></div>
+
+  <h3>Critérios do Auto-Conciliar</h3>
+  <p>O algoritmo de auto-conciliação busca correspondências entre lançamentos OFX e registros internos (Faturamento/Despesas) usando os seguintes critérios simultâneos:</p>
+  <table>
+    <thead><tr><th>Critério</th><th>Tolerância</th><th>Motivo</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Valor</strong></td><td>±1%</td><td>Acomoda pequenas diferenças de arredondamento bancário</td></tr>
+      <tr><td><strong>Data</strong></td><td>±3 dias corridos</td><td>Lançamentos podem entrar no extrato com 1-2 dias de diferença</td></tr>
+      <tr><td><strong>Tipo</strong></td><td>Exato</td><td>Entrada só concilia com entrada; saída com saída</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Mockup — Tela de Conciliação</h3>
+  <div class="mockup">
+    <div class="mockup-bar">🏦 Conciliação Bancária</div>
+    <div class="mockup-row" style="margin-bottom:12px">
+      <div class="mockup-kpi"><div class="mockup-kpi-label">OFX Importados</div><div class="mockup-kpi-val">87</div></div>
+      <div class="mockup-kpi"><div class="mockup-kpi-label">Conciliados</div><div class="mockup-kpi-val" style="color:#16a34a">74</div></div>
+      <div class="mockup-kpi"><div class="mockup-kpi-label">Pendentes</div><div class="mockup-kpi-val" style="color:#ea580c">13</div></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;font-size:12px">
+      <div class="mockup-field" style="flex:1"><div class="mockup-label">De</div><div class="mockup-input">01/06/2026</div></div>
+      <div class="mockup-field" style="flex:1"><div class="mockup-label">Até</div><div class="mockup-input">11/06/2026</div></div>
+      <div class="mockup-field" style="flex:1"><div class="mockup-label">Mostrar</div><div class="mockup-input">Não conciliados</div></div>
+      <div style="display:flex;align-items:flex-end;gap:6px">
+        <span class="mockup-btn">Filtrar</span>
+        <span class="mockup-btn" style="background:#7c3aed">🤖 Auto-Conciliar</span>
+      </div>
+    </div>
+    <div style="border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;font-size:11px">
+      <div style="display:grid;grid-template-columns:80px 2fr 80px 70px 80px;padding:6px 10px;background:#f8fafc;font-weight:700;color:#64748b;text-transform:uppercase;font-size:10px">
+        <span>Data</span><span>Descrição (OFX)</span><span>Valor</span><span>Status</span><span>Ação</span>
+      </div>
+      <div style="display:grid;grid-template-columns:80px 2fr 80px 70px 80px;padding:6px 10px;border-top:1px solid #e2e8f0;align-items:center">
+        <span>05/06</span><span>PGTO FORNECEDOR ABC</span><span style="color:#dc2626">−R$ 3.500</span><span><span class="badge-mock b-orange">Pendente</span></span><span><span class="mockup-btn" style="font-size:10px;padding:3px 8px">✓ Conciliar</span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="info"><span class="box-icon">ℹ</span><div>Lançamentos OFX sem correspondência interna (ex: tarifas bancárias, IOF) podem ser importados diretamente como Despesas clicando no botão <strong>+ Criar Despesa</strong> que aparece ao lado de cada lançamento não conciliado.</div></div>
 </div>
 
 <!-- ===== CAP 12 ===== -->
@@ -628,6 +1007,43 @@ tr:nth-child(even) td{background:#f8fafc}
     <div class="step"><div class="step-n">2</div><div class="step-body">Clique em <strong>⬇ CSV</strong>.</div></div>
     <div class="step"><div class="step-n">3</div><div class="step-body">O arquivo <em>extrato.csv</em> será baixado com colunas: Data, Descrição, Tipo, Valor, Categoria, Origem.</td></div></div>
   </div>
+
+  <h3>Colunas do Extrato</h3>
+  <table>
+    <thead><tr><th>Coluna</th><th>Descrição</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Data</strong></td><td>Data do lançamento (dd/mm/aaaa)</td></tr>
+      <tr><td><strong>Descrição</strong></td><td>Nome do cliente, fornecedor ou descrição do lançamento</td></tr>
+      <tr><td><strong>Tipo</strong></td><td>Entrada ou Saída</td></tr>
+      <tr><td><strong>Valor (R$)</strong></td><td>Valor do lançamento</td></tr>
+      <tr><td><strong>Categoria</strong></td><td>Categoria atribuída</td></tr>
+      <tr><td><strong>Origem</strong></td><td>Faturamento, Despesa, OFX, CR ou CP</td></tr>
+      <tr><td><strong>Saldo Acumulado</strong></td><td>Saldo corrente após este lançamento (calculado a partir do saldo inicial)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Mockup — Extrato de Movimentações</h3>
+  <div class="mockup">
+    <div class="mockup-bar">📋 Extrato de Movimentações</div>
+    <div class="mockup-row" style="margin-bottom:12px">
+      <div class="mockup-kpi"><div class="mockup-kpi-label">Entradas</div><div class="mockup-kpi-val" style="color:#16a34a">R$ 58.200</div></div>
+      <div class="mockup-kpi"><div class="mockup-kpi-label">Saídas</div><div class="mockup-kpi-val" style="color:#dc2626">R$ 43.700</div></div>
+      <div class="mockup-kpi"><div class="mockup-kpi-label">Saldo do Período</div><div class="mockup-kpi-val">R$ 14.500</div></div>
+    </div>
+    <div style="border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;font-size:11px">
+      <div style="display:grid;grid-template-columns:70px 2fr 60px 80px 90px 90px;padding:6px 10px;background:#f8fafc;font-weight:700;color:#64748b;text-transform:uppercase;font-size:10px">
+        <span>Data</span><span>Descrição</span><span>Tipo</span><span>Valor</span><span>Categoria</span><span>Saldo Acum.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:70px 2fr 60px 80px 90px 90px;padding:6px 10px;border-top:1px solid #e2e8f0">
+        <span>10/06</span><span>NF-0042 — ABC Ltda.</span><span><span class="badge-mock b-green" style="font-size:9px">Entrada</span></span><span style="color:#16a34a">+R$ 8.000</span><span>Serviços</span><span style="font-weight:700">R$ 32.400</span>
+      </div>
+      <div style="display:grid;grid-template-columns:70px 2fr 60px 80px 90px 90px;padding:6px 10px;border-top:1px solid #e2e8f0;background:#f8fafc">
+        <span>09/06</span><span>Aluguel — Junho/26</span><span><span class="badge-mock b-red" style="font-size:9px">Saída</span></span><span style="color:#dc2626">−R$ 3.500</span><span>Aluguel</span><span style="font-weight:700">R$ 24.400</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tip"><span class="box-icon">💡</span><div>Use a combinação de filtros <strong>De/Até + Categoria</strong> para isolar gastos específicos em um período, por exemplo: todas as despesas de "Utilities" no primeiro semestre.</div></div>
 </div>
 
 <!-- ===== CAP 13 ===== -->
@@ -674,6 +1090,42 @@ tr:nth-child(even) td{background:#f8fafc}
   <h3>Balancete <span style="background:#dbeafe;color:#1d4ed8;font-size:11px;padding:2px 8px;border-radius:4px;font-weight:700">NOVO v2</span></h3>
   <p>Balancete de verificação mostrando débitos, créditos e saldo por conta contábil.</p>
   <div class="info"><span class="box-icon">ℹ</span><div>Para o balancete ter dados, é necessário: (1) ter contas no Plano de Contas e (2) vincular categorias às contas em <strong>Plano de Contas → Vincular Categoria → Conta Contábil</strong>.</div></div>
+
+  <h3>Como Gerar um Relatório</h3>
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div class="step-body">Clique em <strong>Relatórios</strong> na sidebar.</div></div>
+    <div class="step"><div class="step-n">2</div><div class="step-body">Selecione o tipo de relatório pelo chip no topo da tela.</div></div>
+    <div class="step"><div class="step-n">3</div><div class="step-body">Defina o período: selecione o mês/ano ou intervalo de datas.</div></div>
+    <div class="step"><div class="step-n">4</div><div class="step-body">Clique em <strong>Gerar</strong>. O relatório é exibido na tela.</div></div>
+    <div class="step"><div class="step-n">5</div><div class="step-body">Para exportar, clique em <strong>⬇ CSV</strong> ou use <strong>Ctrl+P</strong> para salvar em PDF.</div></div>
+  </div>
+
+  <h3>Relatório: Aging — Exemplo Visual</h3>
+  <div class="mockup">
+    <div class="mockup-bar">📊 Aging CR — Contas a Receber por Faixa de Vencimento</div>
+    <div style="border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;font-size:12px">
+      <div style="display:grid;grid-template-columns:2fr 80px 80px 60px;padding:7px 10px;background:#f8fafc;font-weight:700;color:#64748b;text-transform:uppercase;font-size:11px">
+        <span>Faixa de Vencimento</span><span>Qtd.</span><span>Valor Total</span><span>% Total</span>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 80px 80px 60px;padding:7px 10px;border-top:1px solid #e2e8f0">
+        <span>✅ A vencer</span><span>12</span><span style="color:#16a34a">R$ 42.000</span><span>58%</span>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 80px 80px 60px;padding:7px 10px;border-top:1px solid #e2e8f0;background:#fef3c7">
+        <span>⚠ Vence hoje</span><span>2</span><span style="color:#ea580c">R$ 5.500</span><span>8%</span>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 80px 80px 60px;padding:7px 10px;border-top:1px solid #e2e8f0;background:#fee2e2">
+        <span>🔴 1–15 dias em atraso</span><span>5</span><span style="color:#dc2626">R$ 15.000</span><span>21%</span>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 80px 80px 60px;padding:7px 10px;border-top:1px solid #e2e8f0;background:#fee2e2">
+        <span>🔴 16–30 dias em atraso</span><span>3</span><span style="color:#dc2626">R$ 7.500</span><span>10%</span>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 80px 80px 60px;padding:7px 10px;border-top:1px solid #e2e8f0;background:#fef2f2">
+        <span>🔴🔴 +30 dias em atraso</span><span>1</span><span style="color:#7f1d1d">R$ 2.200</span><span>3%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="warn"><span class="box-icon">⚠</span><div>O relatório de <strong>Centro de Custo</strong> só exibe valores de lançamentos que possuem o campo "Centro de Custo" preenchido. Lançamentos sem centro de custo são agrupados em "Sem centro de custo".</div></div>
 </div>
 
 <!-- ===== CAP 14 ===== -->
@@ -730,6 +1182,46 @@ tr:nth-child(even) td{background:#f8fafc}
   <p>Agrupam despesas por departamento (Administrativo, Comercial, Operacional, Financeiro, TI etc.). Usados nos relatórios de Centro de Custo.</p>
 
   <div class="warn"><span class="box-icon">⚠</span><div>Excluir uma categoria que já está vinculada a lançamentos não apaga os lançamentos — eles ficam com categoria "Outros" nos relatórios.</div></div>
+
+  <h3>Tabela de Referência — Campos de Categoria</h3>
+  <table>
+    <thead><tr><th>Campo</th><th>Descrição</th><th>Opções</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Nome</strong></td><td>Nome da categoria</td><td>Texto livre (ex: "Serviços de TI")</td></tr>
+      <tr><td><strong>Tipo</strong></td><td>Define em quais módulos aparece</td><td>Entrada / Saída / Ambos</td></tr>
+      <tr><td><strong>Cor</strong></td><td>Cor usada em gráficos e badges</td><td>Seletor hexadecimal (#RRGGBB)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Categorias Padrão do Sistema</h3>
+  <p>O sistema inclui as seguintes categorias pré-configuradas (podem ser editadas ou excluídas):</p>
+  <table>
+    <thead><tr><th>Categoria</th><th>Tipo</th><th>Uso Típico</th></tr></thead>
+    <tbody>
+      <tr><td>Vendas de Produtos</td><td>Entrada</td><td>Receita de venda de mercadorias</td></tr>
+      <tr><td>Prestação de Serviços</td><td>Entrada</td><td>Receita de serviços prestados</td></tr>
+      <tr><td>Outras Receitas</td><td>Entrada</td><td>Receitas financeiras, rendimentos</td></tr>
+      <tr><td>Pessoal / RH</td><td>Saída</td><td>Salários, encargos, benefícios</td></tr>
+      <tr><td>Aluguel / Imóvel</td><td>Saída</td><td>Aluguel, IPTU, condomínio</td></tr>
+      <tr><td>Utilities (Energia/Água/Tel)</td><td>Saída</td><td>Contas de consumo</td></tr>
+      <tr><td>Impostos e Taxas</td><td>Saída</td><td>DARF, Simples Nacional, taxas</td></tr>
+      <tr><td>Marketing e Publicidade</td><td>Saída</td><td>Anúncios, materiais gráficos</td></tr>
+      <tr><td>Despesas Diversas</td><td>Ambos</td><td>Outros gastos não classificados</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Centros de Custo — Exemplos Comuns</h3>
+  <table>
+    <thead><tr><th>Centro de Custo</th><th>Descrição</th></tr></thead>
+    <tbody>
+      <tr><td>Administrativo</td><td>Despesas gerais da administração</td></tr>
+      <tr><td>Comercial / Vendas</td><td>Custos relacionados à equipe de vendas</td></tr>
+      <tr><td>Operacional / Produção</td><td>Custos diretos de produção ou entrega do serviço</td></tr>
+      <tr><td>Tecnologia / TI</td><td>Infraestrutura, licenças, desenvolvimento</td></tr>
+      <tr><td>Financeiro</td><td>Tarifas bancárias, juros, IOF</td></tr>
+      <tr><td>RH / Pessoal</td><td>Folha de pagamento, treinamentos, benefícios</td></tr>
+    </tbody>
+  </table>
 </div>
 
 <!-- ===== CAP 16 ===== -->
@@ -773,6 +1265,50 @@ tr:nth-child(even) td{background:#f8fafc}
     <div class="step"><div class="step-n">2</div><div class="step-body">Para cada categoria, selecione a conta correspondente no dropdown.</div></div>
     <div class="step"><div class="step-n">3</div><div class="step-body">O vínculo é salvo automaticamente.</div></div>
   </div>
+
+  <h3>Filtrar e Exportar o Plano</h3>
+  <table>
+    <thead><tr><th>Recurso</th><th>Descrição</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Filtro por Grupo</strong></td><td>Selecione "Ativo", "Passivo", "Receita" etc. para ver apenas contas de um grupo</td></tr>
+      <tr><td><strong>⬇ Exportar CSV</strong></td><td>Baixa o plano completo em formato CSV para uso em Excel ou sistemas contábeis</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Exemplo de Plano de Contas</h3>
+  <div class="mockup">
+    <div style="border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;font-size:11px">
+      <div style="display:grid;grid-template-columns:80px 2fr 80px 80px;padding:6px 10px;background:#f8fafc;font-weight:700;color:#64748b;text-transform:uppercase;font-size:10px">
+        <span>Código</span><span>Nome da Conta</span><span>Grupo</span><span>Natureza</span>
+      </div>
+      <div style="display:grid;grid-template-columns:80px 2fr 80px 80px;padding:6px 10px;border-top:1px solid #e2e8f0;font-weight:700;background:#eff6ff">
+        <span>4</span><span>RECEITAS</span><span>Receita</span><span>Credora</span>
+      </div>
+      <div style="display:grid;grid-template-columns:80px 2fr 80px 80px;padding:6px 10px;border-top:1px solid #e2e8f0;padding-left:24px">
+        <span>4.1</span><span>Receita Operacional</span><span>Receita</span><span>Credora</span>
+      </div>
+      <div style="display:grid;grid-template-columns:80px 2fr 80px 80px;padding:6px 10px;border-top:1px solid #e2e8f0;padding-left:36px">
+        <span>4.1.1</span><span>Vendas de Mercadorias</span><span>Receita</span><span>Credora</span>
+      </div>
+      <div style="display:grid;grid-template-columns:80px 2fr 80px 80px;padding:6px 10px;border-top:1px solid #e2e8f0;padding-left:36px">
+        <span>4.1.2</span><span>Prestação de Serviços</span><span>Receita</span><span>Credora</span>
+      </div>
+      <div style="display:grid;grid-template-columns:80px 2fr 80px 80px;padding:6px 10px;border-top:1px solid #e2e8f0;font-weight:700;background:#fef2f2">
+        <span>6</span><span>DESPESAS</span><span>Despesa</span><span>Devedora</span>
+      </div>
+      <div style="display:grid;grid-template-columns:80px 2fr 80px 80px;padding:6px 10px;border-top:1px solid #e2e8f0;padding-left:24px">
+        <span>6.1</span><span>Despesas com Pessoal</span><span>Despesa</span><span>Devedora</span>
+      </div>
+      <div style="display:grid;grid-template-columns:80px 2fr 80px 80px;padding:6px 10px;border-top:1px solid #e2e8f0;padding-left:36px">
+        <span>6.1.1</span><span>Salários e Ordenados</span><span>Despesa</span><span>Devedora</span>
+      </div>
+      <div style="display:grid;grid-template-columns:80px 2fr 80px 80px;padding:6px 10px;border-top:1px solid #e2e8f0;padding-left:36px">
+        <span>6.1.2</span><span>Encargos Sociais (INSS, FGTS)</span><span>Despesa</span><span>Devedora</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="info"><span class="box-icon">ℹ</span><div>A estrutura do Plano de Contas é hierárquica: o código <code>6.1.1</code> indica que a conta pertence ao Grupo 6 (Despesas), Subgrupo 6.1 (Pessoal), sendo a conta analítica 6.1.1. Contas de nível 4 são as mais detalhadas e recebem os lançamentos.</div></div>
 </div>
 
 <!-- ===== CAP 17 ===== -->
@@ -803,6 +1339,44 @@ tr:nth-child(even) td{background:#f8fafc}
   </ul>
 
   <div class="info"><span class="box-icon">ℹ</span><div>O histórico é salvo no mesmo localStorage dos dados, portanto é exportado junto com o backup. Ao restaurar um backup, o histórico anterior é substituído.</div></div>
+
+  <h3>Tipos de Ações Registradas</h3>
+  <table>
+    <thead><tr><th>Ação</th><th>Badge</th><th>Quando ocorre</th></tr></thead>
+    <tbody>
+      <tr><td><strong>criar</strong></td><td><span class="badge-mock b-green">criar</span></td><td>Ao salvar um novo lançamento, categoria, conta ou recorrente</td></tr>
+      <tr><td><strong>editar</strong></td><td><span class="badge-mock b-blue">editar</span></td><td>Ao salvar alterações em um lançamento existente</td></tr>
+      <tr><td><strong>excluir</strong></td><td><span class="badge-mock b-red">excluir</span></td><td>Ao confirmar exclusão de um lançamento</td></tr>
+      <tr><td><strong>gerar</strong></td><td><span class="badge-mock b-orange">gerar</span></td><td>Ao clicar em ⚡ Gerar em um lançamento recorrente</td></tr>
+      <tr><td><strong>baixar</strong></td><td><span class="badge-mock b-blue">baixar</span></td><td>Ao realizar baixa total ou parcial em CR ou CP</td></tr>
+      <tr><td><strong>importar</strong></td><td><span class="badge-mock b-green">importar</span></td><td>Ao concluir importação de lançamentos OFX</td></tr>
+      <tr><td><strong>config</strong></td><td><span class="badge-mock" style="background:#f1f5f9;color:#64748b">config</span></td><td>Ao alterar configurações do sistema</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Mockup — Histórico de Ações</h3>
+  <div class="mockup">
+    <div class="mockup-bar">📜 Histórico de Ações</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <div class="mockup-field" style="flex:1"><div class="mockup-label">Filtrar por Módulo</div><div class="mockup-input">Todos os módulos</div></div>
+      <div style="display:flex;align-items:flex-end"><span class="mockup-btn" style="background:#dc2626">🗑 Limpar Histórico</span></div>
+    </div>
+    <div style="border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;font-size:11px">
+      <div style="display:grid;grid-template-columns:60px 90px 2fr 120px;padding:6px 10px;background:#f8fafc;font-weight:700;color:#64748b;text-transform:uppercase;font-size:10px">
+        <span>Ação</span><span>Módulo</span><span>Descrição</span><span>Data/Hora</span>
+      </div>
+      <div style="display:grid;grid-template-columns:60px 90px 2fr 120px;padding:6px 10px;border-top:1px solid #e2e8f0;align-items:center">
+        <span><span class="badge-mock b-green">criar</span></span><span>Faturamento</span><span>NF-0043 — Empresa ABC — R$ 12.500</span><span>11/06/2026 14:32</span>
+      </div>
+      <div style="display:grid;grid-template-columns:60px 90px 2fr 120px;padding:6px 10px;border-top:1px solid #e2e8f0;background:#f8fafc;align-items:center">
+        <span><span class="badge-mock b-orange">gerar</span></span><span>Recorrente</span><span>Aluguel Comercial — R$ 3.500 → Despesas</span><span>11/06/2026 10:15</span>
+      </div>
+      <div style="display:grid;grid-template-columns:60px 90px 2fr 120px;padding:6px 10px;border-top:1px solid #e2e8f0;align-items:center">
+        <span><span class="badge-mock b-red">excluir</span></span><span>Despesas</span><span>Despesa Energia (1/3) — R$ 150</span><span>10/06/2026 16:48</span>
+      </div>
+    </div>
+    <div style="font-size:11px;color:#64748b;margin-top:8px;text-align:right">Exibindo 3 de 187 ações · Máx. 200</div>
+  </div>
 </div>
 
 <!-- ===== CAP 18 ===== -->
@@ -839,6 +1413,34 @@ tr:nth-child(even) td{background:#f8fafc}
 
   <div class="warn"><span class="box-icon">⚠</span><div>Restaurar um backup <strong>substitui todos os dados atuais</strong>. Se você tem lançamentos novos que ainda não estão no backup, eles serão perdidos. Exporte um novo backup antes de restaurar.</div></div>
 
+  <h3>Estratégia de Backup Recomendada</h3>
+  <table>
+    <thead><tr><th>Frequência</th><th>Formato</th><th>Destino Sugerido</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Diário</strong> (uso intenso)</td><td>JSON</td><td>Pasta sincronizada com Google Drive ou OneDrive</td></tr>
+      <tr><td><strong>Semanal</strong> (uso regular)</td><td>JSON</td><td>Pen drive + nuvem</td></tr>
+      <tr><td><strong>Mensal</strong> (fechamento)</td><td>CSV (todos)</td><td>Arquivo histórico para auditoria e Excel</td></tr>
+    </tbody>
+  </table>
+
+  <h3>O que Está Incluído no Backup JSON</h3>
+  <table>
+    <thead><tr><th>Dado</th><th>Incluído?</th></tr></thead>
+    <tbody>
+      <tr><td>Faturamentos</td><td>✅ Sim</td></tr>
+      <tr><td>Despesas (inclusive parcelas)</td><td>✅ Sim</td></tr>
+      <tr><td>Contas a Receber</td><td>✅ Sim</td></tr>
+      <tr><td>Contas a Pagar</td><td>✅ Sim</td></tr>
+      <tr><td>Extrato OFX importado</td><td>✅ Sim</td></tr>
+      <tr><td>Lançamentos Recorrentes</td><td>✅ Sim</td></tr>
+      <tr><td>Categorias e Centros de Custo</td><td>✅ Sim</td></tr>
+      <tr><td>Plano de Contas</td><td>✅ Sim</td></tr>
+      <tr><td>Configurações do Sistema</td><td>✅ Sim</td></tr>
+      <tr><td>Histórico de Ações</td><td>✅ Sim</td></tr>
+      <tr><td>Conciliações Bancárias</td><td>✅ Sim</td></tr>
+    </tbody>
+  </table>
+
   <h3>Sobre o localStorage</h3>
   <table>
     <thead><tr><th>Situação</th><th>Dados perdidos?</th></tr></thead>
@@ -873,6 +1475,27 @@ tr:nth-child(even) td{background:#f8fafc}
   <div class="gloss-item"><div class="gloss-term">Plano de Contas</div><div class="gloss-def">Estrutura hierárquica de contas contábeis que classifica todos os fatos econômicos da empresa, seguindo as normas NBC TG/CFC.</div></div>
   <div class="gloss-item"><div class="gloss-term">Saldo Acumulado</div><div class="gloss-def">No Fluxo de Caixa, representa o saldo corrente após somar todas as entradas e subtrair todas as saídas desde o saldo inicial.</div></div>
   <div class="gloss-item"><div class="gloss-term">Status Automático</div><div class="gloss-def">O sistema verifica automaticamente se um lançamento está "vencido" com base na data de vencimento vs. data atual, alterando o status de "pendente" para "vencido".</div></div>
+  <div class="gloss-item"><div class="gloss-term">FITID (Financial Transaction ID)</div><div class="gloss-def">Identificador único de cada lançamento dentro de um arquivo OFX, usado pelo sistema para detectar e evitar importações duplicadas.</div></div>
+  <div class="gloss-item"><div class="gloss-term">DRE (Demonstração do Resultado do Exercício)</div><div class="gloss-def">Relatório contábil-gerencial que evidencia as receitas, os custos, as despesas e o resultado (lucro ou prejuízo) de um exercício ou período.</div></div>
+  <div class="gloss-item"><div class="gloss-term">NBC TG (Normas Brasileiras de Contabilidade — Técnicas Gerais)</div><div class="gloss-def">Conjunto de normas emitidas pelo CFC (Conselho Federal de Contabilidade) que regulam a contabilidade no Brasil. O Plano de Contas padrão do sistema segue estas normas.</div></div>
+  <div class="gloss-item"><div class="gloss-term">Prolabore</div><div class="gloss-def">Remuneração paga aos sócios de uma empresa por seu trabalho administrativo. Diferente de lucros e dividendos, é uma despesa da empresa.</div></div>
+  <div class="gloss-item"><div class="gloss-term">IOF (Imposto sobre Operações Financeiras)</div><div class="gloss-def">Imposto federal incidente sobre operações financeiras como empréstimos, câmbio e seguros. Frequentemente aparece como lançamento bancário no extrato OFX.</div></div>
+  <div class="gloss-item"><div class="gloss-term">Baixa</div><div class="gloss-def">Operação de registro de recebimento (em CR) ou pagamento (em CP). Pode ser total (liquida o título) ou parcial (reduz o saldo pendente).</div></div>
+  <div class="gloss-item"><div class="gloss-term">Simples Nacional</div><div class="gloss-def">Regime tributário simplificado para micro e pequenas empresas brasileiras. O pagamento é feito via DAS (Documento de Arrecadação do Simples Nacional) mensalmente.</div></div>
+
+  <h3>Boas Práticas de Gestão Financeira</h3>
+  <div class="tip"><span class="box-icon">💡</span><div>
+    <strong>Check-list mensal recomendado:</strong>
+    <ol style="margin:8px 0 0 16px;font-size:13px">
+      <li>Verificar e gerar todos os lançamentos recorrentes vencidos</li>
+      <li>Importar o extrato OFX do banco e conciliar as transações</li>
+      <li>Lançar todas as despesas e faturas do mês</li>
+      <li>Realizar as baixas de CR e CP com pagamentos confirmados</li>
+      <li>Conferir o Fluxo de Caixa do mês</li>
+      <li>Gerar o DRE Gerencial e revisar as margens</li>
+      <li>Executar o backup JSON e salvar em nuvem</li>
+    </ol>
+  </div></div>
 
   <div style="margin-top:40px;padding:24px;background:#f1f5f9;border-radius:8px;text-align:center;color:var(--muted);font-size:13px">
     <strong style="color:var(--text)">💼 Gestão Financeira — Manual do Usuário v2.0</strong><br>
