@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual do Usuário v2.0 — Gestão Financeira</title>
+<style>
+:root{
+  --accent:#4f8ef7; --green:#16a34a; --red:#dc2626; --orange:#ea580c; --blue:#2563eb;
+  --text:#1e293b; --muted:#64748b; --border:#e2e8f0; --bg:#f8fafc; --surface:#fff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;line-height:1.6;max-width:900px;margin:0 auto;padding:24px}
+
+/* PRINT BUTTON */
+.print-btn{position:fixed;bottom:28px;right:28px;background:var(--accent);color:#fff;border:none;border-radius:50px;padding:13px 22px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(79,142,247,.4);z-index:999;transition:all .2s}
+.print-btn:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(79,142,247,.5)}
+
+/* COVER */
+.cover{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:60px 40px;border-bottom:3px solid var(--accent)}
+.cover-logo{font-size:72px;margin-bottom:24px}
+.cover-title{font-size:38px;font-weight:900;color:var(--text);line-height:1.2;margin-bottom:12px}
+.cover-sub{font-size:18px;color:var(--muted);margin-bottom:32px}
+.cover-badge{display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.cover-tag{background:var(--accent);color:#fff;padding:6px 16px;border-radius:20px;font-size:13px;font-weight:600}
+.cover-meta{margin-top:40px;color:var(--muted);font-size:13px}
+
+/* TOC */
+.toc{padding:40px 0}
+.toc h2{font-size:22px;font-weight:800;color:var(--text);margin-bottom:24px;padding-bottom:10px;border-bottom:2px solid var(--accent)}
+.toc-item{display:flex;align-items:baseline;gap:6px;padding:6px 0;border-bottom:1px dashed var(--border)}
+.toc-num{font-weight:700;color:var(--accent);min-width:30px;font-size:13px}
+.toc-title{flex:1;font-size:13px}
+.toc-dots{flex:1;border-bottom:1px dotted var(--border);min-width:20px;margin:0 8px}
+.toc-section{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:16px 0 4px;padding:4px 0}
+
+/* CHAPTER */
+.chapter{padding:40px 0;border-bottom:1px solid var(--border)}
+.ch-header{display:flex;align-items:center;gap:14px;margin-bottom:24px}
+.ch-num{background:var(--accent);color:#fff;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0}
+.ch-title{font-size:24px;font-weight:800;color:var(--text)}
+.ch-subtitle{font-size:13px;color:var(--muted);margin-top:2px}
+
+/* SECTIONS */
+h3{font-size:16px;font-weight:700;color:var(--text);margin:24px 0 10px;padding-left:12px;border-left:4px solid var(--accent)}
+h4{font-size:14px;font-weight:700;color:var(--text);margin:16px 0 8px}
+p{margin-bottom:10px;color:var(--text)}
+ul,ol{margin:0 0 12px 20px}
+li{margin-bottom:5px;font-size:13px}
+strong{font-weight:700}
+
+/* COLOR BOXES */
+.tip,.warn,.info,.danger{padding:12px 16px;border-radius:8px;margin:14px 0;font-size:13px;border-left:4px solid;display:flex;gap:10px;align-items:flex-start}
+.tip{background:#f0fdf4;border-color:var(--green);color:#14532d}
+.warn{background:#fff7ed;border-color:var(--orange);color:#7c2d12}
+.info{background:#eff6ff;border-color:var(--blue);color:#1e3a5f}
+.danger{background:#fef2f2;border-color:var(--red);color:#7f1d1d}
+.box-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+
+/* TABLES */
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
+th{background:#f1f5f9;text-align:left;padding:9px 12px;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.4px;border:1px solid var(--border);color:var(--muted)}
+td{padding:8px 12px;border:1px solid var(--border);vertical-align:top}
+tr:nth-child(even) td{background:#f8fafc}
+.req{color:var(--red);font-weight:700}
+.opt{color:var(--muted)}
+
+/* STEPS */
+.steps{counter-reset:step;margin:12px 0}
+.step{display:flex;gap:12px;margin-bottom:14px;align-items:flex-start}
+.step-n{background:var(--accent);color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;margin-top:1px}
+.step-body{flex:1;font-size:13px}
+
+/* MOCKUP */
+.mockup{border:1px solid var(--border);border-radius:8px;background:#f8fafc;padding:14px;margin:14px 0;font-size:12px}
+.mockup-bar{background:#1e293b;color:#94a3b8;padding:6px 12px;border-radius:6px 6px 0 0;font-size:11px;margin:-14px -14px 12px;font-weight:600}
+.mockup-field{display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
+.mockup-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase}
+.mockup-input{border:1px solid var(--border);border-radius:4px;padding:5px 9px;background:#fff;color:var(--muted);font-size:12px}
+.mockup-btn{display:inline-block;padding:5px 14px;border-radius:5px;font-size:12px;font-weight:700;background:var(--accent);color:#fff;margin-right:6px}
+.mockup-btn-sec{background:#f1f5f9;color:var(--text)}
+.mockup-row{display:flex;gap:8px;flex-wrap:wrap}
+.mockup-kpi{border:1px solid var(--border);border-radius:6px;padding:8px 12px;background:#fff;min-width:120px;text-align:center}
+.mockup-kpi-label{font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700}
+.mockup-kpi-val{font-size:16px;font-weight:800;color:var(--accent)}
+.badge-mock{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700}
+.b-green{background:#dcfce7;color:var(--green)}
+.b-blue{background:#dbeafe;color:var(--blue)}
+.b-red{background:#fee2e2;color:var(--red)}
+.b-orange{background:#fed7aa;color:var(--orange)}
+
+/* GLOSSARY */
+.gloss-item{padding:10px 0;border-bottom:1px solid var(--border)}
+.gloss-term{font-weight:700;color:var(--accent);font-size:14px}
+.gloss-def{font-size:13px;color:var(--text);margin-top:3px}
+
+/* PRINT */
+@media print{
+  .print-btn{display:none!important}
+  body{background:#fff;max-width:100%;padding:0}
+  .chapter{page-break-before:always}
+  .toc{page-break-before:always}
+  .cover{page-break-after:always;min-height:auto;padding:40px}
+  a{color:inherit;text-decoration:none}
+}
+@page{size:A4;margin:20mm 18mm}
+</style>
+</head>
+<body>
+
+<button class="print-btn" onclick="window.print()">🖨 Salvar como PDF</button>
+
+<!-- ===== CAPA ===== -->
+<div class="cover">
+  <div class="cover-logo">💼</div>
+  <div class="cover-title">Gestão Financeira</div>
+  <div class="cover-sub">Manual do Usuário — v2.0</div>
+  <div class="cover-badge">
+    <span class="cover-tag">Guia Completo</span>
+    <span class="cover-tag">18 Capítulos</span>
+    <span class="cover-tag">Todos os Módulos</span>
+    <span class="cover-tag">Novos Recursos v2</span>
+  </div>
+  <div class="cover-meta">
+    <strong>Versão 2.0</strong> — Junho de 2026<br>
+    Sistema financeiro standalone em HTML — funciona offline, sem instalação
+  </div>
+</div>
+
+<!-- ===== SUMÁRIO ===== -->
+<div class="toc chapter">
+  <h2>📋 Sumário</h2>
+  <div class="toc-section">Introdução</div>
+  <div class="toc-item"><span class="toc-num">1</span><span class="toc-title">Visão Geral do Sistema</span></div>
+  <div class="toc-item"><span class="toc-num">2</span><span class="toc-title">Configurações do Sistema</span></div>
+  <div class="toc-section">Operações do Dia a Dia</div>
+  <div class="toc-item"><span class="toc-num">3</span><span class="toc-title">Dashboard</span></div>
+  <div class="toc-item"><span class="toc-num">4</span><span class="toc-title">Faturamento</span></div>
+  <div class="toc-item"><span class="toc-num">5</span><span class="toc-title">Despesas</span></div>
+  <div class="toc-item"><span class="toc-num">6</span><span class="toc-title">Contas a Receber</span></div>
+  <div class="toc-item"><span class="toc-num">7</span><span class="toc-title">Contas a Pagar</span></div>
+  <div class="toc-item"><span class="toc-num">8</span><span class="toc-title">🆕 Lançamentos Recorrentes</span></div>
+  <div class="toc-section">Bancário</div>
+  <div class="toc-item"><span class="toc-num">9</span><span class="toc-title">Fluxo de Caixa</span></div>
+  <div class="toc-item"><span class="toc-num">10</span><span class="toc-title">Importar Extrato OFX</span></div>
+  <div class="toc-item"><span class="toc-num">11</span><span class="toc-title">🆕 Conciliação Bancária</span></div>
+  <div class="toc-item"><span class="toc-num">12</span><span class="toc-title">Extrato de Movimentações</span></div>
+  <div class="toc-section">Relatórios e Análises</div>
+  <div class="toc-item"><span class="toc-num">13</span><span class="toc-title">Relatórios Gerenciais</span></div>
+  <div class="toc-section">Ferramentas</div>
+  <div class="toc-item"><span class="toc-num">14</span><span class="toc-title">🆕 Busca Global</span></div>
+  <div class="toc-item"><span class="toc-num">15</span><span class="toc-title">Categorias e Centros de Custo</span></div>
+  <div class="toc-item"><span class="toc-num">16</span><span class="toc-title">Plano de Contas Contábil</span></div>
+  <div class="toc-item"><span class="toc-num">17</span><span class="toc-title">🆕 Histórico de Ações</span></div>
+  <div class="toc-item"><span class="toc-num">18</span><span class="toc-title">Backup e Restauração</span></div>
+  <div class="toc-section">Referência</div>
+  <div class="toc-item"><span class="toc-num">—</span><span class="toc-title">Glossário</span></div>
+</div>
+
+<!-- ===== CAP 1 ===== -->
+<div class="chapter" id="cap1">
+  <div class="ch-header">
+    <div class="ch-num">1</div>
+    <div><div class="ch-title">Visão Geral do Sistema</div><div class="ch-subtitle">O que é, como abrir e como navegar</div></div>
+  </div>
+
+  <p>O <strong>Gestão Financeira</strong> é um sistema completo para controle financeiro de empresas, desenvolvido como um único arquivo HTML. Funciona diretamente no navegador, sem instalação, sem internet e sem servidor — basta abrir o arquivo.</p>
+
+  <h3>Como Abrir o Sistema</h3>
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div class="step-body">Localize o arquivo <strong>gestao-financeira.html</strong> no seu computador.</div></div>
+    <div class="step"><div class="step-n">2</div><div class="step-body">Dê duplo clique no arquivo — ele abrirá automaticamente no seu navegador padrão (Chrome, Edge ou Firefox recomendados).</div></div>
+    <div class="step"><div class="step-n">3</div><div class="step-body">O sistema carrega instantaneamente. Não precisa de internet.</div></div>
+  </div>
+
+  <div class="warn"><span class="box-icon">⚠</span><div>Os dados ficam salvos no <strong>localStorage</strong> do navegador. <strong>Não limpe o cache/histórico</strong> do navegador sem antes exportar um backup. Cada navegador/computador tem seu próprio localStorage.</div></div>
+
+  <h3>Estrutura da Tela</h3>
+  <div class="mockup">
+    <div class="mockup-bar">💼 Gestão Financeira — Header</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:4px 0">
+      <span style="font-weight:700">💼 Gestão Financeira</span>
+      <span style="display:flex;gap:8px;color:#64748b">
+        <span style="font-weight:700">Minha Empresa Ltda.</span>
+        <span>qua, 11 jun 2026</span>
+        <span style="border:1px solid #e2e8f0;border-radius:4px;padding:2px 8px">🔍 Busca</span>
+        <span style="border:1px solid #e2e8f0;border-radius:4px;padding:2px 8px">⚙ Config</span>
+      </span>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>Elemento</th><th>Descrição</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Logo / Nome do Sistema</strong></td><td>Exibe o emoji e nome configurado. Clicável para ir ao Dashboard.</td></tr>
+      <tr><td><strong>Nome da Empresa</strong></td><td>Nome cadastrado nas Configurações.</td></tr>
+      <tr><td><strong>Data</strong></td><td>Data atual com dia da semana.</td></tr>
+      <tr><td><strong>🔍 Busca</strong></td><td>Abre a busca global em todos os módulos (novo v2).</td></tr>
+      <tr><td><strong>⚙ Config</strong></td><td>Abre as configurações do sistema.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Menu Lateral (Sidebar)</h3>
+  <table>
+    <thead><tr><th>Seção</th><th>Itens</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Principal</strong></td><td>Dashboard, Faturamento, Despesas</td></tr>
+      <tr><td><strong>Financeiro</strong></td><td>Contas a Receber, Contas a Pagar, Fluxo de Caixa</td></tr>
+      <tr><td><strong>Bancário</strong></td><td>Importar OFX, Extrato</td></tr>
+      <tr><td><strong>Relatórios</strong></td><td>Relatórios, Categorias, Plano de Contas</td></tr>
+      <tr><td><strong>Avançado</strong></td><td>Recorrentes 🆕, Conciliação 🆕, Histórico 🆕</td></tr>
+      <tr><td><strong>Sistema</strong></td><td>Backup / Restore</td></tr>
+    </tbody>
+  </table>
+
+  <div class="tip"><span class="box-icon">💡</span><div>O item ativo na sidebar é destacado com a cor principal. Ao navegar entre módulos, o sistema recarrega apenas o painel central — a sidebar e o header permanecem fixos.</div></div>
+</div>
+
+<!-- ===== CAP 2 ===== -->
+<div class="chapter" id="cap2">
+  <div class="ch-header">
+    <div class="ch-num">2</div>
+    <div><div class="ch-title">Configurações do Sistema</div><div class="ch-subtitle">Personalizar nome, logo, cor e dados da empresa</div></div>
+  </div>
+
+  <p>Acesse as configurações clicando no botão <strong>⚙ Config</strong> no canto superior direito. Uma janela modal abrirá com duas seções.</p>
+
+  <h3>Identidade do Sistema</h3>
+  <table>
+    <thead><tr><th>Campo</th><th>Descrição</th><th>Padrão</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Nome do Sistema</strong></td><td>Título exibido no header e na aba do navegador</td><td>Gestão Financeira</td></tr>
+      <tr><td><strong>Emoji / Ícone</strong></td><td>Emoji que aparece ao lado do nome (máx. 4 chars)</td><td>💼</td></tr>
+      <tr><td><strong>Cor Principal</strong></td><td>Cor do accent em todo o sistema (seletor de cor)</td><td>#4f8ef7</td></tr>
+      <tr><td><strong>Prévia do Logo</strong></td><td>Atualiza em tempo real enquanto você digita</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Dados da Empresa</h3>
+  <table>
+    <thead><tr><th>Campo</th><th>Descrição</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Nome da Empresa</strong></td><td>Exibido no header, relatórios e documentos</td></tr>
+      <tr><td><strong>CNPJ</strong></td><td>Apenas informativo, não valida</td></tr>
+      <tr><td><strong>Saldo Inicial do Caixa</strong></td><td>Valor de abertura para cálculo do fluxo de caixa</td></tr>
+    </tbody>
+  </table>
+
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div class="step-body">Preencha os campos desejados.</div></div>
+    <div class="step"><div class="step-n">2</div><div class="step-body">Observe a prévia do logo atualizando em tempo real ao digitar.</div></div>
+    <div class="step"><div class="step-n">3</div><div class="step-body">Clique em <strong>Salvar Configurações</strong>.</div></div>
+  </div>
+
+  <div class="danger"><span class="box-icon">🔴</span><div>O botão <strong>"⚠ Resetar Dados"</strong> apaga <em>todos</em> os dados do sistema (faturamentos, despesas, extrato, etc.) de forma irreversível. Use somente para reiniciar do zero.</div></div>
+</div>
+
+<!-- ===== CAP 3 ===== -->
+<div class="chapter" id="cap3">
+  <div class="ch-header">
+    <div class="ch-num">3</div>
+    <div><div class="ch-title">Dashboard</div><div class="ch-subtitle">Visão geral e indicadores financeiros</div></div>
+  </div>
+
+  <p>O Dashboard é a tela inicial do sistema, exibindo os principais indicadores financeiros do mês atual em um único lugar.</p>
+
+  <h3>Alertas Automáticos (topo da tela)</h3>
+  <table>
+    <thead><tr><th>Alerta</th><th>Condição</th><th>Ação Sugerida</th></tr></thead>
+    <tbody>
+      <tr><td><strong>💾 Backup</strong></td><td>Nenhum backup realizado, ou último há mais de 7 dias</td><td>Clicar em "Fazer Backup Agora"</td></tr>
+      <tr><td><strong>🔁 Recorrentes</strong></td><td>Existem lançamentos recorrentes com data de geração vencida</td><td>Clicar em "Ver Recorrentes"</td></tr>
+    </tbody>
+  </table>
+
+  <h3>KPIs — Indicadores Principais</h3>
+  <div class="mockup">
+    <div class="mockup-row">
+      <div class="mockup-kpi"><div class="mockup-kpi-label">Faturamento Mês</div><div class="mockup-kpi-val">R$ 25.000</div><div style="font-size:10px;color:#64748b">Recebido: R$ 20.000</div></div>
+      <div class="mockup-kpi"><div class="mockup-kpi-label">Despesas Mês</div><div class="mockup-kpi-val" style="color:#dc2626">R$ 12.000</div><div style="font-size:10px;color:#64748b">Pagas: R$ 10.000</div></div>
+      <div class="mockup-kpi"><div class="mockup-kpi-label">Resultado Mês</div><div class="mockup-kpi-val" style="color:#16a34a">R$ 10.000</div><div style="font-size:10px;color:#64748b">Caixa realizado</div></div>
+      <div class="mockup-kpi"><div class="mockup-kpi-label">CR Vencidos</div><div class="mockup-kpi-val" style="color:#ea580c">R$ 2.000</div></div>
+      <div class="mockup-kpi"><div class="mockup-kpi-label">CP Vencidos</div><div class="mockup-kpi-val" style="color:#dc2626">R$ 500</div></div>
+    </div>
+  </div>
+
+  <h3>Gráfico de Barras — Últimos 6 Meses</h3>
+  <p>Mostra barras lado a lado de <strong style="color:var(--green)">Entradas</strong> (verde) e <strong style="color:var(--red)">Saídas</strong> (vermelho) por mês. Passe o mouse sobre cada barra para ver o valor exato.</p>
+
+  <h3>Gráfico Pizza — Despesas por Categoria (mês atual) <span style="background:#dbeafe;color:#1d4ed8;font-size:11px;padding:2px 8px;border-radius:4px;font-weight:700">NOVO v2</span></h3>
+  <p>Gráfico em formato de rosca mostrando a participação percentual de cada categoria nas despesas do mês. A legenda ao lado indica nome e percentual.</p>
+
+  <h3>Alertas de Pendências</h3>
+  <table>
+    <thead><tr><th>Alerta</th><th>Significa</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge-mock b-orange">⚠ CR vencidos</span></td><td>Clientes com valores em aberto além do prazo</td></tr>
+      <tr><td><span class="badge-mock b-red">🔴 CP vencidos</span></td><td>Fornecedores com pagamentos em atraso</td></tr>
+      <tr><td><span class="badge-mock b-blue">📥 CR próximos</span></td><td>Recebimentos com vencimento nos próximos 7 dias</td></tr>
+      <tr><td><span class="badge-mock b-orange">📤 CP próximos</span></td><td>Pagamentos com vencimento nos próximos 7 dias</td></tr>
+      <tr><td><span class="badge-mock b-green">✓ Em dia</span></td><td>Nenhum alerta crítico — finanças em dia</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ===== CAP 4 ===== -->
+<div class="chapter" id="cap4">
+  <div class="ch-header">
+    <div class="ch-num">4</div>
+    <div><div class="ch-title">Faturamento</div><div class="ch-subtitle">Registrar notas fiscais e receitas emitidas</div></div>
+  </div>
+
+  <p>Use o módulo de Faturamento para registrar todas as notas fiscais e receitas emitidas pela empresa, acompanhando o status de recebimento.</p>
+
+  <h3>Campos do Formulário</h3>
+  <table>
+    <thead><tr><th>Campo</th><th>Descrição</th><th></th></tr></thead>
+    <tbody>
+      <tr><td><strong>Nº Documento</strong></td><td>Número da NF ou referência (ex: NF-001)</td><td class="opt">Opcional</td></tr>
+      <tr><td><strong>Cliente</strong></td><td>Nome do cliente ou empresa pagante</td><td class="req">✱ Obrigatório</td></tr>
+      <tr><td><strong>Data Emissão</strong></td><td>Data de emissão da nota (padrão: hoje)</td><td class="req">✱ Obrigatório</td></tr>
+      <tr><td><strong>Vencimento</strong></td><td>Data de vencimento do pagamento</td><td class="opt">Opcional</td></tr>
+      <tr><td><strong>Descrição / Serviço</strong></td><td>Descrição do produto ou serviço prestado</td><td class="opt">Opcional</td></tr>
+      <tr><td><strong>Valor (R$)</strong></td><td>Valor total da nota</td><td class="req">✱ Obrigatório</td></tr>
+      <tr><td><strong>Categoria</strong></td><td>Categoria financeira (Vendas, Serviços, etc.)</td><td class="opt">Opcional</td></tr>
+      <tr><td><strong>Conta Contábil</strong></td><td>Vínculo com o plano de contas (para balancete)</td><td class="opt">Opcional</td></tr>
+      <tr><td><strong>Status</strong></td><td>Pendente / Recebido / Parcial / Vencido / Cancelado</td><td class="req">✱ Obrigatório</td></tr>
+      <tr><td><strong>Observações</strong></td><td>Nota livre (NF, contato, referência interna)</td><td class="opt">Opcional</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Ações na Tabela</h3>
+  <table>
+    <thead><tr><th>Botão</th><th>Ação</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge-mock b-green">✓</span></td><td>Marca o lançamento como <strong>Recebido</strong></td></tr>
+      <tr><td><span class="badge-mock b-orange">✎</span></td><td>Abre o formulário para edição do lançamento</td></tr>
+      <tr><td><span class="badge-mock b-red">✕</span></td><td>Exclui permanentemente (pede confirmação)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Filtros Disponíveis</h3>
+  <ul>
+    <li><strong>Busca livre:</strong> pesquisa no Nº, Cliente e Descrição em tempo real</li>
+    <li><strong>Status:</strong> filtra por Pendente, Recebido, Vencido, Parcial</li>
+    <li><strong>Mês:</strong> filtra pela data de emissão</li>
+  </ul>
+
+  <div class="tip"><span class="box-icon">💡</span><div>Clique nos cabeçalhos das colunas para ordenar a tabela. Clicar duas vezes inverte a ordem.</div></div>
+</div>
+
+<!-- ===== CAP 5 ===== -->
+<div class="chapter" id="cap5">
+  <div class="ch-header">
+    <div class="ch-num">5</div>
+    <div><div class="ch-title">Despesas</div><div class="ch-subtitle">Lançar e controlar todos os gastos da empresa</div></div>
+  </div>
+
+  <p>Registre aqui todas as saídas financeiras: aluguel, energia, fornecedores, pessoal, impostos, etc.</p>
+
+  <h3>Campos do Formulário</h3>
+  <table>
+    <thead><tr><th>Campo</th><th>Descrição</th><th></th></tr></thead>
+    <tbody>
+      <tr><td><strong>Descrição</strong></td><td>Nome da despesa (ex: Aluguel, Energia Elétrica)</td><td class="req">✱ Obrigatório</td></tr>
+      <tr><td><strong>Data</strong></td><td>Data do lançamento (padrão: hoje)</td><td class="req">✱ Obrigatório</td></tr>
+      <tr><td><strong>Vencimento</strong></td><td>Data de vencimento para pagamento</td><td class="opt">Opcional</td></tr>
+      <tr><td><strong>Fornecedor / Beneficiário</strong></td><td>Nome de quem receberá o pagamento</td><td class="opt">Opcional</td></tr>
+      <tr><td><strong>Valor (R$)</strong></td><td>Valor total da despesa</td><td class="req">✱ Obrigatório</td></tr>
+      <tr><td><strong>Categoria</strong></td><td>Categoria da despesa (Aluguel, Pessoal, etc.)</td><td class="opt">Opcional</td></tr>
+      <tr><td><strong>Centro de Custo</strong></td><td>Departamento responsável (Adm, Comercial, etc.)</td><td class="opt">Opcional</td></tr>
+      <tr><td><strong>Conta Contábil</strong></td><td>Vínculo com plano de contas</td><td class="opt">Opcional</td></tr>
+      <tr><td><strong>Status</strong></td><td>Pendente / Pago / Vencido / Cancelado</td><td class="req">✱ Obrigatório</td></tr>
+      <tr><td><strong>Parcelar em</strong></td><td>Divide em N lançamentos mensais automáticos 🆕</td><td class="opt">Opcional</td></tr>
+      <tr><td><strong>Observações</strong></td><td>Nota livre (NF, protocolo, referência)</td><td class="opt">Opcional</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Parcelamento Automático <span style="background:#dbeafe;color:#1d4ed8;font-size:11px;padding:2px 8px;border-radius:4px;font-weight:700">NOVO v2</span></h3>
+  <p>O campo <strong>"Parcelar em"</strong> divide o valor em N parcelas mensais automaticamente.</p>
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div class="step-body">Preencha todos os campos normalmente, incluindo o Vencimento da primeira parcela.</div></div>
+    <div class="step"><div class="step-n">2</div><div class="step-body">Em <strong>Parcelar em</strong>, selecione o número de parcelas (2x, 3x, 4x, 6x, 10x, 12x ou 24x).</div></div>
+    <div class="step"><div class="step-n">3</div><div class="step-body">Clique em <strong>Salvar</strong>. O sistema cria automaticamente N despesas com a descrição "Nome da Despesa (1/N)", "(2/N)", etc., adicionando 1 mês a cada vencimento.</div></div>
+  </div>
+  <div class="info"><span class="box-icon">ℹ</span><div>O valor de cada parcela é o total dividido igualmente. Exemplo: R$ 1.200 em 6x = 6 lançamentos de R$ 200,00 cada.</div></div>
+</div>
+
+<!-- ===== CAP 6 ===== -->
+<div class="chapter" id="cap6">
+  <div class="ch-header">
+    <div class="ch-num">6</div>
+    <div><div class="ch-title">Contas a Receber</div><div class="ch-subtitle">Controlar títulos e recebimentos de clientes</div></div>
+  </div>
+
+  <p>Use este módulo para acompanhar todos os valores que a empresa tem a receber de clientes, com controle de vencimento e baixas parciais.</p>
+
+  <h3>KPIs do Módulo</h3>
+  <div class="mockup">
+    <div class="mockup-row">
+      <div class="mockup-kpi"><div class="mockup-kpi-label">Total a Receber</div><div class="mockup-kpi-val">R$ 45.000</div></div>
+      <div class="mockup-kpi"><div class="mockup-kpi-label">Já Recebido</div><div class="mockup-kpi-val" style="color:var(--green)">R$ 30.000</div></div>
+      <div class="mockup-kpi"><div class="mockup-kpi-label">Saldo Pendente</div><div class="mockup-kpi-val" style="color:var(--orange)">R$ 15.000</div></div>
+    </div>
+  </div>
+
+  <h3>Criar uma Nova Conta a Receber</h3>
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div class="step-body">Clique em <strong>+ Nova CR</strong>.</div></div>
+    <div class="step"><div class="step-n">2</div><div class="step-body">Preencha: Doc/Ref, Cliente, Emissão, Vencimento, Valor, Já Recebido (se houver), Categoria e Observação.</div></div>
+    <div class="step"><div class="step-n">3</div><div class="step-body">Clique em <strong>Salvar</strong>. O status é calculado automaticamente: se Já Recebido = Valor → "Recebido"; se parcial → "Parcial"; se zero → "Pendente".</div></div>
+  </div>
+
+  <h3>Registrar um Recebimento (Baixa)</h3>
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div class="step-body">Na tabela, localize o título e clique em <strong>↓ Baixar</strong>.</div></div>
+    <div class="step"><div class="step-n">2</div><div class="step-body">Informe o valor recebido (pode ser parcial).</div></div>
+    <div class="step"><div class="step-n">3</div><div class="step-body">O sistema atualiza o saldo e o status automaticamente.</div></div>
+  </div>
+
+  <div class="tip"><span class="box-icon">💡</span><div>Títulos com vencimento anterior à data atual e status diferente de "Recebido" são exibidos com a data em vermelho, indicando atraso.</div></div>
+</div>
+
+<!-- ===== CAP 7 ===== -->
+<div class="chapter" id="cap7">
+  <div class="ch-header">
+    <div class="ch-num">7</div>
+    <div><div class="ch-title">Contas a Pagar</div><div class="ch-subtitle">Controlar títulos e pagamentos a fornecedores</div></div>
+  </div>
+
+  <p>Funciona de forma espelhada ao módulo de Contas a Receber, mas para controle de pagamentos a fornecedores e outras obrigações.</p>
+
+  <h3>Diferenças em Relação a Contas a Receber</h3>
+  <table>
+    <thead><tr><th>CR — Contas a Receber</th><th>CP — Contas a Pagar</th></tr></thead>
+    <tbody>
+      <tr><td>Campo "Cliente"</td><td>Campo "Fornecedor"</td></tr>
+      <tr><td>Botão "↓ Baixar" (recebimento)</td><td>Botão "↓ Pagar" (pagamento)</td></tr>
+      <tr><td>Status: Recebido / Parcial</td><td>Status: Pago / Parcial</td></tr>
+      <tr><td>KPI: "Já Recebido"</td><td>KPI: "Já Pago"</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Registrar um Pagamento</h3>
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div class="step-body">Clique em <strong>+ Nova CP</strong> e preencha os dados do título.</div></div>
+    <div class="step"><div class="step-n">2</div><div class="step-body">Para registrar um pagamento, clique em <strong>↓ Pagar</strong> na linha do título.</div></div>
+    <div class="step"><div class="step-n">3</div><div class="step-body">Informe o valor pago (permite pagamentos parciais).</div></div>
+  </div>
+
+  <div class="warn"><span class="box-icon">⚠</span><div>Títulos vencidos e não pagos aparecem destacados em vermelho no Dashboard (KPI "CP Vencidos") e nos alertas de pendência.</div></div>
+</div>
+
+<!-- ===== CAP 8 ===== -->
+<div class="chapter" id="cap8">
+  <div class="ch-header">
+    <div class="ch-num">8</div>
+    <div><div class="ch-title">Lançamentos Recorrentes <span style="background:#dbeafe;color:#1d4ed8;font-size:13px;padding:2px 10px;border-radius:4px">NOVO v2</span></div><div class="ch-subtitle">Automatizar despesas e receitas fixas mensais</div></div>
+  </div>
+
+  <p>Lançamentos Recorrentes permitem cadastrar despesas e receitas que se repetem com regularidade (aluguel, assinaturas, salários fixos etc.) e gerar os lançamentos com um clique.</p>
+
+  <h3>Como Funciona</h3>
+  <p>Você cadastra um <em>modelo</em> de lançamento com valor, frequência e dia do mês. Quando chegar a data, o sistema alerta no Dashboard e você clica em <strong>⚡ Gerar</strong> para criar o lançamento real em Despesas ou Faturamento.</p>
+
+  <h3>Cadastrar um Recorrente</h3>
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div class="step-body">Acesse <strong>Avançado → Recorrentes</strong> na sidebar.</div></div>
+    <div class="step"><div class="step-n">2</div><div class="step-body">Preencha o formulário conforme a tabela abaixo.</div></div>
+    <div class="step"><div class="step-n">3</div><div class="step-body">Clique em <strong>Salvar Recorrente</strong>.</div></div>
+  </div>
+
+  <h3>Campos do Formulário</h3>
+  <table>
+    <thead><tr><th>Campo</th><th>Descrição</th><th></th></tr></thead>
+    <tbody>
+      <tr><td><strong>Descrição</strong></td><td>Nome do lançamento (ex: Aluguel Sala Comercial)</td><td class="req">✱</td></tr>
+      <tr><td><strong>Tipo</strong></td><td>Despesa (vai para o módulo Despesas) ou Receita (vai para Faturamento)</td><td class="req">✱</td></tr>
+      <tr><td><strong>Valor (R$)</strong></td><td>Valor fixo do lançamento</td><td class="req">✱</td></tr>
+      <tr><td><strong>Categoria</strong></td><td>Categoria que será atribuída ao lançamento gerado</td><td class="opt">Opcional</td></tr>
+      <tr><td><strong>Fornecedor / Cliente</strong></td><td>Nome do fornecedor ou cliente</td><td class="opt">Opcional</td></tr>
+      <tr><td><strong>Frequência</strong></td><td>Mensal / Semanal / Bimestral / Trimestral / Anual</td><td class="req">✱</td></tr>
+      <tr><td><strong>Dia do Mês</strong></td><td>Dia preferencial de geração (1-28)</td><td class="req">✱</td></tr>
+      <tr><td><strong>Próxima Geração</strong></td><td>Data da primeira geração (padrão: hoje)</td><td class="req">✱</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Gerar Lançamentos</h3>
+  <table>
+    <thead><tr><th>Ação</th><th>Descrição</th></tr></thead>
+    <tbody>
+      <tr><td><strong>⚡ Gerar</strong> (por linha)</td><td>Cria o lançamento para aquele recorrente e calcula automaticamente a próxima data</td></tr>
+      <tr><td><strong>⚡ Gerar Todos Vencidos</strong></td><td>Gera de uma vez todos os recorrentes cuja data já passou</td></tr>
+    </tbody>
+  </table>
+
+  <div class="tip"><span class="box-icon">💡</span><div>O Dashboard exibe um banner amarelo quando há recorrentes vencidos aguardando geração. Clique em "Ver Recorrentes" para ir direto ao módulo.</div></div>
+</div>
+
+<!-- ===== CAP 9 ===== -->
+<div class="chapter" id="cap9">
+  <div class="ch-header">
+    <div class="ch-num">9</div>
+    <div><div class="ch-title">Fluxo de Caixa</div><div class="ch-subtitle">Visão consolidada de entradas e saídas por período</div></div>
+  </div>
+
+  <p>O Fluxo de Caixa consolida automaticamente todos os lançamentos realizados (Faturamento, Despesas, CR, CP e OFX) em uma visão mensal com saldo acumulado.</p>
+
+  <h3>Filtros</h3>
+  <table>
+    <thead><tr><th>Filtro</th><th>Opções</th><th>Descrição</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Período</strong></td><td>3 / 6 / 12 meses</td><td>Quantidade de meses exibidos</td></tr>
+      <tr><td><strong>Saldo Inicial</strong></td><td>Valor numérico</td><td>Saldo de abertura antes do primeiro mês</td></tr>
+      <tr><td><strong>Tipo</strong></td><td>Realizado / Realizado + Projetado</td><td>Inclui ou não os lançamentos pendentes futuros</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Colunas da Tabela</h3>
+  <table>
+    <thead><tr><th>Coluna</th><th>O que representa</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Mês</strong></td><td>Mês de referência</td></tr>
+      <tr><td><strong>Entradas</strong></td><td>Total de receitas recebidas no mês</td></tr>
+      <tr><td><strong>Saídas</strong></td><td>Total de despesas pagas no mês</td></tr>
+      <tr><td><strong>Resultado</strong></td><td>Entradas menos Saídas (verde = positivo, vermelho = negativo)</td></tr>
+      <tr><td><strong>Saldo Acumulado</strong></td><td>Resultado corrente somado ao saldo inicial e meses anteriores</td></tr>
+    </tbody>
+  </table>
+
+  <div class="info"><span class="box-icon">ℹ</span><div>O gráfico de barras abaixo da tabela exibe visualmente Entradas (verde) × Saídas (vermelho) por mês, facilitando a identificação de meses críticos.</div></div>
+</div>
+
+<!-- ===== CAP 10 ===== -->
+<div class="chapter" id="cap10">
+  <div class="ch-header">
+    <div class="ch-num">10</div>
+    <div><div class="ch-title">Importar Extrato OFX</div><div class="ch-subtitle">Importar lançamentos bancários automaticamente</div></div>
+  </div>
+
+  <p>Importe extratos bancários no formato OFX (Open Financial Exchange) — compatível com a maioria dos bancos brasileiros (Bradesco, Itaú, Santander, BB, Caixa etc.).</p>
+
+  <h3>Como Obter o Arquivo OFX no Banco</h3>
+  <p>Cada banco tem um caminho diferente, geralmente: <em>Internet Banking → Extrato → Exportar → Formato OFX</em>.</p>
+
+  <h3>Passo a Passo para Importar</h3>
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div class="step-body">Acesse <strong>Bancário → Importar OFX</strong> na sidebar.</div></div>
+    <div class="step"><div class="step-n">2</div><div class="step-body">Arraste o arquivo .ofx para a área pontilhada, ou clique para selecionar.</div></div>
+    <div class="step"><div class="step-n">3</div><div class="step-body">O sistema exibe a prévia com todos os lançamentos encontrados. Lançamentos já importados anteriormente são marcados como <span class="badge-mock b-red">DUP</span>.</div></div>
+    <div class="step"><div class="step-n">4</div><div class="step-body">Ajuste as categorias de cada lançamento se desejar.</div></div>
+    <div class="step"><div class="step-n">5</div><div class="step-body">Selecione os lançamentos desejados (checkbox) e clique em <strong>Importar Selecionados</strong>.</div></div>
+  </div>
+
+  <h3>Regras de Categorização Automática</h3>
+  <p>Configure palavras-chave para que o sistema categorize automaticamente os lançamentos importados.</p>
+  <div class="mockup">
+    <div style="display:flex;gap:8px;align-items:center;font-size:12px">
+      <input class="mockup-input" value="ENERGIA" style="flex:1" readonly>
+      <select style="font-size:11px;padding:4px;border:1px solid #e2e8f0;border-radius:4px"><option>Utilities (Energia/Água/Tel)</option></select>
+      <select style="font-size:11px;padding:4px;border:1px solid #e2e8f0;border-radius:4px"><option>Saída</option></select>
+      <span class="mockup-btn">+</span>
+    </div>
+  </div>
+  <p>As regras padrão incluem: SALARIO, FOLHA, ENERGIA, MERCADO, IMPOSTO, ALUGUEL. Você pode adicionar ou remover regras.</p>
+</div>
+
+<!-- ===== CAP 11 ===== -->
+<div class="chapter" id="cap11">
+  <div class="ch-header">
+    <div class="ch-num">11</div>
+    <div><div class="ch-title">Conciliação Bancária <span style="background:#dbeafe;color:#1d4ed8;font-size:13px;padding:2px 10px;border-radius:4px">NOVO v2</span></div><div class="ch-subtitle">Conferir lançamentos OFX com registros contábeis</div></div>
+  </div>
+
+  <p>A Conciliação Bancária é o processo de confirmar que os lançamentos importados do extrato bancário (OFX) correspondem aos lançamentos registrados no sistema (Faturamento e Despesas).</p>
+
+  <h3>Por Que Conciliar?</h3>
+  <ul>
+    <li>Garantir que nenhum lançamento foi perdido ou duplicado</li>
+    <li>Identificar cobranças bancárias não reconhecidas</li>
+    <li>Confirmar que todos os recebimentos e pagamentos foram registrados</li>
+    <li>Fechar o mês com segurança contábil</li>
+  </ul>
+
+  <h3>Passo a Passo</h3>
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div class="step-body">Acesse <strong>Avançado → Conciliação</strong>.</div></div>
+    <div class="step"><div class="step-n">2</div><div class="step-body">Defina o período (De / Até) e o filtro (Não conciliados / Todos / Conciliados).</div></div>
+    <div class="step"><div class="step-n">3</div><div class="step-body">Clique em <strong>Filtrar</strong> para carregar os lançamentos.</div></div>
+    <div class="step"><div class="step-n">4</div><div class="step-body">Para cada lançamento conferido, clique em <strong>✓ Conciliar</strong>.</td></div></div>
+    <div class="step"><div class="step-n">5</div><div class="step-body">Use <strong>🤖 Auto-Conciliar</strong> para conciliar automaticamente lançamentos com valor exato (±1%) e data próxima (±3 dias) em relação aos lançamentos registrados.</div></div>
+  </div>
+
+  <h3>Indicadores</h3>
+  <table>
+    <thead><tr><th>KPI</th><th>Descrição</th></tr></thead>
+    <tbody>
+      <tr><td><strong>OFX Importados</strong></td><td>Total de lançamentos no extrato OFX</td></tr>
+      <tr><td><strong>Conciliados</strong></td><td>Quantos já foram verificados e confirmados</td></tr>
+    </tbody>
+  </table>
+
+  <div class="tip"><span class="box-icon">💡</span><div>Para desfazer uma conciliação, use o botão <strong>↩ Desfazer</strong> que aparece nas linhas já conciliadas.</div></div>
+</div>
+
+<!-- ===== CAP 12 ===== -->
+<div class="chapter" id="cap12">
+  <div class="ch-header">
+    <div class="ch-num">12</div>
+    <div><div class="ch-title">Extrato de Movimentações</div><div class="ch-subtitle">Visão unificada de todas as movimentações financeiras</div></div>
+  </div>
+
+  <p>O Extrato consolida em uma única tabela todos os lançamentos de <strong>Faturamento</strong> (recebidos), <strong>Despesas</strong> (pagas) e <strong>OFX/Banco</strong>, com saldo acumulado linha a linha.</p>
+
+  <h3>Filtros Disponíveis</h3>
+  <table>
+    <thead><tr><th>Filtro</th><th>Descrição</th></tr></thead>
+    <tbody>
+      <tr><td><strong>De / Até</strong></td><td>Período de datas (padrão: mês atual)</td></tr>
+      <tr><td><strong>Tipo</strong></td><td>Todos / Apenas Entradas / Apenas Saídas</td></tr>
+      <tr><td><strong>Categoria</strong></td><td>Filtra por uma categoria específica</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Exportar CSV</h3>
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div class="step-body">Aplique os filtros desejados.</div></div>
+    <div class="step"><div class="step-n">2</div><div class="step-body">Clique em <strong>⬇ CSV</strong>.</div></div>
+    <div class="step"><div class="step-n">3</div><div class="step-body">O arquivo <em>extrato.csv</em> será baixado com colunas: Data, Descrição, Tipo, Valor, Categoria, Origem.</td></div></div>
+  </div>
+</div>
+
+<!-- ===== CAP 13 ===== -->
+<div class="chapter" id="cap13">
+  <div class="ch-header">
+    <div class="ch-num">13</div>
+    <div><div class="ch-title">Relatórios Gerenciais</div><div class="ch-subtitle">DRE, Aging, Categorias, Centro de Custo e Balancete</div></div>
+  </div>
+
+  <h3>Como Acessar</h3>
+  <p>Clique em <strong>Relatórios</strong> na sidebar. Selecione o tipo de relatório pelos chips no topo, depois escolha o período no filtro.</p>
+
+  <h3>DRE Gerencial</h3>
+  <p>Demonstração do Resultado do Exercício simplificada para o mês selecionado.</p>
+  <table>
+    <thead><tr><th>Linha</th><th>Composição</th></tr></thead>
+    <tbody>
+      <tr><td><strong>(+) Receita Bruta</strong></td><td>Soma de Faturamentos + entradas OFX do mês</td></tr>
+      <tr><td><strong>(−) Total Despesas</strong></td><td>Soma de Despesas + saídas OFX do mês, detalhadas por categoria</td></tr>
+      <tr><td><strong>(=) Resultado</strong></td><td>Receita − Despesas (verde = lucro, vermelho = prejuízo)</td></tr>
+      <tr><td><strong>Margem Líquida</strong></td><td>Resultado ÷ Receita × 100</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Aging CP / Aging CR</h3>
+  <p>Análise de envelhecimento dos títulos pendentes, agrupados por faixa de vencimento.</p>
+  <table>
+    <thead><tr><th>Faixa</th><th>Descrição</th></tr></thead>
+    <tbody>
+      <tr><td>A vencer</td><td>Ainda dentro do prazo</td></tr>
+      <tr><td>Vence hoje</td><td>Vencimento no dia atual</td></tr>
+      <tr><td>1-15 dias</td><td>Atrasados de 1 a 15 dias</td></tr>
+      <tr><td>16-30 dias</td><td>Atrasados de 16 a 30 dias</td></tr>
+      <tr><td>+30 dias</td><td>Atrasados há mais de 30 dias</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Por Categoria</h3>
+  <p>Mostra entradas, saídas e líquido por categoria financeira no mês selecionado.</p>
+
+  <h3>Centro de Custo</h3>
+  <p>Mostra o total de despesas agrupado por centro de custo, com percentual de participação e barra de progresso visual.</p>
+
+  <h3>Balancete <span style="background:#dbeafe;color:#1d4ed8;font-size:11px;padding:2px 8px;border-radius:4px;font-weight:700">NOVO v2</span></h3>
+  <p>Balancete de verificação mostrando débitos, créditos e saldo por conta contábil.</p>
+  <div class="info"><span class="box-icon">ℹ</span><div>Para o balancete ter dados, é necessário: (1) ter contas no Plano de Contas e (2) vincular categorias às contas em <strong>Plano de Contas → Vincular Categoria → Conta Contábil</strong>.</div></div>
+</div>
+
+<!-- ===== CAP 14 ===== -->
+<div class="chapter" id="cap14">
+  <div class="ch-header">
+    <div class="ch-num">14</div>
+    <div><div class="ch-title">Busca Global <span style="background:#dbeafe;color:#1d4ed8;font-size:13px;padding:2px 10px;border-radius:4px">NOVO v2</span></div><div class="ch-subtitle">Pesquisar em todos os módulos com um único campo</div></div>
+  </div>
+
+  <p>A Busca Global permite encontrar qualquer lançamento em todos os módulos do sistema a partir de um único campo de pesquisa.</p>
+
+  <h3>Como Usar</h3>
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div class="step-body">Clique no botão <strong>🔍 Busca</strong> no header (canto superior direito).</div></div>
+    <div class="step"><div class="step-n">2</div><div class="step-body">Digite ao menos 2 caracteres — os resultados aparecem automaticamente.</div></div>
+    <div class="step"><div class="step-n">3</div><div class="step-body">Os resultados são agrupados por módulo: Faturamento, Despesas, CR, CP, Extrato.</div></div>
+    <div class="step"><div class="step-n">4</div><div class="step-body">Clique em qualquer resultado para navegar diretamente ao módulo correspondente.</div></div>
+    <div class="step"><div class="step-n">5</div><div class="step-body">Pressione <strong>Esc</strong> ou clique fora para fechar.</div></div>
+  </div>
+
+  <h3>O que é pesquisado em cada módulo</h3>
+  <table>
+    <thead><tr><th>Módulo</th><th>Campos pesquisados</th></tr></thead>
+    <tbody>
+      <tr><td>Faturamento</td><td>Nº Documento, Cliente, Descrição</td></tr>
+      <tr><td>Despesas</td><td>Descrição, Fornecedor</td></tr>
+      <tr><td>Contas a Receber</td><td>Cliente, Nº Doc</td></tr>
+      <tr><td>Contas a Pagar</td><td>Fornecedor, Nº Doc</td></tr>
+      <tr><td>Extrato</td><td>Descrição da movimentação</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ===== CAP 15 ===== -->
+<div class="chapter" id="cap15">
+  <div class="ch-header">
+    <div class="ch-num">15</div>
+    <div><div class="ch-title">Categorias e Centros de Custo</div><div class="ch-subtitle">Classificar e organizar os lançamentos</div></div>
+  </div>
+
+  <p>Categorias e Centros de Custo são usados para classificar os lançamentos e gerar relatórios segmentados.</p>
+
+  <h3>Categorias</h3>
+  <p>Cada categoria tem: <strong>Nome</strong>, <strong>Tipo</strong> (Entrada / Saída / Ambos) e <strong>Cor</strong> (usada nos gráficos).</p>
+
+  <h4>Criar uma Categoria</h4>
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div class="step-body">Acesse <strong>Relatórios → Categorias</strong>.</div></div>
+    <div class="step"><div class="step-n">2</div><div class="step-body">No campo inferior, digite o nome, selecione o tipo e escolha uma cor.</div></div>
+    <div class="step"><div class="step-n">3</div><div class="step-body">Clique em <strong>+</strong>.</div></div>
+  </div>
+
+  <h3>Centros de Custo</h3>
+  <p>Agrupam despesas por departamento (Administrativo, Comercial, Operacional, Financeiro, TI etc.). Usados nos relatórios de Centro de Custo.</p>
+
+  <div class="warn"><span class="box-icon">⚠</span><div>Excluir uma categoria que já está vinculada a lançamentos não apaga os lançamentos — eles ficam com categoria "Outros" nos relatórios.</div></div>
+</div>
+
+<!-- ===== CAP 16 ===== -->
+<div class="chapter" id="cap16">
+  <div class="ch-header">
+    <div class="ch-num">16</div>
+    <div><div class="ch-title">Plano de Contas Contábil</div><div class="ch-subtitle">Estrutura NBC TG / CFC para escrituração contábil</div></div>
+  </div>
+
+  <p>O Plano de Contas é a estrutura contábil hierárquica da empresa. O sistema já vem com um plano completo baseado nas normas NBC TG e CFC, podendo ser expandido.</p>
+
+  <h3>Grupos do Plano</h3>
+  <table>
+    <thead><tr><th>Código</th><th>Grupo</th><th>Natureza</th></tr></thead>
+    <tbody>
+      <tr><td>1.x.x.x</td><td>Ativo</td><td>Devedora</td></tr>
+      <tr><td>2.x.x.x</td><td>Passivo</td><td>Credora</td></tr>
+      <tr><td>3.x.x.x</td><td>Patrimônio Líquido</td><td>Credora</td></tr>
+      <tr><td>4.x.x.x</td><td>Receitas</td><td>Credora</td></tr>
+      <tr><td>5.x.x.x</td><td>Custos</td><td>Devedora</td></tr>
+      <tr><td>6.x.x.x</td><td>Despesas</td><td>Devedora</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Adicionar uma Nova Conta</h3>
+  <table>
+    <thead><tr><th>Campo</th><th>Descrição</th><th>Exemplo</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Código</strong></td><td>Código numérico hierárquico</td><td>6.3.4</td></tr>
+      <tr><td><strong>Nome da Conta</strong></td><td>Descrição da conta</td><td>Despesas com Treinamento</td></tr>
+      <tr><td><strong>Grupo</strong></td><td>Ativo / Passivo / PL / Receita / Custo / Despesa</td><td>Despesa</td></tr>
+      <tr><td><strong>Natureza</strong></td><td>Devedora (débito aumenta) ou Credora (crédito aumenta)</td><td>Devedora</td></tr>
+      <tr><td><strong>Nível</strong></td><td>1=Grupo, 2=Subgrupo, 3=Conta, 4=Subconta analítica</td><td>4</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Vincular Categoria → Conta Contábil</h3>
+  <p>Para que o Balancete tenha dados, vincule cada categoria gerencial a uma conta do plano:</p>
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div class="step-body">Role a página até a seção <strong>"Vincular Categoria → Conta Contábil"</strong>.</div></div>
+    <div class="step"><div class="step-n">2</div><div class="step-body">Para cada categoria, selecione a conta correspondente no dropdown.</div></div>
+    <div class="step"><div class="step-n">3</div><div class="step-body">O vínculo é salvo automaticamente.</div></div>
+  </div>
+</div>
+
+<!-- ===== CAP 17 ===== -->
+<div class="chapter" id="cap17">
+  <div class="ch-header">
+    <div class="ch-num">17</div>
+    <div><div class="ch-title">Histórico de Ações <span style="background:#dbeafe;color:#1d4ed8;font-size:13px;padding:2px 10px;border-radius:4px">NOVO v2</span></div><div class="ch-subtitle">Auditoria das últimas 200 operações realizadas</div></div>
+  </div>
+
+  <p>O Histórico registra automaticamente todas as operações realizadas no sistema: criações, edições, exclusões e gerações de lançamentos.</p>
+
+  <h3>Colunas do Histórico</h3>
+  <table>
+    <thead><tr><th>Coluna</th><th>Descrição</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Ação</strong></td><td><span class="badge-mock b-green">criar</span> <span class="badge-mock b-blue">editar</span> <span class="badge-mock b-red">excluir</span> <span class="badge-mock b-orange">gerar</span></td></tr>
+      <tr><td><strong>Módulo</strong></td><td>Faturamento, Despesas, CR, CP, OFX, Recorrente, Config</td></tr>
+      <tr><td><strong>Descrição</strong></td><td>Detalhes da operação (nome, valor, referência)</td></tr>
+      <tr><td><strong>Data/Hora</strong></td><td>Timestamp completo no formato brasileiro</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Filtrar e Limpar</h3>
+  <ul>
+    <li>Use o filtro <strong>Módulo</strong> para ver apenas as ações de um setor específico.</li>
+    <li>O botão <strong>🗑 Limpar</strong> apaga todo o histórico (pede confirmação).</li>
+    <li>O histórico guarda no máximo as últimas <strong>200 ações</strong>.</li>
+  </ul>
+
+  <div class="info"><span class="box-icon">ℹ</span><div>O histórico é salvo no mesmo localStorage dos dados, portanto é exportado junto com o backup. Ao restaurar um backup, o histórico anterior é substituído.</div></div>
+</div>
+
+<!-- ===== CAP 18 ===== -->
+<div class="chapter" id="cap18">
+  <div class="ch-header">
+    <div class="ch-num">18</div>
+    <div><div class="ch-title">Backup e Restauração</div><div class="ch-subtitle">Proteger e recuperar os dados do sistema</div></div>
+  </div>
+
+  <p>Como os dados ficam no localStorage do navegador, é <strong>essencial</strong> fazer backup regularmente. O sistema alerta no Dashboard quando há mais de 7 dias sem backup.</p>
+
+  <div class="danger"><span class="box-icon">🔴</span><div>Limpar o cache/cookies/histórico do navegador, desinstalar o navegador ou formatar o computador <strong>apaga todos os dados</strong>. Faça backup semanal ou após cada sessão importante.</div></div>
+
+  <h3>Exportar Backup</h3>
+  <p>Acesse <strong>Sistema → Backup / Restore</strong> e clique em um dos botões:</p>
+  <table>
+    <thead><tr><th>Botão</th><th>Descrição</th><th>Uso</th></tr></thead>
+    <tbody>
+      <tr><td><strong>⬇ Baixar Backup JSON</strong></td><td>Exporta todos os dados em um único arquivo .json</td><td>Backup principal — use este</td></tr>
+      <tr><td><strong>⬇ Exportar Dados CSV</strong></td><td>Exporta cada tabela em um arquivo .csv separado</td><td>Análise em Excel ou migração</td></tr>
+    </tbody>
+  </table>
+
+  <div class="tip"><span class="box-icon">💡</span><div>O arquivo JSON de backup tem o nome <strong>backup_fiscalconf_AAAA-MM-DD.json</strong>. Guarde em nuvem (Google Drive, OneDrive) ou pen drive.</div></div>
+
+  <h3>Restaurar Backup</h3>
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><div class="step-body">Acesse <strong>Sistema → Backup / Restore</strong>.</div></div>
+    <div class="step"><div class="step-n">2</div><div class="step-body">Na seção <strong>"Restaurar Backup"</strong>, clique em "Selecionar arquivo de backup (.json)".</div></div>
+    <div class="step"><div class="step-n">3</div><div class="step-body">Selecione o arquivo .json salvo anteriormente.</div></div>
+    <div class="step"><div class="step-n">4</div><div class="step-body">Clique em <strong>↑ Restaurar Backup</strong> e confirme no diálogo.</div></div>
+    <div class="step"><div class="step-n">5</div><div class="step-body">O sistema carrega os dados e recarrega todos os módulos automaticamente.</div></div>
+  </div>
+
+  <div class="warn"><span class="box-icon">⚠</span><div>Restaurar um backup <strong>substitui todos os dados atuais</strong>. Se você tem lançamentos novos que ainda não estão no backup, eles serão perdidos. Exporte um novo backup antes de restaurar.</div></div>
+
+  <h3>Sobre o localStorage</h3>
+  <table>
+    <thead><tr><th>Situação</th><th>Dados perdidos?</th></tr></thead>
+    <tbody>
+      <tr><td>Fechar e reabrir o navegador</td><td>Não — localStorage persiste</td></tr>
+      <tr><td>Reiniciar o computador</td><td>Não — localStorage persiste</td></tr>
+      <tr><td>Limpar cache/cookies do navegador</td><td><strong>Sim — dados apagados</strong></td></tr>
+      <tr><td>Abrir o arquivo em outro navegador</td><td>Sim — localStorage é isolado por navegador</td></tr>
+      <tr><td>Usar o mesmo arquivo em outro PC</td><td>Sim — cada PC tem seu próprio localStorage</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ===== GLOSSÁRIO ===== -->
+<div class="chapter" id="glossario">
+  <div class="ch-header">
+    <div class="ch-num" style="background:var(--muted)">G</div>
+    <div><div class="ch-title">Glossário</div><div class="ch-subtitle">Termos utilizados no sistema</div></div>
+  </div>
+
+  <div class="gloss-item"><div class="gloss-term">Aging</div><div class="gloss-def">Análise de envelhecimento de títulos a receber ou pagar, agrupados por faixas de vencimento.</div></div>
+  <div class="gloss-item"><div class="gloss-term">Balancete de Verificação</div><div class="gloss-def">Relatório contábil que lista todas as contas com seus saldos devedores e credores, verificando o equilíbrio contábil.</div></div>
+  <div class="gloss-item"><div class="gloss-term">Centro de Custo</div><div class="gloss-def">Unidade organizacional (departamento) responsável por determinado grupo de despesas. Permite rastrear gastos por área.</div></div>
+  <div class="gloss-item"><div class="gloss-term">Conciliação Bancária</div><div class="gloss-def">Processo de comparar o extrato bancário com os lançamentos contábeis para garantir que estão em conformidade.</div></div>
+  <div class="gloss-item"><div class="gloss-term">CP — Contas a Pagar</div><div class="gloss-def">Obrigações financeiras da empresa com fornecedores e credores.</div></div>
+  <div class="gloss-item"><div class="gloss-term">CR — Contas a Receber</div><div class="gloss-def">Direitos da empresa sobre clientes que ainda não pagaram.</div></div>
+  <div class="gloss-item"><div class="gloss-term">DRE</div><div class="gloss-def">Demonstração do Resultado do Exercício — relatório que evidencia receitas, despesas e o resultado (lucro ou prejuízo) de um período.</div></div>
+  <div class="gloss-item"><div class="gloss-term">Lançamento Recorrente</div><div class="gloss-def">Modelo de lançamento que se repete com regularidade (mensal, semanal, anual). Ao gerar, cria o lançamento real e avança a data para a próxima ocorrência.</div></div>
+  <div class="gloss-item"><div class="gloss-term">LocalStorage</div><div class="gloss-def">Mecanismo de armazenamento do navegador que persiste os dados entre sessões, mas é isolado por navegador e computador.</div></div>
+  <div class="gloss-item"><div class="gloss-term">OFX (Open Financial Exchange)</div><div class="gloss-def">Formato padrão de arquivo de extrato bancário suportado pela maioria dos bancos brasileiros. Extensões: .ofx, .qfx, .ofc.</div></div>
+  <div class="gloss-item"><div class="gloss-term">Parcela</div><div class="gloss-def">Divisão de uma despesa em N pagamentos mensais. O sistema cria automaticamente os N lançamentos ao salvar com parcelamento ativado.</div></div>
+  <div class="gloss-item"><div class="gloss-term">Plano de Contas</div><div class="gloss-def">Estrutura hierárquica de contas contábeis que classifica todos os fatos econômicos da empresa, seguindo as normas NBC TG/CFC.</div></div>
+  <div class="gloss-item"><div class="gloss-term">Saldo Acumulado</div><div class="gloss-def">No Fluxo de Caixa, representa o saldo corrente após somar todas as entradas e subtrair todas as saídas desde o saldo inicial.</div></div>
+  <div class="gloss-item"><div class="gloss-term">Status Automático</div><div class="gloss-def">O sistema verifica automaticamente se um lançamento está "vencido" com base na data de vencimento vs. data atual, alterando o status de "pendente" para "vencido".</div></div>
+
+  <div style="margin-top:40px;padding:24px;background:#f1f5f9;border-radius:8px;text-align:center;color:var(--muted);font-size:13px">
+    <strong style="color:var(--text)">💼 Gestão Financeira — Manual do Usuário v2.0</strong><br>
+    Junho de 2026 · Sistema standalone HTML · Zero dependências externas<br><br>
+    Para suporte ou dúvidas, consulte o arquivo do sistema ou entre em contato com o responsável técnico.
+  </div>
+</div>
+
+</body>
+</html>
