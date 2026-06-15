@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora de Impostos sobre Serviços</title>
+  <style>
+    :root {
+      --primary: #1a56db;
+      --primary-dark: #1e429f;
+      --success: #057a55;
+      --danger: #c81e1e;
+      --warning: #c27803;
+      --bg: #f3f4f6;
+      --card: #ffffff;
+      --border: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --radius: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      color: #fff;
+      padding: 28px 32px 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.18);
+    }
+    header h1 { font-size: 1.55rem; font-weight: 700; letter-spacing: -.3px; }
+    header p  { margin-top: 4px; opacity: .82; font-size: .9rem; }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 28px 20px; }
+
+    /* ── Tabs ── */
+    .tabs { display: flex; gap: 6px; margin-bottom: 22px; flex-wrap: wrap; }
+    .tab-btn {
+      padding: 9px 20px; border: 2px solid var(--border);
+      background: var(--card); border-radius: 8px; cursor: pointer;
+      font-size: .875rem; font-weight: 600; color: var(--muted);
+      transition: all .18s;
+    }
+    .tab-btn.active {
+      background: var(--primary); color: #fff; border-color: var(--primary);
+    }
+    .tab-btn:hover:not(.active) { border-color: var(--primary); color: var(--primary); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Grid layout ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 700px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    .card h2 {
+      font-size: 1rem; font-weight: 700; margin-bottom: 16px;
+      color: var(--primary-dark); display: flex; align-items: center; gap: 7px;
+    }
+    .card h2 .badge {
+      font-size: .7rem; padding: 2px 8px; border-radius: 20px;
+      background: #dbeafe; color: var(--primary); font-weight: 700;
+    }
+
+    /* ── Form elements ── */
+    .form-group { margin-bottom: 14px; }
+    label { display: block; font-size: .8rem; font-weight: 600; margin-bottom: 5px; color: var(--muted); }
+    input[type="number"], select {
+      width: 100%; padding: 9px 12px; border: 1.5px solid var(--border);
+      border-radius: 7px; font-size: .95rem; color: var(--text);
+      transition: border-color .15s;
+      background: #f9fafb;
+    }
+    input[type="number"]:focus, select:focus {
+      outline: none; border-color: var(--primary); background: #fff;
+    }
+    input[type="number"].readonly {
+      background: #f3f4f6; color: var(--muted); cursor: not-allowed;
+    }
+
+    .prefix-wrap { position: relative; }
+    .prefix-wrap span {
+      position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+      font-weight: 600; color: var(--muted); font-size: .9rem; pointer-events: none;
+    }
+    .prefix-wrap input { padding-left: 32px; }
+
+    .suffix-wrap { position: relative; }
+    .suffix-wrap span {
+      position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
+      font-weight: 600; color: var(--muted); font-size: .9rem; pointer-events: none;
+    }
+    .suffix-wrap input { padding-right: 28px; }
+
+    /* ── Imposto rows ── */
+    .imposto-row {
+      display: grid; grid-template-columns: 1fr 110px 40px;
+      gap: 8px; align-items: center; margin-bottom: 8px;
+    }
+    .imposto-row select { font-size: .83rem; }
+    .btn-remove {
+      width: 34px; height: 34px; border: 1.5px solid #fca5a5;
+      background: #fef2f2; color: var(--danger); border-radius: 7px;
+      cursor: pointer; font-size: 1.1rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s;
+    }
+    .btn-remove:hover { background: #fee2e2; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 18px; border-radius: 7px; font-size: .875rem;
+      font-weight: 600; cursor: pointer; border: none; transition: all .18s;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-secondary { background: #f3f4f6; color: var(--text); border: 1.5px solid var(--border); }
+    .btn-secondary:hover { background: #e5e7eb; }
+    .btn-success { background: #d1fae5; color: var(--success); border: 1.5px solid #a7f3d0; }
+    .btn-success:hover { background: #a7f3d0; }
+
+    /* ── Result table ── */
+    .result-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    .result-table th {
+      background: #eff6ff; color: var(--primary-dark);
+      padding: 9px 12px; text-align: left; font-size: .78rem; font-weight: 700;
+      border-bottom: 2px solid #bfdbfe;
+    }
+    .result-table td {
+      padding: 9px 12px; border-bottom: 1px solid var(--border);
+    }
+    .result-table tr:last-child td { border-bottom: none; }
+    .result-table tr:hover td { background: #f9fafb; }
+    .text-right { text-align: right; }
+    .text-green { color: var(--success); font-weight: 700; }
+    .text-red   { color: var(--danger);  font-weight: 700; }
+    .text-blue  { color: var(--primary); font-weight: 700; }
+    .row-total td { background: #eff6ff !important; font-weight: 700; font-size: .9rem; }
+    .row-total td:last-child { color: var(--primary-dark); }
+
+    /* ── Info box ── */
+    .info-box {
+      background: #eff6ff; border-left: 4px solid var(--primary);
+      border-radius: 6px; padding: 12px 14px; margin-top: 18px;
+      font-size: .83rem; color: #1e3a8a; line-height: 1.6;
+    }
+    .info-box strong { font-weight: 700; }
+
+    .warn-box {
+      background: #fffbeb; border-left: 4px solid #f59e0b;
+      border-radius: 6px; padding: 10px 14px; margin-top: 10px;
+      font-size: .82rem; color: #92400e;
+    }
+
+    /* ── Summary cards ── */
+    .summary-strip {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 14px; margin-bottom: 20px;
+    }
+    @media (max-width: 600px) { .summary-strip { grid-template-columns: 1fr 1fr; } }
+    .summary-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px 18px;
+    }
+    .summary-card .label { font-size: .73rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+    .summary-card .value { font-size: 1.4rem; font-weight: 800; margin-top: 4px; }
+    .summary-card .sub   { font-size: .75rem; color: var(--muted); margin-top: 2px; }
+    .val-blue  { color: var(--primary-dark); }
+    .val-green { color: var(--success); }
+    .val-red   { color: var(--danger); }
+    .val-orange{ color: var(--warning); }
+
+    /* ── Formula display ── */
+    .formula-chip {
+      display: inline-block; background: #1e1b4b; color: #a5b4fc;
+      font-family: 'Courier New', monospace; font-size: .8rem;
+      padding: 6px 14px; border-radius: 6px; margin-top: 8px;
+    }
+
+    /* ── Comparer ── */
+    .compare-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 14px; margin-top: 16px;
+    }
+    @media (max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+    .compare-side {
+      border: 2px solid var(--border); border-radius: 8px; padding: 16px;
+    }
+    .compare-side h3 { font-size: .88rem; font-weight: 700; margin-bottom: 10px; }
+    .compare-side.blue { border-color: #bfdbfe; }
+    .compare-side.green { border-color: #a7f3d0; }
+
+    /* ── Print ── */
+    @media print {
+      header { background: #1a56db !important; -webkit-print-color-adjust: exact; }
+      .tabs, .btn, .imposto-row .btn-remove, .form-group:last-child .btn { display: none !important; }
+      .tab-panel { display: block !important; break-inside: avoid; }
+      body { background: #fff; }
+    }
+
+    hr.sep { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+
+    .actions-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+
+    /* Tooltip */
+    [data-tip] { position: relative; cursor: help; }
+    [data-tip]::after {
+      content: attr(data-tip);
+      position: absolute; bottom: calc(100% + 6px); left: 50%;
+      transform: translateX(-50%);
+      background: #1f2937; color: #fff; font-size: .73rem;
+      padding: 5px 9px; border-radius: 6px; white-space: nowrap;
+      opacity: 0; pointer-events: none; transition: opacity .18s; z-index: 10;
+    }
+    [data-tip]:hover::after { opacity: 1; }
+
+    .toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .toggle-label { font-size: .82rem; font-weight: 600; color: var(--muted); }
+    .toggle {
+      position: relative; width: 42px; height: 22px;
+      display: inline-block;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0; background: #d1d5db;
+      border-radius: 22px; cursor: pointer; transition: .25s;
+    }
+    .toggle-slider::before {
+      content: ''; position: absolute; width: 16px; height: 16px;
+      background: #fff; border-radius: 50%; left: 3px; top: 3px;
+      transition: .25s;
+    }
+    .toggle input:checked + .toggle-slider { background: var(--primary); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🧮 Calculadora de Impostos sobre Serviços</h1>
+  <p>Cálculo por dentro (embutido), por fora e comparativo — com breakdown detalhado</p>
+</header>
+
+<div class="container">
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('por-dentro')">📥 Por Dentro</button>
+    <button class="tab-btn" onclick="switchTab('por-fora')">📤 Por Fora</button>
+    <button class="tab-btn" onclick="switchTab('comparativo')">⚖️ Comparativo</button>
+    <button class="tab-btn" onclick="switchTab('simulador')">🔁 Simulador de Alíquotas</button>
+  </div>
+
+  <!-- ════════════════ TAB: POR DENTRO ════════════════ -->
+  <div class="tab-panel active" id="tab-por-dentro">
+
+    <div class="grid-2">
+      <!-- Inputs -->
+      <div class="card">
+        <h2>⚙️ Configuração <span class="badge">Por Dentro</span></h2>
+
+        <div class="form-group">
+          <label data-tip="Valor base do serviço prestado, sem impostos">Valor Base do Serviço (R$)</label>
+          <div class="prefix-wrap">
+            <span>R$</span>
+            <input type="number" id="pd-base" value="1000" min="0" step="0.01" oninput="calcPorDentro()" />
+          </div>
+        </div>
+
+        <hr class="sep" />
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <label style="margin:0; font-size:.85rem;">Impostos configurados</label>
+          <button class="btn btn-primary" style="padding:5px 12px; font-size:.78rem;" onclick="addImpostoRow('pd')">+ Adicionar</button>
+        </div>
+
+        <div id="pd-impostos">
+          <!-- Rows injetadas via JS -->
+        </div>
+
+        <hr class="sep" />
+
+        <div class="form-group">
+          <label data-tip="Outras despesas embutidas no preço final (ex: comissões, taxas bancárias)">Outras Despesas Embutidas (%)</label>
+          <div class="suffix-wrap">
+            <span>%</span>
+            <input type="number" id="pd-outras" value="0" min="0" max="99" step="0.01" oninput="calcPorDentro()" />
+          </div>
+        </div>
+
+        <div class="formula-chip" id="pd-formula">Valor Final = Base / (1 - 0%)</div>
+
+        <div class="info-box" style="margin-top:14px;">
+          <strong>Cálculo por dentro:</strong> O imposto é embutido no preço final. O percentual incide sobre o valor total cobrado do cliente, não sobre o valor base.<br/>
+          <em>Ex.: ISS 6% por dentro → de R$ 1.000 de base, o cliente paga R$ 1.063,83.</em>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="card">
+        <h2>📊 Resultado</h2>
+
+        <div class="summary-strip" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom:16px;">
+          <div class="summary-card">
+            <div class="label">Valor Final</div>
+            <div class="value val-blue" id="pd-res-final">R$ 0,00</div>
+            <div class="sub">cobrado do cliente</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">Total Impostos</div>
+            <div class="value val-red" id="pd-res-impostos">R$ 0,00</div>
+            <div class="sub" id="pd-res-pct-imp">0,00%</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">Líquido</div>
+            <div class="value val-green" id="pd-res-liquido">R$ 0,00</div>
+            <div class="sub">após impostos e despesas</div>
+          </div>
+        </div>
+
+        <table class="result-table">
+          <thead>
+            <tr>
+              <th>Descrição</th>
+              <th class="text-right">%</th>
+              <th class="text-right">Valor (R$)</th>
+            </tr>
+          </thead>
+          <tbody id="pd-breakdown">
+          </tbody>
+        </table>
+
+        <div class="warn-box" id="pd-warn" style="display:none">
+          ⚠️ A soma dos percentuais atingiu ou ultrapassou 100%. O cálculo por dentro torna-se inválido.
+        </div>
+
+        <div class="actions-row">
+          <button class="btn btn-secondary" onclick="resetTab('pd')">↺ Limpar</button>
+          <button class="btn btn-success" onclick="window.print()">🖨️ Imprimir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ TAB: POR FORA ════════════════ -->
+  <div class="tab-panel" id="tab-por-fora">
+
+    <div class="grid-2">
+      <div class="card">
+        <h2>⚙️ Configuração <span class="badge">Por Fora</span></h2>
+
+        <div class="form-group">
+          <label>Valor Base do Serviço (R$)</label>
+          <div class="prefix-wrap">
+            <span>R$</span>
+            <input type="number" id="pf-base" value="1000" min="0" step="0.01" oninput="calcPorFora()" />
+          </div>
+        </div>
+
+        <hr class="sep" />
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <label style="margin:0; font-size:.85rem;">Impostos configurados</label>
+          <button class="btn btn-primary" style="padding:5px 12px; font-size:.78rem;" onclick="addImpostoRow('pf')">+ Adicionar</button>
+        </div>
+        <div id="pf-impostos"></div>
+
+        <hr class="sep" />
+
+        <div class="form-group">
+          <label>Outras Despesas Adicionadas (%)</label>
+          <div class="suffix-wrap">
+            <span>%</span>
+            <input type="number" id="pf-outras" value="0" min="0" step="0.01" oninput="calcPorFora()" />
+          </div>
+        </div>
+
+        <div class="formula-chip" id="pf-formula">Valor Final = Base × (1 + 0%)</div>
+
+        <div class="info-box">
+          <strong>Cálculo por fora:</strong> O imposto é somado ao valor base. Incide sobre o valor original do serviço.<br/>
+          <em>Ex.: ISS 6% por fora → de R$ 1.000 de base, o cliente paga R$ 1.060,00.</em>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>📊 Resultado</h2>
+        <div class="summary-strip" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom:16px;">
+          <div class="summary-card">
+            <div class="label">Valor Final</div>
+            <div class="value val-blue" id="pf-res-final">R$ 0,00</div>
+            <div class="sub">cobrado do cliente</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">Total Impostos</div>
+            <div class="value val-red" id="pf-res-impostos">R$ 0,00</div>
+            <div class="sub" id="pf-res-pct-imp">0,00%</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">Líquido</div>
+            <div class="value val-green" id="pf-res-liquido">R$ 0,00</div>
+            <div class="sub">após impostos e despesas</div>
+          </div>
+        </div>
+
+        <table class="result-table">
+          <thead>
+            <tr>
+              <th>Descrição</th>
+              <th class="text-right">%</th>
+              <th class="text-right">Valor (R$)</th>
+            </tr>
+          </thead>
+          <tbody id="pf-breakdown"></tbody>
+        </table>
+
+        <div class="actions-row">
+          <button class="btn btn-secondary" onclick="resetTab('pf')">↺ Limpar</button>
+          <button class="btn btn-success" onclick="window.print()">🖨️ Imprimir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ TAB: COMPARATIVO ════════════════ -->
+  <div class="tab-panel" id="tab-comparativo">
+    <div class="card">
+      <h2>⚖️ Comparativo — Por Dentro vs Por Fora</h2>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Valor Base do Serviço (R$)</label>
+          <div class="prefix-wrap">
+            <span>R$</span>
+            <input type="number" id="cmp-base" value="1000" min="0" step="0.01" oninput="calcComparativo()" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Alíquota Total de Impostos (%)</label>
+          <div class="suffix-wrap">
+            <span>%</span>
+            <input type="number" id="cmp-aliq" value="6" min="0" max="99" step="0.01" oninput="calcComparativo()" />
+          </div>
+        </div>
+      </div>
+
+      <div class="compare-grid">
+        <div class="compare-side blue">
+          <h3 style="color:var(--primary)">📥 Por Dentro (embutido)</h3>
+          <table class="result-table">
+            <tr><td>Valor Final ao Cliente</td><td class="text-right text-blue" id="cmp-pd-final">—</td></tr>
+            <tr><td>Impostos Recolhidos</td><td class="text-right text-red" id="cmp-pd-imp">—</td></tr>
+            <tr><td>Líquido do Prestador</td><td class="text-right text-green" id="cmp-pd-liq">—</td></tr>
+            <tr><td>Fórmula</td><td class="text-right" id="cmp-pd-form" style="font-family:monospace;font-size:.8rem">—</td></tr>
+          </table>
+        </div>
+        <div class="compare-side green">
+          <h3 style="color:var(--success)">📤 Por Fora (acrescido)</h3>
+          <table class="result-table">
+            <tr><td>Valor Final ao Cliente</td><td class="text-right text-blue" id="cmp-pf-final">—</td></tr>
+            <tr><td>Impostos Recolhidos</td><td class="text-right text-red" id="cmp-pf-imp">—</td></tr>
+            <tr><td>Líquido do Prestador</td><td class="text-right text-green" id="cmp-pf-liq">—</td></tr>
+            <tr><td>Fórmula</td><td class="text-right" id="cmp-pf-form" style="font-family:monospace;font-size:.8rem">—</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="info-box" style="margin-top:18px;" id="cmp-insight">
+        Preencha os campos acima para ver a diferença entre os dois métodos.
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ TAB: SIMULADOR ════════════════ -->
+  <div class="tab-panel" id="tab-simulador">
+    <div class="card">
+      <h2>🔁 Simulador de Composição de Alíquotas — Serviços (Regime Simples/Lucro Presumido)</h2>
+
+      <div class="grid-2">
+        <div>
+          <div class="form-group">
+            <label>Valor do Serviço (R$)</label>
+            <div class="prefix-wrap">
+              <span>R$</span>
+              <input type="number" id="sim-base" value="5000" min="0" step="0.01" oninput="calcSimulador()" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Regime Tributário</label>
+            <select id="sim-regime" onchange="applyRegimePreset(); calcSimulador()">
+              <option value="custom">Personalizado</option>
+              <option value="lp">Lucro Presumido</option>
+              <option value="simples">Simples Nacional (faixa 1)</option>
+              <option value="lr">Lucro Real (estimativa)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Método de cálculo</label>
+            <select id="sim-metodo" onchange="calcSimulador()">
+              <option value="dentro">Por Dentro (embutido)</option>
+              <option value="fora">Por Fora (acrescido)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size:.8rem; font-weight:600; color:var(--muted); margin-bottom:8px; display:block">Alíquotas individuais (%)</label>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div class="form-group">
+              <label>ISS</label>
+              <div class="suffix-wrap"><span>%</span>
+                <input type="number" id="sim-iss" value="3" min="0" max="5" step="0.01" oninput="calcSimulador()" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>PIS</label>
+              <div class="suffix-wrap"><span>%</span>
+                <input type="number" id="sim-pis" value="0.65" min="0" step="0.01" oninput="calcSimulador()" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>COFINS</label>
+              <div class="suffix-wrap"><span>%</span>
+                <input type="number" id="sim-cofins" value="3" min="0" step="0.01" oninput="calcSimulador()" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>CSLL</label>
+              <div class="suffix-wrap"><span>%</span>
+                <input type="number" id="sim-csll" value="2.88" min="0" step="0.01" oninput="calcSimulador()" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>IRPJ</label>
+              <div class="suffix-wrap"><span>%</span>
+                <input type="number" id="sim-irpj" value="4.8" min="0" step="0.01" oninput="calcSimulador()" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Outras</label>
+              <div class="suffix-wrap"><span>%</span>
+                <input type="number" id="sim-outras" value="0" min="0" step="0.01" oninput="calcSimulador()" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="sep" />
+
+      <div class="summary-strip" style="grid-template-columns: repeat(4,1fr);">
+        <div class="summary-card">
+          <div class="label">Alíquota Total</div>
+          <div class="value val-orange" id="sim-res-aliq">0,00%</div>
+          <div class="sub">soma dos impostos</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">Valor Final</div>
+          <div class="value val-blue" id="sim-res-final">R$ 0,00</div>
+          <div class="sub">cobrado do cliente</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">Total em Impostos</div>
+          <div class="value val-red" id="sim-res-impostos">R$ 0,00</div>
+          <div class="sub">recolhimento total</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">Margem Líquida</div>
+          <div class="value val-green" id="sim-res-margem">0,00%</div>
+          <div class="sub">do valor final</div>
+        </div>
+      </div>
+
+      <table class="result-table" style="margin-top:16px;">
+        <thead>
+          <tr>
+            <th>Imposto</th>
+            <th class="text-right">Alíquota</th>
+            <th class="text-right">Valor Calculado</th>
+            <th class="text-right">% sobre Final</th>
+          </tr>
+        </thead>
+        <tbody id="sim-breakdown"></tbody>
+      </table>
+
+      <div class="actions-row">
+        <button class="btn btn-secondary" onclick="applyRegimePreset(); calcSimulador()">↺ Resetar Alíquotas</button>
+        <button class="btn btn-success" onclick="window.print()">🖨️ Imprimir</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ─── Utils ───────────────────────────────────────────────────────────────────
+const fmt = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const pct = v => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) + '%';
+
+function switchTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ─── Imposto Presets ──────────────────────────────────────────────────────────
+const IMPOSTOS_PRESET = [
+  { label: 'ISS',    default: 3 },
+  { label: 'PIS',    default: 0.65 },
+  { label: 'COFINS', default: 3 },
+  { label: 'CSLL',   default: 2.88 },
+  { label: 'IRPJ',   default: 4.8 },
+  { label: 'Outro',  default: 0 },
+];
+
+function addImpostoRow(prefix, label = '', valor = 0) {
+  const container = document.getElementById(prefix + '-impostos');
+  const idx = Date.now();
+  const opts = IMPOSTOS_PRESET.map(p => `<option value="${p.label}" ${p.label === label ? 'selected' : ''}>${p.label}</option>`).join('');
+
+  const row = document.createElement('div');
+  row.className = 'imposto-row';
+  row.id = `${prefix}-imp-${idx}`;
+  row.innerHTML = `
+    <select onchange="calc${prefix === 'pd' ? 'PorDentro' : 'PorFora'}()">${opts}</select>
+    <div class="suffix-wrap">
+      <span>%</span>
+      <input type="number" value="${valor}" min="0" max="100" step="0.01"
+             oninput="calc${prefix === 'pd' ? 'PorDentro' : 'PorFora'}()" />
+    </div>
+    <button class="btn-remove" onclick="removeRow('${prefix}-imp-${idx}', '${prefix}')">×</button>
+  `;
+  container.appendChild(row);
+  prefix === 'pd' ? calcPorDentro() : calcPorFora();
+}
+
+function removeRow(id, prefix) {
+  document.getElementById(id)?.remove();
+  prefix === 'pd' ? calcPorDentro() : calcPorFora();
+}
+
+function getImpostosRows(prefix) {
+  const rows = document.querySelectorAll(`#${prefix}-impostos .imposto-row`);
+  return Array.from(rows).map(r => ({
+    label: r.querySelector('select').value,
+    pct: parseFloat(r.querySelector('input').value) || 0,
+  }));
+}
+
+// ─── Por Dentro ───────────────────────────────────────────────────────────────
+function calcPorDentro() {
+  const base    = parseFloat(document.getElementById('pd-base').value) || 0;
+  const outras  = parseFloat(document.getElementById('pd-outras').value) || 0;
+  const impostos = getImpostosRows('pd');
+
+  const totalImpPct = impostos.reduce((s, i) => s + i.pct, 0);
+  const totalPct    = totalImpPct + outras;
+
+  document.getElementById('pd-warn').style.display = totalPct >= 100 ? 'block' : 'none';
+
+  if (totalPct >= 100) {
+    document.getElementById('pd-res-final').textContent = '—';
+    return;
+  }
+
+  const divisor  = 1 - totalPct / 100;
+  const final    = base / divisor;
+  const impTotal = impostos.reduce((s, i) => s + final * (i.pct / 100), 0);
+  const outrasVal= final * (outras / 100);
+  const liquido  = final - impTotal - outrasVal;
+
+  document.getElementById('pd-res-final').textContent   = fmt(final);
+  document.getElementById('pd-res-impostos').textContent = fmt(impTotal);
+  document.getElementById('pd-res-pct-imp').textContent  = pct(totalImpPct);
+  document.getElementById('pd-res-liquido').textContent  = fmt(liquido);
+
+  const pctStr = impostos.map(i => i.pct + '%').concat(outras ? [outras + '%'] : []).join(' + ');
+  document.getElementById('pd-formula').textContent =
+    `Valor Final = ${fmt(base)} / (1 − ${pct(totalPct)})  =  ${fmt(final)}`;
+
+  const tbody = document.getElementById('pd-breakdown');
+  tbody.innerHTML = '';
+  const addRow = (desc, p, v, cls = '') =>
+    tbody.insertAdjacentHTML('beforeend',
+      `<tr class="${cls}"><td>${desc}</td><td class="text-right">${p ? pct(p) : '—'}</td>
+       <td class="text-right ${cls ? '' : (v < 0 ? 'text-red' : '')}">${fmt(v)}</td></tr>`);
+
+  addRow('Valor Base do Serviço', null, base);
+  impostos.forEach(i => addRow(`${i.label} (por dentro)`, i.pct, -(final * i.pct / 100)));
+  if (outras) addRow('Outras Despesas (por dentro)', outras, -(final * outras / 100));
+  tbody.insertAdjacentHTML('beforeend',
+    `<tr class="row-total"><td>Valor Total Final</td><td class="text-right">—</td>
+     <td class="text-right">${fmt(final)}</td></tr>`);
+  tbody.insertAdjacentHTML('beforeend',
+    `<tr><td><em>Conferência: impostos + base</em></td><td></td>
+     <td class="text-right">${fmt(impTotal + outrasVal + liquido)}</td></tr>`);
+}
+
+// ─── Por Fora ────────────────────────────────────────────────────────────────
+function calcPorFora() {
+  const base    = parseFloat(document.getElementById('pf-base').value) || 0;
+  const outras  = parseFloat(document.getElementById('pf-outras').value) || 0;
+  const impostos = getImpostosRows('pf');
+
+  const totalImpPct = impostos.reduce((s, i) => s + i.pct, 0);
+  const totalPct    = totalImpPct + outras;
+
+  const impTotal = impostos.reduce((s, i) => s + base * (i.pct / 100), 0);
+  const outrasVal= base * (outras / 100);
+  const final    = base + impTotal + outrasVal;
+  const liquido  = base;
+
+  document.getElementById('pf-res-final').textContent   = fmt(final);
+  document.getElementById('pf-res-impostos').textContent = fmt(impTotal);
+  document.getElementById('pf-res-pct-imp').textContent  = pct(totalImpPct);
+  document.getElementById('pf-res-liquido').textContent  = fmt(liquido);
+
+  document.getElementById('pf-formula').textContent =
+    `Valor Final = ${fmt(base)} × (1 + ${pct(totalPct)})  =  ${fmt(final)}`;
+
+  const tbody = document.getElementById('pf-breakdown');
+  tbody.innerHTML = '';
+  tbody.insertAdjacentHTML('beforeend',
+    `<tr><td>Valor Base do Serviço</td><td class="text-right">—</td><td class="text-right">${fmt(base)}</td></tr>`);
+  impostos.forEach(i =>
+    tbody.insertAdjacentHTML('beforeend',
+      `<tr><td>${i.label} (por fora)</td><td class="text-right">${pct(i.pct)}</td>
+       <td class="text-right text-red">+${fmt(base * i.pct / 100)}</td></tr>`));
+  if (outras)
+    tbody.insertAdjacentHTML('beforeend',
+      `<tr><td>Outras Despesas (por fora)</td><td class="text-right">${pct(outras)}</td>
+       <td class="text-right text-red">+${fmt(outrasVal)}</td></tr>`);
+  tbody.insertAdjacentHTML('beforeend',
+    `<tr class="row-total"><td>Valor Total Final</td><td class="text-right">—</td>
+     <td class="text-right">${fmt(final)}</td></tr>`);
+}
+
+// ─── Comparativo ─────────────────────────────────────────────────────────────
+function calcComparativo() {
+  const base = parseFloat(document.getElementById('cmp-base').value) || 0;
+  const aliq = parseFloat(document.getElementById('cmp-aliq').value) || 0;
+
+  if (aliq >= 100) return;
+
+  const pdFinal = base / (1 - aliq / 100);
+  const pdImp   = pdFinal * (aliq / 100);
+
+  const pfFinal = base * (1 + aliq / 100);
+  const pfImp   = base * (aliq / 100);
+
+  document.getElementById('cmp-pd-final').textContent = fmt(pdFinal);
+  document.getElementById('cmp-pd-imp').textContent   = fmt(pdImp);
+  document.getElementById('cmp-pd-liq').textContent   = fmt(base);
+  document.getElementById('cmp-pd-form').textContent  = `${fmt(base)} ÷ (1−${aliq}%)`;
+
+  document.getElementById('cmp-pf-final').textContent = fmt(pfFinal);
+  document.getElementById('cmp-pf-imp').textContent   = fmt(pfImp);
+  document.getElementById('cmp-pf-liq').textContent   = fmt(base);
+  document.getElementById('cmp-pf-form').textContent  = `${fmt(base)} × (1+${aliq}%)`;
+
+  const diff = pdFinal - pfFinal;
+  document.getElementById('cmp-insight').innerHTML =
+    `<strong>Diferença entre métodos:</strong> o cálculo <em>por dentro</em> resulta em um valor final
+     <strong>${fmt(Math.abs(diff))}</strong> ${diff > 0 ? 'maior' : 'menor'} que o <em>por fora</em>.
+     Para o prestador de serviço, o líquido é sempre <strong>${fmt(base)}</strong> nos dois casos —
+     mas o cliente paga valores distintos. O método <em>por dentro</em> é mais comum em NFS-e e
+     representa a regra padrão do ISS.`;
+}
+
+// ─── Simulador ───────────────────────────────────────────────────────────────
+const REGIMES = {
+  lp:      { iss: 3, pis: 0.65, cofins: 3, csll: 2.88, irpj: 4.8, outras: 0 },
+  simples: { iss: 3, pis: 0, cofins: 0, csll: 0, irpj: 0, outras: 4.5 },
+  lr:      { iss: 3, pis: 1.65, cofins: 7.6, csll: 9, irpj: 15, outras: 0 },
+  custom:  null,
+};
+
+function applyRegimePreset() {
+  const regime = document.getElementById('sim-regime').value;
+  const p = REGIMES[regime];
+  if (!p) return;
+  document.getElementById('sim-iss').value    = p.iss;
+  document.getElementById('sim-pis').value    = p.pis;
+  document.getElementById('sim-cofins').value = p.cofins;
+  document.getElementById('sim-csll').value   = p.csll;
+  document.getElementById('sim-irpj').value   = p.irpj;
+  document.getElementById('sim-outras').value = p.outras;
+}
+
+function calcSimulador() {
+  const base   = parseFloat(document.getElementById('sim-base').value) || 0;
+  const metodo = document.getElementById('sim-metodo').value;
+  const itens  = [
+    { label: 'ISS',    id: 'sim-iss' },
+    { label: 'PIS',    id: 'sim-pis' },
+    { label: 'COFINS', id: 'sim-cofins' },
+    { label: 'CSLL',   id: 'sim-csll' },
+    { label: 'IRPJ',   id: 'sim-irpj' },
+    { label: 'Outras Despesas', id: 'sim-outras' },
+  ].map(i => ({ ...i, pct: parseFloat(document.getElementById(i.id).value) || 0 }));
+
+  const totalPct = itens.reduce((s, i) => s + i.pct, 0);
+
+  let final, calcVal;
+  if (metodo === 'dentro') {
+    if (totalPct >= 100) return;
+    final = base / (1 - totalPct / 100);
+    calcVal = pct => final * (pct / 100);
+  } else {
+    final = base * (1 + totalPct / 100);
+    calcVal = pct => base * (pct / 100);
+  }
+
+  const impTotal = itens.reduce((s, i) => s + calcVal(i.pct), 0);
+  const margem   = ((final - impTotal) / final) * 100;
+
+  document.getElementById('sim-res-aliq').textContent     = pct(totalPct);
+  document.getElementById('sim-res-final').textContent    = fmt(final);
+  document.getElementById('sim-res-impostos').textContent = fmt(impTotal);
+  document.getElementById('sim-res-margem').textContent   = pct(margem);
+
+  const tbody = document.getElementById('sim-breakdown');
+  tbody.innerHTML = '';
+  itens.forEach(i => {
+    if (i.pct === 0) return;
+    const val = calcVal(i.pct);
+    tbody.insertAdjacentHTML('beforeend',
+      `<tr>
+        <td>${i.label}</td>
+        <td class="text-right">${pct(i.pct)}</td>
+        <td class="text-right text-red">${fmt(val)}</td>
+        <td class="text-right">${pct((val / final) * 100)}</td>
+      </tr>`);
+  });
+  tbody.insertAdjacentHTML('beforeend',
+    `<tr class="row-total">
+      <td>Total</td>
+      <td class="text-right">${pct(totalPct)}</td>
+      <td class="text-right">${fmt(impTotal)}</td>
+      <td class="text-right">${pct((impTotal / final) * 100)}</td>
+    </tr>
+    <tr>
+      <td>Valor Base / Líquido</td><td></td>
+      <td class="text-right text-green">${fmt(final - impTotal)}</td>
+      <td class="text-right">${pct(margem)}</td>
+    </tr>`);
+}
+
+function resetTab(prefix) {
+  document.getElementById(prefix + '-impostos').innerHTML = '';
+  document.getElementById(prefix + '-base').value = 1000;
+  document.getElementById(prefix + '-outras').value = 0;
+  prefix === 'pd' ? calcPorDentro() : calcPorFora();
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  addImpostoRow('pd', 'ISS', 6);
+  addImpostoRow('pf', 'ISS', 6);
+  applyRegimePreset();
+  calcComparativo();
+  calcSimulador();
+});
+</script>
+</body>
+</html>
