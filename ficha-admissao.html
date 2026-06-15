@@ -272,7 +272,62 @@
     .modal h2 { color: #1a56a0; margin-bottom: 8px; }
     .modal p  { color: #555; font-size: 0.93rem; line-height: 1.5; }
 
-    .modal-actions { margin-top: 24px; display: flex; gap: 12px; justify-content: center; }
+    .modal-actions {
+      margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .modal-actions .row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-whatsapp {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 11px 20px;
+      border-radius: 7px;
+      border: none;
+      background: #25d366;
+      color: #fff;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s;
+      text-decoration: none;
+    }
+
+    .btn-whatsapp:hover { background: #1ebe5d; }
+
+    .btn-email {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 11px 20px;
+      border-radius: 7px;
+      border: none;
+      background: #ea4335;
+      color: #fff;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s;
+      text-decoration: none;
+    }
+
+    .btn-email:hover { background: #d33426; }
+
+    .modal-divider {
+      font-size: 0.78rem;
+      color: #aaa;
+      text-align: center;
+      margin: 2px 0;
+    }
 
     /* ── PRINT STYLES ── */
     @media print {
@@ -640,10 +695,36 @@
   <div class="modal">
     <div class="check-icon">✅</div>
     <h2>Ficha Salva com Sucesso!</h2>
-    <p>Os dados do funcionário foram registrados. Você pode imprimir a ficha para arquivar.</p>
+    <p>Escolha como deseja enviar ou arquivar a ficha do funcionário:</p>
+
     <div class="modal-actions">
-      <button class="btn-secondary" onclick="fecharModal()">Fechar</button>
-      <button class="btn-primary" onclick="window.print()">🖨️ Imprimir</button>
+      <!-- Imprimir / PDF -->
+      <div class="row">
+        <button class="btn-primary" style="flex:1" onclick="imprimirFicha()">
+          🖨️ Imprimir / Salvar PDF
+        </button>
+      </div>
+
+      <div class="modal-divider">── ou compartilhar diretamente ──</div>
+
+      <!-- WhatsApp -->
+      <div class="row">
+        <button class="btn-whatsapp" style="flex:1" onclick="enviarWhatsApp()">
+          <svg width="18" height="18" viewBox="0 0 32 32" fill="#fff"><path d="M16 0C7.163 0 0 7.163 0 16c0 2.824.737 5.469 2.027 7.766L0 32l8.469-2.004A15.94 15.94 0 0016 32c8.837 0 16-7.163 16-16S24.837 0 16 0zm0 29.333a13.28 13.28 0 01-6.771-1.853l-.485-.288-5.027 1.189 1.212-4.899-.317-.503A13.267 13.267 0 012.667 16C2.667 8.636 8.636 2.667 16 2.667S29.333 8.636 29.333 16 23.364 29.333 16 29.333zm7.307-9.907c-.4-.2-2.368-1.168-2.736-1.301-.368-.133-.636-.2-.904.2-.267.4-1.035 1.301-1.269 1.568-.233.267-.467.3-.867.1-.4-.2-1.688-.623-3.215-1.984-1.188-1.06-1.99-2.369-2.223-2.769-.233-.4-.025-.616.175-.815.18-.179.4-.467.6-.7.2-.233.267-.4.4-.667.133-.267.067-.5-.033-.7-.1-.2-.904-2.18-1.237-2.98-.326-.784-.657-.677-.904-.689l-.77-.013c-.267 0-.7.1-1.068.5-.367.4-1.4 1.368-1.4 3.336s1.433 3.869 1.633 4.136c.2.267 2.82 4.305 6.832 6.035.955.412 1.7.658 2.281.843.958.305 1.831.262 2.52.159.769-.114 2.368-.969 2.702-1.904.333-.935.333-1.737.233-1.904-.1-.167-.367-.267-.767-.467z"/></svg>
+          Enviar pelo WhatsApp
+        </button>
+      </div>
+
+      <!-- E-mail -->
+      <div class="row">
+        <button class="btn-email" style="flex:1" onclick="enviarEmail()">
+          ✉️ Enviar por E-mail
+        </button>
+      </div>
+
+      <div class="row" style="margin-top:4px">
+        <button class="btn-secondary" onclick="fecharModal()">Fechar</button>
+      </div>
     </div>
   </div>
 </div>
@@ -760,6 +841,86 @@
 
   function fecharModal() {
     document.getElementById('modalSucesso').classList.remove('open');
+  }
+
+  /* ── Imprimir (fecha modal antes para não aparecer na impressão) ── */
+  function imprimirFicha() {
+    fecharModal();
+    setTimeout(() => window.print(), 200);
+  }
+
+  /* ── Resumo dos dados para compartilhamento ── */
+  function gerarResumo() {
+    const v = (name) => {
+      const el = document.querySelector(`[name="${name}"]`);
+      return el ? el.value.trim() : '';
+    };
+    const linhas = [
+      '📋 *FICHA DE ADMISSÃO*',
+      '',
+      `👤 *Nome:* ${v('nome_completo')}`,
+      `📅 *Nascimento:* ${formatarData(v('data_nascimento'))}`,
+      `🪪 *CPF:* ${v('cpf')}`,
+      `🪪 *RG:* ${v('rg_numero')} ${v('rg_emissor') ? '– ' + v('rg_emissor') : ''}`,
+      `👩 *Mãe:* ${v('nome_mae')}`,
+      v('nome_pai') ? `👨 *Pai:* ${v('nome_pai')}` : '',
+      v('titulo_numero') ? `🗳️ *Título:* ${v('titulo_numero')} – Zona ${v('titulo_zona')} Seção ${v('titulo_secao')}` : '',
+      '',
+      `🏠 *Endereço:* ${v('logradouro')}, ${v('numero')}${v('complemento') ? ' ' + v('complemento') : ''} – ${v('bairro')}, ${v('cidade')}/${v('uf')} – CEP ${v('cep')}`,
+      `📱 *Telefone:* ${v('telefone')}`,
+      v('email') ? `✉️ *E-mail:* ${v('email')}` : '',
+      '',
+      `💼 *Cargo:* ${v('cargo')}`,
+      `📅 *Admissão:* ${formatarData(v('data_admissao'))}`,
+    ];
+
+    // CNH
+    const temCnh = document.querySelector('[name="tem_cnh"]:checked');
+    if (temCnh && temCnh.value === 'sim') {
+      linhas.push(`🚗 *CNH:* ${v('cnh_numero')} – Cat. ${v('cnh_categoria')} – Val. ${formatarData(v('cnh_validade'))}`);
+    }
+
+    // CTPS
+    const temCtps = document.querySelector('[name="tem_ctps"]:checked');
+    if (temCtps && temCtps.value === 'sim') {
+      linhas.push(`📒 *CTPS:* Nº ${v('ctps_numero')} Série ${v('ctps_serie')}/${v('ctps_uf')}`);
+    }
+
+    // Filhos
+    const cards = document.querySelectorAll('.filho-card');
+    if (cards.length) {
+      linhas.push('', `👶 *Filhos (${cards.length}):*`);
+      cards.forEach((card, i) => {
+        const n   = card.querySelector('input[name^="filho_nome"]')?.value || '';
+        const dt  = card.querySelector('input[name^="filho_nasc"]')?.value || '';
+        const cpf = card.querySelector('input[name^="filho_cpf"]')?.value  || '';
+        linhas.push(`  ${i+1}. ${n} – ${formatarData(dt)}${cpf ? ' – CPF: ' + cpf : ''}`);
+      });
+    }
+
+    return linhas.filter(l => l !== undefined).join('\n');
+  }
+
+  function formatarData(iso) {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+  }
+
+  /* ── WhatsApp ── */
+  function enviarWhatsApp() {
+    const texto = gerarResumo();
+    const url   = `https://wa.me/?text=${encodeURIComponent(texto)}`;
+    window.open(url, '_blank');
+  }
+
+  /* ── E-mail ── */
+  function enviarEmail() {
+    const nome    = document.querySelector('[name="nome_completo"]')?.value.trim() || 'Funcionário';
+    const texto   = gerarResumo().replace(/\*/g, '');   // remove negrito Markdown para e-mail
+    const assunto = encodeURIComponent(`Ficha de Admissão – ${nome}`);
+    const corpo   = encodeURIComponent(texto);
+    window.location.href = `mailto:?subject=${assunto}&body=${corpo}`;
   }
 
   function limparForm() {
