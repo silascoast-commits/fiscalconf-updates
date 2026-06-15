@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ficha de Admissão</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      color: #222;
+      min-height: 100vh;
+      padding: 24px 12px;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: #1a56a0;
+      color: #fff;
+      border-radius: 10px 10px 0 0;
+      padding: 28px 32px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    header .logo-circle {
+      width: 52px; height: 52px;
+      background: #fff;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      flex-shrink: 0;
+    }
+
+    header h1 { font-size: 1.5rem; font-weight: 700; }
+    header p  { font-size: 0.85rem; opacity: 0.85; margin-top: 3px; }
+
+    .form-body {
+      background: #fff;
+      border-radius: 0 0 10px 10px;
+      padding: 32px;
+      box-shadow: 0 4px 18px rgba(0,0,0,.10);
+    }
+
+    /* ── SEÇÕES ── */
+    .section {
+      margin-bottom: 36px;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1a56a0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #1a56a0;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title span.icon { font-size: 1.1rem; }
+
+    /* ── GRID ── */
+    .grid { display: grid; gap: 16px; }
+    .g-2 { grid-template-columns: 1fr 1fr; }
+    .g-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .g-1 { grid-template-columns: 1fr; }
+
+    @media (max-width: 600px) {
+      .g-2, .g-3 { grid-template-columns: 1fr; }
+      header { flex-direction: column; text-align: center; }
+    }
+
+    /* ── CAMPOS ── */
+    .field { display: flex; flex-direction: column; gap: 5px; }
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #444;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+
+    label .required { color: #c0392b; margin-left: 2px; }
+
+    input[type="text"],
+    input[type="date"],
+    input[type="email"],
+    input[type="tel"],
+    select,
+    textarea {
+      padding: 9px 12px;
+      border: 1.5px solid #d1d5db;
+      border-radius: 7px;
+      font-size: 0.93rem;
+      color: #222;
+      background: #fafafa;
+      transition: border-color .2s, box-shadow .2s;
+      width: 100%;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #1a56a0;
+      box-shadow: 0 0 0 3px rgba(26,86,160,.15);
+      background: #fff;
+    }
+
+    textarea { resize: vertical; min-height: 72px; }
+
+    /* ── RADIO / CHECKBOX ── */
+    .radio-group, .check-group {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+      padding: 8px 0;
+    }
+
+    .radio-group label, .check-group label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-transform: none;
+      font-weight: 500;
+      font-size: 0.9rem;
+      cursor: pointer;
+      color: #333;
+      letter-spacing: 0;
+    }
+
+    input[type="radio"], input[type="checkbox"] {
+      accent-color: #1a56a0;
+      width: 16px; height: 16px;
+      cursor: pointer;
+    }
+
+    /* ── BLOCO FILHO ── */
+    .filho-card {
+      background: #f7f9fc;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      padding: 18px 18px 14px;
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    .filho-card .filho-num {
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: #1a56a0;
+      margin-bottom: 12px;
+    }
+
+    .btn-remove {
+      position: absolute;
+      top: 12px; right: 14px;
+      background: none;
+      border: none;
+      color: #c0392b;
+      font-size: 1.2rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .btn-add {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #e8f0fb;
+      color: #1a56a0;
+      border: 1.5px dashed #1a56a0;
+      border-radius: 7px;
+      padding: 8px 18px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: background .2s;
+    }
+
+    .btn-add:hover { background: #d0e2f7; }
+
+    /* ── CONDICIONAL (CNH / CTPS / FILHOS) ── */
+    .conditional { display: none; }
+    .conditional.visible { display: block; }
+
+    /* ── BOTÕES FINAIS ── */
+    .actions {
+      display: flex;
+      gap: 14px;
+      justify-content: flex-end;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-secondary {
+      padding: 11px 28px;
+      border-radius: 7px;
+      border: 1.5px solid #aaa;
+      background: #fff;
+      color: #555;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s;
+    }
+
+    .btn-secondary:hover { background: #f0f0f0; }
+
+    .btn-primary {
+      padding: 11px 36px;
+      border-radius: 7px;
+      border: none;
+      background: #1a56a0;
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s;
+    }
+
+    .btn-primary:hover { background: #154389; }
+
+    /* ── PRINT ── */
+    .btn-print {
+      padding: 11px 22px;
+      border-radius: 7px;
+      border: 1.5px solid #1a56a0;
+      background: #fff;
+      color: #1a56a0;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s;
+    }
+
+    .btn-print:hover { background: #e8f0fb; }
+
+    /* ── MODAL SUCESSO ── */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: #fff;
+      border-radius: 12px;
+      padding: 40px 36px;
+      max-width: 420px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,.2);
+    }
+
+    .modal .check-icon { font-size: 3rem; margin-bottom: 12px; }
+    .modal h2 { color: #1a56a0; margin-bottom: 8px; }
+    .modal p  { color: #555; font-size: 0.93rem; line-height: 1.5; }
+
+    .modal-actions { margin-top: 24px; display: flex; gap: 12px; justify-content: center; }
+
+    /* ── PRINT STYLES ── */
+    @media print {
+      body { background: #fff; padding: 0; }
+      .actions, .btn-print, .modal-overlay { display: none !important; }
+      .form-body { box-shadow: none; padding: 0; }
+      header { border-radius: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="logo-circle">📋</div>
+    <div>
+      <h1>Ficha de Admissão de Funcionário</h1>
+      <p>Preencha todos os campos obrigatórios (*) com atenção. Os dados serão utilizados para registro em folha de pagamento.</p>
+    </div>
+  </header>
+
+  <form class="form-body" id="admissaoForm" novalidate>
+
+    <!-- ══════════════════════════════ 1. DADOS PESSOAIS ══════════════════════════════ -->
+    <div class="section">
+      <div class="section-title"><span class="icon">👤</span> 1. Dados Pessoais</div>
+
+      <div class="grid g-1" style="margin-bottom:16px">
+        <div class="field">
+          <label>Nome Completo <span class="required">*</span></label>
+          <input type="text" name="nome_completo" placeholder="Ex.: João da Silva Souza" required />
+        </div>
+      </div>
+
+      <div class="grid g-3">
+        <div class="field">
+          <label>Data de Nascimento <span class="required">*</span></label>
+          <input type="date" name="data_nascimento" required />
+        </div>
+        <div class="field">
+          <label>Sexo <span class="required">*</span></label>
+          <select name="sexo" required>
+            <option value="">Selecione…</option>
+            <option>Masculino</option>
+            <option>Feminino</option>
+            <option>Outro</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Estado Civil <span class="required">*</span></label>
+          <select name="estado_civil" required>
+            <option value="">Selecione…</option>
+            <option>Solteiro(a)</option>
+            <option>Casado(a)</option>
+            <option>Divorciado(a)</option>
+            <option>Viúvo(a)</option>
+            <option>União Estável</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid g-2" style="margin-top:16px">
+        <div class="field">
+          <label>Naturalidade (Cidade/UF) <span class="required">*</span></label>
+          <input type="text" name="naturalidade" placeholder="Ex.: São Paulo / SP" required />
+        </div>
+        <div class="field">
+          <label>Nacionalidade <span class="required">*</span></label>
+          <input type="text" name="nacionalidade" value="Brasileira" required />
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════ 2. DOCUMENTOS ══════════════════════════════ -->
+    <div class="section">
+      <div class="section-title"><span class="icon">🪪</span> 2. Documentos</div>
+
+      <div class="grid g-3">
+        <div class="field">
+          <label>CPF <span class="required">*</span></label>
+          <input type="text" name="cpf" placeholder="000.000.000-00" maxlength="14" required />
+        </div>
+        <div class="field">
+          <label>RG (Número) <span class="required">*</span></label>
+          <input type="text" name="rg_numero" placeholder="00.000.000-0" required />
+        </div>
+        <div class="field">
+          <label>RG – Órgão Emissor / UF <span class="required">*</span></label>
+          <input type="text" name="rg_emissor" placeholder="SSP/SP" required />
+        </div>
+      </div>
+
+      <div class="grid g-2" style="margin-top:16px">
+        <div class="field">
+          <label>Data de Emissão do RG</label>
+          <input type="date" name="rg_data_emissao" />
+        </div>
+        <div class="field">
+          <label>PIS / NIT / PASEP</label>
+          <input type="text" name="pis" placeholder="000.00000.00-0" maxlength="14" />
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════ 3. FILIAÇÃO ══════════════════════════════ -->
+    <div class="section">
+      <div class="section-title"><span class="icon">👨‍👩‍👦</span> 3. Filiação</div>
+
+      <div class="grid g-2">
+        <div class="field">
+          <label>Nome da Mãe <span class="required">*</span></label>
+          <input type="text" name="nome_mae" placeholder="Nome completo da mãe" required />
+        </div>
+        <div class="field">
+          <label>Nome do Pai</label>
+          <input type="text" name="nome_pai" placeholder="Nome completo do pai (ou 'Não declarado')" />
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════ 4. TÍTULO DE ELEITOR ══════════════════════════════ -->
+    <div class="section">
+      <div class="section-title"><span class="icon">🗳️</span> 4. Título de Eleitor</div>
+
+      <div class="grid g-3">
+        <div class="field">
+          <label>Número do Título</label>
+          <input type="text" name="titulo_numero" placeholder="0000 0000 0000" maxlength="15" />
+        </div>
+        <div class="field">
+          <label>Zona Eleitoral</label>
+          <input type="text" name="titulo_zona" placeholder="Ex.: 001" />
+        </div>
+        <div class="field">
+          <label>Seção</label>
+          <input type="text" name="titulo_secao" placeholder="Ex.: 0123" />
+        </div>
+      </div>
+
+      <div class="grid g-2" style="margin-top:16px">
+        <div class="field">
+          <label>Município / UF do Título</label>
+          <input type="text" name="titulo_municipio" placeholder="Ex.: Campinas / SP" />
+        </div>
+        <div class="field">
+          <label>Data de Emissão</label>
+          <input type="date" name="titulo_data_emissao" />
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════ 5. CNH ══════════════════════════════ -->
+    <div class="section">
+      <div class="section-title"><span class="icon">🚗</span> 5. Carteira Nacional de Habilitação (CNH)</div>
+
+      <div class="field" style="margin-bottom:14px">
+        <label>O funcionário é motorista / possui CNH? <span class="required">*</span></label>
+        <div class="radio-group">
+          <label><input type="radio" name="tem_cnh" value="sim" onchange="toggle('cnh-block','sim',this)" /> Sim</label>
+          <label><input type="radio" name="tem_cnh" value="nao" onchange="toggle('cnh-block','sim',this)" checked /> Não</label>
+        </div>
+      </div>
+
+      <div class="conditional" id="cnh-block">
+        <div class="grid g-3">
+          <div class="field">
+            <label>Número da CNH</label>
+            <input type="text" name="cnh_numero" placeholder="00000000000" maxlength="11" />
+          </div>
+          <div class="field">
+            <label>Categoria</label>
+            <select name="cnh_categoria">
+              <option value="">Selecione…</option>
+              <option>A</option><option>B</option><option>AB</option>
+              <option>C</option><option>D</option><option>E</option>
+              <option>AC</option><option>AD</option><option>AE</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>UF de Emissão</label>
+            <input type="text" name="cnh_uf" placeholder="Ex.: SP" maxlength="2" />
+          </div>
+        </div>
+        <div class="grid g-2" style="margin-top:16px">
+          <div class="field">
+            <label>Data de Emissão</label>
+            <input type="date" name="cnh_data_emissao" />
+          </div>
+          <div class="field">
+            <label>Data de Validade</label>
+            <input type="date" name="cnh_validade" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════ 6. CTPS ══════════════════════════════ -->
+    <div class="section">
+      <div class="section-title"><span class="icon">📒</span> 6. Carteira de Trabalho (CTPS)</div>
+
+      <div class="field" style="margin-bottom:14px">
+        <label>Possui CTPS física? <span class="required">*</span></label>
+        <div class="radio-group">
+          <label><input type="radio" name="tem_ctps" value="sim" onchange="toggle('ctps-block','sim',this)" /> Sim</label>
+          <label><input type="radio" name="tem_ctps" value="nao" onchange="toggle('ctps-block','sim',this)" checked /> Não (somente digital)</label>
+        </div>
+      </div>
+
+      <div class="conditional" id="ctps-block">
+        <div class="grid g-3">
+          <div class="field">
+            <label>Número da CTPS</label>
+            <input type="text" name="ctps_numero" placeholder="0000000" maxlength="8" />
+          </div>
+          <div class="field">
+            <label>Série</label>
+            <input type="text" name="ctps_serie" placeholder="00000" maxlength="5" />
+          </div>
+          <div class="field">
+            <label>UF de Emissão</label>
+            <input type="text" name="ctps_uf" placeholder="Ex.: SP" maxlength="2" />
+          </div>
+        </div>
+        <div class="grid g-2" style="margin-top:16px">
+          <div class="field">
+            <label>Data de Emissão da CTPS</label>
+            <input type="date" name="ctps_data_emissao" />
+          </div>
+          <div class="field"><!-- espaçador --></div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px" class="field">
+        <label>Número do CPF (para CTPS digital)</label>
+        <input type="text" name="ctps_cpf_digital" placeholder="Mesmo CPF informado acima" maxlength="14" />
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════ 7. ENDEREÇO ══════════════════════════════ -->
+    <div class="section">
+      <div class="section-title"><span class="icon">🏠</span> 7. Endereço Residencial</div>
+
+      <div class="grid g-2" style="margin-bottom:16px">
+        <div class="field">
+          <label>CEP <span class="required">*</span></label>
+          <input type="text" name="cep" placeholder="00000-000" maxlength="9" required />
+        </div>
+        <div class="field" style="align-self:flex-end">
+          <label>&nbsp;</label>
+          <button type="button" class="btn-secondary" onclick="buscarCep()" style="width:100%">🔍 Buscar CEP</button>
+        </div>
+      </div>
+
+      <div class="grid g-1" style="margin-bottom:16px">
+        <div class="field">
+          <label>Logradouro (Rua / Avenida…) <span class="required">*</span></label>
+          <input type="text" name="logradouro" placeholder="Ex.: Rua das Flores" required />
+        </div>
+      </div>
+
+      <div class="grid g-3" style="margin-bottom:16px">
+        <div class="field">
+          <label>Número <span class="required">*</span></label>
+          <input type="text" name="numero" placeholder="Ex.: 123" required />
+        </div>
+        <div class="field">
+          <label>Complemento</label>
+          <input type="text" name="complemento" placeholder="Apto, Bloco…" />
+        </div>
+        <div class="field">
+          <label>Bairro <span class="required">*</span></label>
+          <input type="text" name="bairro" placeholder="Ex.: Centro" required />
+        </div>
+      </div>
+
+      <div class="grid g-2">
+        <div class="field">
+          <label>Cidade <span class="required">*</span></label>
+          <input type="text" name="cidade" placeholder="Ex.: São Paulo" required />
+        </div>
+        <div class="field">
+          <label>UF <span class="required">*</span></label>
+          <select name="uf" required>
+            <option value="">UF…</option>
+            <option>AC</option><option>AL</option><option>AM</option><option>AP</option>
+            <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+            <option>GO</option><option>MA</option><option>MG</option><option>MS</option>
+            <option>MT</option><option>PA</option><option>PB</option><option>PE</option>
+            <option>PI</option><option>PR</option><option>RJ</option><option>RN</option>
+            <option>RO</option><option>RR</option><option>RS</option><option>SC</option>
+            <option>SE</option><option>SP</option><option>TO</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid g-2" style="margin-top:16px">
+        <div class="field">
+          <label>Telefone / WhatsApp <span class="required">*</span></label>
+          <input type="tel" name="telefone" placeholder="(00) 00000-0000" required />
+        </div>
+        <div class="field">
+          <label>E-mail</label>
+          <input type="email" name="email" placeholder="funcionario@email.com" />
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════ 8. FILHOS / DEPENDENTES ══════════════════════════════ -->
+    <div class="section">
+      <div class="section-title"><span class="icon">👶</span> 8. Filhos / Dependentes</div>
+
+      <div class="field" style="margin-bottom:14px">
+        <label>Possui filhos? <span class="required">*</span></label>
+        <div class="radio-group">
+          <label><input type="radio" name="tem_filhos" value="sim" onchange="toggle('filhos-block','sim',this)" /> Sim</label>
+          <label><input type="radio" name="tem_filhos" value="nao" onchange="toggle('filhos-block','sim',this)" checked /> Não</label>
+        </div>
+      </div>
+
+      <div class="conditional" id="filhos-block">
+        <div id="filhos-lista"></div>
+        <button type="button" class="btn-add" onclick="adicionarFilho()">＋ Adicionar filho</button>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════ 9. DADOS ADMISSIONAIS ══════════════════════════════ -->
+    <div class="section">
+      <div class="section-title"><span class="icon">💼</span> 9. Dados Admissionais</div>
+
+      <div class="grid g-2">
+        <div class="field">
+          <label>Cargo / Função <span class="required">*</span></label>
+          <input type="text" name="cargo" placeholder="Ex.: Auxiliar Administrativo" required />
+        </div>
+        <div class="field">
+          <label>Data de Admissão <span class="required">*</span></label>
+          <input type="date" name="data_admissao" required />
+        </div>
+      </div>
+
+      <div class="grid g-2" style="margin-top:16px">
+        <div class="field">
+          <label>Salário (R$)</label>
+          <input type="text" name="salario" placeholder="0.000,00" />
+        </div>
+        <div class="field">
+          <label>Departamento / Setor</label>
+          <input type="text" name="departamento" placeholder="Ex.: Financeiro" />
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════ AÇÕES ══════════════════════════════ -->
+    <div class="actions">
+      <button type="button" class="btn-print" onclick="window.print()">🖨️ Imprimir</button>
+      <button type="button" class="btn-secondary" onclick="limparForm()">Limpar</button>
+      <button type="submit" class="btn-primary">✔ Salvar Ficha</button>
+    </div>
+
+  </form>
+</div>
+
+<!-- MODAL SUCESSO -->
+<div class="modal-overlay" id="modalSucesso">
+  <div class="modal">
+    <div class="check-icon">✅</div>
+    <h2>Ficha Salva com Sucesso!</h2>
+    <p>Os dados do funcionário foram registrados. Você pode imprimir a ficha para arquivar.</p>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="fecharModal()">Fechar</button>
+      <button class="btn-primary" onclick="window.print()">🖨️ Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ── Mostrar / ocultar blocos condicionais ── */
+  function toggle(blockId, showValue, radio) {
+    const block = document.getElementById(blockId);
+    if (radio.value === showValue) {
+      block.classList.add('visible');
+    } else {
+      block.classList.remove('visible');
+    }
+  }
+
+  /* ── Filhos ── */
+  let filhoCount = 0;
+
+  function adicionarFilho() {
+    filhoCount++;
+    const lista = document.getElementById('filhos-lista');
+    const div = document.createElement('div');
+    div.className = 'filho-card';
+    div.id = `filho-${filhoCount}`;
+    div.innerHTML = `
+      <div class="filho-num">Filho ${filhoCount}</div>
+      <button type="button" class="btn-remove" title="Remover" onclick="removerFilho(${filhoCount})">✕</button>
+      <div class="grid g-1" style="margin-bottom:12px">
+        <div class="field">
+          <label>Nome Completo do Filho <span class="required">*</span></label>
+          <input type="text" name="filho_nome_${filhoCount}" placeholder="Nome completo" />
+        </div>
+      </div>
+      <div class="grid g-2">
+        <div class="field">
+          <label>Data de Nascimento <span class="required">*</span></label>
+          <input type="date" name="filho_nasc_${filhoCount}" />
+        </div>
+        <div class="field">
+          <label>CPF do Filho</label>
+          <input type="text" name="filho_cpf_${filhoCount}" placeholder="000.000.000-00" maxlength="14" />
+        </div>
+      </div>
+    `;
+    lista.appendChild(div);
+    renumerar();
+  }
+
+  function removerFilho(id) {
+    const el = document.getElementById(`filho-${id}`);
+    if (el) el.remove();
+    renumerar();
+  }
+
+  function renumerar() {
+    document.querySelectorAll('.filho-card .filho-num').forEach((el, i) => {
+      el.textContent = `Filho ${i + 1}`;
+    });
+  }
+
+  /* ── Busca de CEP (ViaCEP) ── */
+  async function buscarCep() {
+    const cep = document.querySelector('[name="cep"]').value.replace(/\D/g, '');
+    if (cep.length !== 8) { alert('Digite um CEP válido com 8 dígitos.'); return; }
+    try {
+      const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const d = await r.json();
+      if (d.erro) { alert('CEP não encontrado.'); return; }
+      document.querySelector('[name="logradouro"]').value = d.logradouro || '';
+      document.querySelector('[name="bairro"]').value     = d.bairro     || '';
+      document.querySelector('[name="cidade"]').value     = d.localidade  || '';
+      document.querySelector('[name="uf"]').value         = d.uf          || '';
+      document.querySelector('[name="numero"]').focus();
+    } catch {
+      alert('Erro ao buscar CEP. Verifique sua conexão.');
+    }
+  }
+
+  /* ── Máscaras simples ── */
+  function mascara(el, pattern) {
+    el.addEventListener('input', () => {
+      let v = el.value.replace(/\D/g, ''), i = 0;
+      el.value = pattern.replace(/#/g, () => v[i++] ?? '').trimEnd().replace(/[^0-9]$/, '');
+    });
+  }
+
+  mascara(document.querySelector('[name="cpf"]'),     '###.###.###-##');
+  mascara(document.querySelector('[name="pis"]'),     '###.#####.##-#');
+  mascara(document.querySelector('[name="cep"]'),     '#####-###');
+  mascara(document.querySelector('[name="telefone"]'),'(##) #####-####');
+  mascara(document.querySelector('[name="titulo_numero"]'), '#### #### ####');
+
+  /* ── Atualizar máscara em filhos dinamicamente ── */
+  document.getElementById('filhos-lista').addEventListener('input', e => {
+    if (e.target.name && e.target.name.startsWith('filho_cpf_')) {
+      let v = e.target.value.replace(/\D/g, ''), i = 0;
+      const p = '###.###.###-##';
+      e.target.value = p.replace(/#/g, () => v[i++] ?? '').trimEnd().replace(/[^0-9]$/, '');
+    }
+  });
+
+  /* ── Envio ── */
+  document.getElementById('admissaoForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const required = e.target.querySelectorAll('[required]');
+    let ok = true;
+    required.forEach(f => {
+      f.style.borderColor = '';
+      if (!f.value.trim()) { f.style.borderColor = '#c0392b'; ok = false; }
+    });
+    if (!ok) { alert('Por favor, preencha todos os campos obrigatórios (marcados com *).'); return; }
+    document.getElementById('modalSucesso').classList.add('open');
+  });
+
+  function fecharModal() {
+    document.getElementById('modalSucesso').classList.remove('open');
+  }
+
+  function limparForm() {
+    if (!confirm('Deseja realmente limpar todos os campos?')) return;
+    document.getElementById('admissaoForm').reset();
+    document.getElementById('filhos-lista').innerHTML = '';
+    filhoCount = 0;
+    document.querySelectorAll('.conditional').forEach(b => b.classList.remove('visible'));
+  }
+</script>
+
+</body>
+</html>
