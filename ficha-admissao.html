@@ -329,6 +329,23 @@
       margin: 2px 0;
     }
 
+    .btn-json {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 11px 20px;
+      border-radius: 7px;
+      border: 2px solid #6d28d9;
+      background: #f5f3ff;
+      color: #6d28d9;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s;
+    }
+
+    .btn-json:hover { background: #ede9fe; }
+
     /* ── PRINT STYLES ── */
     @media print {
       body { background: #fff; padding: 0; }
@@ -705,6 +722,13 @@
         </button>
       </div>
 
+      <!-- Exportar JSON eSocial -->
+      <div class="row">
+        <button class="btn-json" style="flex:1" onclick="exportarJsonESocial()">
+          📄 Exportar JSON eSocial
+        </button>
+      </div>
+
       <div class="modal-divider">── ou compartilhar diretamente ──</div>
 
       <!-- WhatsApp -->
@@ -841,6 +865,182 @@
 
   function fecharModal() {
     document.getElementById('modalSucesso').classList.remove('open');
+  }
+
+  /* ── Exportar JSON no padrão eSocial evtAdmissao ── */
+  function exportarJsonESocial() {
+    const v  = (name) => { const el = document.querySelector(`[name="${name}"]`); return el ? el.value.trim() : ''; };
+    const vr = (name) => { const el = document.querySelector(`[name="${name}"]:checked`); return el ? el.value : ''; };
+
+    /* helpers */
+    const isoData = (iso) => iso || null;
+    const soNum   = (s)   => s.replace(/\D/g, '');
+    const now     = new Date();
+    const ts      = now.toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
+    const nrInsc  = '00000000';   // CNPJ raiz do empregador — ajuste no seu sistema
+
+    /* estado civil eSocial: 1=Solteiro 2=Casado 3=Divorciado 4=Separado 5=Viúvo 6=UE 9=Outros */
+    const estCivMap = { 'Solteiro(a)':'1','Casado(a)':'2','Divorciado(a)':'3','Viúvo(a)':'5','União Estável':'6' };
+    const sexoMap   = { 'Masculino':'M','Feminino':'F' };
+
+    /* salário: retira formatação BR → número */
+    const salBr = v('salario').replace(/\./g,'').replace(',','.');
+    const salFx = parseFloat(salBr) || 0;
+
+    /* filhos */
+    const dependentes = [];
+    document.querySelectorAll('.filho-card').forEach((card, i) => {
+      const nome = card.querySelector(`[name^="filho_nome"]`)?.value.trim() || '';
+      const nasc = card.querySelector(`[name^="filho_nasc"]`)?.value || '';
+      const cpf  = soNum(card.querySelector(`[name^="filho_cpf"]`)?.value || '');
+      if (nome) dependentes.push({
+        tpDep: '11',                    // 11 = filho/enteado até 21 anos
+        nmDep: nome,
+        dtNascto: isoData(nasc),
+        cpfDep: cpf || null,
+        indDedIRRF: 'S'
+      });
+    });
+
+    const json = {
+      eSocial: {
+        _xmlns: 'http://www.esocial.gov.br/schema/evt/evtAdmissao/v02_05_00',
+        evtAdmissao: {
+          Id: `ID${nrInsc}${ts}00001`,
+          ideEvento: {
+            indRetif: '1',
+            tpAmb: '1',
+            procEmi: '1',
+            verProc: 'FichaAdmissao/v1.0'
+          },
+          ideEmpregador: {
+            tpInsc: '1',
+            nrInsc: nrInsc
+          },
+          trabalhador: {
+            cpfTrab:   soNum(v('cpf')),
+            nmTrab:    v('nome_completo'),
+            sexo:      sexoMap[v('sexo')] || 'M',
+            racaCor:   '1',
+            estCiv:    estCivMap[v('estado_civil')] || '1',
+            grauInstr: '07',
+            indPriEmpr: 'N',
+            nascimento: {
+              dtNascto:  isoData(v('data_nascimento')),
+              codMunic:  null,
+              uf:        v('naturalidade').split('/').pop().trim() || null,
+              paisNascto: '105',
+              paisNac:    '105',
+              nmMae: v('nome_mae') || null,
+              nmPai: v('nome_pai') || null
+            },
+            documentos: {
+              ...(v('rg_numero') ? {
+                RG: {
+                  nrRg: soNum(v('rg_numero')),
+                  orgaoEmissor: v('rg_emissor') || null,
+                  dtExped: isoData(v('rg_data_emissao')) || null
+                }
+              } : {}),
+              ...(vr('tem_ctps') === 'sim' ? {
+                CTPS: {
+                  nrCtps:   soNum(v('ctps_numero')),
+                  serieCtps: v('ctps_serie'),
+                  ufCtps:   v('ctps_uf')
+                }
+              } : {}),
+              ...(vr('tem_cnh') === 'sim' ? {
+                CNH: {
+                  nrRegCnh:    soNum(v('cnh_numero')),
+                  dtExped:     isoData(v('cnh_data_emissao')) || null,
+                  ufCnh:       v('cnh_uf'),
+                  dtValid:     isoData(v('cnh_validade')) || null,
+                  categoriaCnh: v('cnh_categoria')
+                }
+              } : {}),
+              ...(v('titulo_numero') ? {
+                tituloEleitor: {
+                  nrTit:   soNum(v('titulo_numero')),
+                  zona:    v('titulo_zona') || null,
+                  secao:   v('titulo_secao') || null,
+                  ufTit:   v('uf') || null
+                }
+              } : {}),
+              ...(v('pis') ? {
+                PIS_PASEP: { nrPisPasep: soNum(v('pis')) }
+              } : {})
+            },
+            endereco: {
+              brasil: {
+                tpLograd: 'R',
+                dscLograd: v('logradouro'),
+                nrLograd:  v('numero'),
+                complemento: v('complemento') || null,
+                bairro:  v('bairro'),
+                cep:     soNum(v('cep')),
+                codMunic: null,
+                uf:      v('uf')
+              }
+            },
+            infoDeficiencia: {
+              defFisica: 'N', defVisual: 'N', defAuditiva: 'N',
+              defMental: 'N', defIntelectual: 'N',
+              reabReadap: 'N', infoCota: 'N'
+            },
+            contato: {
+              fonePrinc:  soNum(v('telefone')) || null,
+              emailPrinc: v('email') || null
+            },
+            ...(dependentes.length ? { dependente: dependentes } : {})
+          },
+          vinculo: {
+            matricula: null,
+            tpRegTrab: '1',
+            tpRegPrev: '1',
+            infoRegimeTrab: {
+              infoCeletista: {
+                dtAdm:        isoData(v('data_admissao')),
+                tpAdmissao:   '1',
+                indAdmissao:  '1',
+                tpRegJor:     '1',
+                natAtividade: '1',
+                FGTS: {
+                  opcFGTS:    '1',
+                  dtOpcFGTS:  isoData(v('data_admissao'))
+                }
+              }
+            },
+            infoContrato: {
+              nmCargo:  v('cargo') || null,
+              codCateg: '101',
+              remuneracao: {
+                vrSalFx:   salFx,
+                undSalFixo: '5'
+              },
+              duracao: { tpContr: '1' },
+              localTrabalho: {
+                localTrabGeral: {
+                  tpInsc: '1',
+                  nrInsc: null
+                }
+              }
+            }
+          }
+        }
+      }
+    };
+
+    const nome    = v('nome_completo').replace(/\s+/g,'_') || 'funcionario';
+    const dtAdm   = soNum(v('data_admissao')) || ts.slice(0,8);
+    const nomeArq = `eSocial_evtAdmissao_${nome}_${dtAdm}.json`;
+
+    const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = nomeArq;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   /* ── Imprimir (fecha modal antes para não aparecer na impressão) ── */
