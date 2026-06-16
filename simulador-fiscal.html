@@ -226,23 +226,17 @@
     <div class="card">
       <h2>📋 Resultado PJ</h2>
       <div class="result-section">
-        <div class="divider-label">Empresa</div>
+        <div class="divider-label">Receita</div>
         <div class="result-row"><span class="lbl">Faturamento Mensal</span><span class="v neu" id="r-pj-fat">—</span></div>
         <div class="result-row"><span class="lbl">(-) Simples Nacional <span id="r-pj-aliq" class="abadge r"></span></span><span class="v neg" id="r-pj-simples">—</span></div>
-        <div class="result-row"><span class="lbl">(-) Pró-labore bruto</span><span class="v neg" id="r-pj-pl-out">—</span></div>
-        <div class="result-row"><span class="lbl">= Lucro distribuível (dividendos) <span style="font-size:.68rem;color:var(--pj)">Isento IR*</span></span><span class="v pos" id="r-pj-lucro">—</span></div>
-        <div class="divider-label">Sócio – Pró-labore</div>
-        <div class="result-row"><span class="lbl">Pró-labore Bruto</span><span class="v neu" id="r-pj-pl-bruto">—</span></div>
+        <div class="divider-label">Encargos sobre Pró-labore</div>
+        <div class="result-row"><span class="lbl">Pró-labore (base de cálculo)</span><span class="v neu" id="r-pj-pl-bruto">—</span></div>
         <div class="result-row"><span class="lbl">(-) INSS Pró-labore (11%)</span><span class="v neg" id="r-pj-inss">—</span></div>
-        <div class="result-row"><span class="lbl">= Base IRRF (prolabore − INSS)</span><span class="v neu" id="r-pj-base">—</span></div>
+        <div class="result-row"><span class="lbl">Base IRRF (pró-labore − INSS)</span><span class="v neu" id="r-pj-base">—</span></div>
         <div class="result-row"><span class="lbl">(-) IRRF Pró-labore <span id="r-pj-irrf-pct" class="abadge r"></span></span><span class="v neg" id="r-pj-irrf">—</span></div>
-        <div class="result-row"><span class="lbl">= Pró-labore Líquido</span><span class="v pos" id="r-pj-pl-liq">—</span></div>
       </div>
-      <div class="result-total"><span class="tl">💰 Total recebido (dividendos + pró-labore líq.)</span><span id="r-pj-total" style="color:var(--pj)">—</span></div>
+      <div class="result-total"><span class="tl">💰 Líquido mensal (faturamento − Simples − INSS − IRRF)</span><span id="r-pj-total" style="color:var(--pj)">—</span></div>
       <div class="result-total" style="margin-top:8px"><span class="tl">📉 Carga tributária (% sobre faturamento)</span><span id="r-pj-carga" style="color:var(--warn)">—</span></div>
-      <div style="margin-top:10px;font-size:.7rem;color:var(--muted)">
-        * Dividendos Simples Nacional atualmente isentos. Reforma Tributária em andamento pode alterar — verifique legislação vigente.
-      </div>
     </div>
   </div>
 </div>
@@ -569,9 +563,8 @@ function calcPJ(){
     irrfPL = calcIRRF(basePL);
   }
 
-  const plLiq  = pl - inssPL - irrfPL.valor;
-  const lucro  = Math.max(0, fat - simples.valor - pl);
-  const total  = lucro + plLiq;
+  // total = faturamento - simples - INSS pró-labore - IRRF pró-labore
+  const total  = fat - simples.valor - inssPL - irrfPL.valor;
   const carga  = fat>0 ? (simples.valor+inssPL+irrfPL.valor)/fat*100 : 0;
 
   const aliqBadge = document.getElementById('r-pj-aliq');
@@ -580,18 +573,15 @@ function calcPJ(){
 
   sv('r-pj-fat',     fmt(fat),              'neu');
   sv('r-pj-simples', '- '+fmt(simples.valor),'neg');
-  sv('r-pj-pl-out',  '- '+fmt(pl),           'neg');
-  sv('r-pj-lucro',   fmt(lucro),             'pos');
   sv('r-pj-pl-bruto',fmt(pl),               'neu');
   sv('r-pj-inss',    '- '+fmt(inssPL),       'neg');
   sv('r-pj-base',    fmt(basePL),            'neu');
   document.getElementById('r-pj-irrf-pct').textContent = pct(irrfPL.aliq);
   sv('r-pj-irrf',    irrfPL.valor>0 ? '- '+fmt(irrfPL.valor) : (T.isentoAte5k&&pl<=5000?'Isento (≤ R$ 5.000)':'Isento'), irrfPL.valor>0?'neg':'pos');
-  sv('r-pj-pl-liq',  fmt(plLiq),            'pos');
   document.getElementById('r-pj-total').textContent = fmt(total);
   document.getElementById('r-pj-carga').textContent  = pct(carga)+' sobre faturamento';
 
-  lastPJ = {fat, simples:simples.valor, inssPL, irrfPL:irrfPL.valor, plLiq, lucro, total, carga};
+  lastPJ = {fat, simples:simples.valor, inssPL, irrfPL:irrfPL.valor, total, carga};
 }
 
 // ─── COMPARATIVO ────────────────────────────────────────────────────────────
