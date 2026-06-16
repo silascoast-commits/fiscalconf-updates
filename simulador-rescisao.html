@@ -360,8 +360,12 @@
           <span id="r-decimo" class="valor-pos"></span>
         </div>
         <div class="linha">
-          <span>Férias proporcionais + 1/3</span>
+          <span>Férias proporcionais</span>
           <span id="r-ferias" class="valor-pos"></span>
+        </div>
+        <div class="linha">
+          <span>1/3 constitucional sobre férias</span>
+          <span id="r-ferias-terco" class="valor-pos"></span>
         </div>
         <div class="linha" id="linha-fgts">
           <span>FGTS acumulado <span class="badge">8%/mês</span></span>
@@ -577,7 +581,9 @@
     let ultimoAniversario = new Date(dem.getFullYear(), adm.getMonth(), adm.getDate());
     if (ultimoAniversario > dem) ultimoAniversario.setFullYear(dem.getFullYear() - 1);
     const avosFerias = calcularAvos(ultimoAniversario, dem);
-    const feriasTotal = (salario / 12) * avosFerias * (4 / 3);
+    const feriasProp = (salario / 12) * avosFerias;
+    const feriasTerco = feriasProp / 3;
+    const feriasTotal = feriasProp + feriasTerco;
 
     const fgtsAcum = pagarFgts ? salario * 0.08 * meses : 0;
     const multaVal = (pagarFgts && pagarMulta) ? fgtsAcum * 0.40 : 0;
@@ -606,7 +612,8 @@
     document.getElementById('r-saldo').textContent = fmt(saldo);
     document.getElementById('r-aviso').textContent = fmt(aviso_final);
     document.getElementById('r-decimo').textContent = fmt(decimoProp);
-    document.getElementById('r-ferias').textContent = fmt(feriasTotal);
+    document.getElementById('r-ferias').textContent = fmt(feriasProp);
+    document.getElementById('r-ferias-terco').textContent = fmt(feriasTerco);
     document.getElementById('r-fgts').textContent = fmt(fgtsAcum);
     document.getElementById('r-multa').textContent = fmt(multa_final);
     document.getElementById('r-bruto').textContent = fmt(bruto);
