@@ -343,6 +343,7 @@
         <div class="empresa-nome" id="r-empresa"></div>
         <div class="func-nome" id="r-funcionario"></div>
         <div class="periodo" id="r-periodo"></div>
+        <div class="periodo" id="r-salario-base" style="margin-top:3px"></div>
       </div>
       <div class="resultado-body">
         <h2>Verbas Rescisórias</h2>
@@ -566,6 +567,7 @@
     const mResto = meses % 12;
     document.getElementById('r-periodo').textContent =
       `${fmtData(adm)} → ${fmtData(dem)}  •  ${anosTxt}${mResto} mês(es)  •  ${meses} meses no total`;
+    document.getElementById('r-salario-base').textContent = `Salário base: ${fmt(salario)}`;
 
     document.getElementById('r-saldo').textContent = fmt(saldo);
     document.getElementById('r-aviso').textContent = fmt(aviso_final);
