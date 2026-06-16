@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador de Rescisão</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 30px 16px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.1);
+      padding: 32px;
+      width: 100%;
+      max-width: 560px;
+      height: fit-content;
+    }
+    h1 {
+      font-size: 1.4rem;
+      color: #1e293b;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-bottom: 28px;
+    }
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 5px;
+    }
+    input[type="number"], select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      color: #1e293b;
+      background: #f9fafb;
+      transition: border-color 0.2s;
+      margin-bottom: 18px;
+    }
+    input[type="number"]:focus, select:focus {
+      outline: none;
+      border-color: #3b82f6;
+      background: #fff;
+    }
+    .row { display: flex; gap: 16px; }
+    .row > div { flex: 1; }
+
+    .toggle-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+    .toggle-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    .toggle-item span {
+      font-size: 0.88rem;
+      color: #374151;
+      font-weight: 500;
+    }
+    .toggle {
+      position: relative;
+      width: 44px;
+      height: 24px;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      inset: 0;
+      background: #d1d5db;
+      border-radius: 24px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .slider::before {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      background: #fff;
+      border-radius: 50%;
+      top: 3px; left: 3px;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle input:checked + .slider { background: #3b82f6; }
+    .toggle input:checked + .slider::before { transform: translateX(20px); }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #2563eb; }
+
+    .resultado {
+      margin-top: 28px;
+      display: none;
+    }
+    .resultado h2 {
+      font-size: 1rem;
+      color: #1e293b;
+      margin-bottom: 14px;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 8px;
+    }
+    .linha {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+      color: #4b5563;
+      padding: 7px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .linha.destaque {
+      font-weight: 700;
+      color: #1e293b;
+      font-size: 0.95rem;
+      border-bottom: none;
+      margin-top: 6px;
+    }
+    .linha.inativo { color: #94a3b8; text-decoration: line-through; }
+    .valor-pos { color: #16a34a; }
+    .badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      background: #fef3c7;
+      color: #92400e;
+      border-radius: 4px;
+      padding: 1px 6px;
+      margin-left: 6px;
+      font-weight: 600;
+    }
+    .aviso-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.8rem;
+      color: #1d4ed8;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>Simulador de Rescisão</h1>
+  <p class="subtitle">Sem desconto de INSS &nbsp;•&nbsp; Trabalhador informal / CLT sem registro</p>
+
+  <div class="row">
+    <div>
+      <label>Salário Mensal (R$)</label>
+      <input type="number" id="salario" placeholder="0,00" min="0" step="0.01" />
+    </div>
+    <div>
+      <label>Meses Trabalhados</label>
+      <input type="number" id="meses" placeholder="0" min="1" max="600" />
+    </div>
+  </div>
+
+  <label>Tipo de Rescisão</label>
+  <select id="tipo">
+    <option value="sem_justa">Sem justa causa (demissão pela empresa)</option>
+    <option value="pedido">Pedido de demissão (funcionário pediu)</option>
+    <option value="acordo">Acordo entre as partes</option>
+  </select>
+
+  <div class="toggle-group">
+    <div class="toggle-item">
+      <span>Pagar FGTS (8% ao mês)</span>
+      <label class="toggle">
+        <input type="checkbox" id="fgts" />
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="toggle-item" id="wrap-multa">
+      <span>Pagar Multa do FGTS (40%)</span>
+      <label class="toggle">
+        <input type="checkbox" id="multa" />
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="toggle-item" id="wrap-aviso">
+      <span>Aviso Prévio Indenizado</span>
+      <label class="toggle">
+        <input type="checkbox" id="aviso_ind" checked />
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <button onclick="calcular()">Calcular Rescisão</button>
+
+  <div class="resultado" id="resultado">
+    <h2>Resumo da Rescisão</h2>
+
+    <div class="linha">
+      <span>Saldo de salário (dias restantes)</span>
+      <span id="r-saldo" class="valor-pos">R$ 0,00</span>
+    </div>
+    <div class="linha" id="linha-aviso">
+      <span>Aviso prévio indenizado</span>
+      <span id="r-aviso" class="valor-pos">R$ 0,00</span>
+    </div>
+    <div class="linha">
+      <span>13º salário proporcional</span>
+      <span id="r-decimo" class="valor-pos">R$ 0,00</span>
+    </div>
+    <div class="linha">
+      <span>Férias proporcionais + 1/3</span>
+      <span id="r-ferias" class="valor-pos">R$ 0,00</span>
+    </div>
+    <div class="linha" id="linha-fgts">
+      <span>FGTS acumulado <span class="badge">8%/mês</span></span>
+      <span id="r-fgts" class="valor-pos">R$ 0,00</span>
+    </div>
+    <div class="linha" id="linha-multa">
+      <span>Multa do FGTS <span class="badge">40%</span></span>
+      <span id="r-multa" class="valor-pos">R$ 0,00</span>
+    </div>
+
+    <div class="linha destaque">
+      <span>TOTAL A PAGAR</span>
+      <span id="r-total" class="valor-pos">R$ 0,00</span>
+    </div>
+
+    <div class="aviso-box" id="aviso-box"></div>
+  </div>
+</div>
+
+<script>
+  const fmt = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  document.getElementById('tipo').addEventListener('change', () => {
+    const tipo = document.getElementById('tipo').value;
+    const wrapAviso = document.getElementById('wrap-aviso');
+    const avisoCb = document.getElementById('aviso_ind');
+    if (tipo === 'pedido') {
+      avisoCb.checked = false;
+      wrapAviso.style.opacity = '0.4';
+      wrapAviso.style.pointerEvents = 'none';
+    } else {
+      wrapAviso.style.opacity = '1';
+      wrapAviso.style.pointerEvents = 'auto';
+      avisoCb.checked = true;
+    }
+  });
+
+  document.getElementById('fgts').addEventListener('change', () => {
+    const fgts = document.getElementById('fgts').checked;
+    const wrapMulta = document.getElementById('wrap-multa');
+    if (!fgts) {
+      document.getElementById('multa').checked = false;
+      wrapMulta.style.opacity = '0.4';
+      wrapMulta.style.pointerEvents = 'none';
+    } else {
+      wrapMulta.style.opacity = '1';
+      wrapMulta.style.pointerEvents = 'auto';
+    }
+  });
+
+  function calcular() {
+    const salario = parseFloat(document.getElementById('salario').value) || 0;
+    const meses = parseInt(document.getElementById('meses').value) || 0;
+    const tipo = document.getElementById('tipo').value;
+    const pagarFgts = document.getElementById('fgts').checked;
+    const pagarMulta = document.getElementById('multa').checked;
+    const avisoPago = document.getElementById('aviso_ind').checked;
+
+    if (salario <= 0 || meses <= 0) {
+      alert('Preencha o salário e os meses trabalhados.');
+      return;
+    }
+
+    const hoje = new Date();
+    const diaAtual = hoje.getDate();
+    const diasMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
+
+    // Saldo de salário
+    const saldo = (salario / diasMes) * diaAtual;
+
+    // Aviso prévio (30 dias base + 3 por ano, máx 90)
+    const anos = Math.floor(meses / 12);
+    const diasAviso = Math.min(30 + (anos * 3), 90);
+    const aviso = avisoPago ? (salario / 30) * diasAviso : 0;
+
+    // 13º proporcional — meses do ano corrente
+    const mesesAno = ((meses - 1) % 12) + 1;
+    const decimoProp = (salario / 12) * mesesAno;
+
+    // Férias proporcionais + 1/3
+    const feriasProp = (salario / 12) * mesesAno;
+    const feriasTotal = feriasProp * (4 / 3);
+
+    // FGTS acumulado
+    const fgtsAcum = pagarFgts ? salario * 0.08 * meses : 0;
+
+    // Multa 40% sobre FGTS
+    const multaVal = (pagarFgts && pagarMulta) ? fgtsAcum * 0.40 : 0;
+
+    // Ajuste acordo: 50% do aviso e da multa
+    let aviso_final = aviso;
+    let multa_final = multaVal;
+    if (tipo === 'acordo') {
+      aviso_final = aviso * 0.5;
+      multa_final = multaVal * 0.5;
+    }
+
+    const total = saldo + aviso_final + decimoProp + feriasTotal + fgtsAcum + multa_final;
+
+    // Renderizar
+    document.getElementById('r-saldo').textContent = fmt(saldo);
+    document.getElementById('r-decimo').textContent = fmt(decimoProp);
+    document.getElementById('r-ferias').textContent = fmt(feriasTotal);
+    document.getElementById('r-aviso').textContent = fmt(aviso_final);
+    document.getElementById('r-fgts').textContent = fmt(fgtsAcum);
+    document.getElementById('r-multa').textContent = fmt(multa_final);
+    document.getElementById('r-total').textContent = fmt(total);
+
+    const linhaAviso = document.getElementById('linha-aviso');
+    linhaAviso.className = 'linha' + (aviso_final === 0 ? ' inativo' : '');
+
+    const linhaFgts = document.getElementById('linha-fgts');
+    linhaFgts.className = 'linha' + (!pagarFgts ? ' inativo' : '');
+
+    const linhaMulta = document.getElementById('linha-multa');
+    linhaMulta.className = 'linha' + (multa_final === 0 ? ' inativo' : '');
+
+    // Aviso informativo
+    const avisoBox = document.getElementById('aviso-box');
+    const msgs = [];
+    if (tipo === 'acordo') msgs.push('Rescisão por acordo: aviso prévio e multa do FGTS reduzidos em 50%.');
+    if (tipo === 'pedido') msgs.push('Pedido de demissão: sem aviso indenizado e sem multa do FGTS.');
+    if (!pagarFgts) msgs.push('FGTS não incluído no cálculo.');
+    msgs.push(`Aviso prévio calculado em ${diasAviso} dias (${anos} ano(s) completo(s)).`);
+    avisoBox.textContent = msgs.join(' ');
+
+    document.getElementById('resultado').style.display = 'block';
+    document.getElementById('resultado').scrollIntoView({ behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
