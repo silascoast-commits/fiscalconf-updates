@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador Fiscal CLT × PJ Simples Nacional</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3450;
+    --accent-clt: #3b82f6;
+    --accent-pj: #10b981;
+    --accent-warn: #f59e0b;
+    --accent-red: #ef4444;
+    --text: #e2e8f0;
+    --text-muted: #8892aa;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    background: linear-gradient(90deg, var(--accent-clt), var(--accent-pj));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: .82rem;
+    color: var(--text-muted);
+    margin-bottom: 28px;
+  }
+  .badge-tabela {
+    display: inline-block;
+    background: #1e3a2e;
+    color: var(--accent-pj);
+    font-size: .7rem;
+    border: 1px solid var(--accent-pj);
+    border-radius: 20px;
+    padding: 2px 10px;
+    margin-bottom: 24px;
+  }
+  .tabs {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 28px;
+  }
+  .tab-btn {
+    padding: 10px 28px;
+    border-radius: 8px;
+    border: 2px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: .95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .tab-btn.active-clt {
+    border-color: var(--accent-clt);
+    color: var(--accent-clt);
+    background: #1a2540;
+  }
+  .tab-btn.active-pj {
+    border-color: var(--accent-pj);
+    color: var(--accent-pj);
+    background: #0f2b1e;
+  }
+  .tab-btn.active-comp {
+    border-color: var(--accent-warn);
+    color: var(--accent-warn);
+    background: #2b1f0a;
+  }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 960px; margin: 0 auto; }
+  @media(max-width:700px){ .grid2 { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 20px;
+  }
+  .card h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dot-clt { width:10px;height:10px;border-radius:50%;background:var(--accent-clt);display:inline-block; }
+  .dot-pj  { width:10px;height:10px;border-radius:50%;background:var(--accent-pj);display:inline-block; }
+
+  label {
+    display: block;
+    font-size: .78rem;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+    margin-top: 14px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  label:first-of-type { margin-top: 0; }
+  input, select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--text);
+    font-size: .95rem;
+    padding: 9px 12px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  input:focus, select:focus { border-color: var(--accent-pj); }
+  select option { background: var(--surface2); }
+
+  .info-box {
+    background: var(--surface2);
+    border-left: 3px solid var(--accent-warn);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: .8rem;
+    color: var(--text-muted);
+    margin-top: 14px;
+    line-height: 1.5;
+  }
+  .info-box strong { color: var(--accent-warn); }
+
+  /* Result rows */
+  .result-section { margin-top: 8px; }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: 1px solid #1e2338;
+    font-size: .88rem;
+  }
+  .result-row:last-child { border-bottom: none; }
+  .result-row .label { color: var(--text-muted); }
+  .result-row .value { font-weight: 600; }
+  .value.neg { color: var(--accent-red); }
+  .value.pos { color: var(--accent-pj); }
+  .value.neu { color: var(--text); }
+  .value.warn { color: var(--accent-warn); }
+
+  .result-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    background: var(--surface2);
+    border-radius: 8px;
+    margin-top: 12px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    border: 1px solid var(--border);
+  }
+  .result-total .total-label { color: var(--text-muted); font-size: .85rem; }
+
+  .aliq-badge {
+    display: inline-block;
+    font-size: .72rem;
+    border-radius: 20px;
+    padding: 2px 8px;
+    margin-left: 8px;
+    font-weight: 700;
+  }
+  .aliq-badge.red { background:#2d1515; color:var(--accent-red); border:1px solid var(--accent-red); }
+  .aliq-badge.green { background:#0f2b1e; color:var(--accent-pj); border:1px solid var(--accent-pj); }
+  .aliq-badge.blue { background:#1a2540; color:var(--accent-clt); border:1px solid var(--accent-clt); }
+
+  .fator-r-bar {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--border);
+    margin: 8px 0 4px;
+    overflow: hidden;
+  }
+  .fator-r-fill { height: 100%; border-radius: 4px; transition: width .4s; }
+
+  .anexo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: .82rem;
+    font-weight: 700;
+    margin-top: 10px;
+  }
+  .anexo-iii { background:#0f2b1e; color:var(--accent-pj); border:1px solid var(--accent-pj); }
+  .anexo-v   { background:#2d1515; color:var(--accent-red); border:1px solid var(--accent-red); }
+
+  /* Comparison */
+  .comp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 960px; margin: 0 auto 20px; }
+  @media(max-width:600px){ .comp-grid { grid-template-columns: 1fr; } }
+  .comp-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+  }
+  .comp-card.winner { border-color: var(--accent-pj); }
+  .comp-regime { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 6px; }
+  .comp-value { font-size: 1.8rem; font-weight: 800; }
+  .comp-value.clt { color: var(--accent-clt); }
+  .comp-value.pj  { color: var(--accent-pj); }
+  .comp-diff-card {
+    max-width: 960px; margin: 0 auto 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    text-align: center;
+  }
+  .comp-diff-card p { font-size: .85rem; color: var(--text-muted); margin-bottom: 4px; }
+  .comp-diff-card .diff-value { font-size: 1.4rem; font-weight: 800; }
+
+  .divider-label {
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--text-muted);
+    margin: 18px 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .divider-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  /* Tables */
+  .table-toggle {
+    background:none; border:none; color:var(--accent-clt); font-size:.78rem; cursor:pointer;
+    text-decoration:underline; margin-top: 10px; display:block;
+  }
+  .ref-table { display:none; margin-top:10px; width:100%; border-collapse:collapse; font-size:.75rem; }
+  .ref-table th { background:var(--surface2); color:var(--text-muted); padding:6px 8px; text-align:left; }
+  .ref-table td { padding:5px 8px; border-bottom:1px solid var(--border); }
+  .ref-table tr:last-child td { border-bottom:none; }
+  .ref-table.show { display:table; }
+
+  .section-max { max-width: 960px; margin: 0 auto; }
+</style>
+</head>
+<body>
+
+<h1>⚖️ Simulador Fiscal 2025/2026</h1>
+<p class="subtitle">CLT × PJ Simples Nacional · Tabelas vigentes atualizadas</p>
+<div style="text-align:center">
+  <span class="badge-tabela">📅 Tabelas: INSS/IRRF 2025 · Simples Nacional Vigente</span>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active-clt" onclick="showTab('clt',this,'active-clt')">👔 CLT</button>
+  <button class="tab-btn" onclick="showTab('pj',this,'active-pj')">🏢 PJ Simples</button>
+  <button class="tab-btn" onclick="showTab('comp',this,'active-comp')">📊 Comparativo</button>
+</div>
+
+<!-- ═══════════════════ CLT PANEL ═══════════════════ -->
+<div id="tab-clt" class="panel active">
+  <div class="grid2">
+    <div class="card">
+      <h2><span class="dot-clt"></span> Dados CLT</h2>
+
+      <label>Salário Bruto (R$)</label>
+      <input type="number" id="clt-salario" value="5000" min="0" step="100" oninput="calcCLT()">
+
+      <label>Número de Dependentes</label>
+      <input type="number" id="clt-dep" value="0" min="0" max="20" oninput="calcCLT()">
+
+      <label>Outras Deduções IRRF (R$)</label>
+      <input type="number" id="clt-deduc" value="0" min="0" step="50" oninput="calcCLT()">
+
+      <div class="info-box">
+        <strong>ℹ️ Dedução por dependente:</strong> R$ 189,59/mês (2025)<br>
+        <strong>INSS:</strong> Tabela progressiva (até teto R$ 8.157,41)<br>
+        <strong>IRRF:</strong> Alíquota sobre base após INSS e deduções
+      </div>
+
+      <button class="table-toggle" onclick="toggleTable('tabela-inss')">▼ Ver tabela INSS 2025</button>
+      <table class="ref-table" id="tabela-inss">
+        <tr><th>Faixa Salarial</th><th>Alíquota</th></tr>
+        <tr><td>Até R$ 1.518,00</td><td>7,5%</td></tr>
+        <tr><td>R$ 1.518,01 – R$ 2.793,88</td><td>9,0%</td></tr>
+        <tr><td>R$ 2.793,89 – R$ 4.190,83</td><td>12,0%</td></tr>
+        <tr><td>R$ 4.190,84 – R$ 8.157,41</td><td>14,0%</td></tr>
+      </table>
+
+      <button class="table-toggle" onclick="toggleTable('tabela-irrf')">▼ Ver tabela IRRF 2025</button>
+      <table class="ref-table" id="tabela-irrf">
+        <tr><th>Base de Cálculo</th><th>Alíq.</th><th>Dedução</th></tr>
+        <tr><td>Até R$ 2.259,20</td><td>Isento</td><td>—</td></tr>
+        <tr><td>R$ 2.259,21 – R$ 2.826,65</td><td>7,5%</td><td>R$ 169,44</td></tr>
+        <tr><td>R$ 2.826,66 – R$ 3.751,05</td><td>15%</td><td>R$ 381,44</td></tr>
+        <tr><td>R$ 3.751,06 – R$ 4.664,68</td><td>22,5%</td><td>R$ 662,77</td></tr>
+        <tr><td>Acima de R$ 4.664,68</td><td>27,5%</td><td>R$ 896,00</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>📋 Resultado CLT</h2>
+      <div class="result-section">
+        <div class="divider-label">Descontos</div>
+        <div class="result-row">
+          <span class="label">Salário Bruto</span>
+          <span class="value neu" id="r-clt-bruto">—</span>
+        </div>
+        <div class="result-row">
+          <span class="label">(-) INSS <span id="r-clt-inss-pct" class="aliq-badge red"></span></span>
+          <span class="value neg" id="r-clt-inss">—</span>
+        </div>
+        <div class="result-row">
+          <span class="label">(-) Deduções (dependentes + outras)</span>
+          <span class="value neg" id="r-clt-deducoes">—</span>
+        </div>
+        <div class="result-row">
+          <span class="label">= Base de Cálculo IRRF</span>
+          <span class="value neu" id="r-clt-base-irrf">—</span>
+        </div>
+        <div class="result-row">
+          <span class="label">(-) IRRF <span id="r-clt-irrf-pct" class="aliq-badge red"></span></span>
+          <span class="value neg" id="r-clt-irrf">—</span>
+        </div>
+
+        <div class="divider-label">Encargos Patronais (custo empresa)</div>
+        <div class="result-row">
+          <span class="label">INSS Patronal (20%)</span>
+          <span class="value warn" id="r-clt-patronal">—</span>
+        </div>
+        <div class="result-row">
+          <span class="label">FGTS (8%)</span>
+          <span class="value warn" id="r-clt-fgts">—</span>
+        </div>
+        <div class="result-row">
+          <span class="label">Custo Total Empresa (estimado)</span>
+          <span class="value warn" id="r-clt-custo">—</span>
+        </div>
+      </div>
+
+      <div class="result-total">
+        <span class="total-label">🏠 Salário Líquido (você recebe)</span>
+        <span id="r-clt-liquido" style="color:var(--accent-clt);font-size:1.1rem">—</span>
+      </div>
+      <div class="result-total" style="margin-top:8px">
+        <span class="total-label">💼 Carga tributária total (CLT)</span>
+        <span id="r-clt-carga" style="color:var(--accent-warn)">—</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ PJ PANEL ═══════════════════ -->
+<div id="tab-pj" class="panel">
+  <div class="grid2">
+    <div class="card">
+      <h2><span class="dot-pj"></span> Dados PJ – Simples Nacional</h2>
+
+      <label>Faturamento Mensal (R$)</label>
+      <input type="number" id="pj-fat-mensal" value="10000" min="0" step="500" oninput="calcPJ()">
+
+      <label>Faturamento Acumulado últimos 12 meses (RBT12) (R$)</label>
+      <input type="number" id="pj-rbt12" value="120000" min="0" step="1000" oninput="calcPJ()">
+
+      <label>Pró-labore Mensal (R$) <span style="color:var(--accent-warn);font-size:.75rem">→ base INSS 11%</span></label>
+      <input type="number" id="pj-prolabore" value="1518" min="0" step="100" oninput="calcPJ()">
+
+      <label>Folha de Salários últimos 12 meses (R$) <span style="color:var(--text-muted);font-size:.75rem">para cálculo Fator R</span></label>
+      <input type="number" id="pj-folha12" value="18216" min="0" step="500" oninput="calcPJ()">
+
+      <label>Anexo Simples Nacional</label>
+      <select id="pj-anexo" onchange="calcPJ()">
+        <option value="auto">🤖 Automático pelo Fator R</option>
+        <option value="3">Anexo III (serviços – Fator R ≥ 28%)</option>
+        <option value="5">Anexo V (serviços – Fator R &lt; 28%)</option>
+      </select>
+
+      <div id="fator-r-display" style="margin-top:14px">
+        <div style="display:flex;justify-content:space-between;font-size:.8rem">
+          <span style="color:var(--text-muted)">Fator R (folha/faturamento 12m)</span>
+          <span id="fator-r-pct" style="font-weight:700">—</span>
+        </div>
+        <div class="fator-r-bar">
+          <div class="fator-r-fill" id="fator-r-fill" style="width:0%;background:var(--accent-red)"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--text-muted)">
+          <span>0%</span><span style="color:var(--accent-warn);font-weight:600">28% (limiar)</span><span>100%</span>
+        </div>
+        <div id="fator-r-resultado" class="anexo-badge" style="margin-top:8px"></div>
+      </div>
+
+      <div class="info-box" style="margin-top:14px">
+        <strong>Fator R</strong> = Folha 12m ÷ Faturamento 12m<br>
+        ≥ 28% → <strong>Anexo III</strong> (alíquotas menores 🟢)<br>
+        &lt; 28% → <strong>Anexo V</strong> (alíquotas maiores 🔴)<br>
+        <strong>INSS Prolabore:</strong> 11% (mínimo R$ 1.518,00)
+      </div>
+
+      <button class="table-toggle" onclick="toggleTable('tabela-anexo3')">▼ Ver Anexo III</button>
+      <table class="ref-table" id="tabela-anexo3">
+        <tr><th>RBT12</th><th>Alíq.</th><th>Dedução (PD)</th></tr>
+        <tr><td>Até R$ 180.000</td><td>6,00%</td><td>—</td></tr>
+        <tr><td>até R$ 360.000</td><td>11,20%</td><td>R$ 9.360,00</td></tr>
+        <tr><td>até R$ 720.000</td><td>13,50%</td><td>R$ 17.640,00</td></tr>
+        <tr><td>até R$ 1.800.000</td><td>16,00%</td><td>R$ 35.640,00</td></tr>
+        <tr><td>até R$ 3.600.000</td><td>21,00%</td><td>R$ 125.640,00</td></tr>
+        <tr><td>até R$ 4.800.000</td><td>33,00%</td><td>R$ 557.640,00</td></tr>
+      </table>
+
+      <button class="table-toggle" onclick="toggleTable('tabela-anexo5')">▼ Ver Anexo V</button>
+      <table class="ref-table" id="tabela-anexo5">
+        <tr><th>RBT12</th><th>Alíq.</th><th>Dedução (PD)</th></tr>
+        <tr><td>Até R$ 180.000</td><td>15,50%</td><td>—</td></tr>
+        <tr><td>até R$ 360.000</td><td>18,00%</td><td>R$ 4.500,00</td></tr>
+        <tr><td>até R$ 720.000</td><td>19,50%</td><td>R$ 9.900,00</td></tr>
+        <tr><td>até R$ 1.800.000</td><td>20,50%</td><td>R$ 17.100,00</td></tr>
+        <tr><td>até R$ 3.600.000</td><td>23,00%</td><td>R$ 62.100,00</td></tr>
+        <tr><td>até R$ 4.800.000</td><td>30,50%</td><td>R$ 332.100,00</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>📋 Resultado PJ</h2>
+
+      <div class="result-section">
+        <div class="divider-label">Empresa</div>
+        <div class="result-row">
+          <span class="label">Faturamento Mensal</span>
+          <span class="value neu" id="r-pj-fat">—</span>
+        </div>
+        <div class="result-row">
+          <span class="label">(-) Simples Nacional <span id="r-pj-aliq-badge" class="aliq-badge red"></span></span>
+          <span class="value neg" id="r-pj-simples">—</span>
+        </div>
+        <div class="result-row">
+          <span class="label">(-) Pró-labore bruto</span>
+          <span class="value neg" id="r-pj-prolabore-out">—</span>
+        </div>
+        <div class="result-row">
+          <span class="label">= Lucro distribuível (dividendos) <span style="font-size:.7rem;color:var(--accent-pj)">Isento IR*</span></span>
+          <span class="value pos" id="r-pj-lucro">—</span>
+        </div>
+
+        <div class="divider-label">Sócio – Pró-labore</div>
+        <div class="result-row">
+          <span class="label">Pró-labore Bruto</span>
+          <span class="value neu" id="r-pj-pl-bruto">—</span>
+        </div>
+        <div class="result-row">
+          <span class="label">(-) INSS Pró-labore (11%)</span>
+          <span class="value neg" id="r-pj-inss">—</span>
+        </div>
+        <div class="result-row">
+          <span class="label">Base IRRF (pró-labore - INSS)</span>
+          <span class="value neu" id="r-pj-base-irrf">—</span>
+        </div>
+        <div class="result-row">
+          <span class="label">(-) IRRF Pró-labore <span id="r-pj-irrf-badge" class="aliq-badge red"></span></span>
+          <span class="value neg" id="r-pj-irrf">—</span>
+        </div>
+        <div class="result-row">
+          <span class="label">= Pró-labore Líquido</span>
+          <span class="value pos" id="r-pj-pl-liq">—</span>
+        </div>
+      </div>
+
+      <div class="result-total">
+        <span class="total-label">💰 Recebimento Total (dividendos + pró-labore líq.)</span>
+        <span id="r-pj-total" style="color:var(--accent-pj);font-size:1.1rem">—</span>
+      </div>
+      <div class="result-total" style="margin-top:8px">
+        <span class="total-label">📉 Carga tributária sobre faturamento</span>
+        <span id="r-pj-carga" style="color:var(--accent-warn)">—</span>
+      </div>
+      <div style="margin-top:10px;font-size:.72rem;color:var(--text-muted)">
+        * Dividendos distribuídos pelo Simples Nacional atualmente isentos de IR (Reforma Tributária pode alterar — verifique legislação vigente).
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ COMPARATIVO PANEL ═══════════════════ -->
+<div id="tab-comp" class="panel">
+  <div class="section-max">
+    <div class="comp-diff-card">
+      <p>ℹ️ Preencha os dados nas abas <strong>CLT</strong> e <strong>PJ Simples</strong> para ver a comparação</p>
+      <div id="comp-winner-msg" style="margin-top:8px;font-size:.9rem;color:var(--text-muted)">Aguardando dados...</div>
+    </div>
+
+    <div class="comp-grid">
+      <div class="comp-card" id="comp-card-clt">
+        <div class="comp-regime">👔 CLT</div>
+        <div class="comp-value clt" id="comp-clt-val">—</div>
+        <div style="font-size:.75rem;color:var(--text-muted);margin-top:4px">Salário líquido mensal</div>
+        <div style="margin-top:10px;font-size:.8rem">
+          <div class="result-row"><span class="label">Carga tributária</span><span class="value" id="comp-clt-carga" style="color:var(--accent-warn)">—</span></div>
+          <div class="result-row"><span class="label">INSS</span><span class="value neg" id="comp-clt-inss">—</span></div>
+          <div class="result-row"><span class="label">IRRF</span><span class="value neg" id="comp-clt-irrf">—</span></div>
+          <div class="result-row"><span class="label">Custo empresa</span><span class="value warn" id="comp-clt-custo">—</span></div>
+        </div>
+      </div>
+
+      <div class="comp-card" id="comp-card-pj">
+        <div class="comp-regime">🏢 PJ SIMPLES</div>
+        <div class="comp-value pj" id="comp-pj-val">—</div>
+        <div style="font-size:.75rem;color:var(--text-muted);margin-top:4px">Recebimento total mensal</div>
+        <div style="margin-top:10px;font-size:.8rem">
+          <div class="result-row"><span class="label">Carga tributária</span><span class="value" id="comp-pj-carga" style="color:var(--accent-warn)">—</span></div>
+          <div class="result-row"><span class="label">Simples Nacional</span><span class="value neg" id="comp-pj-simples">—</span></div>
+          <div class="result-row"><span class="label">INSS Pró-labore</span><span class="value neg" id="comp-pj-inss">—</span></div>
+          <div class="result-row"><span class="label">IRRF Pró-labore</span><span class="value neg" id="comp-pj-irrf">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="comp-diff-card">
+      <p>Diferença mensal (PJ – CLT)</p>
+      <div class="diff-value" id="comp-diff">—</div>
+      <div style="font-size:.75rem;color:var(--text-muted);margin-top:6px" id="comp-diff-anual"></div>
+    </div>
+
+    <div class="card" style="margin-top:0">
+      <h2 style="margin-bottom:14px">📌 Pontos de atenção</h2>
+      <div style="font-size:.82rem;line-height:1.8;color:var(--text-muted)">
+        <p>• <strong style="color:var(--text)">CLT:</strong> 13º salário, férias + 1/3, FGTS 8%, seguro-desemprego, estabilidade</p>
+        <p>• <strong style="color:var(--text)">PJ:</strong> Sem benefícios trabalhistas — reserve ~25% para provisões (férias, 13º, emergências)</p>
+        <p>• <strong style="color:var(--text)">Fator R:</strong> Manter pro-labore ≥ 28% do faturamento anual = Anexo III (menor imposto)</p>
+        <p>• <strong style="color:var(--text)">Previdência:</strong> No PJ o INSS sobre pró-labore garante benefícios, mas apenas sobre o valor declarado</p>
+        <p>• <strong style="color:var(--text)">Reforma Tributária:</strong> Possível tributação de dividendos — acompanhe a legislação</p>
+        <p>• Este simulador tem caráter educativo. Consulte um contador para decisões definitivas.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── UTILIDADES ──────────────────────────────────────────────────────────────
+
+function fmt(v) {
+  return 'R$ ' + Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function pct(v) {
+  return v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+}
+function setVal(id, v, cls) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = v;
+  if (cls) { el.className = 'value ' + cls; }
+}
+
+function toggleTable(id) {
+  const t = document.getElementById(id);
+  t.classList.toggle('show');
+}
+
+function showTab(name, btn, activeCls) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.className = 'tab-btn');
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.className = 'tab-btn ' + activeCls;
+  if (name === 'comp') updateComp();
+}
+
+// ── INSS CLT (tabela progressiva 2025) ──────────────────────────────────────
+function calcINSSCLT(salario) {
+  const faixas = [
+    { limite: 1518.00,   aliq: 0.075 },
+    { limite: 2793.88,   aliq: 0.09  },
+    { limite: 4190.83,   aliq: 0.12  },
+    { limite: 8157.41,   aliq: 0.14  },
+  ];
+  let inss = 0, prev = 0;
+  for (const f of faixas) {
+    if (salario <= prev) break;
+    const base = Math.min(salario, f.limite) - prev;
+    inss += base * f.aliq;
+    prev = f.limite;
+    if (salario <= f.limite) break;
+  }
+  return inss;
+}
+
+// ── IRRF (tabela progressiva 2025) ──────────────────────────────────────────
+function calcIRRF(base) {
+  if (base <= 2259.20) return { valor: 0, aliq: 0 };
+  const faixas = [
+    { limite: 2259.20, aliq: 0,     ded: 0      },
+    { limite: 2826.65, aliq: 0.075, ded: 169.44 },
+    { limite: 3751.05, aliq: 0.15,  ded: 381.44 },
+    { limite: 4664.68, aliq: 0.225, ded: 662.77 },
+    { limite: Infinity, aliq: 0.275, ded: 896.00 },
+  ];
+  for (const f of faixas) {
+    if (base <= f.limite) {
+      return { valor: Math.max(0, base * f.aliq - f.ded), aliq: f.aliq * 100 };
+    }
+  }
+  return { valor: 0, aliq: 0 };
+}
+
+// ── SIMPLES NACIONAL (Alíquota efetiva) ─────────────────────────────────────
+const ANEXO3 = [
+  { limite: 180000,    aliq: 0.060, pd: 0        },
+  { limite: 360000,    aliq: 0.112, pd: 9360     },
+  { limite: 720000,    aliq: 0.135, pd: 17640    },
+  { limite: 1800000,   aliq: 0.160, pd: 35640    },
+  { limite: 3600000,   aliq: 0.210, pd: 125640   },
+  { limite: 4800000,   aliq: 0.330, pd: 557640   },
+];
+const ANEXO5 = [
+  { limite: 180000,    aliq: 0.155, pd: 0        },
+  { limite: 360000,    aliq: 0.180, pd: 4500     },
+  { limite: 720000,    aliq: 0.195, pd: 9900     },
+  { limite: 1800000,   aliq: 0.205, pd: 17100    },
+  { limite: 3600000,   aliq: 0.230, pd: 62100    },
+  { limite: 4800000,   aliq: 0.305, pd: 332100   },
+];
+
+function calcSimples(rbt12, fatMensal, anexo) {
+  if (rbt12 <= 0) return { valor: 0, aliqEfetiva: 0 };
+  const tabela = anexo === 3 ? ANEXO3 : ANEXO5;
+  let faixa = tabela[tabela.length - 1];
+  for (const f of tabela) {
+    if (rbt12 <= f.limite) { faixa = f; break; }
+  }
+  const aliqEfetiva = (rbt12 * faixa.aliq - faixa.pd) / rbt12;
+  return { valor: fatMensal * aliqEfetiva, aliqEfetiva: aliqEfetiva * 100 };
+}
+
+// ── INSS PRÓ-LABORE (11%) ───────────────────────────────────────────────────
+const TETO_INSS = 8157.41;
+function calcINSSProLabore(pl) {
+  return Math.min(pl, TETO_INSS) * 0.11;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CALC CLT
+// ─────────────────────────────────────────────────────────────────────────────
+let lastCLT = {};
+
+function calcCLT() {
+  const salario = parseFloat(document.getElementById('clt-salario').value) || 0;
+  const ndep    = parseInt(document.getElementById('clt-dep').value) || 0;
+  const outrasDeduc = parseFloat(document.getElementById('clt-deduc').value) || 0;
+
+  const inss        = calcINSSCLT(salario);
+  const dedDep      = ndep * 189.59;
+  const totalDeduc  = dedDep + outrasDeduc;
+  const baseIRRF    = Math.max(0, salario - inss - totalDeduc);
+  const irrf        = calcIRRF(baseIRRF);
+
+  const liquido     = salario - inss - irrf.valor;
+  const patronal    = salario * 0.20;
+  const fgts        = salario * 0.08;
+  const custoEmp    = salario + patronal + fgts;
+
+  const cargaTot    = inss + irrf.valor;
+  const cargaPct    = salario > 0 ? (cargaTot / salario * 100) : 0;
+
+  const inssAliq    = salario > 0 ? (inss / salario * 100) : 0;
+
+  setVal('r-clt-bruto', fmt(salario), 'neu');
+  document.getElementById('r-clt-inss-pct').textContent = pct(inssAliq);
+  setVal('r-clt-inss', '- ' + fmt(inss), 'neg');
+  setVal('r-clt-deducoes', '- ' + fmt(totalDeduc), 'neg');
+  setVal('r-clt-base-irrf', fmt(baseIRRF), 'neu');
+  document.getElementById('r-clt-irrf-pct').textContent = pct(irrf.aliq);
+  setVal('r-clt-irrf', irrf.valor > 0 ? '- ' + fmt(irrf.valor) : 'Isento', irrf.valor > 0 ? 'neg' : 'pos');
+  setVal('r-clt-patronal', fmt(patronal), 'warn');
+  setVal('r-clt-fgts', fmt(fgts), 'warn');
+  setVal('r-clt-custo', fmt(custoEmp), 'warn');
+  setVal('r-clt-liquido', fmt(liquido));
+  document.getElementById('r-clt-liquido').style.color = 'var(--accent-clt)';
+  setVal('r-clt-carga', pct(cargaPct) + ' (sobre bruto)');
+
+  lastCLT = { salario, inss, irrf: irrf.valor, liquido, patronal, fgts, custoEmp, cargaTot, cargaPct };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CALC PJ
+// ─────────────────────────────────────────────────────────────────────────────
+let lastPJ = {};
+
+function calcPJ() {
+  const fatMensal  = parseFloat(document.getElementById('pj-fat-mensal').value) || 0;
+  const rbt12      = parseFloat(document.getElementById('pj-rbt12').value) || 0;
+  const prolabore  = parseFloat(document.getElementById('pj-prolabore').value) || 0;
+  const folha12    = parseFloat(document.getElementById('pj-folha12').value) || 0;
+  const anexoSel   = document.getElementById('pj-anexo').value;
+
+  // Fator R
+  const fatorR     = rbt12 > 0 ? (folha12 / rbt12 * 100) : 0;
+  const usaAnexo3  = anexoSel === 'auto' ? fatorR >= 28 : anexoSel === '3';
+  const anexoNum   = usaAnexo3 ? 3 : 5;
+
+  // Atualiza barra Fator R
+  const fill = document.getElementById('fator-r-fill');
+  const fillPct = Math.min(fatorR, 100);
+  fill.style.width = fillPct + '%';
+  fill.style.background = fatorR >= 28 ? 'var(--accent-pj)' : 'var(--accent-red)';
+  document.getElementById('fator-r-pct').textContent = pct(fatorR);
+  document.getElementById('fator-r-pct').style.color = fatorR >= 28 ? 'var(--accent-pj)' : 'var(--accent-red)';
+
+  const res = document.getElementById('fator-r-resultado');
+  if (fatorR >= 28) {
+    res.textContent = '✅ Fator R ≥ 28% → Anexo III (menor alíquota)';
+    res.className = 'anexo-badge anexo-iii';
+  } else {
+    res.textContent = '⚠️ Fator R < 28% → Anexo V (maior alíquota)';
+    res.className = 'anexo-badge anexo-v';
+  }
+
+  // Simples Nacional
+  const simples    = calcSimples(rbt12, fatMensal, anexoNum);
+
+  // INSS pró-labore
+  const inssPL     = calcINSSProLabore(prolabore);
+
+  // IRRF pró-labore
+  const baseIRRFPL = Math.max(0, prolabore - inssPL);
+  const irrfPL     = calcIRRF(baseIRRFPL);
+
+  const plLiquido  = prolabore - inssPL - irrfPL.valor;
+  const lucro      = Math.max(0, fatMensal - simples.valor - prolabore);
+  const totalSocio = lucro + plLiquido;
+
+  const cargaTot   = simples.valor + inssPL + irrfPL.valor;
+  const cargaPct   = fatMensal > 0 ? (cargaTot / fatMensal * 100) : 0;
+
+  // Atualiza resultado
+  setVal('r-pj-fat', fmt(fatMensal), 'neu');
+  document.getElementById('r-pj-aliq-badge').textContent = pct(simples.aliqEfetiva) + ' ef. Anx.' + anexoNum;
+  document.getElementById('r-pj-aliq-badge').className = 'aliq-badge ' + (anexoNum === 3 ? 'green' : 'red');
+  setVal('r-pj-simples', '- ' + fmt(simples.valor), 'neg');
+  setVal('r-pj-prolabore-out', '- ' + fmt(prolabore), 'neg');
+  setVal('r-pj-lucro', fmt(lucro), 'pos');
+
+  setVal('r-pj-pl-bruto', fmt(prolabore), 'neu');
+  setVal('r-pj-inss', '- ' + fmt(inssPL), 'neg');
+  setVal('r-pj-base-irrf', fmt(baseIRRFPL), 'neu');
+  document.getElementById('r-pj-irrf-badge').textContent = pct(irrfPL.aliq);
+  setVal('r-pj-irrf', irrfPL.valor > 0 ? '- ' + fmt(irrfPL.valor) : 'Isento', irrfPL.valor > 0 ? 'neg' : 'pos');
+  setVal('r-pj-pl-liq', fmt(plLiquido), 'pos');
+
+  document.getElementById('r-pj-total').textContent = fmt(totalSocio);
+  document.getElementById('r-pj-carga').textContent = pct(cargaPct) + ' (sobre faturamento)';
+
+  lastPJ = {
+    fatMensal, simples: simples.valor, aliqEf: simples.aliqEfetiva,
+    inssPL, irrfPL: irrfPL.valor, plLiquido, lucro, totalSocio, cargaTot, cargaPct
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPARATIVO
+// ─────────────────────────────────────────────────────────────────────────────
+function updateComp() {
+  calcCLT(); calcPJ();
+  const clt = lastCLT.liquido || 0;
+  const pj  = lastPJ.totalSocio || 0;
+
+  document.getElementById('comp-clt-val').textContent = fmt(clt);
+  document.getElementById('comp-pj-val').textContent  = fmt(pj);
+
+  document.getElementById('comp-clt-carga').textContent = pct(lastCLT.cargaPct || 0);
+  document.getElementById('comp-clt-inss').textContent  = fmt(lastCLT.inss || 0);
+  document.getElementById('comp-clt-irrf').textContent  = fmt(lastCLT.irrf || 0);
+  document.getElementById('comp-clt-custo').textContent = fmt(lastCLT.custoEmp || 0);
+
+  document.getElementById('comp-pj-carga').textContent  = pct(lastPJ.cargaPct || 0);
+  document.getElementById('comp-pj-simples').textContent = fmt(lastPJ.simples || 0);
+  document.getElementById('comp-pj-inss').textContent    = fmt(lastPJ.inssPL || 0);
+  document.getElementById('comp-pj-irrf').textContent    = fmt(lastPJ.irrfPL || 0);
+
+  const diff = pj - clt;
+  const diffEl = document.getElementById('comp-diff');
+  diffEl.textContent = (diff >= 0 ? '+' : '') + fmt(diff);
+  diffEl.style.color = diff >= 0 ? 'var(--accent-pj)' : 'var(--accent-red)';
+
+  document.getElementById('comp-diff-anual').textContent =
+    'Diferença anual estimada: ' + (diff >= 0 ? '+' : '') + fmt(diff * 12);
+
+  const winner = diff >= 0 ? 'PJ Simples' : 'CLT';
+  const msg = document.getElementById('comp-winner-msg');
+  if (diff >= 0) {
+    msg.innerHTML = `🏆 <strong style="color:var(--accent-pj)">PJ Simples Nacional</strong> resulta em maior rendimento líquido mensal`;
+    document.getElementById('comp-card-pj').classList.add('winner');
+    document.getElementById('comp-card-clt').classList.remove('winner');
+  } else {
+    msg.innerHTML = `🏆 <strong style="color:var(--accent-clt)">CLT</strong> resulta em maior rendimento líquido mensal`;
+    document.getElementById('comp-card-clt').classList.add('winner');
+    document.getElementById('comp-card-pj').classList.remove('winner');
+  }
+}
+
+// Init
+calcCLT();
+calcPJ();
+</script>
+</body>
+</html>
