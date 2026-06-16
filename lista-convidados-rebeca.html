@@ -7,110 +7,105 @@
   body { font-family: Arial, sans-serif; background:#fdf6f9; margin:0; padding:20px; color:#333; }
   h1 { text-align:center; color:#d6336c; }
   .container { max-width:900px; margin:0 auto; }
+  .actions { text-align:center; margin-bottom:20px; }
+  .actions button { background:#d6336c; color:#fff; border:none; padding:10px 18px; border-radius:6px; cursor:pointer; font-size:14px; margin:0 5px; }
+  .actions button:hover { background:#b3265a; }
   .columns { display:flex; gap:30px; flex-wrap:wrap; justify-content:center; }
   .card { background:#fff; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1); padding:20px; flex:1; min-width:280px; }
   .card h2 { color:#d6336c; border-bottom:2px solid #f3c4d8; padding-bottom:8px; }
   ol { padding-left:20px; }
-  li { padding:4px 0; border-bottom:1px dashed #eee; }
+  li { padding:4px 0; border-bottom:1px dashed #eee; display:flex; justify-content:space-between; align-items:center; }
+  li .nome { flex:1; }
+  li button.remove { background:none; border:none; color:#d6336c; cursor:pointer; font-size:16px; padding:0 6px; }
+  li button.remove:hover { color:#900; }
+  .add-form { display:flex; gap:6px; margin-top:12px; }
+  .add-form input { flex:1; padding:6px 8px; border:1px solid #ddd; border-radius:6px; }
+  .add-form button { background:#28a745; color:#fff; border:none; border-radius:6px; padding:6px 12px; cursor:pointer; }
+  .add-form button:hover { background:#1e7e34; }
   .total { text-align:right; font-weight:bold; margin-top:10px; color:#555; }
+  .total-geral { text-align:center; margin-top:20px; font-weight:bold; }
+
+  @media print {
+    .actions, .add-form, li button.remove { display:none !important; }
+    body { background:#fff; }
+    .card { box-shadow:none; }
+  }
 </style>
 </head>
 <body>
 <div class="container">
   <h1>Rebeca - 5 anos 🎉</h1>
   <p style="text-align:center;">Lista de Convidados</p>
+
+  <div class="actions">
+    <button onclick="window.print()">🖨️ Imprimir lista</button>
+  </div>
+
   <div class="columns">
     <div class="card">
       <h2>Adultos</h2>
-      <ol>
-        <li>Vovô Sebastião</li>
-        <li>Vovó Casilda</li>
-        <li>Maria Eduarda</li>
-        <li>Dani</li>
-        <li>Marina</li>
-        <li>Vovó Bela</li>
-        <li>Sonia</li>
-        <li>Sandro</li>
-        <li>Pedro</li>
-        <li>Dayane</li>
-        <li>Peterson</li>
-        <li>Silvia</li>
-        <li>Toninho</li>
-        <li>Nicole</li>
-        <li>Sirlei</li>
-        <li>Autevan</li>
-        <li>Shayla</li>
-        <li>Maiko</li>
-        <li>Leonardo</li>
-        <li>Sara</li>
-        <li>Cássio</li>
-        <li>Flavia</li>
-        <li>Claudio</li>
-        <li>Odília</li>
-        <li>Thais</li>
-        <li>Marcus</li>
-        <li>Gus</li>
-        <li>Marco</li>
-        <li>Edneia</li>
-        <li>Marido</li>
-        <li>Isabele</li>
-        <li>Tia Maria</li>
-        <li>Tia Luiz</li>
-        <li>Leandro</li>
-        <li>Silas</li>
-        <li>Veronica</li>
-        <li>Edu</li>
-        <li>Thayná</li>
-        <li>Isabelly</li>
-        <li>Renata</li>
-        <li>Felipe</li>
-        <li>Natália</li>
-        <li>Claudia</li>
-        <li>Michel</li>
-        <li>Vanessa</li>
-        <li>Nathan</li>
-        <li>Debora</li>
-        <li>Davi</li>
-        <li>Kelle</li>
-        <li>Namorada</li>
-        <li>Sirlene</li>
-        <li>Aldo</li>
-        <li>Daiane</li>
-        <li>Eduardo</li>
-        <li>Ana Paula</li>
-        <li>Douglas</li>
-        <li>Karen</li>
-        <li>Mariane</li>
-        <li>Igor</li>
-      </ol>
-      <div class="total">Total: 59</div>
+      <ol id="lista-adultos"></ol>
+      <div class="add-form">
+        <input type="text" id="novo-adulto" placeholder="Nome do convidado" onkeydown="if(event.key==='Enter') adicionar('adultos')">
+        <button onclick="adicionar('adultos')">+ Incluir</button>
+      </div>
+      <div class="total" id="total-adultos">Total: 0</div>
     </div>
+
     <div class="card">
       <h2>Crianças</h2>
-      <ol>
-        <li>Luna</li>
-        <li>Beatriz</li>
-        <li>José Lucca</li>
-        <li>Arthur</li>
-        <li>Bianca</li>
-        <li>Gaby</li>
-        <li>Pedro</li>
-        <li>Gabi Barros</li>
-        <li>Enrico</li>
-        <li>Lorenzo</li>
-        <li>Laura Mendes</li>
-        <li>Arthur Ramos</li>
-        <li>Gabi Ramos</li>
-        <li>Luana</li>
-        <li>Noah</li>
-        <li>Gustavo</li>
-        <li>Felipe</li>
-        <li>Akemi</li>
-      </ol>
-      <div class="total">Total: 18</div>
+      <ol id="lista-criancas"></ol>
+      <div class="add-form">
+        <input type="text" id="novo-crianca" placeholder="Nome da criança" onkeydown="if(event.key==='Enter') adicionar('criancas')">
+        <button onclick="adicionar('criancas')">+ Incluir</button>
+      </div>
+      <div class="total" id="total-criancas">Total: 0</div>
     </div>
   </div>
-  <p class="total" style="text-align:center; margin-top:20px;">Total geral: 77 convidados</p>
+
+  <p class="total-geral" id="total-geral">Total geral: 0 convidados</p>
 </div>
+
+<script>
+  const adultos = ["Vovô Sebastião","Vovó Casilda","Maria Eduarda","Dani","Marina","Vovó Bela","Sonia","Sandro","Pedro","Dayane","Peterson","Silvia","Toninho","Nicole","Sirlei","Autevan","Shayla","Maiko","Leonardo","Sara","Cássio","Flavia","Claudio","Odília","Thais","Marcus","Gus","Marco","Edneia","Marido","Isabele","Tia Maria","Tia Luiz","Leandro","Silas","Veronica","Edu","Thayná","Isabelly","Renata","Felipe","Natália","Claudia","Michel","Vanessa","Nathan","Debora","Davi","Kelle","Namorada","Sirlene","Aldo","Daiane","Eduardo","Ana Paula","Douglas","Karen","Mariane","Igor"];
+
+  const criancas = ["Luna","Beatriz","José Lucca","Arthur","Bianca","Gaby","Pedro","Gabi Barros","Enrico","Lorenzo","Laura Mendes","Arthur Ramos","Gabi Ramos","Luana","Noah","Gustavo","Felipe","Akemi"];
+
+  function renderizar() {
+    renderizarLista('adultos', document.getElementById('lista-adultos'));
+    renderizarLista('criancas', document.getElementById('lista-criancas'));
+    document.getElementById('total-adultos').textContent = 'Total: ' + adultos.length;
+    document.getElementById('total-criancas').textContent = 'Total: ' + criancas.length;
+    document.getElementById('total-geral').textContent = 'Total geral: ' + (adultos.length + criancas.length) + ' convidados';
+  }
+
+  function renderizarLista(tipo, ol) {
+    const arr = tipo === 'adultos' ? adultos : criancas;
+    ol.innerHTML = '';
+    arr.forEach((nome, i) => {
+      const li = document.createElement('li');
+      li.innerHTML = '<span class="nome"></span><button class="remove" title="Excluir">✕</button>';
+      li.querySelector('.nome').textContent = nome;
+      li.querySelector('.remove').onclick = () => excluir(tipo, i);
+      ol.appendChild(li);
+    });
+  }
+
+  function adicionar(tipo) {
+    const input = document.getElementById(tipo === 'adultos' ? 'novo-adulto' : 'novo-crianca');
+    const nome = input.value.trim();
+    if (!nome) return;
+    (tipo === 'adultos' ? adultos : criancas).push(nome);
+    input.value = '';
+    renderizar();
+  }
+
+  function excluir(tipo, index) {
+    (tipo === 'adultos' ? adultos : criancas).splice(index, 1);
+    renderizar();
+  }
+
+  renderizar();
+</script>
 </body>
 </html>
