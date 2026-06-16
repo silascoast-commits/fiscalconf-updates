@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recibo de Férias</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 30px 16px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.1);
+      padding: 32px;
+      width: 100%;
+      max-width: 580px;
+      height: fit-content;
+    }
+    h1 { font-size: 1.4rem; color: #1e293b; margin-bottom: 6px; }
+    .subtitle { font-size: 0.85rem; color: #64748b; margin-bottom: 24px; }
+    .secao {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 12px;
+      margin-top: 4px;
+    }
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 5px;
+    }
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      color: #1e293b;
+      background: #f9fafb;
+      transition: border-color 0.2s;
+      margin-bottom: 14px;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #3b82f6;
+      background: #fff;
+    }
+    .row { display: flex; gap: 14px; }
+    .row > div { flex: 1; }
+    .info-periodo {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.82rem;
+      color: #15803d;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .toggle-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
+    .toggle-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    .toggle-item span { font-size: 0.88rem; color: #374151; font-weight: 500; }
+    .toggle { position: relative; width: 44px; height: 24px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; inset: 0;
+      background: #d1d5db;
+      border-radius: 24px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .slider::before {
+      content: '';
+      position: absolute;
+      width: 18px; height: 18px;
+      background: #fff;
+      border-radius: 50%;
+      top: 3px; left: 3px;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle input:checked + .slider { background: #3b82f6; }
+    .toggle input:checked + .slider::before { transform: translateX(20px); }
+
+    .desconto-lista { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .desconto-item { display: flex; gap: 8px; align-items: center; }
+    .desconto-item input[type="text"] { flex: 2; margin-bottom: 0; }
+    .desconto-item input[type="number"] { flex: 1; margin-bottom: 0; }
+    .btn-rem {
+      background: #fee2e2;
+      border: none;
+      border-radius: 6px;
+      color: #dc2626;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 8px 10px;
+      line-height: 1;
+      transition: background 0.2s;
+    }
+    .btn-rem:hover { background: #fca5a5; }
+    .btn-add {
+      background: #eff6ff;
+      border: 1.5px dashed #93c5fd;
+      border-radius: 8px;
+      color: #3b82f6;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 9px 14px;
+      width: 100%;
+      margin-bottom: 18px;
+      transition: background 0.2s;
+    }
+    .btn-add:hover { background: #dbeafe; }
+
+    .btn-calcular {
+      width: 100%;
+      padding: 12px;
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-calcular:hover { background: #2563eb; }
+
+    .resultado { margin-top: 28px; display: none; }
+
+    .btn-imprimir {
+      width: 100%;
+      margin-top: 14px;
+      padding: 11px;
+      background: #fff;
+      color: #1e293b;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-imprimir:hover { background: #f8fafc; border-color: #94a3b8; }
+
+    .resultado-header {
+      background: #1e293b;
+      border-radius: 10px 10px 0 0;
+      padding: 18px 20px;
+      color: #fff;
+    }
+    .resultado-header .empresa-nome { font-size: 0.78rem; color: #94a3b8; margin-bottom: 2px; }
+    .resultado-header .func-nome { font-size: 1.1rem; font-weight: 700; }
+    .resultado-header .periodo { font-size: 0.78rem; color: #cbd5e1; margin-top: 4px; }
+    .resultado-body {
+      border: 1.5px solid #e2e8f0;
+      border-top: none;
+      border-radius: 0 0 10px 10px;
+      padding: 18px 20px;
+    }
+    .resultado-body h2 {
+      font-size: 0.78rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
+      margin-top: 14px;
+    }
+    .resultado-body h2:first-child { margin-top: 0; }
+    .linha {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+      color: #4b5563;
+      padding: 7px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .linha.destaque {
+      font-weight: 700;
+      color: #1e293b;
+      font-size: 0.95rem;
+      border-bottom: none;
+      margin-top: 6px;
+    }
+    .linha.inativo { color: #cbd5e1; text-decoration: line-through; }
+    .valor-pos { color: #16a34a; }
+    .valor-neg { color: #dc2626; }
+    .badge {
+      display: inline-block;
+      font-size: 0.68rem;
+      background: #fef3c7;
+      color: #92400e;
+      border-radius: 4px;
+      padding: 1px 5px;
+      margin-left: 5px;
+      font-weight: 600;
+    }
+    .aviso-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.8rem;
+      color: #1d4ed8;
+      margin-top: 14px;
+    }
+    hr.divider { border: none; border-top: 1.5px solid #e2e8f0; margin: 18px 0; }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .card { box-shadow: none; border-radius: 0; padding: 0; max-width: 100%; }
+      .no-print { display: none !important; }
+      .linha.inativo { display: none !important; }
+      .resultado { display: block !important; margin-top: 0; }
+      .resultado-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .recibo-print { border: 2px solid #1e293b; border-radius: 8px; overflow: hidden; }
+      .assinaturas { display: flex !important; margin-top: 48px; gap: 40px; }
+      .ass-linha {
+        flex: 1;
+        border-top: 1px solid #1e293b;
+        padding-top: 6px;
+        font-size: 0.8rem;
+        color: #374151;
+        text-align: center;
+      }
+    }
+    .assinaturas { display: none; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="no-print">
+    <h1>Recibo de Férias</h1>
+    <p class="subtitle">Funcionário não registrado &nbsp;•&nbsp; Pagamento por fora, sem INSS</p>
+
+    <p class="secao">Dados da Empresa e Funcionário</p>
+    <label>Nome da Empresa</label>
+    <input type="text" id="empresa" placeholder="Ex: Padaria São João" />
+    <label>Nome do Funcionário</label>
+    <input type="text" id="funcionario" placeholder="Ex: João da Silva" />
+
+    <hr class="divider" />
+    <p class="secao">Período Aquisitivo</p>
+    <div class="row">
+      <div>
+        <label>Início do Período Aquisitivo</label>
+        <input type="date" id="aq_inicio" />
+      </div>
+      <div>
+        <label>Fim do Período Aquisitivo</label>
+        <input type="date" id="aq_fim" />
+      </div>
+    </div>
+
+    <hr class="divider" />
+    <p class="secao">Período de Gozo (Férias)</p>
+    <div class="row">
+      <div>
+        <label>Início das Férias</label>
+        <input type="date" id="inicio" />
+      </div>
+      <div>
+        <label>Fim das Férias</label>
+        <input type="date" id="fim" />
+      </div>
+    </div>
+    <div class="info-periodo" id="info-periodo"></div>
+
+    <hr class="divider" />
+    <p class="secao">Dados do Pagamento</p>
+    <label>Salário Mensal (R$)</label>
+    <input type="number" id="salario" placeholder="0,00" min="0" step="0.01" />
+
+    <div class="toggle-group">
+      <div class="toggle-item">
+        <span>Pagar 1/3 constitucional</span>
+        <label class="toggle"><input type="checkbox" id="terco" checked /><span class="slider"></span></label>
+      </div>
+      <div class="toggle-item">
+        <span>Vender 1/3 das férias (abono pecuniário)</span>
+        <label class="toggle"><input type="checkbox" id="abono" /><span class="slider"></span></label>
+      </div>
+      <div class="toggle-item" id="wrap-adiant13">
+        <span>Adiantar 13º na venda do abono</span>
+        <label class="toggle"><input type="checkbox" id="adiant13" /><span class="slider"></span></label>
+      </div>
+    </div>
+
+    <hr class="divider" />
+    <p class="secao">Outros Descontos</p>
+    <div class="desconto-lista" id="desconto-lista"></div>
+    <button class="btn-add" onclick="addDesconto()">+ Adicionar desconto</button>
+
+    <button class="btn-calcular" onclick="calcular()">Calcular Recibo de Férias</button>
+  </div>
+
+  <div class="resultado" id="resultado">
+    <div class="recibo-print">
+      <div class="resultado-header">
+        <div class="empresa-nome" id="r-empresa"></div>
+        <div class="func-nome" id="r-funcionario"></div>
+        <div class="periodo" id="r-periodo-aquisitivo"></div>
+        <div class="periodo" id="r-periodo"></div>
+        <div class="periodo" id="r-salario-base" style="margin-top:3px"></div>
+      </div>
+      <div class="resultado-body">
+        <h2>Recibo de Férias</h2>
+        <div class="linha">
+          <span>Férias (dias gozados) <span class="badge" id="badge-dias-gozados"></span></span>
+          <span id="r-ferias-gozadas" class="valor-pos"></span>
+        </div>
+        <div class="linha" id="linha-terco">
+          <span>1/3 constitucional</span>
+          <span id="r-terco" class="valor-pos"></span>
+        </div>
+        <div class="linha" id="linha-abono">
+          <span>Abono pecuniário (venda de 1/3) <span class="badge" id="badge-dias-abono"></span></span>
+          <span id="r-abono" class="valor-pos"></span>
+        </div>
+        <div class="linha" id="linha-abono-terco">
+          <span>1/3 sobre o abono</span>
+          <span id="r-abono-terco" class="valor-pos"></span>
+        </div>
+        <div class="linha" id="linha-adiant13">
+          <span>Adiantamento de 13º (sobre abono)</span>
+          <span id="r-adiant13" class="valor-pos"></span>
+        </div>
+
+        <div id="secao-descontos" style="display:none">
+          <h2>Descontos</h2>
+          <div id="r-descontos-lista"></div>
+        </div>
+
+        <div class="linha destaque" style="margin-top:10px">
+          <span>TOTAL BRUTO</span>
+          <span id="r-bruto" class="valor-pos"></span>
+        </div>
+        <div class="linha destaque" id="linha-desc-total" style="display:none">
+          <span>(-) Total de Descontos</span>
+          <span id="r-desc-total" class="valor-neg"></span>
+        </div>
+        <div class="linha destaque" style="border-top: 2px solid #1e293b; padding-top:10px; margin-top:4px">
+          <span>VALOR LÍQUIDO A RECEBER</span>
+          <span id="r-total" class="valor-pos"></span>
+        </div>
+
+        <div class="aviso-box no-print" id="aviso-box"></div>
+
+        <div class="assinaturas">
+          <div class="ass-linha" id="ass-empresa">Assinatura da Empresa</div>
+          <div class="ass-linha" id="ass-func">Assinatura do Funcionário</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-imprimir no-print" onclick="window.print()">
+      🖨️ Imprimir / Salvar como PDF
+    </button>
+  </div>
+</div>
+
+<script>
+  const fmt = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const fmtData = d => d.toLocaleDateString('pt-BR');
+
+  let descontos = [];
+
+  function addDesconto() {
+    const id = Date.now();
+    descontos.push({ id, desc: '', valor: 0 });
+    renderDescontos();
+  }
+  function remDesconto(id) {
+    descontos = descontos.filter(d => d.id !== id);
+    renderDescontos();
+  }
+  function renderDescontos() {
+    const lista = document.getElementById('desconto-lista');
+    lista.innerHTML = '';
+    descontos.forEach(d => {
+      const row = document.createElement('div');
+      row.className = 'desconto-item';
+      row.innerHTML = `
+        <input type="text" placeholder="Descrição (ex: Adiantamento)" value="${d.desc}"
+          oninput="updateDesconto(${d.id},'desc',this.value)" style="margin-bottom:0" />
+        <input type="number" placeholder="R$ 0,00" value="${d.valor || ''}" min="0" step="0.01"
+          oninput="updateDesconto(${d.id},'valor',this.value)" style="margin-bottom:0" />
+        <button class="btn-rem" onclick="remDesconto(${d.id})">✕</button>
+      `;
+      lista.appendChild(row);
+    });
+  }
+  function updateDesconto(id, campo, val) {
+    const d = descontos.find(x => x.id === id);
+    if (d) d[campo] = campo === 'valor' ? (parseFloat(val) || 0) : val;
+  }
+
+  function diffDias(a, b) {
+    return Math.round((b - a) / 86400000) + 1;
+  }
+
+  function atualizarPeriodo() {
+    const iniStr = document.getElementById('inicio').value;
+    const fimStr = document.getElementById('fim').value;
+    const info = document.getElementById('info-periodo');
+    if (!iniStr || !fimStr) { info.style.display = 'none'; return; }
+    const ini = new Date(iniStr + 'T00:00:00');
+    const fim = new Date(fimStr + 'T00:00:00');
+    if (fim < ini) { info.style.display = 'none'; return; }
+    const dias = diffDias(ini, fim);
+    info.textContent = `Período: ${fmtData(ini)} até ${fmtData(fim)} — ${dias} dia(s) de férias`;
+    info.style.display = 'block';
+  }
+  document.getElementById('inicio').addEventListener('change', atualizarPeriodo);
+  document.getElementById('fim').addEventListener('change', atualizarPeriodo);
+
+  document.getElementById('abono').addEventListener('change', () => {
+    const abono = document.getElementById('abono').checked;
+    const wrap = document.getElementById('wrap-adiant13');
+    if (!abono) {
+      document.getElementById('adiant13').checked = false;
+      wrap.style.opacity = '0.4';
+      wrap.style.pointerEvents = 'none';
+    } else {
+      wrap.style.opacity = '1';
+      wrap.style.pointerEvents = 'auto';
+    }
+  });
+
+  function calcular() {
+    const empresa = document.getElementById('empresa').value.trim();
+    const funcionario = document.getElementById('funcionario').value.trim();
+    const aqIniStr = document.getElementById('aq_inicio').value;
+    const aqFimStr = document.getElementById('aq_fim').value;
+    const iniStr = document.getElementById('inicio').value;
+    const fimStr = document.getElementById('fim').value;
+    const salario = parseFloat(document.getElementById('salario').value) || 0;
+    const pagarTerco = document.getElementById('terco').checked;
+    const venderAbono = document.getElementById('abono').checked;
+    const adiantar13 = document.getElementById('adiant13').checked;
+
+    if (!aqIniStr || !aqFimStr) { alert('Preencha o período aquisitivo.'); return; }
+    if (!iniStr || !fimStr) { alert('Preencha as datas de início e fim das férias.'); return; }
+    if (salario <= 0) { alert('Preencha o salário mensal.'); return; }
+
+    const aqIni = new Date(aqIniStr + 'T00:00:00');
+    const aqFim = new Date(aqFimStr + 'T00:00:00');
+
+    const ini = new Date(iniStr + 'T00:00:00');
+    const fim = new Date(fimStr + 'T00:00:00');
+    if (fim < ini) { alert('A data de fim deve ser igual ou posterior ao início.'); return; }
+
+    const diasTotais = diffDias(ini, fim);
+
+    // Dias vendidos (abono) = até 10 dias (1/3 de 30)
+    const diasAbono = venderAbono ? 10 : 0;
+    const diasGozados = diasTotais;
+
+    const valorDia = salario / 30;
+
+    const valorFerias = valorDia * diasGozados;
+    const tercoFerias = pagarTerco ? valorFerias / 3 : 0;
+
+    const valorAbono = valorDia * diasAbono;
+    const tercoAbono = valorAbono / 3;
+
+    const adiant13Val = (venderAbono && adiantar13) ? salario / 12 : 0;
+
+    const bruto = valorFerias + tercoFerias + valorAbono + (venderAbono ? tercoAbono : 0) + adiant13Val;
+
+    const totalDescontos = descontos.reduce((s, d) => s + (d.valor || 0), 0);
+    const liquido = bruto - totalDescontos;
+
+    document.getElementById('r-empresa').textContent = empresa || 'Empresa não informada';
+    document.getElementById('r-funcionario').textContent = funcionario || 'Funcionário não informado';
+    document.getElementById('ass-empresa').textContent = empresa || 'Assinatura da Empresa';
+    document.getElementById('ass-func').textContent = funcionario || 'Assinatura do Funcionário';
+
+    document.getElementById('r-periodo-aquisitivo').textContent =
+      `Período aquisitivo: ${fmtData(aqIni)} → ${fmtData(aqFim)}`;
+    document.getElementById('r-periodo').textContent =
+      `Período de gozo: ${fmtData(ini)} → ${fmtData(fim)}  •  ${diasTotais} dia(s)`;
+    document.getElementById('r-salario-base').textContent = `Salário base: ${fmt(salario)}`;
+
+    document.getElementById('r-ferias-gozadas').textContent = fmt(valorFerias);
+    document.getElementById('badge-dias-gozados').textContent = `${diasGozados} dias`;
+
+    document.getElementById('r-terco').textContent = fmt(tercoFerias);
+    document.getElementById('linha-terco').className = 'linha' + (!pagarTerco ? ' inativo' : '');
+
+    document.getElementById('r-abono').textContent = fmt(valorAbono);
+    document.getElementById('badge-dias-abono').textContent = `${diasAbono} dias`;
+    document.getElementById('linha-abono').className = 'linha' + (!venderAbono ? ' inativo' : '');
+
+    document.getElementById('r-abono-terco').textContent = fmt(tercoAbono);
+    document.getElementById('linha-abono-terco').className = 'linha' + (!venderAbono ? ' inativo' : '');
+
+    document.getElementById('r-adiant13').textContent = fmt(adiant13Val);
+    document.getElementById('linha-adiant13').className = 'linha' + (adiant13Val === 0 ? ' inativo' : '');
+
+    document.getElementById('r-bruto').textContent = fmt(bruto);
+    document.getElementById('r-total').textContent = fmt(liquido);
+
+    const secDesc = document.getElementById('secao-descontos');
+    const listaDesc = document.getElementById('r-descontos-lista');
+    const linhaDescTotal = document.getElementById('linha-desc-total');
+    listaDesc.innerHTML = '';
+    if (descontos.length > 0 && totalDescontos > 0) {
+      secDesc.style.display = 'block';
+      linhaDescTotal.style.display = 'flex';
+      descontos.forEach(d => {
+        if (d.valor > 0) {
+          const div = document.createElement('div');
+          div.className = 'linha';
+          div.innerHTML = `<span>${d.desc || 'Desconto'}</span><span class="valor-neg">- ${fmt(d.valor)}</span>`;
+          listaDesc.appendChild(div);
+        }
+      });
+      document.getElementById('r-desc-total').textContent = fmt(totalDescontos);
+    } else {
+      secDesc.style.display = 'none';
+      linhaDescTotal.style.display = 'none';
+    }
+
+    const msgs = [];
+    if (!pagarTerco) msgs.push('1/3 constitucional não incluído.');
+    if (venderAbono) msgs.push('Abono pecuniário: venda de até 10 dias (1/3 das férias), com 1/3 sobre o valor vendido.');
+    if (adiantar13) msgs.push('13º adiantado junto com o abono pecuniário.');
+    document.getElementById('aviso-box').textContent = msgs.join(' ') || 'Cálculo padrão de férias, sem venda de abono.';
+
+    document.getElementById('resultado').style.display = 'block';
+    document.getElementById('resultado').scrollIntoView({ behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
