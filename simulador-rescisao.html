@@ -534,16 +534,50 @@
     const diasAviso = Math.min(30 + (anos * 3), 90);
     const aviso = avisoPago ? (salario / 30) * diasAviso : 0;
 
-    const mesesNoAno = dem.getMonth() + 1;
-    const decimoProp = (salario / 12) * mesesNoAno;
+    // Calcula avos (1/12) com regra dos 15 dias
+    function calcularAvos(inicio, fim) {
+      let avos = 0;
+      let cursor = new Date(inicio);
 
-    const ultimoAniversario = new Date(dem.getFullYear(), adm.getMonth(), adm.getDate());
+      // Primeiro mês parcial (se não iniciou no dia 1)
+      if (cursor.getDate() !== 1) {
+        const fimPrimeiro = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+        const ponto = fimPrimeiro < fim ? fimPrimeiro : fim;
+        const dias = Math.round((ponto - cursor) / 86400000);
+        if (dias >= 15) avos++;
+        cursor = fimPrimeiro;
+      }
+
+      // Meses completos
+      while (true) {
+        const proximo = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+        if (proximo >= fim) break;
+        avos++;
+        cursor = proximo;
+      }
+
+      // Último mês parcial
+      if (cursor < fim) {
+        const dias = Math.round((fim - cursor) / 86400000);
+        if (dias >= 15) avos++;
+      }
+
+      return Math.min(avos, 12);
+    }
+
+    // 13º: do início do ano corrente (ou admissão, se mais recente) até demissão
+    const inicioAno = new Date(Math.max(
+      new Date(dem.getFullYear(), 0, 1).getTime(),
+      adm.getTime()
+    ));
+    const avos13 = calcularAvos(inicioAno, dem);
+    const decimoProp = (salario / 12) * avos13;
+
+    // Férias: do último aniversário de contrato até demissão
+    let ultimoAniversario = new Date(dem.getFullYear(), adm.getMonth(), adm.getDate());
     if (ultimoAniversario > dem) ultimoAniversario.setFullYear(dem.getFullYear() - 1);
-    let mesesFerias = (dem.getFullYear() - ultimoAniversario.getFullYear()) * 12
-      + (dem.getMonth() - ultimoAniversario.getMonth());
-    if (dem.getDate() >= ultimoAniversario.getDate()) mesesFerias += 1;
-    mesesFerias = Math.min(Math.max(mesesFerias, 1), 12);
-    const feriasTotal = (salario / 12) * mesesFerias * (4 / 3);
+    const avosFerias = calcularAvos(ultimoAniversario, dem);
+    const feriasTotal = (salario / 12) * avosFerias * (4 / 3);
 
     const fgtsAcum = pagarFgts ? salario * 0.08 * meses : 0;
     const multaVal = (pagarFgts && pagarMulta) ? fgtsAcum * 0.40 : 0;
@@ -609,7 +643,7 @@
     if (tipo === 'acordo') msgs.push('Rescisão por acordo: aviso prévio e multa reduzidos em 50%.');
     if (tipo === 'pedido') msgs.push('Pedido de demissão: sem aviso indenizado e sem multa do FGTS.');
     if (!pagarFgts) msgs.push('FGTS não incluído.');
-    msgs.push(`Aviso: ${diasAviso} dias (${anos} ano(s) completo(s)). Férias: ${mesesFerias} mês(es) do período aquisitivo.`);
+    msgs.push(`Aviso: ${diasAviso} dias (${anos} ano(s) completo(s)). 13º: ${avos13}/12 avos. Férias: ${avosFerias}/12 avos.`);
     document.getElementById('aviso-box').textContent = msgs.join(' ');
 
     document.getElementById('resultado').style.display = 'block';
