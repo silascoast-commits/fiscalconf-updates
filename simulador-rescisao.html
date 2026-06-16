@@ -20,27 +20,19 @@
       box-shadow: 0 2px 16px rgba(0,0,0,0.1);
       padding: 32px;
       width: 100%;
-      max-width: 580px;
+      max-width: 600px;
       height: fit-content;
     }
-    h1 {
-      font-size: 1.4rem;
-      color: #1e293b;
-      margin-bottom: 6px;
-    }
-    .subtitle {
-      font-size: 0.85rem;
-      color: #64748b;
-      margin-bottom: 24px;
-    }
+    h1 { font-size: 1.4rem; color: #1e293b; margin-bottom: 6px; }
+    .subtitle { font-size: 0.85rem; color: #64748b; margin-bottom: 24px; }
     .secao {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 700;
       color: #94a3b8;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       margin-bottom: 12px;
-      margin-top: 6px;
+      margin-top: 4px;
     }
     label {
       display: block;
@@ -70,7 +62,6 @@
     }
     .row { display: flex; gap: 14px; }
     .row > div { flex: 1; }
-
     .info-periodo {
       background: #f0fdf4;
       border: 1px solid #bbf7d0;
@@ -81,13 +72,7 @@
       margin-bottom: 16px;
       display: none;
     }
-
-    .toggle-group {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 22px;
-    }
+    .toggle-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
     .toggle-item {
       display: flex;
       align-items: center;
@@ -97,20 +82,11 @@
       border-radius: 8px;
       padding: 10px 14px;
     }
-    .toggle-item span {
-      font-size: 0.88rem;
-      color: #374151;
-      font-weight: 500;
-    }
-    .toggle {
-      position: relative;
-      width: 44px;
-      height: 24px;
-    }
+    .toggle-item span { font-size: 0.88rem; color: #374151; font-weight: 500; }
+    .toggle { position: relative; width: 44px; height: 24px; }
     .toggle input { opacity: 0; width: 0; height: 0; }
     .slider {
-      position: absolute;
-      inset: 0;
+      position: absolute; inset: 0;
       background: #d1d5db;
       border-radius: 24px;
       cursor: pointer;
@@ -119,8 +95,7 @@
     .slider::before {
       content: '';
       position: absolute;
-      width: 18px;
-      height: 18px;
+      width: 18px; height: 18px;
       background: #fff;
       border-radius: 50%;
       top: 3px; left: 3px;
@@ -130,7 +105,39 @@
     .toggle input:checked + .slider { background: #3b82f6; }
     .toggle input:checked + .slider::before { transform: translateX(20px); }
 
-    button {
+    /* Descontos extras */
+    .desconto-lista { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .desconto-item { display: flex; gap: 8px; align-items: center; }
+    .desconto-item input[type="text"] { flex: 2; margin-bottom: 0; }
+    .desconto-item input[type="number"] { flex: 1; margin-bottom: 0; }
+    .btn-rem {
+      background: #fee2e2;
+      border: none;
+      border-radius: 6px;
+      color: #dc2626;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 8px 10px;
+      line-height: 1;
+      transition: background 0.2s;
+    }
+    .btn-rem:hover { background: #fca5a5; }
+    .btn-add {
+      background: #eff6ff;
+      border: 1.5px dashed #93c5fd;
+      border-radius: 8px;
+      color: #3b82f6;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 9px 14px;
+      width: 100%;
+      margin-bottom: 18px;
+      transition: background 0.2s;
+    }
+    .btn-add:hover { background: #dbeafe; }
+
+    .btn-calcular {
       width: 100%;
       padding: 12px;
       background: #3b82f6;
@@ -142,32 +149,40 @@
       cursor: pointer;
       transition: background 0.2s;
     }
-    button:hover { background: #2563eb; }
+    .btn-calcular:hover { background: #2563eb; }
 
-    .resultado {
-      margin-top: 28px;
-      display: none;
+    .resultado { margin-top: 28px; display: none; }
+
+    /* Botão imprimir */
+    .btn-imprimir {
+      width: 100%;
+      margin-top: 14px;
+      padding: 11px;
+      background: #fff;
+      color: #1e293b;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.2s, border-color 0.2s;
     }
+    .btn-imprimir:hover { background: #f8fafc; border-color: #94a3b8; }
+
+    /* Resultado visual */
     .resultado-header {
       background: #1e293b;
       border-radius: 10px 10px 0 0;
       padding: 18px 20px;
       color: #fff;
     }
-    .resultado-header .empresa-nome {
-      font-size: 0.8rem;
-      color: #94a3b8;
-      margin-bottom: 2px;
-    }
-    .resultado-header .func-nome {
-      font-size: 1.1rem;
-      font-weight: 700;
-    }
-    .resultado-header .periodo {
-      font-size: 0.8rem;
-      color: #cbd5e1;
-      margin-top: 4px;
-    }
+    .resultado-header .empresa-nome { font-size: 0.78rem; color: #94a3b8; margin-bottom: 2px; }
+    .resultado-header .func-nome { font-size: 1.1rem; font-weight: 700; }
+    .resultado-header .periodo { font-size: 0.78rem; color: #cbd5e1; margin-top: 4px; }
     .resultado-body {
       border: 1.5px solid #e2e8f0;
       border-top: none;
@@ -175,12 +190,14 @@
       padding: 18px 20px;
     }
     .resultado-body h2 {
-      font-size: 0.9rem;
+      font-size: 0.78rem;
       color: #64748b;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
+      margin-top: 14px;
     }
+    .resultado-body h2:first-child { margin-top: 0; }
     .linha {
       display: flex;
       justify-content: space-between;
@@ -198,14 +215,15 @@
     }
     .linha.inativo { color: #cbd5e1; text-decoration: line-through; }
     .valor-pos { color: #16a34a; }
+    .valor-neg { color: #dc2626; }
     .badge {
       display: inline-block;
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       background: #fef3c7;
       color: #92400e;
       border-radius: 4px;
-      padding: 1px 6px;
-      margin-left: 6px;
+      padding: 1px 5px;
+      margin-left: 5px;
       font-weight: 600;
     }
     .aviso-box {
@@ -217,119 +235,168 @@
       color: #1d4ed8;
       margin-top: 14px;
     }
-    hr.divider {
-      border: none;
-      border-top: 1.5px solid #e2e8f0;
-      margin: 18px 0;
+    hr.divider { border: none; border-top: 1.5px solid #e2e8f0; margin: 18px 0; }
+
+    /* ===== IMPRESSÃO ===== */
+    @media print {
+      body { background: #fff; padding: 0; }
+      .card {
+        box-shadow: none;
+        border-radius: 0;
+        padding: 0;
+        max-width: 100%;
+      }
+      .no-print { display: none !important; }
+      .resultado { display: block !important; margin-top: 0; }
+      .resultado-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+      .recibo-print {
+        border: 2px solid #1e293b;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .assinaturas {
+        display: flex !important;
+        margin-top: 48px;
+        gap: 40px;
+      }
+      .ass-linha {
+        flex: 1;
+        border-top: 1px solid #1e293b;
+        padding-top: 6px;
+        font-size: 0.8rem;
+        color: #374151;
+        text-align: center;
+      }
     }
+    .assinaturas { display: none; }
   </style>
 </head>
 <body>
 <div class="card">
-  <h1>Simulador de Rescisão</h1>
-  <p class="subtitle">Sem desconto de INSS &nbsp;•&nbsp; Trabalhador informal / CLT sem registro</p>
+  <!-- Formulário -->
+  <div class="no-print">
+    <h1>Simulador de Rescisão</h1>
+    <p class="subtitle">Sem desconto de INSS &nbsp;•&nbsp; Trabalhador informal / CLT sem registro</p>
 
-  <p class="secao">Dados da Empresa e Funcionário</p>
-
-  <label>Nome da Empresa</label>
-  <input type="text" id="empresa" placeholder="Ex: Padaria São João" />
-
-  <label>Nome do Funcionário</label>
-  <input type="text" id="funcionario" placeholder="Ex: João da Silva" />
-
-  <div class="row">
-    <div>
-      <label>Data de Admissão</label>
-      <input type="date" id="admissao" />
+    <p class="secao">Dados da Empresa e Funcionário</p>
+    <label>Nome da Empresa</label>
+    <input type="text" id="empresa" placeholder="Ex: Padaria São João" />
+    <label>Nome do Funcionário</label>
+    <input type="text" id="funcionario" placeholder="Ex: João da Silva" />
+    <div class="row">
+      <div>
+        <label>Data de Admissão</label>
+        <input type="date" id="admissao" />
+      </div>
+      <div>
+        <label>Data de Demissão</label>
+        <input type="date" id="demissao" />
+      </div>
     </div>
-    <div>
-      <label>Data de Demissão</label>
-      <input type="date" id="demissao" />
+    <div class="info-periodo" id="info-periodo"></div>
+
+    <hr class="divider" />
+    <p class="secao">Dados da Rescisão</p>
+    <label>Salário Mensal (R$)</label>
+    <input type="number" id="salario" placeholder="0,00" min="0" step="0.01" />
+
+    <label>Tipo de Rescisão</label>
+    <select id="tipo">
+      <option value="sem_justa">Sem justa causa (demissão pela empresa)</option>
+      <option value="pedido">Pedido de demissão (funcionário pediu)</option>
+      <option value="acordo">Acordo entre as partes</option>
+    </select>
+
+    <div class="toggle-group">
+      <div class="toggle-item">
+        <span>Pagar FGTS (8% ao mês)</span>
+        <label class="toggle"><input type="checkbox" id="fgts" /><span class="slider"></span></label>
+      </div>
+      <div class="toggle-item" id="wrap-multa">
+        <span>Pagar Multa do FGTS (40%)</span>
+        <label class="toggle"><input type="checkbox" id="multa" /><span class="slider"></span></label>
+      </div>
+      <div class="toggle-item" id="wrap-aviso">
+        <span>Aviso Prévio Indenizado</span>
+        <label class="toggle"><input type="checkbox" id="aviso_ind" checked /><span class="slider"></span></label>
+      </div>
     </div>
+
+    <hr class="divider" />
+    <p class="secao">Outros Descontos</p>
+    <div class="desconto-lista" id="desconto-lista"></div>
+    <button class="btn-add" onclick="addDesconto()">+ Adicionar desconto</button>
+
+    <button class="btn-calcular" onclick="calcular()">Calcular Rescisão</button>
   </div>
 
-  <div class="info-periodo" id="info-periodo"></div>
-
-  <hr class="divider" />
-  <p class="secao">Dados da Rescisão</p>
-
-  <label>Salário Mensal (R$)</label>
-  <input type="number" id="salario" placeholder="0,00" min="0" step="0.01" />
-
-  <label>Tipo de Rescisão</label>
-  <select id="tipo">
-    <option value="sem_justa">Sem justa causa (demissão pela empresa)</option>
-    <option value="pedido">Pedido de demissão (funcionário pediu)</option>
-    <option value="acordo">Acordo entre as partes</option>
-  </select>
-
-  <div class="toggle-group">
-    <div class="toggle-item">
-      <span>Pagar FGTS (8% ao mês)</span>
-      <label class="toggle">
-        <input type="checkbox" id="fgts" />
-        <span class="slider"></span>
-      </label>
-    </div>
-    <div class="toggle-item" id="wrap-multa">
-      <span>Pagar Multa do FGTS (40%)</span>
-      <label class="toggle">
-        <input type="checkbox" id="multa" />
-        <span class="slider"></span>
-      </label>
-    </div>
-    <div class="toggle-item" id="wrap-aviso">
-      <span>Aviso Prévio Indenizado</span>
-      <label class="toggle">
-        <input type="checkbox" id="aviso_ind" checked />
-        <span class="slider"></span>
-      </label>
-    </div>
-  </div>
-
-  <button onclick="calcular()">Calcular Rescisão</button>
-
+  <!-- Resultado -->
   <div class="resultado" id="resultado">
-    <div class="resultado-header">
-      <div class="empresa-nome" id="r-empresa"></div>
-      <div class="func-nome" id="r-funcionario"></div>
-      <div class="periodo" id="r-periodo"></div>
+    <div class="recibo-print">
+      <div class="resultado-header">
+        <div class="empresa-nome" id="r-empresa"></div>
+        <div class="func-nome" id="r-funcionario"></div>
+        <div class="periodo" id="r-periodo"></div>
+      </div>
+      <div class="resultado-body">
+        <h2>Verbas Rescisórias</h2>
+        <div class="linha">
+          <span>Saldo de salário</span>
+          <span id="r-saldo" class="valor-pos"></span>
+        </div>
+        <div class="linha" id="linha-aviso">
+          <span>Aviso prévio indenizado</span>
+          <span id="r-aviso" class="valor-pos"></span>
+        </div>
+        <div class="linha">
+          <span>13º salário proporcional</span>
+          <span id="r-decimo" class="valor-pos"></span>
+        </div>
+        <div class="linha">
+          <span>Férias proporcionais + 1/3</span>
+          <span id="r-ferias" class="valor-pos"></span>
+        </div>
+        <div class="linha" id="linha-fgts">
+          <span>FGTS acumulado <span class="badge">8%/mês</span></span>
+          <span id="r-fgts" class="valor-pos"></span>
+        </div>
+        <div class="linha" id="linha-multa">
+          <span>Multa do FGTS <span class="badge">40%</span></span>
+          <span id="r-multa" class="valor-pos"></span>
+        </div>
+
+        <div id="secao-descontos" style="display:none">
+          <h2>Descontos</h2>
+          <div id="r-descontos-lista"></div>
+        </div>
+
+        <div class="linha destaque" style="margin-top:10px">
+          <span>TOTAL BRUTO</span>
+          <span id="r-bruto" class="valor-pos"></span>
+        </div>
+        <div class="linha destaque" id="linha-desc-total" style="display:none">
+          <span>(-) Total de Descontos</span>
+          <span id="r-desc-total" class="valor-neg"></span>
+        </div>
+        <div class="linha destaque" style="border-top: 2px solid #1e293b; padding-top:10px; margin-top:4px">
+          <span>VALOR LÍQUIDO A RECEBER</span>
+          <span id="r-total" class="valor-pos"></span>
+        </div>
+
+        <div class="aviso-box no-print" id="aviso-box"></div>
+
+        <!-- Assinaturas para impressão -->
+        <div class="assinaturas">
+          <div class="ass-linha" id="ass-empresa">Assinatura da Empresa</div>
+          <div class="ass-linha" id="ass-func">Assinatura do Funcionário</div>
+        </div>
+      </div>
     </div>
-    <div class="resultado-body">
-      <h2>Verbas Rescisórias</h2>
 
-      <div class="linha">
-        <span>Saldo de salário</span>
-        <span id="r-saldo" class="valor-pos">R$ 0,00</span>
-      </div>
-      <div class="linha" id="linha-aviso">
-        <span>Aviso prévio indenizado</span>
-        <span id="r-aviso" class="valor-pos">R$ 0,00</span>
-      </div>
-      <div class="linha">
-        <span>13º salário proporcional</span>
-        <span id="r-decimo" class="valor-pos">R$ 0,00</span>
-      </div>
-      <div class="linha">
-        <span>Férias proporcionais + 1/3</span>
-        <span id="r-ferias" class="valor-pos">R$ 0,00</span>
-      </div>
-      <div class="linha" id="linha-fgts">
-        <span>FGTS acumulado <span class="badge">8%/mês</span></span>
-        <span id="r-fgts" class="valor-pos">R$ 0,00</span>
-      </div>
-      <div class="linha" id="linha-multa">
-        <span>Multa do FGTS <span class="badge">40%</span></span>
-        <span id="r-multa" class="valor-pos">R$ 0,00</span>
-      </div>
-
-      <div class="linha destaque">
-        <span>TOTAL A PAGAR</span>
-        <span id="r-total" class="valor-pos">R$ 0,00</span>
-      </div>
-
-      <div class="aviso-box" id="aviso-box"></div>
-    </div>
+    <button class="btn-imprimir no-print" onclick="window.print()">
+      🖨️ Imprimir / Salvar como PDF
+    </button>
   </div>
 </div>
 
@@ -337,11 +404,48 @@
   const fmt = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const fmtData = d => d.toLocaleDateString('pt-BR');
 
-  function calcularMeses(admissao, demissao) {
-    let anos = demissao.getFullYear() - admissao.getFullYear();
-    let meses = demissao.getMonth() - admissao.getMonth();
+  // ---- Descontos ----
+  let descontos = [];
+
+  function addDesconto() {
+    const id = Date.now();
+    descontos.push({ id, desc: '', valor: 0 });
+    renderDescontos();
+  }
+
+  function remDesconto(id) {
+    descontos = descontos.filter(d => d.id !== id);
+    renderDescontos();
+  }
+
+  function renderDescontos() {
+    const lista = document.getElementById('desconto-lista');
+    lista.innerHTML = '';
+    descontos.forEach(d => {
+      const row = document.createElement('div');
+      row.className = 'desconto-item';
+      row.innerHTML = `
+        <input type="text" placeholder="Descrição (ex: Adiantamento)" value="${d.desc}"
+          oninput="updateDesconto(${d.id},'desc',this.value)" style="margin-bottom:0" />
+        <input type="number" placeholder="R$ 0,00" value="${d.valor || ''}" min="0" step="0.01"
+          oninput="updateDesconto(${d.id},'valor',this.value)" style="margin-bottom:0" />
+        <button class="btn-rem" onclick="remDesconto(${d.id})">✕</button>
+      `;
+      lista.appendChild(row);
+    });
+  }
+
+  function updateDesconto(id, campo, val) {
+    const d = descontos.find(x => x.id === id);
+    if (d) d[campo] = campo === 'valor' ? (parseFloat(val) || 0) : val;
+  }
+
+  // ---- Datas ----
+  function calcularMeses(adm, dem) {
+    let anos = dem.getFullYear() - adm.getFullYear();
+    let meses = dem.getMonth() - adm.getMonth();
     let total = anos * 12 + meses;
-    if (demissao.getDate() >= admissao.getDate()) total += 1;
+    if (dem.getDate() >= adm.getDate()) total += 1;
     return Math.max(total, 1);
   }
 
@@ -355,11 +459,11 @@
     if (dem <= adm) { info.style.display = 'none'; return; }
     const meses = calcularMeses(adm, dem);
     const anos = Math.floor(meses / 12);
-    const mesesResto = meses % 12;
-    let texto = `Período: ${fmtData(adm)} até ${fmtData(dem)} — `;
-    if (anos > 0) texto += `${anos} ano(s) e `;
-    texto += `${mesesResto} mês(es) (${meses} meses no total)`;
-    info.textContent = texto;
+    const rest = meses % 12;
+    let txt = `Período: ${fmtData(adm)} até ${fmtData(dem)} — `;
+    if (anos > 0) txt += `${anos} ano(s) e `;
+    txt += `${rest} mês(es) (${meses} meses no total)`;
+    info.textContent = txt;
     info.style.display = 'block';
   }
 
@@ -394,6 +498,7 @@
     }
   });
 
+  // ---- Calcular ----
   function calcular() {
     const empresa = document.getElementById('empresa').value.trim();
     const funcionario = document.getElementById('funcionario').value.trim();
@@ -410,27 +515,21 @@
 
     const adm = new Date(admStr + 'T00:00:00');
     const dem = new Date(demStr + 'T00:00:00');
-
     if (dem <= adm) { alert('A data de demissão deve ser posterior à admissão.'); return; }
 
     const meses = calcularMeses(adm, dem);
     const diaDesligamento = dem.getDate();
     const diasNoMes = new Date(dem.getFullYear(), dem.getMonth() + 1, 0).getDate();
 
-    // Saldo de salário (dias trabalhados no último mês)
     const saldo = (salario / diasNoMes) * diaDesligamento;
 
-    // Aviso prévio
     const anos = Math.floor(meses / 12);
     const diasAviso = Math.min(30 + (anos * 3), 90);
     const aviso = avisoPago ? (salario / 30) * diasAviso : 0;
 
-    // 13º proporcional — meses trabalhados no ano da demissão
     const mesesNoAno = dem.getMonth() + 1;
     const decimoProp = (salario / 12) * mesesNoAno;
 
-    // Férias proporcionais + 1/3
-    // Calcula meses desde o último aniversário de contrato
     const ultimoAniversario = new Date(dem.getFullYear(), adm.getMonth(), adm.getDate());
     if (ultimoAniversario > dem) ultimoAniversario.setFullYear(dem.getFullYear() - 1);
     let mesesFerias = (dem.getFullYear() - ultimoAniversario.getFullYear()) * 12
@@ -439,48 +538,69 @@
     mesesFerias = Math.min(Math.max(mesesFerias, 1), 12);
     const feriasTotal = (salario / 12) * mesesFerias * (4 / 3);
 
-    // FGTS acumulado
     const fgtsAcum = pagarFgts ? salario * 0.08 * meses : 0;
-
-    // Multa 40%
     const multaVal = (pagarFgts && pagarMulta) ? fgtsAcum * 0.40 : 0;
 
-    // Ajuste acordo
     let aviso_final = aviso;
     let multa_final = multaVal;
-    if (tipo === 'acordo') {
-      aviso_final = aviso * 0.5;
-      multa_final = multaVal * 0.5;
-    }
+    if (tipo === 'acordo') { aviso_final *= 0.5; multa_final *= 0.5; }
 
-    const total = saldo + aviso_final + decimoProp + feriasTotal + fgtsAcum + multa_final;
+    const bruto = saldo + aviso_final + decimoProp + feriasTotal + fgtsAcum + multa_final;
 
-    // Header do resultado
+    const totalDescontos = descontos.reduce((s, d) => s + (d.valor || 0), 0);
+    const liquido = bruto - totalDescontos;
+
+    // Header
     document.getElementById('r-empresa').textContent = empresa || 'Empresa não informada';
     document.getElementById('r-funcionario').textContent = funcionario || 'Funcionário não informado';
-    const anosText = anos > 0 ? `${anos} ano(s) e ` : '';
-    const mesesResto = meses % 12;
-    document.getElementById('r-periodo').textContent =
-      `${fmtData(adm)} → ${fmtData(dem)}  •  ${anosText}${mesesResto} mês(es)  •  ${meses} meses`;
+    document.getElementById('ass-empresa').textContent = empresa || 'Assinatura da Empresa';
+    document.getElementById('ass-func').textContent = funcionario || 'Assinatura do Funcionário';
 
-    // Valores
+    const anosTxt = anos > 0 ? `${anos} ano(s) e ` : '';
+    const mResto = meses % 12;
+    document.getElementById('r-periodo').textContent =
+      `${fmtData(adm)} → ${fmtData(dem)}  •  ${anosTxt}${mResto} mês(es)  •  ${meses} meses no total`;
+
     document.getElementById('r-saldo').textContent = fmt(saldo);
     document.getElementById('r-aviso').textContent = fmt(aviso_final);
     document.getElementById('r-decimo').textContent = fmt(decimoProp);
     document.getElementById('r-ferias').textContent = fmt(feriasTotal);
     document.getElementById('r-fgts').textContent = fmt(fgtsAcum);
     document.getElementById('r-multa').textContent = fmt(multa_final);
-    document.getElementById('r-total').textContent = fmt(total);
+    document.getElementById('r-bruto').textContent = fmt(bruto);
+    document.getElementById('r-total').textContent = fmt(liquido);
 
     document.getElementById('linha-aviso').className = 'linha' + (aviso_final === 0 ? ' inativo' : '');
     document.getElementById('linha-fgts').className = 'linha' + (!pagarFgts ? ' inativo' : '');
     document.getElementById('linha-multa').className = 'linha' + (multa_final === 0 ? ' inativo' : '');
 
+    // Descontos
+    const secDesc = document.getElementById('secao-descontos');
+    const listaDesc = document.getElementById('r-descontos-lista');
+    const linhaDescTotal = document.getElementById('linha-desc-total');
+    listaDesc.innerHTML = '';
+    if (descontos.length > 0 && totalDescontos > 0) {
+      secDesc.style.display = 'block';
+      linhaDescTotal.style.display = 'flex';
+      descontos.forEach(d => {
+        if (d.valor > 0) {
+          const div = document.createElement('div');
+          div.className = 'linha';
+          div.innerHTML = `<span>${d.desc || 'Desconto'}</span><span class="valor-neg">- ${fmt(d.valor)}</span>`;
+          listaDesc.appendChild(div);
+        }
+      });
+      document.getElementById('r-desc-total').textContent = fmt(totalDescontos);
+    } else {
+      secDesc.style.display = 'none';
+      linhaDescTotal.style.display = 'none';
+    }
+
     const msgs = [];
-    if (tipo === 'acordo') msgs.push('Rescisão por acordo: aviso prévio e multa do FGTS reduzidos em 50%.');
+    if (tipo === 'acordo') msgs.push('Rescisão por acordo: aviso prévio e multa reduzidos em 50%.');
     if (tipo === 'pedido') msgs.push('Pedido de demissão: sem aviso indenizado e sem multa do FGTS.');
-    if (!pagarFgts) msgs.push('FGTS não incluído no cálculo.');
-    msgs.push(`Aviso prévio: ${diasAviso} dias (${anos} ano(s) completo(s)). Férias: ${mesesFerias} mês(es) do período aquisitivo.`);
+    if (!pagarFgts) msgs.push('FGTS não incluído.');
+    msgs.push(`Aviso: ${diasAviso} dias (${anos} ano(s) completo(s)). Férias: ${mesesFerias} mês(es) do período aquisitivo.`);
     document.getElementById('aviso-box').textContent = msgs.join(' ');
 
     document.getElementById('resultado').style.display = 'block';
