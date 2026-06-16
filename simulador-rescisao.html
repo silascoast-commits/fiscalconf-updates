@@ -20,7 +20,7 @@
       box-shadow: 0 2px 16px rgba(0,0,0,0.1);
       padding: 32px;
       width: 100%;
-      max-width: 560px;
+      max-width: 580px;
       height: fit-content;
     }
     h1 {
@@ -31,7 +31,16 @@
     .subtitle {
       font-size: 0.85rem;
       color: #64748b;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
+    }
+    .secao {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 12px;
+      margin-top: 6px;
     }
     label {
       display: block;
@@ -40,7 +49,10 @@
       color: #374151;
       margin-bottom: 5px;
     }
-    input[type="number"], select {
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    select {
       width: 100%;
       padding: 10px 12px;
       border: 1.5px solid #d1d5db;
@@ -49,15 +61,26 @@
       color: #1e293b;
       background: #f9fafb;
       transition: border-color 0.2s;
-      margin-bottom: 18px;
+      margin-bottom: 14px;
     }
-    input[type="number"]:focus, select:focus {
+    input:focus, select:focus {
       outline: none;
       border-color: #3b82f6;
       background: #fff;
     }
-    .row { display: flex; gap: 16px; }
+    .row { display: flex; gap: 14px; }
     .row > div { flex: 1; }
+
+    .info-periodo {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.82rem;
+      color: #15803d;
+      margin-bottom: 16px;
+      display: none;
+    }
 
     .toggle-group {
       display: flex;
@@ -125,12 +148,38 @@
       margin-top: 28px;
       display: none;
     }
-    .resultado h2 {
-      font-size: 1rem;
-      color: #1e293b;
-      margin-bottom: 14px;
-      border-bottom: 2px solid #e2e8f0;
-      padding-bottom: 8px;
+    .resultado-header {
+      background: #1e293b;
+      border-radius: 10px 10px 0 0;
+      padding: 18px 20px;
+      color: #fff;
+    }
+    .resultado-header .empresa-nome {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      margin-bottom: 2px;
+    }
+    .resultado-header .func-nome {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .resultado-header .periodo {
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      margin-top: 4px;
+    }
+    .resultado-body {
+      border: 1.5px solid #e2e8f0;
+      border-top: none;
+      border-radius: 0 0 10px 10px;
+      padding: 18px 20px;
+    }
+    .resultado-body h2 {
+      font-size: 0.9rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
     }
     .linha {
       display: flex;
@@ -147,7 +196,7 @@
       border-bottom: none;
       margin-top: 6px;
     }
-    .linha.inativo { color: #94a3b8; text-decoration: line-through; }
+    .linha.inativo { color: #cbd5e1; text-decoration: line-through; }
     .valor-pos { color: #16a34a; }
     .badge {
       display: inline-block;
@@ -166,7 +215,12 @@
       padding: 10px 14px;
       font-size: 0.8rem;
       color: #1d4ed8;
-      margin-top: 16px;
+      margin-top: 14px;
+    }
+    hr.divider {
+      border: none;
+      border-top: 1.5px solid #e2e8f0;
+      margin: 18px 0;
     }
   </style>
 </head>
@@ -175,16 +229,32 @@
   <h1>Simulador de Rescisão</h1>
   <p class="subtitle">Sem desconto de INSS &nbsp;•&nbsp; Trabalhador informal / CLT sem registro</p>
 
+  <p class="secao">Dados da Empresa e Funcionário</p>
+
+  <label>Nome da Empresa</label>
+  <input type="text" id="empresa" placeholder="Ex: Padaria São João" />
+
+  <label>Nome do Funcionário</label>
+  <input type="text" id="funcionario" placeholder="Ex: João da Silva" />
+
   <div class="row">
     <div>
-      <label>Salário Mensal (R$)</label>
-      <input type="number" id="salario" placeholder="0,00" min="0" step="0.01" />
+      <label>Data de Admissão</label>
+      <input type="date" id="admissao" />
     </div>
     <div>
-      <label>Meses Trabalhados</label>
-      <input type="number" id="meses" placeholder="0" min="1" max="600" />
+      <label>Data de Demissão</label>
+      <input type="date" id="demissao" />
     </div>
   </div>
+
+  <div class="info-periodo" id="info-periodo"></div>
+
+  <hr class="divider" />
+  <p class="secao">Dados da Rescisão</p>
+
+  <label>Salário Mensal (R$)</label>
+  <input type="number" id="salario" placeholder="0,00" min="0" step="0.01" />
 
   <label>Tipo de Rescisão</label>
   <select id="tipo">
@@ -220,44 +290,81 @@
   <button onclick="calcular()">Calcular Rescisão</button>
 
   <div class="resultado" id="resultado">
-    <h2>Resumo da Rescisão</h2>
+    <div class="resultado-header">
+      <div class="empresa-nome" id="r-empresa"></div>
+      <div class="func-nome" id="r-funcionario"></div>
+      <div class="periodo" id="r-periodo"></div>
+    </div>
+    <div class="resultado-body">
+      <h2>Verbas Rescisórias</h2>
 
-    <div class="linha">
-      <span>Saldo de salário (dias restantes)</span>
-      <span id="r-saldo" class="valor-pos">R$ 0,00</span>
-    </div>
-    <div class="linha" id="linha-aviso">
-      <span>Aviso prévio indenizado</span>
-      <span id="r-aviso" class="valor-pos">R$ 0,00</span>
-    </div>
-    <div class="linha">
-      <span>13º salário proporcional</span>
-      <span id="r-decimo" class="valor-pos">R$ 0,00</span>
-    </div>
-    <div class="linha">
-      <span>Férias proporcionais + 1/3</span>
-      <span id="r-ferias" class="valor-pos">R$ 0,00</span>
-    </div>
-    <div class="linha" id="linha-fgts">
-      <span>FGTS acumulado <span class="badge">8%/mês</span></span>
-      <span id="r-fgts" class="valor-pos">R$ 0,00</span>
-    </div>
-    <div class="linha" id="linha-multa">
-      <span>Multa do FGTS <span class="badge">40%</span></span>
-      <span id="r-multa" class="valor-pos">R$ 0,00</span>
-    </div>
+      <div class="linha">
+        <span>Saldo de salário</span>
+        <span id="r-saldo" class="valor-pos">R$ 0,00</span>
+      </div>
+      <div class="linha" id="linha-aviso">
+        <span>Aviso prévio indenizado</span>
+        <span id="r-aviso" class="valor-pos">R$ 0,00</span>
+      </div>
+      <div class="linha">
+        <span>13º salário proporcional</span>
+        <span id="r-decimo" class="valor-pos">R$ 0,00</span>
+      </div>
+      <div class="linha">
+        <span>Férias proporcionais + 1/3</span>
+        <span id="r-ferias" class="valor-pos">R$ 0,00</span>
+      </div>
+      <div class="linha" id="linha-fgts">
+        <span>FGTS acumulado <span class="badge">8%/mês</span></span>
+        <span id="r-fgts" class="valor-pos">R$ 0,00</span>
+      </div>
+      <div class="linha" id="linha-multa">
+        <span>Multa do FGTS <span class="badge">40%</span></span>
+        <span id="r-multa" class="valor-pos">R$ 0,00</span>
+      </div>
 
-    <div class="linha destaque">
-      <span>TOTAL A PAGAR</span>
-      <span id="r-total" class="valor-pos">R$ 0,00</span>
-    </div>
+      <div class="linha destaque">
+        <span>TOTAL A PAGAR</span>
+        <span id="r-total" class="valor-pos">R$ 0,00</span>
+      </div>
 
-    <div class="aviso-box" id="aviso-box"></div>
+      <div class="aviso-box" id="aviso-box"></div>
+    </div>
   </div>
 </div>
 
 <script>
   const fmt = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const fmtData = d => d.toLocaleDateString('pt-BR');
+
+  function calcularMeses(admissao, demissao) {
+    let anos = demissao.getFullYear() - admissao.getFullYear();
+    let meses = demissao.getMonth() - admissao.getMonth();
+    let total = anos * 12 + meses;
+    if (demissao.getDate() >= admissao.getDate()) total += 1;
+    return Math.max(total, 1);
+  }
+
+  function atualizarPeriodo() {
+    const admStr = document.getElementById('admissao').value;
+    const demStr = document.getElementById('demissao').value;
+    const info = document.getElementById('info-periodo');
+    if (!admStr || !demStr) { info.style.display = 'none'; return; }
+    const adm = new Date(admStr + 'T00:00:00');
+    const dem = new Date(demStr + 'T00:00:00');
+    if (dem <= adm) { info.style.display = 'none'; return; }
+    const meses = calcularMeses(adm, dem);
+    const anos = Math.floor(meses / 12);
+    const mesesResto = meses % 12;
+    let texto = `Período: ${fmtData(adm)} até ${fmtData(dem)} — `;
+    if (anos > 0) texto += `${anos} ano(s) e `;
+    texto += `${mesesResto} mês(es) (${meses} meses no total)`;
+    info.textContent = texto;
+    info.style.display = 'block';
+  }
+
+  document.getElementById('admissao').addEventListener('change', atualizarPeriodo);
+  document.getElementById('demissao').addEventListener('change', atualizarPeriodo);
 
   document.getElementById('tipo').addEventListener('change', () => {
     const tipo = document.getElementById('tipo').value;
@@ -288,45 +395,57 @@
   });
 
   function calcular() {
+    const empresa = document.getElementById('empresa').value.trim();
+    const funcionario = document.getElementById('funcionario').value.trim();
+    const admStr = document.getElementById('admissao').value;
+    const demStr = document.getElementById('demissao').value;
     const salario = parseFloat(document.getElementById('salario').value) || 0;
-    const meses = parseInt(document.getElementById('meses').value) || 0;
     const tipo = document.getElementById('tipo').value;
     const pagarFgts = document.getElementById('fgts').checked;
     const pagarMulta = document.getElementById('multa').checked;
     const avisoPago = document.getElementById('aviso_ind').checked;
 
-    if (salario <= 0 || meses <= 0) {
-      alert('Preencha o salário e os meses trabalhados.');
-      return;
-    }
+    if (!admStr || !demStr) { alert('Preencha as datas de admissão e demissão.'); return; }
+    if (salario <= 0) { alert('Preencha o salário mensal.'); return; }
 
-    const hoje = new Date();
-    const diaAtual = hoje.getDate();
-    const diasMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
+    const adm = new Date(admStr + 'T00:00:00');
+    const dem = new Date(demStr + 'T00:00:00');
 
-    // Saldo de salário
-    const saldo = (salario / diasMes) * diaAtual;
+    if (dem <= adm) { alert('A data de demissão deve ser posterior à admissão.'); return; }
 
-    // Aviso prévio (30 dias base + 3 por ano, máx 90)
+    const meses = calcularMeses(adm, dem);
+    const diaDesligamento = dem.getDate();
+    const diasNoMes = new Date(dem.getFullYear(), dem.getMonth() + 1, 0).getDate();
+
+    // Saldo de salário (dias trabalhados no último mês)
+    const saldo = (salario / diasNoMes) * diaDesligamento;
+
+    // Aviso prévio
     const anos = Math.floor(meses / 12);
     const diasAviso = Math.min(30 + (anos * 3), 90);
     const aviso = avisoPago ? (salario / 30) * diasAviso : 0;
 
-    // 13º proporcional — meses do ano corrente
-    const mesesAno = ((meses - 1) % 12) + 1;
-    const decimoProp = (salario / 12) * mesesAno;
+    // 13º proporcional — meses trabalhados no ano da demissão
+    const mesesNoAno = dem.getMonth() + 1;
+    const decimoProp = (salario / 12) * mesesNoAno;
 
     // Férias proporcionais + 1/3
-    const feriasProp = (salario / 12) * mesesAno;
-    const feriasTotal = feriasProp * (4 / 3);
+    // Calcula meses desde o último aniversário de contrato
+    const ultimoAniversario = new Date(dem.getFullYear(), adm.getMonth(), adm.getDate());
+    if (ultimoAniversario > dem) ultimoAniversario.setFullYear(dem.getFullYear() - 1);
+    let mesesFerias = (dem.getFullYear() - ultimoAniversario.getFullYear()) * 12
+      + (dem.getMonth() - ultimoAniversario.getMonth());
+    if (dem.getDate() >= ultimoAniversario.getDate()) mesesFerias += 1;
+    mesesFerias = Math.min(Math.max(mesesFerias, 1), 12);
+    const feriasTotal = (salario / 12) * mesesFerias * (4 / 3);
 
     // FGTS acumulado
     const fgtsAcum = pagarFgts ? salario * 0.08 * meses : 0;
 
-    // Multa 40% sobre FGTS
+    // Multa 40%
     const multaVal = (pagarFgts && pagarMulta) ? fgtsAcum * 0.40 : 0;
 
-    // Ajuste acordo: 50% do aviso e da multa
+    // Ajuste acordo
     let aviso_final = aviso;
     let multa_final = multaVal;
     if (tipo === 'acordo') {
@@ -336,32 +455,33 @@
 
     const total = saldo + aviso_final + decimoProp + feriasTotal + fgtsAcum + multa_final;
 
-    // Renderizar
+    // Header do resultado
+    document.getElementById('r-empresa').textContent = empresa || 'Empresa não informada';
+    document.getElementById('r-funcionario').textContent = funcionario || 'Funcionário não informado';
+    const anosText = anos > 0 ? `${anos} ano(s) e ` : '';
+    const mesesResto = meses % 12;
+    document.getElementById('r-periodo').textContent =
+      `${fmtData(adm)} → ${fmtData(dem)}  •  ${anosText}${mesesResto} mês(es)  •  ${meses} meses`;
+
+    // Valores
     document.getElementById('r-saldo').textContent = fmt(saldo);
+    document.getElementById('r-aviso').textContent = fmt(aviso_final);
     document.getElementById('r-decimo').textContent = fmt(decimoProp);
     document.getElementById('r-ferias').textContent = fmt(feriasTotal);
-    document.getElementById('r-aviso').textContent = fmt(aviso_final);
     document.getElementById('r-fgts').textContent = fmt(fgtsAcum);
     document.getElementById('r-multa').textContent = fmt(multa_final);
     document.getElementById('r-total').textContent = fmt(total);
 
-    const linhaAviso = document.getElementById('linha-aviso');
-    linhaAviso.className = 'linha' + (aviso_final === 0 ? ' inativo' : '');
+    document.getElementById('linha-aviso').className = 'linha' + (aviso_final === 0 ? ' inativo' : '');
+    document.getElementById('linha-fgts').className = 'linha' + (!pagarFgts ? ' inativo' : '');
+    document.getElementById('linha-multa').className = 'linha' + (multa_final === 0 ? ' inativo' : '');
 
-    const linhaFgts = document.getElementById('linha-fgts');
-    linhaFgts.className = 'linha' + (!pagarFgts ? ' inativo' : '');
-
-    const linhaMulta = document.getElementById('linha-multa');
-    linhaMulta.className = 'linha' + (multa_final === 0 ? ' inativo' : '');
-
-    // Aviso informativo
-    const avisoBox = document.getElementById('aviso-box');
     const msgs = [];
     if (tipo === 'acordo') msgs.push('Rescisão por acordo: aviso prévio e multa do FGTS reduzidos em 50%.');
     if (tipo === 'pedido') msgs.push('Pedido de demissão: sem aviso indenizado e sem multa do FGTS.');
     if (!pagarFgts) msgs.push('FGTS não incluído no cálculo.');
-    msgs.push(`Aviso prévio calculado em ${diasAviso} dias (${anos} ano(s) completo(s)).`);
-    avisoBox.textContent = msgs.join(' ');
+    msgs.push(`Aviso prévio: ${diasAviso} dias (${anos} ano(s) completo(s)). Férias: ${mesesFerias} mês(es) do período aquisitivo.`);
+    document.getElementById('aviso-box').textContent = msgs.join(' ');
 
     document.getElementById('resultado').style.display = 'block';
     document.getElementById('resultado').scrollIntoView({ behavior: 'smooth' });
