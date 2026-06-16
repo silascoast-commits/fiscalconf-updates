@@ -148,10 +148,6 @@
         <div class="result-row"><span class="lbl">(-) Deduções (dep. + outras)</span><span class="v neg" id="r-clt-deducoes">—</span></div>
         <div class="result-row"><span class="lbl">= Base cálculo IRRF</span><span class="v neu" id="r-clt-base-irrf">—</span></div>
         <div class="result-row"><span class="lbl">(-) IRRF <span id="r-clt-irrf-pct" class="abadge r"></span></span><span class="v neg" id="r-clt-irrf">—</span></div>
-        <div class="divider-label">Custo empresa (encargos patronais)</div>
-        <div class="result-row"><span class="lbl">INSS Patronal (20%)</span><span class="v warn" id="r-clt-patronal">—</span></div>
-        <div class="result-row"><span class="lbl">FGTS (8%)</span><span class="v warn" id="r-clt-fgts">—</span></div>
-        <div class="result-row"><span class="lbl">Custo Total Empresa</span><span class="v warn" id="r-clt-custo">—</span></div>
       </div>
       <div class="result-total"><span class="tl">🏠 Salário Líquido (você recebe)</span><span id="r-clt-liquido" style="color:var(--clt)">—</span></div>
       <div class="result-total" style="margin-top:8px"><span class="tl">📉 Carga tributária (% sobre bruto)</span><span id="r-clt-carga" style="color:var(--warn)">—</span></div>
@@ -267,7 +263,6 @@
           <div class="result-row"><span class="lbl">Carga trib.</span><span class="v warn" id="cc-carga">—</span></div>
           <div class="result-row"><span class="lbl">INSS</span><span class="v neg" id="cc-inss">—</span></div>
           <div class="result-row"><span class="lbl">IRRF</span><span class="v neg" id="cc-irrf">—</span></div>
-          <div class="result-row"><span class="lbl">Custo empresa</span><span class="v warn" id="cc-custo">—</span></div>
         </div>
       </div>
       <div class="comp-card" id="comp-pj-card">
@@ -522,9 +517,6 @@ function calcCLT(){
   }
 
   const liq     = sal - inss - irrf.valor;
-  const patron  = sal*0.20;
-  const fgts    = sal*0.08;
-  const custo   = sal + patron + fgts;
   const carga   = sal>0 ? (inss+irrf.valor)/sal*100 : 0;
   const inssAliq= sal>0 ? inss/sal*100 : 0;
 
@@ -535,13 +527,10 @@ function calcCLT(){
   sv('r-clt-base-irrf', fmt(baseIR),      'neu');
   document.getElementById('r-clt-irrf-pct').textContent = pct(irrf.aliq);
   sv('r-clt-irrf',      irrf.valor>0 ? '- '+fmt(irrf.valor) : (T.isentoAte5k&&sal<=5000?'Isento (≤ R$ 5.000)':'Isento'), irrf.valor>0?'neg':'pos');
-  sv('r-clt-patronal',  fmt(patron), 'warn');
-  sv('r-clt-fgts',      fmt(fgts),   'warn');
-  sv('r-clt-custo',     fmt(custo),  'warn');
   document.getElementById('r-clt-liquido').textContent = fmt(liq);
   document.getElementById('r-clt-carga').textContent   = pct(carga)+' sobre bruto';
 
-  lastCLT = {sal, inss, irrf:irrf.valor, liq, patron, fgts, custo, carga};
+  lastCLT = {sal, inss, irrf:irrf.valor, liq, carga};
 }
 
 // ─── CALC PJ ────────────────────────────────────────────────────────────────
@@ -615,7 +604,6 @@ function updateComp(){
   document.getElementById('cc-carga').textContent = pct(lastCLT.carga||0);
   document.getElementById('cc-inss').textContent  = fmt(lastCLT.inss||0);
   document.getElementById('cc-irrf').textContent  = fmt(lastCLT.irrf||0);
-  document.getElementById('cc-custo').textContent = fmt(lastCLT.custo||0);
   document.getElementById('cp-carga').textContent  = pct(lastPJ.carga||0);
   document.getElementById('cp-simples').textContent = fmt(lastPJ.simples||0);
   document.getElementById('cp-inss').textContent   = fmt(lastPJ.inssPL||0);
