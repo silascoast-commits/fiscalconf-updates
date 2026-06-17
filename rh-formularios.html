@@ -320,7 +320,10 @@
         </div>
       </div>
       <div class="field">
-        <label id="motivoLabel">Motivo / Descrição da Ocorrência</label>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <label id="motivoLabel" style="margin-bottom:0">Motivo / Descrição da Ocorrência</label>
+          <button type="button" class="btn secondary" style="padding:4px 10px;font-size:12px;" onclick="carregarModeloPadrao(true)">Carregar Modelo Padrão</button>
+        </div>
         <textarea id="formMotivo" placeholder="Descreva detalhadamente o motivo, data e circunstâncias da ocorrência..."></textarea>
       </div>
       <div class="actions">
@@ -390,6 +393,72 @@ const TIPOS_DOCUMENTO = [
   { id:'telegrama', label:'Telegrama / Notificação Formal' },
   { id:'recibo_13', label:'Recibo de Adiantamento 13º Salário' },
 ];
+
+const MODELOS_MOTIVO = {
+  advertencia: (f,d)=>
+`No dia ${d}, o(a) colaborador(a) ${f.nome} cometeu a seguinte irregularidade: [descreva o que aconteceu, ex: chegou atrasado(a) sem justificativa].
+
+Esta foi a [1ª/2ª/3ª] ocorrência deste tipo. O(a) colaborador(a) foi orientado(a) verbalmente sobre a importância de cumprir as normas da empresa.`,
+
+  advertencia_escrita: (f,d)=>
+`No dia ${d}, o(a) colaborador(a) ${f.nome} cometeu a seguinte irregularidade: [descreva detalhadamente o fato, local, horário e testemunhas, se houver].
+
+Já houve orientação anterior sobre o assunto e o(a) colaborador(a) está sendo formalmente advertido(a) por escrito.`,
+
+  advertencia_atraso: (f,d)=>
+`No dia ${d}, o(a) colaborador(a) ${f.nome} registrou atraso/falta não justificado(a) no horário das [informar horário], descumprindo o horário de trabalho estabelecido em contrato e no regulamento interno da empresa.
+
+[Informe se há histórico de atrasos/faltas anteriores e as datas.]`,
+
+  termo_advertencia_epi: (f,d)=>
+`No dia ${d}, constatou-se que o(a) colaborador(a) ${f.nome} não estava utilizando o(s) Equipamento(s) de Proteção Individual (EPI) obrigatório(s) para a função, especificamente: [descrever o EPI não utilizado].
+
+O uso correto dos EPIs é obrigatório nos termos da NR-6 e do art. 158 da CLT, visando a segurança e saúde do trabalhador.`,
+
+  suspensao: (f,d)=>
+`O(a) colaborador(a) ${f.nome} cometeu a seguinte falta grave em ${d}: [descreva detalhadamente o fato].
+
+Esta conduta já havia sido objeto de advertência anterior em [data da advertência anterior], não havendo mudança de comportamento por parte do(a) colaborador(a), o que motiva a presente suspensão disciplinar.`,
+
+  aviso_previo: (f,d)=>
+`Comunicamos que o contrato de trabalho do(a) colaborador(a) ${f.nome} será encerrado por iniciativa da empresa, com início do aviso prévio em ${d}.
+
+[Informe o motivo da dispensa, se aplicável, e demais orientações sobre a entrega de uniformes, crachá, materiais da empresa, etc.]`,
+
+  atestado: (f,d)=>
+`O(a) colaborador(a) ${f.nome} apresentou atestado médico referente ao dia ${d}, emitido pelo(a) Dr(a). [nome do médico/CRM], com o seguinte CID (se informado): [CID].
+
+Período de afastamento: [informar quantidade de dias, se mais de um].`,
+
+  declaracao_horas: (f,d)=>
+`O(a) colaborador(a) ${f.nome} prestou horas extras no dia ${d}, no horário das [hora início] às [hora fim], totalizando [quantidade] hora(s) extra(s), em razão de: [descrever o motivo da necessidade de hora extra].`,
+
+  aviso_ferias: (f,d)=>
+`Período aquisitivo de férias: [informar período, ex: 01/01/2025 a 31/12/2025].
+Período de gozo: início em ${d}.
+
+[Informar se haverá conversão de 1/3 do período em abono pecuniário, conforme art. 143 da CLT.]`,
+
+  pedido_demissao: (f,d)=>
+`O(a) colaborador(a) ${f.nome} solicita o desligamento da empresa por iniciativa própria, com data de saída em ${d}, pelo seguinte motivo (opcional): [descrever motivo, se houver].`,
+
+  telegrama: (f,d)=>
+`Prezado(a) ${f.nome},
+
+Vimos por meio deste notificá-lo(a) sobre: [descrever o assunto da notificação, ex: necessidade de comparecimento à empresa, justificativa de falta, devolução de materiais, etc.], com prazo de resposta/atendimento até [data limite].`,
+
+  recibo_13: (f,d)=>
+`Valor pago a título de adiantamento da primeira parcela do 13º salário: R$ [informar valor].
+Forma de pagamento: [depósito em conta / dinheiro / outro], realizado em ${d}.`,
+};
+
+function modeloPadraoTexto(tipoId, func, dataStr){
+  const gerador = MODELOS_MOTIVO[tipoId];
+  if(!gerador) return '';
+  const f = func || { nome:'[nome do funcionário]' };
+  const d = dataStr ? fmtDate(dataStr) : '[data]';
+  return gerador(f, d);
+}
 
 function load(){
   const raw = localStorage.getItem(STORAGE_KEY);
@@ -589,6 +658,35 @@ function selecionarTipo(id){
     id==='telegrama' ? 'Texto da notificação' :
     id==='recibo_13' ? 'Valor pago e observações' :
     'Motivo / Descrição da Ocorrência';
+
+  carregarModeloPadrao(false);
+}
+
+let ultimoModeloAutoPreenchido = '';
+
+function funcionarioSelecionadoAtual(){
+  const funcId = document.getElementById('formFuncionario').value;
+  return db.funcionarios.find(f=>f.id===funcId);
+}
+
+function carregarModeloPadrao(forcar){
+  if(!tipoSelecionado) return;
+  const textarea = document.getElementById('formMotivo');
+  const atual = textarea.value.trim();
+
+  // Só sobrescreve automaticamente se o campo estiver vazio ou ainda contiver
+  // o último modelo carregado automaticamente (ou seja, o usuário não editou).
+  if(!forcar && atual !== '' && atual !== ultimoModeloAutoPreenchido.trim()){
+    return;
+  }
+
+  const func = funcionarioSelecionadoAtual();
+  const dataStr = document.getElementById('formData').value;
+  const texto = modeloPadraoTexto(tipoSelecionado, func, dataStr);
+  if(!texto) return;
+
+  textarea.value = texto;
+  ultimoModeloAutoPreenchido = texto;
 }
 
 function refreshEmitirView(){
@@ -607,6 +705,9 @@ function refreshEmitirView(){
   }
   document.getElementById('formData').value = new Date().toISOString().slice(0,10);
 }
+
+document.getElementById('formFuncionario').addEventListener('change', ()=> carregarModeloPadrao(false));
+document.getElementById('formData').addEventListener('change', ()=> carregarModeloPadrao(false));
 
 function gerarDocumento(){
   if(!db.empresa || !db.empresa.razaoSocial){
