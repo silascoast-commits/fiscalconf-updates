@@ -206,6 +206,7 @@
   <button data-view="funcionarios">Funcionários</button>
   <button data-view="emitir">Emitir Formulário</button>
   <button data-view="historico">Histórico</button>
+  <button data-view="backup">Backup</button>
 </nav>
 
 <main>
@@ -333,6 +334,34 @@
     <div class="card">
       <h2>Histórico de Formulários Emitidos</h2>
       <div id="historicoTable"></div>
+    </div>
+  </section>
+
+  <!-- BACKUP -->
+  <section id="view-backup" class="view">
+    <div class="card">
+      <h2>Exportar Backup</h2>
+      <p>Gera um arquivo <strong>.json</strong> com todos os dados do sistema (empresa, funcionários e histórico de formulários).
+      Guarde esse arquivo em local seguro (e-mail, nuvem, pendrive) para não perder as informações caso troque de computador
+      ou limpe os dados do navegador.</p>
+      <div class="actions">
+        <button class="btn" onclick="exportarBackup()">Baixar Backup (.json)</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Importar Backup</h2>
+      <p>Selecione um arquivo de backup (.json) gerado anteriormente para restaurar os dados. Você pode optar por
+      <strong>substituir</strong> tudo que está cadastrado agora, ou <strong>mesclar</strong> com os dados atuais
+      (adicionando o que não existir ainda).</p>
+      <div class="field">
+        <label>Arquivo de backup</label>
+        <input type="file" id="inputBackup" accept="application/json">
+      </div>
+      <div class="actions">
+        <button class="btn" onclick="importarBackup('mesclar')">Importar e Mesclar</button>
+        <button class="btn danger" onclick="importarBackup('substituir')">Importar e Substituir Tudo</button>
+      </div>
     </div>
   </section>
 
@@ -938,6 +967,85 @@ function reimprimir(id){
   document.querySelector('nav button[data-view="emitir"]').classList.add('active');
   document.getElementById('view-emitir').classList.add('active');
   renderDocumento(reg, func);
+}
+
+/* ---------- BACKUP ---------- */
+function exportarBackup(){
+  const payload = {
+    sistema: 'dp_sistema_v1',
+    exportadoEm: new Date().toISOString(),
+    dados: db
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const empresaSlug = (db.empresa && db.empresa.razaoSocial)
+    ? db.empresa.razaoSocial.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9]+/g,'_')
+    : 'sistema_dp';
+  const dataSlug = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `backup_${empresaSlug}_${dataSlug}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Backup baixado com sucesso.');
+}
+
+function importarBackup(modo){
+  const input = document.getElementById('inputBackup');
+  const file = input.files[0];
+  if(!file){
+    toast('Selecione um arquivo de backup primeiro.');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    let payload;
+    try{
+      payload = JSON.parse(e.target.result);
+    }catch(err){
+      toast('Arquivo inválido. Selecione um backup .json gerado pelo sistema.');
+      return;
+    }
+
+    const dados = payload.dados || payload;
+    if(!dados || (!dados.empresa && !dados.funcionarios && !dados.historico)){
+      toast('O arquivo não parece ser um backup válido deste sistema.');
+      return;
+    }
+
+    if(modo==='substituir'){
+      if(!confirm('Isso vai apagar TODOS os dados atuais (empresa, funcionários e histórico) e substituir pelo conteúdo do backup. Deseja continuar?')) return;
+      db = {
+        empresa: dados.empresa || {},
+        funcionarios: dados.funcionarios || [],
+        historico: dados.historico || []
+      };
+      toast('Backup importado. Todos os dados foram substituídos.');
+    } else {
+      db.empresa = (db.empresa && db.empresa.razaoSocial) ? db.empresa : (dados.empresa || db.empresa);
+
+      const idsExistentes = new Set(db.funcionarios.map(f=>f.id));
+      (dados.funcionarios||[]).forEach(f=>{
+        if(!idsExistentes.has(f.id)) db.funcionarios.push(f);
+      });
+
+      const idsHistorico = new Set(db.historico.map(h=>h.id));
+      (dados.historico||[]).forEach(h=>{
+        if(!idsHistorico.has(h.id)) db.historico.push(h);
+      });
+      toast('Backup mesclado com os dados atuais.');
+    }
+
+    save();
+    renderEmpresa();
+    renderFuncionarios();
+    renderHistorico();
+    input.value = '';
+  };
+  reader.readAsText(file);
 }
 
 /* ---------- INIT ---------- */
