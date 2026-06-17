@@ -214,7 +214,16 @@
   <!-- EMPRESA -->
   <section id="view-empresa" class="view active">
     <div class="card">
-      <h2>Dados da Empresa</h2>
+      <h2>Empresas Cadastradas</h2>
+      <p style="font-size:13px;color:var(--muted);margin-top:-8px;">
+        Cada empresa tem seus próprios funcionários e histórico de formulários, separados entre si.
+        Marque a empresa como <strong>Ativa</strong> para emitir formulários por ela.
+      </p>
+      <div id="empresasTable"></div>
+    </div>
+
+    <div class="card">
+      <h2 id="empresaFormTitle">Cadastrar Nova Empresa</h2>
       <div class="grid">
         <div class="field">
           <label>Razão Social</label>
@@ -242,7 +251,8 @@
         </div>
       </div>
       <div class="actions">
-        <button class="btn" onclick="salvarEmpresa()">Salvar Empresa</button>
+        <button class="btn" id="empSaveBtn" onclick="salvarEmpresa()">Cadastrar Empresa</button>
+        <button class="btn secondary" id="empCancelBtn" style="display:none" onclick="cancelarEdicaoEmpresa()">Cancelar Edição</button>
       </div>
     </div>
   </section>
@@ -505,15 +515,41 @@ function modeloPadraoTexto(tipoId, func, dataStr){
 
 function load(){
   const raw = localStorage.getItem(STORAGE_KEY);
-  if(raw) return JSON.parse(raw);
-  return { empresa:{}, funcionarios:[], historico:[] };
+  if(!raw) return { empresas:[], empresaAtualId:null, dados:{} };
+
+  const parsed = JSON.parse(raw);
+
+  // Migração: formato antigo tinha uma única empresa (db.empresa) com
+  // funcionarios/historico soltos no nível raiz.
+  if(parsed.empresa && !parsed.empresas){
+    const id = 'emp_' + Date.now();
+    return {
+      empresas: parsed.empresa.razaoSocial ? [{ id, ...parsed.empresa }] : [],
+      empresaAtualId: parsed.empresa.razaoSocial ? id : null,
+      dados: parsed.empresa.razaoSocial ? { [id]: { funcionarios: parsed.funcionarios||[], historico: parsed.historico||[] } } : {}
+    };
+  }
+
+  if(!parsed.empresas) parsed.empresas = [];
+  if(!parsed.dados) parsed.dados = {};
+  return parsed;
 }
 function save(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
 }
 let db = load();
 let editingFuncId = null;
+let editingEmpresaId = null;
 let tipoSelecionado = null;
+
+function empresaAtual(){
+  return db.empresas.find(e=>e.id===db.empresaAtualId) || null;
+}
+function dadosAtuais(){
+  if(!db.empresaAtualId) return { funcionarios:[], historico:[] };
+  if(!db.dados[db.empresaAtualId]) db.dados[db.empresaAtualId] = { funcionarios:[], historico:[] };
+  return db.dados[db.empresaAtualId];
+}
 
 function toast(msg){
   const t = document.getElementById('toast');
@@ -543,14 +579,41 @@ document.querySelectorAll('nav button').forEach(btn=>{
 
 /* ---------- EMPRESA ---------- */
 function renderEmpresa(){
-  const e = db.empresa || {};
-  document.getElementById('empRazaoSocial').value = e.razaoSocial || '';
-  document.getElementById('empFantasia').value = e.fantasia || '';
-  document.getElementById('empCnpj').value = e.cnpj || '';
-  document.getElementById('empEndereco').value = e.endereco || '';
-  document.getElementById('empResponsavel').value = e.responsavel || '';
-  document.getElementById('empResponsavelCargo').value = e.responsavelCargo || '';
-  document.getElementById('headerEmpresa').textContent = e.razaoSocial ? `${e.razaoSocial}${e.cnpj ? ' — '+e.cnpj : ''}` : 'Nenhuma empresa cadastrada';
+  const ativa = empresaAtual();
+  document.getElementById('headerEmpresa').textContent = ativa ? `${ativa.razaoSocial}${ativa.cnpj ? ' — '+ativa.cnpj : ''}` : 'Nenhuma empresa ativa';
+  renderEmpresasList();
+}
+
+function renderEmpresasList(){
+  const wrap = document.getElementById('empresasTable');
+  if(!db.empresas.length){
+    wrap.innerHTML = '<p class="empty">Nenhuma empresa cadastrada ainda. Cadastre abaixo.</p>';
+    return;
+  }
+  let html = `<table><thead><tr>
+    <th>Razão Social</th><th>CNPJ</th><th>Status</th><th></th>
+  </tr></thead><tbody>`;
+  db.empresas.forEach(emp=>{
+    const ativa = emp.id === db.empresaAtualId;
+    html += `<tr>
+      <td>${emp.razaoSocial}</td>
+      <td>${emp.cnpj||'-'}</td>
+      <td>${ativa ? '<span class="badge" style="background:#2e7d32">Ativa</span>' : ''}</td>
+      <td class="row-actions">
+        ${ativa ? '' : `<button onclick="selecionarEmpresa('${emp.id}')">Selecionar</button>`}
+        <button onclick="editarEmpresa('${emp.id}')">Editar</button>
+        <button onclick="excluirEmpresa('${emp.id}')">Excluir</button>
+      </td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function limparFormEmpresa(){
+  ['empRazaoSocial','empFantasia','empCnpj','empEndereco','empResponsavel','empResponsavelCargo'].forEach(id=>{
+    document.getElementById(id).value = '';
+  });
 }
 
 function salvarEmpresa(){
@@ -559,7 +622,7 @@ function salvarEmpresa(){
     toast('Informe a Razão Social da empresa.');
     return;
   }
-  db.empresa = {
+  const dadosForm = {
     razaoSocial,
     fantasia: document.getElementById('empFantasia').value.trim(),
     cnpj: document.getElementById('empCnpj').value.trim(),
@@ -567,9 +630,76 @@ function salvarEmpresa(){
     responsavel: document.getElementById('empResponsavel').value.trim(),
     responsavelCargo: document.getElementById('empResponsavelCargo').value.trim(),
   };
+
+  if(editingEmpresaId){
+    const emp = db.empresas.find(x=>x.id===editingEmpresaId);
+    Object.assign(emp, dadosForm);
+    toast('Empresa atualizada.');
+    cancelarEdicaoEmpresa();
+  } else {
+    const id = 'emp_' + Date.now();
+    db.empresas.push({ id, ...dadosForm });
+    db.dados[id] = { funcionarios:[], historico:[] };
+    if(!db.empresaAtualId) db.empresaAtualId = id;
+    toast('Empresa cadastrada com sucesso.');
+    limparFormEmpresa();
+  }
+
   save();
   renderEmpresa();
-  toast('Dados da empresa salvos com sucesso.');
+}
+
+function editarEmpresa(id){
+  const emp = db.empresas.find(x=>x.id===id);
+  if(!emp) return;
+  editingEmpresaId = id;
+  document.getElementById('empRazaoSocial').value = emp.razaoSocial || '';
+  document.getElementById('empFantasia').value = emp.fantasia || '';
+  document.getElementById('empCnpj').value = emp.cnpj || '';
+  document.getElementById('empEndereco').value = emp.endereco || '';
+  document.getElementById('empResponsavel').value = emp.responsavel || '';
+  document.getElementById('empResponsavelCargo').value = emp.responsavelCargo || '';
+  document.getElementById('empresaFormTitle').textContent = 'Editar Empresa';
+  document.getElementById('empSaveBtn').textContent = 'Salvar Alterações';
+  document.getElementById('empCancelBtn').style.display = 'inline-block';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function cancelarEdicaoEmpresa(){
+  editingEmpresaId = null;
+  limparFormEmpresa();
+  document.getElementById('empresaFormTitle').textContent = 'Cadastrar Nova Empresa';
+  document.getElementById('empSaveBtn').textContent = 'Cadastrar Empresa';
+  document.getElementById('empCancelBtn').style.display = 'none';
+}
+
+function selecionarEmpresa(id){
+  db.empresaAtualId = id;
+  save();
+  renderEmpresa();
+  renderFuncionarios();
+  renderHistorico();
+  toast('Empresa ativa: ' + empresaAtual().razaoSocial);
+}
+
+function excluirEmpresa(id){
+  const emp = db.empresas.find(x=>x.id===id);
+  if(!emp) return;
+  if(!confirm(`Excluir a empresa "${emp.razaoSocial}"? Todos os funcionários e formulários cadastrados nela também serão excluídos permanentemente. Esta ação não pode ser desfeita.`)) return;
+
+  db.empresas = db.empresas.filter(x=>x.id!==id);
+  delete db.dados[id];
+
+  if(db.empresaAtualId === id){
+    db.empresaAtualId = db.empresas.length ? db.empresas[0].id : null;
+  }
+  if(editingEmpresaId === id) cancelarEdicaoEmpresa();
+
+  save();
+  renderEmpresa();
+  renderFuncionarios();
+  renderHistorico();
+  toast('Empresa excluída.');
 }
 
 /* ---------- FUNCIONARIOS ---------- */
@@ -581,6 +711,10 @@ function salvarFuncionario(){
   const rg = document.getElementById('funcRg').value.trim();
   const setor = document.getElementById('funcSetor').value.trim();
 
+  if(!empresaAtual()){
+    toast('Cadastre e selecione uma empresa ativa antes de cadastrar funcionários.');
+    return;
+  }
   if(!nome){
     toast('Informe o nome do funcionário.');
     return;
@@ -590,13 +724,15 @@ function salvarFuncionario(){
     return;
   }
 
+  const funcionarios = dadosAtuais().funcionarios;
+
   if(editingFuncId){
-    const f = db.funcionarios.find(x=>x.id===editingFuncId);
+    const f = funcionarios.find(x=>x.id===editingFuncId);
     Object.assign(f, { nome, cargo, admissao, cpf, rg, setor });
     toast('Funcionário atualizado.');
     cancelarEdicaoFuncionario();
   } else {
-    db.funcionarios.push({
+    funcionarios.push({
       id: 'f_' + Date.now(),
       nome, cargo, admissao, cpf, rg, setor
     });
@@ -615,7 +751,7 @@ function limparFormFuncionario(){
 }
 
 function editarFuncionario(id){
-  const f = db.funcionarios.find(x=>x.id===id);
+  const f = dadosAtuais().funcionarios.find(x=>x.id===id);
   if(!f) return;
   editingFuncId = id;
   document.getElementById('funcNome').value = f.nome;
@@ -638,21 +774,27 @@ function cancelarEdicaoFuncionario(){
 
 function excluirFuncionario(id){
   if(!confirm('Deseja realmente excluir este funcionário? O histórico de documentos será mantido.')) return;
-  db.funcionarios = db.funcionarios.filter(x=>x.id!==id);
+  const dados = dadosAtuais();
+  dados.funcionarios = dados.funcionarios.filter(x=>x.id!==id);
   save();
   renderFuncionarios();
 }
 
 function renderFuncionarios(){
   const wrap = document.getElementById('funcionariosTable');
-  if(!db.funcionarios.length){
+  if(!empresaAtual()){
+    wrap.innerHTML = '<p class="empty">Cadastre e selecione uma empresa ativa na aba "Empresa" para gerenciar funcionários.</p>';
+    return;
+  }
+  const funcionarios = dadosAtuais().funcionarios;
+  if(!funcionarios.length){
     wrap.innerHTML = '<p class="empty">Nenhum funcionário cadastrado ainda.</p>';
     return;
   }
   let html = `<table><thead><tr>
     <th>Nome</th><th>Cargo</th><th>Admissão</th><th>CPF</th><th>RG</th><th>Setor</th><th></th>
   </tr></thead><tbody>`;
-  db.funcionarios.forEach(f=>{
+  funcionarios.forEach(f=>{
     html += `<tr>
       <td>${f.nome}</td>
       <td>${f.cargo||'-'}</td>
@@ -716,7 +858,7 @@ let ultimoModeloAutoPreenchido = '';
 
 function funcionarioSelecionadoAtual(){
   const funcId = document.getElementById('formFuncionario').value;
-  return db.funcionarios.find(f=>f.id===funcId);
+  return dadosAtuais().funcionarios.find(f=>f.id===funcId);
 }
 
 function carregarModeloPadrao(forcar){
@@ -743,10 +885,12 @@ function refreshEmitirView(){
   buildDocTypes();
   const sel = document.getElementById('formFuncionario');
   sel.innerHTML = '';
-  if(!db.funcionarios.length){
+  if(!empresaAtual()){
+    sel.innerHTML = '<option value="">Nenhuma empresa ativa selecionada</option>';
+  } else if(!dadosAtuais().funcionarios.length){
     sel.innerHTML = '<option value="">Nenhum funcionário cadastrado</option>';
   } else {
-    db.funcionarios.forEach(f=>{
+    dadosAtuais().funcionarios.forEach(f=>{
       const opt = document.createElement('option');
       opt.value = f.id;
       opt.textContent = f.nome;
@@ -760,8 +904,8 @@ document.getElementById('formFuncionario').addEventListener('change', ()=> carre
 document.getElementById('formData').addEventListener('change', ()=> carregarModeloPadrao(false));
 
 function gerarDocumento(){
-  if(!db.empresa || !db.empresa.razaoSocial){
-    toast('Cadastre os dados da empresa antes de emitir um formulário.');
+  if(!empresaAtual()){
+    toast('Cadastre e selecione uma empresa ativa antes de emitir um formulário.');
     return;
   }
   if(!tipoSelecionado){
@@ -769,7 +913,7 @@ function gerarDocumento(){
     return;
   }
   const funcId = document.getElementById('formFuncionario').value;
-  const func = db.funcionarios.find(f=>f.id===funcId);
+  const func = dadosAtuais().funcionarios.find(f=>f.id===funcId);
   if(!func){
     toast('Selecione um funcionário válido.');
     return;
@@ -796,7 +940,7 @@ function gerarDocumento(){
     criadoEm: new Date().toISOString()
   };
 
-  db.historico.unshift(registro);
+  dadosAtuais().historico.unshift(registro);
   save();
   renderDocumento(registro, func);
   toast('Formulário gerado. Use o botão Imprimir/Salvar PDF.');
@@ -804,7 +948,7 @@ function gerarDocumento(){
 
 /* ---------- RENDER DOCUMENTO PARA IMPRESSAO ---------- */
 function renderDocumento(reg, func){
-  const e = db.empresa;
+  const e = empresaAtual();
   const page = document.getElementById('docPage');
 
   let corpo = '';
@@ -1107,8 +1251,8 @@ async function gerarPdfBlob(reg, func){
 }
 
 async function baixarPdf(regId){
-  const reg = db.historico.find(h=>h.id===regId);
-  const func = db.funcionarios.find(f=>f.id===reg.funcionarioId) || {nome:reg.funcionarioNome};
+  const reg = dadosAtuais().historico.find(h=>h.id===regId);
+  const func = dadosAtuais().funcionarios.find(f=>f.id===reg.funcionarioId) || {nome:reg.funcionarioNome};
   toast('Gerando PDF...');
   try{
     const blob = await gerarPdfBlob(reg, func);
@@ -1128,9 +1272,10 @@ async function baixarPdf(regId){
 }
 
 async function compartilharWhatsapp(regId){
-  const reg = db.historico.find(h=>h.id===regId);
-  const func = db.funcionarios.find(f=>f.id===reg.funcionarioId) || {nome:reg.funcionarioNome};
-  const mensagem = `${reg.tipoLabel} - ${func.nome} - ${fmtDate(reg.data)} (${db.empresa.razaoSocial||''})`;
+  const reg = dadosAtuais().historico.find(h=>h.id===regId);
+  const func = dadosAtuais().funcionarios.find(f=>f.id===reg.funcionarioId) || {nome:reg.funcionarioNome};
+  const empresa = empresaAtual();
+  const mensagem = `${reg.tipoLabel} - ${func.nome} - ${fmtDate(reg.data)} (${empresa ? empresa.razaoSocial : ''})`;
 
   try{
     const blob = await gerarPdfBlob(reg, func);
@@ -1161,14 +1306,19 @@ async function compartilharWhatsapp(regId){
 /* ---------- HISTORICO ---------- */
 function renderHistorico(){
   const wrap = document.getElementById('historicoTable');
-  if(!db.historico.length){
+  if(!empresaAtual()){
+    wrap.innerHTML = '<p class="empty">Cadastre e selecione uma empresa ativa na aba "Empresa" para ver o histórico.</p>';
+    return;
+  }
+  const historico = dadosAtuais().historico;
+  if(!historico.length){
     wrap.innerHTML = '<p class="empty">Nenhum formulário emitido ainda.</p>';
     return;
   }
   let html = `<table><thead><tr>
     <th>Tipo</th><th>Funcionário</th><th>Data</th><th>Emitido em</th><th></th>
   </tr></thead><tbody>`;
-  db.historico.forEach(h=>{
+  historico.forEach(h=>{
     html += `<tr>
       <td><span class="badge">${h.tipoLabel}</span></td>
       <td>${h.funcionarioNome}</td>
@@ -1184,8 +1334,8 @@ function renderHistorico(){
 }
 
 function reimprimir(id){
-  const reg = db.historico.find(h=>h.id===id);
-  const func = db.funcionarios.find(f=>f.id===reg.funcionarioId) || {nome:reg.funcionarioNome};
+  const reg = dadosAtuais().historico.find(h=>h.id===id);
+  const func = dadosAtuais().funcionarios.find(f=>f.id===reg.funcionarioId) || {nome:reg.funcionarioNome};
   document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelector('nav button[data-view="emitir"]').classList.add('active');
@@ -1203,17 +1353,32 @@ function exportarBackup(){
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const empresaSlug = (db.empresa && db.empresa.razaoSocial)
-    ? db.empresa.razaoSocial.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9]+/g,'_')
-    : 'sistema_dp';
   const dataSlug = new Date().toISOString().slice(0,10);
+  const sufixo = db.empresas.length === 1 ? db.empresas[0].razaoSocial.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9]+/g,'_') : 'todas_empresas';
   a.href = url;
-  a.download = `backup_${empresaSlug}_${dataSlug}.json`;
+  a.download = `backup_${sufixo}_${dataSlug}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   toast('Backup baixado com sucesso.');
+}
+
+function normalizarBackupImportado(dados){
+  // Formato novo (multi-empresa)
+  if(dados.empresas){
+    return { empresas: dados.empresas, empresaAtualId: dados.empresaAtualId || (dados.empresas[0] && dados.empresas[0].id) || null, dados: dados.dados || {} };
+  }
+  // Formato antigo (uma única empresa)
+  if(dados.empresa && dados.empresa.razaoSocial){
+    const id = 'emp_' + Date.now();
+    return {
+      empresas: [{ id, ...dados.empresa }],
+      empresaAtualId: id,
+      dados: { [id]: { funcionarios: dados.funcionarios||[], historico: dados.historico||[] } }
+    };
+  }
+  return null;
 }
 
 function importarBackup(modo){
@@ -1234,32 +1399,37 @@ function importarBackup(modo){
       return;
     }
 
-    const dados = payload.dados || payload;
-    if(!dados || (!dados.empresa && !dados.funcionarios && !dados.historico)){
+    const bruto = payload.dados || payload;
+    const importado = normalizarBackupImportado(bruto);
+    if(!importado){
       toast('O arquivo não parece ser um backup válido deste sistema.');
       return;
     }
 
     if(modo==='substituir'){
-      if(!confirm('Isso vai apagar TODOS os dados atuais (empresa, funcionários e histórico) e substituir pelo conteúdo do backup. Deseja continuar?')) return;
-      db = {
-        empresa: dados.empresa || {},
-        funcionarios: dados.funcionarios || [],
-        historico: dados.historico || []
-      };
+      if(!confirm('Isso vai apagar TODAS as empresas, funcionários e formulários cadastrados atualmente e substituir pelo conteúdo do backup. Deseja continuar?')) return;
+      db = importado;
       toast('Backup importado. Todos os dados foram substituídos.');
     } else {
-      db.empresa = (db.empresa && db.empresa.razaoSocial) ? db.empresa : (dados.empresa || db.empresa);
+      const idsExistentes = new Set(db.empresas.map(e=>e.id));
+      importado.empresas.forEach(emp=>{
+        if(!idsExistentes.has(emp.id)){
+          db.empresas.push(emp);
+          db.dados[emp.id] = importado.dados[emp.id] || { funcionarios:[], historico:[] };
+        } else {
+          const dAtual = db.dados[emp.id] || { funcionarios:[], historico:[] };
+          const dImportado = importado.dados[emp.id] || { funcionarios:[], historico:[] };
 
-      const idsExistentes = new Set(db.funcionarios.map(f=>f.id));
-      (dados.funcionarios||[]).forEach(f=>{
-        if(!idsExistentes.has(f.id)) db.funcionarios.push(f);
-      });
+          const idsFunc = new Set(dAtual.funcionarios.map(f=>f.id));
+          dImportado.funcionarios.forEach(f=>{ if(!idsFunc.has(f.id)) dAtual.funcionarios.push(f); });
 
-      const idsHistorico = new Set(db.historico.map(h=>h.id));
-      (dados.historico||[]).forEach(h=>{
-        if(!idsHistorico.has(h.id)) db.historico.push(h);
+          const idsHist = new Set(dAtual.historico.map(h=>h.id));
+          dImportado.historico.forEach(h=>{ if(!idsHist.has(h.id)) dAtual.historico.push(h); });
+
+          db.dados[emp.id] = dAtual;
+        }
       });
+      if(!db.empresaAtualId && db.empresas.length) db.empresaAtualId = db.empresas[0].id;
       toast('Backup mesclado com os dados atuais.');
     }
 
