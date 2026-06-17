@@ -619,60 +619,90 @@ function renderDocumento(reg, func){
   const page = document.getElementById('docPage');
 
   let corpo = '';
+  let exigeTestemunhas = false;
   switch(reg.tipoId){
     case 'advertencia':
+      corpo = `
+        <p>Pelo presente termo, a empresa <strong>${e.razaoSocial}</strong> aplica ao(à) empregado(a)
+        <strong>${func.nome}</strong>, ocupante do cargo de <strong>${func.cargo||'-'}</strong>, admitido(a) em
+        <strong>${fmtDate(func.admissao)}</strong>, uma <strong>ADVERTÊNCIA VERBAL</strong>, registrada por escrito para fins de controle interno,
+        em razão do seguinte fato ocorrido em <strong>${fmtDate(reg.data)}</strong>:</p>
+        <p>${reg.motivo}</p>
+        <p>A presente medida tem caráter pedagógico e disciplinar, fundamentada no poder diretivo do empregador (art. 2º da CLT), e visa
+        alertar o(a) empregado(a) quanto à necessidade de adequar sua conduta às normas internas da empresa e à legislação trabalhista vigente.
+        A reincidência poderá resultar em penalidades mais graves, como advertência por escrito, suspensão disciplinar ou, em caso de falta grave,
+        dispensa por justa causa, nos termos do art. 482 da CLT.</p>
+        <p>Declaro estar ciente do teor desta advertência, sem que isso represente concordância com seu conteúdo.</p>`;
+      break;
     case 'advertencia_escrita':
     case 'advertencia_atraso':
     case 'termo_advertencia_epi':
+      exigeTestemunhas = true;
       corpo = `
-        <p>Pelo presente instrumento, a empresa <strong>${e.razaoSocial}</strong> comunica ao(à) funcionário(a)
+        <p>Pelo presente termo, a empresa <strong>${e.razaoSocial}</strong> aplica ao(à) empregado(a)
         <strong>${func.nome}</strong>, ocupante do cargo de <strong>${func.cargo||'-'}</strong>, admitido(a) em
-        <strong>${fmtDate(func.admissao)}</strong>, que está sendo ${reg.tipoId==='advertencia' ? 'advertido(a) verbalmente' : 'advertido(a) por escrito'}
-        em razão do seguinte fato:</p>
+        <strong>${fmtDate(func.admissao)}</strong>, uma <strong>ADVERTÊNCIA POR ESCRITO</strong>, em razão do seguinte fato ocorrido em
+        <strong>${fmtDate(reg.data)}</strong>:</p>
         <p>${reg.motivo}</p>
-        <p>Esta advertência tem caráter disciplinar e visa alertar o(a) colaborador(a) sobre a necessidade de adequação de sua conduta
-        às normas internas da empresa e à legislação trabalhista vigente. A reincidência em conduta semelhante poderá ensejar a aplicação
-        de penalidades mais severas, incluindo suspensão disciplinar ou rescisão do contrato de trabalho por justa causa, nos termos do
-        art. 482 da CLT.</p>`;
+        <p>A presente medida tem caráter pedagógico e disciplinar, fundamentada no poder diretivo do empregador (art. 2º da CLT), e visa
+        alertar o(a) empregado(a) quanto à necessidade de adequar sua conduta às normas internas da empresa, ao regulamento interno e à
+        legislação trabalhista vigente. Fica o(a) empregado(a) ciente de que a reincidência em conduta semelhante ou de outra natureza
+        poderá ensejar a aplicação de penalidades mais severas, como suspensão disciplinar ou rescisão do contrato de trabalho por justa
+        causa, nos termos do art. 482 da CLT.</p>
+        <p>Declaro estar ciente do teor desta advertência, sem que isso represente concordância com seu conteúdo. Em caso de recusa de
+        assinatura pelo(a) empregado(a), o presente termo será válido mediante a assinatura de 2 (duas) testemunhas.</p>`;
       break;
     case 'suspensao':
+      exigeTestemunhas = true;
       corpo = `
-        <p>Pelo presente instrumento, a empresa <strong>${e.razaoSocial}</strong> comunica ao(à) funcionário(a)
+        <p>Pelo presente termo, a empresa <strong>${e.razaoSocial}</strong> aplica ao(à) empregado(a)
         <strong>${func.nome}</strong>, ocupante do cargo de <strong>${func.cargo||'-'}</strong>, admitido(a) em
-        <strong>${fmtDate(func.admissao)}</strong>, a aplicação de <strong>SUSPENSÃO DISCIPLINAR</strong> pelo período de
-        <strong>${reg.duracao||'-'} dia(s)</strong>, com início em <strong>${fmtDate(reg.data)}</strong>, em razão do seguinte fato:</p>
+        <strong>${fmtDate(func.admissao)}</strong>, a penalidade de <strong>SUSPENSÃO DISCIPLINAR</strong> pelo prazo de
+        <strong>${reg.duracao||'-'} dia(s)</strong>, com início em <strong>${fmtDate(reg.data)}</strong>, em razão do(s) seguinte(s) fato(s):</p>
         <p>${reg.motivo}</p>
-        <p>Durante o período de suspensão, o(a) colaborador(a) ficará afastado(a) de suas atividades, sem prejuízo das demais
-        disposições legais e contratuais aplicáveis, conforme art. 474 da CLT.</p>`;
+        <p>A presente suspensão é aplicada com fundamento no poder disciplinar do empregador e nos termos do art. 474 da CLT, que estabelece
+        o limite máximo de 30 (trinta) dias consecutivos para a suspensão disciplinar, sob pena de configurar rescisão indireta do contrato
+        de trabalho. Durante o período de suspensão, o(a) empregado(a) ficará afastado(a) de suas atividades, sem direito à remuneração
+        correspondente aos dias de afastamento.</p>
+        <p>Fica o(a) empregado(a) advertido(a) de que a reincidência em conduta semelhante ou de outra natureza poderá ensejar a rescisão
+        do contrato de trabalho por justa causa, nos termos do art. 482 da CLT.</p>
+        <p>Declaro estar ciente do teor deste termo, sem que isso represente concordância com seu conteúdo. Em caso de recusa de assinatura
+        pelo(a) empregado(a), o presente termo será válido mediante a assinatura de 2 (duas) testemunhas.</p>`;
       break;
     case 'aviso_previo':
       corpo = `
-        <p>Pelo presente instrumento, a empresa <strong>${e.razaoSocial}</strong> comunica ao(à) funcionário(a)
+        <p>Pelo presente termo, a empresa <strong>${e.razaoSocial}</strong> comunica ao(à) empregado(a)
         <strong>${func.nome}</strong>, ocupante do cargo de <strong>${func.cargo||'-'}</strong>, admitido(a) em
         <strong>${fmtDate(func.admissao)}</strong>, a concessão de <strong>AVISO PRÉVIO ${reg.avisoTipo==='indenizado' ? 'INDENIZADO' : 'TRABALHADO'}</strong>,
-        com início em <strong>${fmtDate(reg.data)}</strong>, nos termos da Lei nº 12.506/2011 e da Consolidação das Leis do Trabalho (CLT).</p>
+        com início na presente data, <strong>${fmtDate(reg.data)}</strong>, nos termos dos arts. 487 a 491 da CLT e da Lei nº 12.506/2011,
+        que regula a proporcionalidade do aviso prévio em razão do tempo de serviço.</p>
         <p><strong>Observações:</strong> ${reg.motivo}</p>
         ${reg.avisoTipo==='trabalhado'
-          ? '<p>Durante o cumprimento do aviso prévio trabalhado, fica assegurada a redução de 2 (duas) horas diárias na jornada de trabalho, ou a critério da empresa, a dispensa de 7 (sete) dias corridos, sem prejuízo do salário integral, nos termos do art. 488 da CLT.</p>'
-          : '<p>O presente aviso prévio será indenizado, com o pagamento integral do período correspondente, sem a obrigatoriedade de comparecimento ao trabalho a partir desta data.</p>'}`;
+          ? '<p>Durante o cumprimento do aviso prévio trabalhado, fica assegurada ao(à) empregado(a) a redução de 2 (duas) horas diárias na jornada de trabalho, sem prejuízo do salário integral, podendo a empresa, a seu critério, optar pela dispensa do cumprimento dos últimos 7 (sete) dias corridos, nos termos do art. 488 da CLT.</p>'
+          : '<p>O presente aviso prévio é concedido na modalidade indenizada, com o pagamento dos salários e demais verbas correspondentes ao período, ficando o(a) empregado(a) dispensado(a) do comparecimento ao trabalho a partir desta data.</p>'}
+        <p>O prazo do presente aviso prévio observará o disposto na Lei nº 12.506/2011, sendo acrescido de 3 (três) dias por ano completo
+        de serviço prestado à empresa, limitado a 90 (noventa) dias.</p>`;
       break;
     case 'atestado':
       corpo = `
-        <p>A empresa <strong>${e.razaoSocial}</strong> registra, para os devidos fins, o recebimento de atestado médico
-        apresentado pelo(a) funcionário(a) <strong>${func.nome}</strong>, ocupante do cargo de <strong>${func.cargo||'-'}</strong>,
-        referente à data de <strong>${fmtDate(reg.data)}</strong>.</p>
+        <p>A empresa <strong>${e.razaoSocial}</strong> registra, para os devidos fins, o recebimento de atestado médico/odontológico
+        apresentado pelo(a) empregado(a) <strong>${func.nome}</strong>, ocupante do cargo de <strong>${func.cargo||'-'}</strong>,
+        referente ao afastamento ocorrido em <strong>${fmtDate(reg.data)}</strong>, nos termos do art. 6º da Lei nº 605/1949 e do art. 60,
+        §4º, da Lei nº 8.213/1991.</p>
         <p><strong>Observações:</strong> ${reg.motivo}</p>
-        <p>O presente documento tem finalidade meramente declaratória, servindo como registro interno do afastamento e não substitui
-        o atestado médico original, que deverá ser arquivado na pasta funcional do(a) colaborador(a).</p>`;
+        <p>O presente documento tem finalidade meramente declaratória, servindo como registro interno do afastamento para fins de abono
+        de falta e cálculo de frequência. O atestado médico original deverá ser arquivado na pasta funcional do(a) empregado(a), conforme
+        determina a legislação previdenciária e trabalhista vigente.</p>`;
       break;
     case 'declaracao_horas':
       corpo = `
-        <p>A empresa <strong>${e.razaoSocial}</strong> declara, para os devidos fins, que o(a) funcionário(a)
+        <p>A empresa <strong>${e.razaoSocial}</strong> declara, para os devidos fins, que o(a) empregado(a)
         <strong>${func.nome}</strong>, ocupante do cargo de <strong>${func.cargo||'-'}</strong>, prestou horas extraordinárias
         de trabalho na data de <strong>${fmtDate(reg.data)}</strong>, conforme detalhamento abaixo:</p>
         <p>${reg.motivo}</p>
-        <p>As horas extras ora declaradas serão devidamente computadas para fins de pagamento ou compensação, conforme acordo
-        individual, coletivo ou banco de horas vigente na empresa, em conformidade com a legislação trabalhista aplicável.</p>`;
+        <p>As horas extras ora declaradas serão remuneradas com o acréscimo mínimo de 50% (cinquenta por cento) sobre o valor da hora
+        normal, nos termos do art. 7º, inciso XVI, da Constituição Federal e do art. 59 da CLT, ou compensadas conforme acordo individual,
+        convenção coletiva ou regime de banco de horas vigente na empresa.</p>`;
       break;
     default:
       corpo = `<p>${reg.motivo}</p>`;
@@ -706,6 +736,16 @@ function renderDocumento(reg, func){
           <div class="sign-line">${func.nome}<br>Funcionário(a) — Ciente</div>
         </div>
       </div>
+
+      ${exigeTestemunhas ? `
+      <div class="doc-sign" style="margin-top:40px;">
+        <div class="sign-block">
+          <div class="sign-line">Testemunha 1 — Nome e assinatura</div>
+        </div>
+        <div class="sign-block">
+          <div class="sign-line">Testemunha 2 — Nome e assinatura</div>
+        </div>
+      </div>` : ''}
 
       <p style="margin-top:50px;font-size:12px;">Local e data: ____________________________, ${fmtDate(reg.data)}</p>
     </div>
