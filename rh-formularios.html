@@ -392,6 +392,10 @@ const TIPOS_DOCUMENTO = [
   { id:'pedido_demissao', label:'Pedido de Demissão', avisoTipo:true },
   { id:'telegrama', label:'Telegrama / Notificação Formal' },
   { id:'recibo_13', label:'Recibo de Adiantamento 13º Salário' },
+  { id:'justa_causa', label:'Dispensa por Justa Causa' },
+  { id:'dispensa_sem_justa_causa', label:'Dispensa Sem Justa Causa' },
+  { id:'interrupcao_experiencia', label:'Interrupção do Contrato de Experiência' },
+  { id:'termino_experiencia', label:'Término Normal do Contrato de Experiência' },
 ];
 
 const MODELOS_MOTIVO = {
@@ -450,6 +454,26 @@ Vimos por meio deste notificá-lo(a) sobre: [descrever o assunto da notificaçã
   recibo_13: (f,d)=>
 `Valor pago a título de adiantamento da primeira parcela do 13º salário: R$ [informar valor].
 Forma de pagamento: [depósito em conta / dinheiro / outro], realizado em ${d}.`,
+
+  justa_causa: (f,d)=>
+`O(a) empregado(a) ${f.nome} praticou a seguinte falta grave em ${d}, que motiva a dispensa por justa causa: [descreva detalhadamente o fato, enquadrando-o em uma das hipóteses do art. 482 da CLT, ex: ato de improbidade, indisciplina, insubordinação, abandono de emprego, etc.].
+
+Histórico de advertências/suspensões anteriores pelo mesmo motivo ou motivo correlato: [informar datas e medidas anteriores aplicadas, se houver].`,
+
+  dispensa_sem_justa_causa: (f,d)=>
+`Comunicamos o desligamento do(a) empregado(a) ${f.nome}, por iniciativa da empresa, sem justa causa, com data de saída em ${d}.
+
+[Informar se haverá cumprimento de aviso prévio trabalhado ou se será indenizado, e orientações sobre devolução de uniformes, crachá, materiais da empresa, exame demissional, etc.]`,
+
+  interrupcao_experiencia: (f,d)=>
+`O contrato de experiência do(a) empregado(a) ${f.nome}, iniciado em ${fmtDate(f.admissao)}, está sendo interrompido antecipadamente em ${d}, antes do término do prazo previamente ajustado.
+
+Motivo da interrupção antecipada: [descrever o motivo, ex: desempenho insatisfatório, comum acordo, iniciativa do empregado, etc.].`,
+
+  termino_experiencia: (f,d)=>
+`O contrato de experiência do(a) empregado(a) ${f.nome}, iniciado em ${fmtDate(f.admissao)}, chega ao seu termo final na data de ${d}, conforme prazo previamente ajustado entre as partes.
+
+[Informar se haverá efetivação do(a) empregado(a) no quadro permanente (prorrogação para prazo indeterminado) ou se o contrato será encerrado ao final do prazo.]`,
 };
 
 function modeloPadraoTexto(tipoId, func, dataStr){
@@ -883,6 +907,58 @@ function renderDocumento(reg, func){
         incidência de descontos.</p>
         <p><strong>Valor e observações:</strong> ${reg.motivo}</p>
         <p>Declaro ter recebido a importância acima referida, dela dando plena e geral quitação para os devidos fins de direito.</p>`;
+      break;
+    case 'justa_causa':
+      exigeTestemunhas = true;
+      corpo = `
+        <p>Pelo presente termo, a empresa <strong>${e.razaoSocial}</strong> comunica ao(à) empregado(a)
+        <strong>${func.nome}</strong>, ocupante do cargo de <strong>${func.cargo||'-'}</strong>, admitido(a) em
+        <strong>${fmtDate(func.admissao)}</strong>, a <strong>DISPENSA POR JUSTA CAUSA</strong>, com efeitos a partir de
+        <strong>${fmtDate(reg.data)}</strong>, em razão do(s) seguinte(s) fato(s):</p>
+        <p>${reg.motivo}</p>
+        <p>A presente dispensa fundamenta-se no art. 482 da CLT, que elenca as hipóteses de falta grave ensejadoras da rescisão do
+        contrato de trabalho por justa causa, sendo a conduta acima descrita incompatível com a manutenção do vínculo empregatício.</p>
+        <p>Em razão da modalidade de dispensa, o(a) empregado(a) não fará jus ao aviso prévio, à indenização compensatória de 40% sobre
+        o FGTS, ao saque do FGTS, nem ao seguro-desemprego, conforme legislação vigente, fazendo jus apenas ao saldo de salário e,
+        quando houver, às férias vencidas acrescidas de 1/3, nos termos do art. 146, parágrafo único, da CLT.</p>
+        <p>Declaro estar ciente do teor deste termo, sem que isso represente concordância com seu conteúdo. Em caso de recusa de
+        assinatura pelo(a) empregado(a), o presente termo será válido mediante a assinatura de 2 (duas) testemunhas.</p>`;
+      break;
+    case 'dispensa_sem_justa_causa':
+      corpo = `
+        <p>Pelo presente termo, a empresa <strong>${e.razaoSocial}</strong> comunica ao(à) empregado(a)
+        <strong>${func.nome}</strong>, ocupante do cargo de <strong>${func.cargo||'-'}</strong>, admitido(a) em
+        <strong>${fmtDate(func.admissao)}</strong>, a <strong>DISPENSA SEM JUSTA CAUSA</strong>, por iniciativa da empresa, com efeitos
+        a partir de <strong>${fmtDate(reg.data)}</strong>.</p>
+        <p><strong>Observações:</strong> ${reg.motivo}</p>
+        <p>O(a) empregado(a) fará jus a todas as verbas rescisórias previstas em lei, nos termos do art. 477 da CLT, incluindo: saldo
+        de salário, aviso prévio (trabalhado ou indenizado), 13º salário proporcional, férias vencidas e/ou proporcionais acrescidas de
+        1/3, saque do FGTS e indenização compensatória de 40% sobre os depósitos, bem como guias para requerimento do seguro-desemprego,
+        quando aplicável.</p>`;
+      break;
+    case 'interrupcao_experiencia':
+      corpo = `
+        <p>Pelo presente termo, a empresa <strong>${e.razaoSocial}</strong> comunica ao(à) empregado(a)
+        <strong>${func.nome}</strong>, ocupante do cargo de <strong>${func.cargo||'-'}</strong>, admitido(a) em
+        <strong>${fmtDate(func.admissao)}</strong> sob contrato de experiência, a <strong>INTERRUPÇÃO ANTECIPADA</strong> do referido
+        contrato, com efeitos a partir de <strong>${fmtDate(reg.data)}</strong>, antes do término do prazo previamente ajustado.</p>
+        <p><strong>Motivo:</strong> ${reg.motivo}</p>
+        <p>Nos termos do art. 479 da CLT, havendo rescisão antecipada do contrato de experiência por iniciativa da empresa sem justa
+        causa, é devida ao(à) empregado(a) indenização correspondente à metade da remuneração a que teria direito até o término do
+        contrato, além das demais verbas rescisórias proporcionais cabíveis (saldo de salário, férias proporcionais com 1/3, 13º salário
+        proporcional e FGTS com a multa de 40%, quando aplicável).</p>`;
+      break;
+    case 'termino_experiencia':
+      corpo = `
+        <p>Pelo presente termo, a empresa <strong>${e.razaoSocial}</strong> comunica ao(à) empregado(a)
+        <strong>${func.nome}</strong>, ocupante do cargo de <strong>${func.cargo||'-'}</strong>, admitido(a) em
+        <strong>${fmtDate(func.admissao)}</strong> sob contrato de experiência, o <strong>TÉRMINO NORMAL</strong> do referido contrato
+        na data de <strong>${fmtDate(reg.data)}</strong>, em conformidade com o prazo previamente ajustado entre as partes, nos termos
+        do art. 451 e 452 da CLT.</p>
+        <p><strong>Observações:</strong> ${reg.motivo}</p>
+        <p>Por se tratar de término normal do prazo contratualmente estipulado, não há incidência de aviso prévio, multa de 40% sobre o
+        FGTS ou indenização adicional, sendo devidas ao(à) empregado(a) apenas as verbas rescisórias proporcionais: saldo de salário,
+        férias proporcionais acrescidas de 1/3, 13º salário proporcional e liberação do FGTS depositado, sem a multa rescisória.</p>`;
       break;
     default:
       corpo = `<p>${reg.motivo}</p>`;
