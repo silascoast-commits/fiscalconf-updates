@@ -292,12 +292,7 @@
   <!-- EMITIR -->
   <section id="view-emitir" class="view">
     <div class="card">
-      <h2>1. Selecione o Tipo de Formulário</h2>
-      <div class="doc-types" id="docTypesContainer"></div>
-    </div>
-
-    <div class="card">
-      <h2>2. Dados do Formulário</h2>
+      <h2>1. Selecione o Funcionário</h2>
       <div class="grid">
         <div class="field">
           <label>Funcionário</label>
@@ -307,6 +302,17 @@
           <label>Data do Documento</label>
           <input id="formData" type="date">
         </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2. Selecione o Tipo de Formulário</h2>
+      <div class="doc-types" id="docTypesContainer"></div>
+    </div>
+
+    <div class="card">
+      <h2>3. Dados do Formulário</h2>
+      <div class="grid">
         <div class="field" id="campoDuracaoWrap" style="display:none">
           <label id="campoDuracaoLabel">Duração (dias)</label>
           <input id="campoDuracao" type="number" min="1" placeholder="Ex: 3">
@@ -316,6 +322,13 @@
           <select id="campoAvisoTipo">
             <option value="trabalhado">Trabalhado</option>
             <option value="indenizado">Indenizado</option>
+          </select>
+        </div>
+        <div class="field" id="campoVtOpcaoWrap" style="display:none">
+          <label>Opção de Vale-Transporte</label>
+          <select id="campoVtOpcao">
+            <option value="aceita">Aceita / Quer utilizar o VT</option>
+            <option value="recusa">Recusa / Não quer utilizar o VT</option>
           </select>
         </div>
       </div>
@@ -396,6 +409,7 @@ const TIPOS_DOCUMENTO = [
   { id:'dispensa_sem_justa_causa', label:'Dispensa Sem Justa Causa' },
   { id:'interrupcao_experiencia', label:'Interrupção do Contrato de Experiência' },
   { id:'termino_experiencia', label:'Término Normal do Contrato de Experiência' },
+  { id:'declaracao_vt', label:'Opção/Recusa de Vale-Transporte', vtOpcao:true },
 ];
 
 const MODELOS_MOTIVO = {
@@ -474,6 +488,11 @@ Motivo da interrupção antecipada: [descrever o motivo, ex: desempenho insatisf
 `O contrato de experiência do(a) empregado(a) ${f.nome}, iniciado em ${fmtDate(f.admissao)}, chega ao seu termo final na data de ${d}, conforme prazo previamente ajustado entre as partes.
 
 [Informar se haverá efetivação do(a) empregado(a) no quadro permanente (prorrogação para prazo indeterminado) ou se o contrato será encerrado ao final do prazo.]`,
+
+  declaracao_vt: (f,d)=>
+`Endereço residencial do(a) empregado(a): [informar endereço completo].
+Linha(s)/itinerário(s) utilizado(s): [informar ônibus/metrô/trem e quantidade de conduções por dia].
+Valor gasto por dia com transporte: R$ [informar valor].`,
 };
 
 function modeloPadraoTexto(tipoId, func, dataStr){
@@ -666,6 +685,11 @@ function buildDocTypes(){
 }
 
 function selecionarTipo(id){
+  if(!document.getElementById('formFuncionario').value){
+    toast('Selecione o funcionário antes de escolher o tipo de formulário.');
+    return;
+  }
+
   tipoSelecionado = id;
   document.querySelectorAll('.doc-type-btn').forEach(b=>{
     b.classList.toggle('selected', b.dataset.id===id);
@@ -674,6 +698,7 @@ function selecionarTipo(id){
   document.getElementById('campoDuracaoWrap').style.display = tipo.duracao ? 'block' : 'none';
   if(tipo.duracao) document.getElementById('campoDuracaoLabel').textContent = tipo.duracaoLabel;
   document.getElementById('campoAvisoTipoWrap').style.display = tipo.avisoTipo ? 'block' : 'none';
+  document.getElementById('campoVtOpcaoWrap').style.display = tipo.vtOpcao ? 'block' : 'none';
   document.getElementById('motivoLabel').textContent =
     id==='atestado' ? 'Observações do Atestado' :
     id==='declaracao_horas' ? 'Detalhamento das horas extras' :
@@ -681,6 +706,7 @@ function selecionarTipo(id){
     id==='pedido_demissao' ? 'Observações' :
     id==='telegrama' ? 'Texto da notificação' :
     id==='recibo_13' ? 'Valor pago e observações' :
+    id==='declaracao_vt' ? 'Endereço, itinerário e valor gasto com transporte' :
     'Motivo / Descrição da Ocorrência';
 
   carregarModeloPadrao(false);
@@ -766,6 +792,7 @@ function gerarDocumento(){
     motivo,
     duracao: tipo.duracao ? document.getElementById('campoDuracao').value : null,
     avisoTipo: tipo.avisoTipo ? document.getElementById('campoAvisoTipo').value : null,
+    vtOpcao: tipo.vtOpcao ? document.getElementById('campoVtOpcao').value : null,
     criadoEm: new Date().toISOString()
   };
 
@@ -959,6 +986,26 @@ function renderDocumento(reg, func){
         <p>Por se tratar de término normal do prazo contratualmente estipulado, não há incidência de aviso prévio, multa de 40% sobre o
         FGTS ou indenização adicional, sendo devidas ao(à) empregado(a) apenas as verbas rescisórias proporcionais: saldo de salário,
         férias proporcionais acrescidas de 1/3, 13º salário proporcional e liberação do FGTS depositado, sem a multa rescisória.</p>`;
+      break;
+    case 'declaracao_vt':
+      corpo = reg.vtOpcao === 'recusa' ? `
+        <p>Eu, <strong>${func.nome}</strong>, ocupante do cargo de <strong>${func.cargo||'-'}</strong>, na empresa
+        <strong>${e.razaoSocial}</strong>, declaro, para os devidos fins, que <strong>NÃO TENHO INTERESSE</strong> em receber o
+        benefício do Vale-Transporte (VT), instituído pela Lei nº 7.418/1985 e regulamentado pelo Decreto nº 95.247/1987, a partir da
+        presente data, <strong>${fmtDate(reg.data)}</strong>.</p>
+        <p><strong>Observações:</strong> ${reg.motivo}</p>
+        <p>Estou ciente de que esta opção pode ser alterada a qualquer momento, mediante comunicação por escrito ao Departamento
+        Pessoal, e que, enquanto vigorar esta recusa, não haverá desconto em folha de pagamento relativo ao Vale-Transporte, bem como
+        não haverá fornecimento do benefício.</p>` : `
+        <p>Eu, <strong>${func.nome}</strong>, ocupante do cargo de <strong>${func.cargo||'-'}</strong>, na empresa
+        <strong>${e.razaoSocial}</strong>, declaro, para os devidos fins, que <strong>OPTO POR RECEBER</strong> o benefício do
+        Vale-Transporte (VT), instituído pela Lei nº 7.418/1985 e regulamentado pelo Decreto nº 95.247/1987, a partir da presente data,
+        <strong>${fmtDate(reg.data)}</strong>, declarando que o utilizarei exclusivamente para o deslocamento residência-trabalho e
+        trabalho-residência.</p>
+        <p><strong>Itinerário e valor informados:</strong> ${reg.motivo}</p>
+        <p>Estou ciente de que, nos termos do art. 4º do Decreto nº 95.247/1987, autorizo o desconto em folha de pagamento de até 6%
+        (seis por cento) do meu salário básico, referente à participação no custeio do Vale-Transporte, e que devo comunicar
+        imediatamente ao Departamento Pessoal qualquer alteração de endereço ou itinerário que modifique o valor do benefício.</p>`;
       break;
     default:
       corpo = `<p>${reg.motivo}</p>`;
