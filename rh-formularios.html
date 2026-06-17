@@ -356,6 +356,10 @@ const TIPOS_DOCUMENTO = [
   { id:'advertencia_atraso', label:'Advertência por Atraso/Falta' },
   { id:'declaracao_horas', label:'Declaração de Horas Extras' },
   { id:'termo_advertencia_epi', label:'Advertência - Uso de EPI' },
+  { id:'aviso_ferias', label:'Aviso de Férias', duracao:true, duracaoLabel:'Quantidade de dias de férias' },
+  { id:'pedido_demissao', label:'Pedido de Demissão', avisoTipo:true },
+  { id:'telegrama', label:'Telegrama / Notificação Formal' },
+  { id:'recibo_13', label:'Recibo de Adiantamento 13º Salário' },
 ];
 
 function load(){
@@ -551,6 +555,10 @@ function selecionarTipo(id){
   document.getElementById('motivoLabel').textContent =
     id==='atestado' ? 'Observações do Atestado' :
     id==='declaracao_horas' ? 'Detalhamento das horas extras' :
+    id==='aviso_ferias' ? 'Observações (período aquisitivo, etc.)' :
+    id==='pedido_demissao' ? 'Observações' :
+    id==='telegrama' ? 'Texto da notificação' :
+    id==='recibo_13' ? 'Valor pago e observações' :
     'Motivo / Descrição da Ocorrência';
 }
 
@@ -703,6 +711,48 @@ function renderDocumento(reg, func){
         <p>As horas extras ora declaradas serão remuneradas com o acréscimo mínimo de 50% (cinquenta por cento) sobre o valor da hora
         normal, nos termos do art. 7º, inciso XVI, da Constituição Federal e do art. 59 da CLT, ou compensadas conforme acordo individual,
         convenção coletiva ou regime de banco de horas vigente na empresa.</p>`;
+      break;
+    case 'aviso_ferias':
+      corpo = `
+        <p>A empresa <strong>${e.razaoSocial}</strong> comunica ao(à) empregado(a) <strong>${func.nome}</strong>, ocupante do cargo de
+        <strong>${func.cargo||'-'}</strong>, admitido(a) em <strong>${fmtDate(func.admissao)}</strong>, a concessão de
+        <strong>${reg.duracao||'-'} dia(s) de férias</strong>, com início em <strong>${fmtDate(reg.data)}</strong>, nos termos dos
+        arts. 129 a 145 da CLT.</p>
+        <p><strong>Observações:</strong> ${reg.motivo}</p>
+        <p>A remuneração das férias, acrescida do terço constitucional previsto no art. 7º, inciso XVII, da Constituição Federal, será
+        paga até 2 (dois) dias antes do início do respectivo período, conforme determina o art. 145 da CLT. Este aviso é comunicado ao(à)
+        empregado(a) com antecedência mínima de 30 (trinta) dias, em conformidade com o art. 135 da CLT.</p>`;
+      break;
+    case 'pedido_demissao':
+      corpo = `
+        <p>Eu, <strong>${func.nome}</strong>, ocupante do cargo de <strong>${func.cargo||'-'}</strong>, admitido(a) na empresa
+        <strong>${e.razaoSocial}</strong> em <strong>${fmtDate(func.admissao)}</strong>, venho por meio deste comunicar minha
+        <strong>DEMISSÃO VOLUNTÁRIA</strong> do cargo que ocupo, com efeitos a partir de <strong>${fmtDate(reg.data)}</strong>,
+        ${reg.avisoTipo==='trabalhado' ? 'com cumprimento do aviso prévio de 30 (trinta) dias, nos termos do art. 487 da CLT' : 'dispensado(a) do cumprimento do aviso prévio, mediante acordo entre as partes'}.</p>
+        <p><strong>Observações:</strong> ${reg.motivo}</p>
+        <p>Declaro estar ciente de que farei jus às verbas rescisórias previstas em lei, observado o disposto no art. 477 da CLT,
+        incluindo saldo de salário, férias vencidas e proporcionais acrescidas de 1/3, 13º salário proporcional, ${reg.avisoTipo==='trabalhado' ? '' : 'com desconto do aviso prévio não cumprido, quando aplicável, '}e demais direitos cabíveis, não fazendo jus ao saque do FGTS nem à multa de 40%, por se tratar de pedido de demissão.</p>`;
+      break;
+    case 'telegrama':
+      corpo = `
+        <p><strong>DESTINATÁRIO:</strong> ${func.nome} — CPF: ${func.cpf||'-'}</p>
+        <p><strong>REMETENTE:</strong> ${e.razaoSocial}${e.cnpj ? ' — CNPJ: '+e.cnpj : ''}</p>
+        <p><strong>TEXTO:</strong></p>
+        <p>${reg.motivo}</p>
+        <p>A presente notificação é enviada para os devidos fins de direito, servindo como prova de ciência inequívoca por parte do(a)
+        destinatário(a), conforme as disposições da Consolidação das Leis do Trabalho (CLT) aplicáveis ao caso, recomendando-se o envio
+        por meio que assegure comprovante de recebimento (telegrama com AR, carta registrada com AR ou aplicativo de mensagens com
+        confirmação de leitura).</p>`;
+      break;
+    case 'recibo_13':
+      corpo = `
+        <p>A empresa <strong>${e.razaoSocial}</strong> declara, para os devidos fins, que efetuou o pagamento de
+        <strong>adiantamento da primeira parcela do 13º salário</strong> ao(à) empregado(a) <strong>${func.nome}</strong>, ocupante do
+        cargo de <strong>${func.cargo||'-'}</strong>, na data de <strong>${fmtDate(reg.data)}</strong>, nos termos da Lei nº 4.749/1965
+        e do Decreto nº 57.155/1965, que estabelecem o pagamento da primeira parcela entre fevereiro e novembro de cada ano, sem
+        incidência de descontos.</p>
+        <p><strong>Valor e observações:</strong> ${reg.motivo}</p>
+        <p>Declaro ter recebido a importância acima referida, dela dando plena e geral quitação para os devidos fins de direito.</p>`;
       break;
     default:
       corpo = `<p>${reg.motivo}</p>`;
