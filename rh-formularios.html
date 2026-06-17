@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Formulários - Departamento Pessoal</title>
+<style>
+  :root{
+    --primary:#1e3a5f;
+    --primary-light:#2c5282;
+    --accent:#c0392b;
+    --bg:#f4f6f8;
+    --card:#ffffff;
+    --border:#d9dee3;
+    --text:#222;
+    --muted:#667;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', Arial, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+  header{
+    background:var(--primary);
+    color:#fff;
+    padding:18px 24px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  header h1{margin:0;font-size:20px;}
+  header .empresa-nome{font-size:13px;opacity:.85;}
+  nav{
+    display:flex;
+    background:var(--primary-light);
+    flex-wrap:wrap;
+  }
+  nav button{
+    background:none;
+    border:none;
+    color:#fff;
+    padding:12px 18px;
+    cursor:pointer;
+    font-size:14px;
+    border-bottom:3px solid transparent;
+  }
+  nav button:hover{background:rgba(255,255,255,.1);}
+  nav button.active{border-bottom:3px solid var(--accent);font-weight:600;}
+  main{
+    max-width:1100px;
+    margin:24px auto;
+    padding:0 16px;
+  }
+  .view{display:none;}
+  .view.active{display:block;}
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:20px;
+    margin-bottom:20px;
+  }
+  .card h2{margin-top:0;font-size:18px;color:var(--primary);}
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:14px;
+  }
+  label{
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:4px;
+    color:var(--muted);
+  }
+  input, select, textarea{
+    width:100%;
+    padding:9px 10px;
+    border:1px solid var(--border);
+    border-radius:5px;
+    font-size:14px;
+    font-family:inherit;
+  }
+  textarea{resize:vertical;min-height:90px;}
+  .field{margin-bottom:14px;}
+  .actions{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;}
+  button.btn{
+    background:var(--primary);
+    color:#fff;
+    border:none;
+    padding:10px 18px;
+    border-radius:5px;
+    font-size:14px;
+    cursor:pointer;
+  }
+  button.btn:hover{background:var(--primary-light);}
+  button.btn.secondary{background:#6c757d;}
+  button.btn.danger{background:var(--accent);}
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th,td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:left;}
+  th{background:#f0f2f5;color:var(--primary);}
+  tr:hover{background:#fafbfc;}
+  .badge{
+    display:inline-block;
+    padding:2px 9px;
+    border-radius:12px;
+    font-size:12px;
+    color:#fff;
+    background:var(--primary-light);
+  }
+  .empty{color:var(--muted);font-style:italic;padding:14px 0;}
+  .row-actions button{
+    border:none;
+    background:none;
+    cursor:pointer;
+    color:var(--accent);
+    font-size:13px;
+    margin-right:8px;
+  }
+  .doc-types{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+    gap:10px;
+    margin-bottom:18px;
+  }
+  .doc-type-btn{
+    border:2px solid var(--border);
+    background:#fff;
+    border-radius:8px;
+    padding:14px 10px;
+    text-align:center;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:600;
+    color:var(--primary);
+  }
+  .doc-type-btn.selected{
+    border-color:var(--primary);
+    background:#eaf0f7;
+  }
+
+  /* Documento de impressão */
+  #printArea{display:none;}
+  .doc-page{
+    background:#fff;
+    width:210mm;
+    min-height:297mm;
+    margin:0 auto;
+    padding:25mm 20mm;
+    font-family:'Times New Roman', serif;
+    color:#000;
+    line-height:1.6;
+  }
+  .doc-header{text-align:center;margin-bottom:30px;}
+  .doc-header h2{margin:0;font-size:16px;text-transform:uppercase;letter-spacing:1px;}
+  .doc-header p{margin:2px 0;font-size:12px;}
+  .doc-title{
+    text-align:center;
+    font-size:18px;
+    font-weight:bold;
+    text-transform:uppercase;
+    margin:30px 0;
+    text-decoration:underline;
+  }
+  .doc-body p{font-size:14px;text-align:justify;margin:14px 0;}
+  .doc-field{margin:8px 0;font-size:14px;}
+  .doc-field strong{display:inline-block;min-width:140px;}
+  .doc-sign{margin-top:60px;display:flex;justify-content:space-between;}
+  .sign-block{width:45%;text-align:center;font-size:13px;}
+  .sign-line{border-top:1px solid #000;margin-top:50px;padding-top:6px;}
+
+  @media print{
+    body *{visibility:hidden;}
+    #printArea, #printArea *{visibility:visible;}
+    #printArea{display:block;position:absolute;top:0;left:0;width:100%;}
+    .doc-page{box-shadow:none;margin:0;width:auto;}
+  }
+  .toast{
+    position:fixed;bottom:20px;right:20px;
+    background:#222;color:#fff;padding:12px 18px;border-radius:6px;
+    font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;
+  }
+  .toast.show{opacity:1;}
+  .preview-box{
+    border:1px dashed var(--border);
+    border-radius:6px;
+    padding:16px;
+    background:#fafbfc;
+    margin-top:16px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Departamento Pessoal — Formulários</h1>
+  <div class="empresa-nome" id="headerEmpresa">Nenhuma empresa cadastrada</div>
+</header>
+
+<nav>
+  <button data-view="empresa" class="active">Empresa</button>
+  <button data-view="funcionarios">Funcionários</button>
+  <button data-view="emitir">Emitir Formulário</button>
+  <button data-view="historico">Histórico</button>
+</nav>
+
+<main>
+
+  <!-- EMPRESA -->
+  <section id="view-empresa" class="view active">
+    <div class="card">
+      <h2>Dados da Empresa</h2>
+      <div class="grid">
+        <div class="field">
+          <label>Razão Social</label>
+          <input id="empRazaoSocial" placeholder="Ex: Empresa LTDA">
+        </div>
+        <div class="field">
+          <label>Nome Fantasia</label>
+          <input id="empFantasia" placeholder="Ex: Loja Modelo">
+        </div>
+        <div class="field">
+          <label>CNPJ</label>
+          <input id="empCnpj" placeholder="00.000.000/0000-00">
+        </div>
+        <div class="field">
+          <label>Endereço</label>
+          <input id="empEndereco" placeholder="Rua, número, bairro, cidade/UF">
+        </div>
+        <div class="field">
+          <label>Responsável / RH</label>
+          <input id="empResponsavel" placeholder="Nome do responsável pelo DP">
+        </div>
+        <div class="field">
+          <label>Cargo do Responsável</label>
+          <input id="empResponsavelCargo" placeholder="Ex: Gerente de RH">
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" onclick="salvarEmpresa()">Salvar Empresa</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FUNCIONARIOS -->
+  <section id="view-funcionarios" class="view">
+    <div class="card">
+      <h2>Cadastrar Funcionário</h2>
+      <div class="grid">
+        <div class="field">
+          <label>Nome completo</label>
+          <input id="funcNome" placeholder="Nome do funcionário">
+        </div>
+        <div class="field">
+          <label>Cargo / Função</label>
+          <input id="funcCargo" placeholder="Ex: Auxiliar Administrativo">
+        </div>
+        <div class="field">
+          <label>Data de Admissão</label>
+          <input id="funcAdmissao" type="date">
+        </div>
+        <div class="field">
+          <label>CPF</label>
+          <input id="funcCpf" placeholder="000.000.000-00">
+        </div>
+        <div class="field">
+          <label>RG</label>
+          <input id="funcRg" placeholder="00.000.000-0">
+        </div>
+        <div class="field">
+          <label>Setor</label>
+          <input id="funcSetor" placeholder="Ex: Financeiro">
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="funcSaveBtn" onclick="salvarFuncionario()">Cadastrar Funcionário</button>
+        <button class="btn secondary" id="funcCancelBtn" style="display:none" onclick="cancelarEdicaoFuncionario()">Cancelar Edição</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Funcionários Cadastrados</h2>
+      <div id="funcionariosTable"></div>
+    </div>
+  </section>
+
+  <!-- EMITIR -->
+  <section id="view-emitir" class="view">
+    <div class="card">
+      <h2>1. Selecione o Tipo de Formulário</h2>
+      <div class="doc-types" id="docTypesContainer"></div>
+    </div>
+
+    <div class="card">
+      <h2>2. Dados do Formulário</h2>
+      <div class="grid">
+        <div class="field">
+          <label>Funcionário</label>
+          <select id="formFuncionario"></select>
+        </div>
+        <div class="field">
+          <label>Data do Documento</label>
+          <input id="formData" type="date">
+        </div>
+        <div class="field" id="campoDuracaoWrap" style="display:none">
+          <label id="campoDuracaoLabel">Duração (dias)</label>
+          <input id="campoDuracao" type="number" min="1" placeholder="Ex: 3">
+        </div>
+        <div class="field" id="campoAvisoTipoWrap" style="display:none">
+          <label>Tipo de Aviso Prévio</label>
+          <select id="campoAvisoTipo">
+            <option value="trabalhado">Trabalhado</option>
+            <option value="indenizado">Indenizado</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label id="motivoLabel">Motivo / Descrição da Ocorrência</label>
+        <textarea id="formMotivo" placeholder="Descreva detalhadamente o motivo, data e circunstâncias da ocorrência..."></textarea>
+      </div>
+      <div class="actions">
+        <button class="btn" onclick="gerarDocumento()">Gerar Formulário</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- HISTORICO -->
+  <section id="view-historico" class="view">
+    <div class="card">
+      <h2>Histórico de Formulários Emitidos</h2>
+      <div id="historicoTable"></div>
+    </div>
+  </section>
+
+</main>
+
+<div id="printArea">
+  <div class="doc-page" id="docPage"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'dp_sistema_v1';
+
+const TIPOS_DOCUMENTO = [
+  { id:'advertencia', label:'Advertência Verbal' },
+  { id:'advertencia_escrita', label:'Advertência por Escrito' },
+  { id:'suspensao', label:'Suspensão Disciplinar', duracao:true, duracaoLabel:'Duração da suspensão (dias)' },
+  { id:'aviso_previo', label:'Aviso Prévio', avisoTipo:true },
+  { id:'atestado', label:'Comunicado de Atestado Médico' },
+  { id:'advertencia_atraso', label:'Advertência por Atraso/Falta' },
+  { id:'declaracao_horas', label:'Declaração de Horas Extras' },
+  { id:'termo_advertencia_epi', label:'Advertência - Uso de EPI' },
+];
+
+function load(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(raw) return JSON.parse(raw);
+  return { empresa:{}, funcionarios:[], historico:[] };
+}
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+}
+let db = load();
+let editingFuncId = null;
+let tipoSelecionado = null;
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+function fmtDate(d){
+  if(!d) return '-';
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+/* ---------- NAVIGATION ---------- */
+document.querySelectorAll('nav button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+    if(btn.dataset.view==='emitir') refreshEmitirView();
+    if(btn.dataset.view==='historico') renderHistorico();
+    if(btn.dataset.view==='funcionarios') renderFuncionarios();
+  });
+});
+
+/* ---------- EMPRESA ---------- */
+function renderEmpresa(){
+  const e = db.empresa || {};
+  document.getElementById('empRazaoSocial').value = e.razaoSocial || '';
+  document.getElementById('empFantasia').value = e.fantasia || '';
+  document.getElementById('empCnpj').value = e.cnpj || '';
+  document.getElementById('empEndereco').value = e.endereco || '';
+  document.getElementById('empResponsavel').value = e.responsavel || '';
+  document.getElementById('empResponsavelCargo').value = e.responsavelCargo || '';
+  document.getElementById('headerEmpresa').textContent = e.razaoSocial ? `${e.razaoSocial}${e.cnpj ? ' — '+e.cnpj : ''}` : 'Nenhuma empresa cadastrada';
+}
+
+function salvarEmpresa(){
+  const razaoSocial = document.getElementById('empRazaoSocial').value.trim();
+  if(!razaoSocial){
+    toast('Informe a Razão Social da empresa.');
+    return;
+  }
+  db.empresa = {
+    razaoSocial,
+    fantasia: document.getElementById('empFantasia').value.trim(),
+    cnpj: document.getElementById('empCnpj').value.trim(),
+    endereco: document.getElementById('empEndereco').value.trim(),
+    responsavel: document.getElementById('empResponsavel').value.trim(),
+    responsavelCargo: document.getElementById('empResponsavelCargo').value.trim(),
+  };
+  save();
+  renderEmpresa();
+  toast('Dados da empresa salvos com sucesso.');
+}
+
+/* ---------- FUNCIONARIOS ---------- */
+function salvarFuncionario(){
+  const nome = document.getElementById('funcNome').value.trim();
+  const cargo = document.getElementById('funcCargo').value.trim();
+  const admissao = document.getElementById('funcAdmissao').value;
+  const cpf = document.getElementById('funcCpf').value.trim();
+  const rg = document.getElementById('funcRg').value.trim();
+  const setor = document.getElementById('funcSetor').value.trim();
+
+  if(!nome){
+    toast('Informe o nome do funcionário.');
+    return;
+  }
+  if(!cpf && !rg){
+    toast('Informe ao menos CPF ou RG.');
+    return;
+  }
+
+  if(editingFuncId){
+    const f = db.funcionarios.find(x=>x.id===editingFuncId);
+    Object.assign(f, { nome, cargo, admissao, cpf, rg, setor });
+    toast('Funcionário atualizado.');
+    cancelarEdicaoFuncionario();
+  } else {
+    db.funcionarios.push({
+      id: 'f_' + Date.now(),
+      nome, cargo, admissao, cpf, rg, setor
+    });
+    toast('Funcionário cadastrado com sucesso.');
+  }
+
+  save();
+  limparFormFuncionario();
+  renderFuncionarios();
+}
+
+function limparFormFuncionario(){
+  ['funcNome','funcCargo','funcAdmissao','funcCpf','funcRg','funcSetor'].forEach(id=>{
+    document.getElementById(id).value = '';
+  });
+}
+
+function editarFuncionario(id){
+  const f = db.funcionarios.find(x=>x.id===id);
+  if(!f) return;
+  editingFuncId = id;
+  document.getElementById('funcNome').value = f.nome;
+  document.getElementById('funcCargo').value = f.cargo;
+  document.getElementById('funcAdmissao').value = f.admissao;
+  document.getElementById('funcCpf').value = f.cpf;
+  document.getElementById('funcRg').value = f.rg;
+  document.getElementById('funcSetor').value = f.setor;
+  document.getElementById('funcSaveBtn').textContent = 'Salvar Alterações';
+  document.getElementById('funcCancelBtn').style.display = 'inline-block';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function cancelarEdicaoFuncionario(){
+  editingFuncId = null;
+  limparFormFuncionario();
+  document.getElementById('funcSaveBtn').textContent = 'Cadastrar Funcionário';
+  document.getElementById('funcCancelBtn').style.display = 'none';
+}
+
+function excluirFuncionario(id){
+  if(!confirm('Deseja realmente excluir este funcionário? O histórico de documentos será mantido.')) return;
+  db.funcionarios = db.funcionarios.filter(x=>x.id!==id);
+  save();
+  renderFuncionarios();
+}
+
+function renderFuncionarios(){
+  const wrap = document.getElementById('funcionariosTable');
+  if(!db.funcionarios.length){
+    wrap.innerHTML = '<p class="empty">Nenhum funcionário cadastrado ainda.</p>';
+    return;
+  }
+  let html = `<table><thead><tr>
+    <th>Nome</th><th>Cargo</th><th>Admissão</th><th>CPF</th><th>RG</th><th>Setor</th><th></th>
+  </tr></thead><tbody>`;
+  db.funcionarios.forEach(f=>{
+    html += `<tr>
+      <td>${f.nome}</td>
+      <td>${f.cargo||'-'}</td>
+      <td>${fmtDate(f.admissao)}</td>
+      <td>${f.cpf||'-'}</td>
+      <td>${f.rg||'-'}</td>
+      <td>${f.setor||'-'}</td>
+      <td class="row-actions">
+        <button onclick="editarFuncionario('${f.id}')">Editar</button>
+        <button onclick="excluirFuncionario('${f.id}')">Excluir</button>
+      </td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+/* ---------- EMITIR FORMULARIO ---------- */
+function buildDocTypes(){
+  const wrap = document.getElementById('docTypesContainer');
+  wrap.innerHTML = '';
+  TIPOS_DOCUMENTO.forEach(t=>{
+    const btn = document.createElement('div');
+    btn.className = 'doc-type-btn';
+    btn.textContent = t.label;
+    btn.onclick = ()=> selecionarTipo(t.id);
+    btn.dataset.id = t.id;
+    wrap.appendChild(btn);
+  });
+}
+
+function selecionarTipo(id){
+  tipoSelecionado = id;
+  document.querySelectorAll('.doc-type-btn').forEach(b=>{
+    b.classList.toggle('selected', b.dataset.id===id);
+  });
+  const tipo = TIPOS_DOCUMENTO.find(t=>t.id===id);
+  document.getElementById('campoDuracaoWrap').style.display = tipo.duracao ? 'block' : 'none';
+  if(tipo.duracao) document.getElementById('campoDuracaoLabel').textContent = tipo.duracaoLabel;
+  document.getElementById('campoAvisoTipoWrap').style.display = tipo.avisoTipo ? 'block' : 'none';
+  document.getElementById('motivoLabel').textContent =
+    id==='atestado' ? 'Observações do Atestado' :
+    id==='declaracao_horas' ? 'Detalhamento das horas extras' :
+    'Motivo / Descrição da Ocorrência';
+}
+
+function refreshEmitirView(){
+  buildDocTypes();
+  const sel = document.getElementById('formFuncionario');
+  sel.innerHTML = '';
+  if(!db.funcionarios.length){
+    sel.innerHTML = '<option value="">Nenhum funcionário cadastrado</option>';
+  } else {
+    db.funcionarios.forEach(f=>{
+      const opt = document.createElement('option');
+      opt.value = f.id;
+      opt.textContent = f.nome;
+      sel.appendChild(opt);
+    });
+  }
+  document.getElementById('formData').value = new Date().toISOString().slice(0,10);
+}
+
+function gerarDocumento(){
+  if(!db.empresa || !db.empresa.razaoSocial){
+    toast('Cadastre os dados da empresa antes de emitir um formulário.');
+    return;
+  }
+  if(!tipoSelecionado){
+    toast('Selecione o tipo de formulário.');
+    return;
+  }
+  const funcId = document.getElementById('formFuncionario').value;
+  const func = db.funcionarios.find(f=>f.id===funcId);
+  if(!func){
+    toast('Selecione um funcionário válido.');
+    return;
+  }
+  const dataDoc = document.getElementById('formData').value;
+  const motivo = document.getElementById('formMotivo').value.trim();
+  if(!motivo){
+    toast('Descreva o motivo / observações do documento.');
+    return;
+  }
+
+  const tipo = TIPOS_DOCUMENTO.find(t=>t.id===tipoSelecionado);
+  const registro = {
+    id: 'doc_' + Date.now(),
+    tipoId: tipo.id,
+    tipoLabel: tipo.label,
+    funcionarioId: func.id,
+    funcionarioNome: func.nome,
+    data: dataDoc,
+    motivo,
+    duracao: tipo.duracao ? document.getElementById('campoDuracao').value : null,
+    avisoTipo: tipo.avisoTipo ? document.getElementById('campoAvisoTipo').value : null,
+    criadoEm: new Date().toISOString()
+  };
+
+  db.historico.unshift(registro);
+  save();
+  renderDocumento(registro, func);
+  toast('Formulário gerado. Use o botão Imprimir/Salvar PDF.');
+}
+
+/* ---------- RENDER DOCUMENTO PARA IMPRESSAO ---------- */
+function renderDocumento(reg, func){
+  const e = db.empresa;
+  const page = document.getElementById('docPage');
+
+  let corpo = '';
+  switch(reg.tipoId){
+    case 'advertencia':
+    case 'advertencia_escrita':
+    case 'advertencia_atraso':
+    case 'termo_advertencia_epi':
+      corpo = `
+        <p>Pelo presente instrumento, a empresa <strong>${e.razaoSocial}</strong> comunica ao(à) funcionário(a)
+        <strong>${func.nome}</strong>, ocupante do cargo de <strong>${func.cargo||'-'}</strong>, admitido(a) em
+        <strong>${fmtDate(func.admissao)}</strong>, que está sendo ${reg.tipoId==='advertencia' ? 'advertido(a) verbalmente' : 'advertido(a) por escrito'}
+        em razão do seguinte fato:</p>
+        <p>${reg.motivo}</p>
+        <p>Esta advertência tem caráter disciplinar e visa alertar o(a) colaborador(a) sobre a necessidade de adequação de sua conduta
+        às normas internas da empresa e à legislação trabalhista vigente. A reincidência em conduta semelhante poderá ensejar a aplicação
+        de penalidades mais severas, incluindo suspensão disciplinar ou rescisão do contrato de trabalho por justa causa, nos termos do
+        art. 482 da CLT.</p>`;
+      break;
+    case 'suspensao':
+      corpo = `
+        <p>Pelo presente instrumento, a empresa <strong>${e.razaoSocial}</strong> comunica ao(à) funcionário(a)
+        <strong>${func.nome}</strong>, ocupante do cargo de <strong>${func.cargo||'-'}</strong>, admitido(a) em
+        <strong>${fmtDate(func.admissao)}</strong>, a aplicação de <strong>SUSPENSÃO DISCIPLINAR</strong> pelo período de
+        <strong>${reg.duracao||'-'} dia(s)</strong>, com início em <strong>${fmtDate(reg.data)}</strong>, em razão do seguinte fato:</p>
+        <p>${reg.motivo}</p>
+        <p>Durante o período de suspensão, o(a) colaborador(a) ficará afastado(a) de suas atividades, sem prejuízo das demais
+        disposições legais e contratuais aplicáveis, conforme art. 474 da CLT.</p>`;
+      break;
+    case 'aviso_previo':
+      corpo = `
+        <p>Pelo presente instrumento, a empresa <strong>${e.razaoSocial}</strong> comunica ao(à) funcionário(a)
+        <strong>${func.nome}</strong>, ocupante do cargo de <strong>${func.cargo||'-'}</strong>, admitido(a) em
+        <strong>${fmtDate(func.admissao)}</strong>, a concessão de <strong>AVISO PRÉVIO ${reg.avisoTipo==='indenizado' ? 'INDENIZADO' : 'TRABALHADO'}</strong>,
+        com início em <strong>${fmtDate(reg.data)}</strong>, nos termos da Lei nº 12.506/2011 e da Consolidação das Leis do Trabalho (CLT).</p>
+        <p><strong>Observações:</strong> ${reg.motivo}</p>
+        ${reg.avisoTipo==='trabalhado'
+          ? '<p>Durante o cumprimento do aviso prévio trabalhado, fica assegurada a redução de 2 (duas) horas diárias na jornada de trabalho, ou a critério da empresa, a dispensa de 7 (sete) dias corridos, sem prejuízo do salário integral, nos termos do art. 488 da CLT.</p>'
+          : '<p>O presente aviso prévio será indenizado, com o pagamento integral do período correspondente, sem a obrigatoriedade de comparecimento ao trabalho a partir desta data.</p>'}`;
+      break;
+    case 'atestado':
+      corpo = `
+        <p>A empresa <strong>${e.razaoSocial}</strong> registra, para os devidos fins, o recebimento de atestado médico
+        apresentado pelo(a) funcionário(a) <strong>${func.nome}</strong>, ocupante do cargo de <strong>${func.cargo||'-'}</strong>,
+        referente à data de <strong>${fmtDate(reg.data)}</strong>.</p>
+        <p><strong>Observações:</strong> ${reg.motivo}</p>
+        <p>O presente documento tem finalidade meramente declaratória, servindo como registro interno do afastamento e não substitui
+        o atestado médico original, que deverá ser arquivado na pasta funcional do(a) colaborador(a).</p>`;
+      break;
+    case 'declaracao_horas':
+      corpo = `
+        <p>A empresa <strong>${e.razaoSocial}</strong> declara, para os devidos fins, que o(a) funcionário(a)
+        <strong>${func.nome}</strong>, ocupante do cargo de <strong>${func.cargo||'-'}</strong>, prestou horas extraordinárias
+        de trabalho na data de <strong>${fmtDate(reg.data)}</strong>, conforme detalhamento abaixo:</p>
+        <p>${reg.motivo}</p>
+        <p>As horas extras ora declaradas serão devidamente computadas para fins de pagamento ou compensação, conforme acordo
+        individual, coletivo ou banco de horas vigente na empresa, em conformidade com a legislação trabalhista aplicável.</p>`;
+      break;
+    default:
+      corpo = `<p>${reg.motivo}</p>`;
+  }
+
+  page.innerHTML = `
+    <div class="doc-header">
+      <h2>${e.razaoSocial}</h2>
+      ${e.fantasia ? `<p>${e.fantasia}</p>` : ''}
+      ${e.cnpj ? `<p>CNPJ: ${e.cnpj}</p>` : ''}
+      ${e.endereco ? `<p>${e.endereco}</p>` : ''}
+    </div>
+
+    <div class="doc-title">${reg.tipoLabel}</div>
+
+    <div class="doc-body">
+      <div class="doc-field"><strong>Funcionário(a):</strong> ${func.nome}</div>
+      <div class="doc-field"><strong>Cargo:</strong> ${func.cargo||'-'}</div>
+      <div class="doc-field"><strong>Setor:</strong> ${func.setor||'-'}</div>
+      <div class="doc-field"><strong>Admissão:</strong> ${fmtDate(func.admissao)}</div>
+      <div class="doc-field"><strong>CPF:</strong> ${func.cpf||'-'} ${func.rg ? ' | RG: '+func.rg : ''}</div>
+      <div class="doc-field"><strong>Data do documento:</strong> ${fmtDate(reg.data)}</div>
+
+      ${corpo}
+
+      <div class="doc-sign">
+        <div class="sign-block">
+          <div class="sign-line">${e.responsavel || 'Responsável pelo RH/DP'}<br>${e.responsavelCargo||'Departamento Pessoal'}</div>
+        </div>
+        <div class="sign-block">
+          <div class="sign-line">${func.nome}<br>Funcionário(a) — Ciente</div>
+        </div>
+      </div>
+
+      <p style="margin-top:50px;font-size:12px;">Local e data: ____________________________, ${fmtDate(reg.data)}</p>
+    </div>
+  `;
+
+  document.getElementById('printArea').style.display = 'block';
+
+  const preview = document.createElement('div');
+  // show inline preview + print button at bottom of "emitir" view
+  let previewWrap = document.getElementById('previewBox');
+  if(!previewWrap){
+    previewWrap = document.createElement('div');
+    previewWrap.id = 'previewBox';
+    previewWrap.className = 'card';
+    document.getElementById('view-emitir').appendChild(previewWrap);
+  }
+  previewWrap.innerHTML = `
+    <h2>Formulário Gerado</h2>
+    <div class="preview-box">${page.innerHTML}</div>
+    <div class="actions">
+      <button class="btn" onclick="window.print()">Imprimir / Salvar PDF</button>
+    </div>
+  `;
+  previewWrap.scrollIntoView({behavior:'smooth'});
+}
+
+/* ---------- HISTORICO ---------- */
+function renderHistorico(){
+  const wrap = document.getElementById('historicoTable');
+  if(!db.historico.length){
+    wrap.innerHTML = '<p class="empty">Nenhum formulário emitido ainda.</p>';
+    return;
+  }
+  let html = `<table><thead><tr>
+    <th>Tipo</th><th>Funcionário</th><th>Data</th><th>Emitido em</th><th></th>
+  </tr></thead><tbody>`;
+  db.historico.forEach(h=>{
+    html += `<tr>
+      <td><span class="badge">${h.tipoLabel}</span></td>
+      <td>${h.funcionarioNome}</td>
+      <td>${fmtDate(h.data)}</td>
+      <td>${new Date(h.criadoEm).toLocaleString('pt-BR')}</td>
+      <td class="row-actions">
+        <button onclick="reimprimir('${h.id}')">Visualizar/Imprimir</button>
+      </td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function reimprimir(id){
+  const reg = db.historico.find(h=>h.id===id);
+  const func = db.funcionarios.find(f=>f.id===reg.funcionarioId) || {nome:reg.funcionarioNome};
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelector('nav button[data-view="emitir"]').classList.add('active');
+  document.getElementById('view-emitir').classList.add('active');
+  renderDocumento(reg, func);
+}
+
+/* ---------- INIT ---------- */
+renderEmpresa();
+renderFuncionarios();
+buildDocTypes();
+</script>
+
+</body>
+</html>
