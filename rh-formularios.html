@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sistema de Formulários - Departamento Pessoal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
     --primary:#1e3a5f;
@@ -724,10 +726,93 @@ function renderDocumento(reg, func){
     <h2>Formulário Gerado</h2>
     <div class="preview-box">${page.innerHTML}</div>
     <div class="actions">
-      <button class="btn" onclick="window.print()">Imprimir / Salvar PDF</button>
+      <button class="btn" onclick="window.print()">Imprimir</button>
+      <button class="btn secondary" id="btnBaixarPdf" onclick="baixarPdf('${reg.id}')">Baixar PDF</button>
+      <button class="btn" style="background:#25D366" id="btnWhatsapp" onclick="compartilharWhatsapp('${reg.id}')">Compartilhar no WhatsApp</button>
     </div>
   `;
   previewWrap.scrollIntoView({behavior:'smooth'});
+}
+
+function nomeArquivoPdf(reg, func){
+  const safe = (s)=> (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9]+/g,'_');
+  return `${safe(reg.tipoLabel)}_${safe(func.nome)}_${reg.data}.pdf`;
+}
+
+async function gerarPdfBlob(reg, func){
+  const sourceEl = document.querySelector('#previewBox .preview-box') || document.getElementById('docPage');
+  const canvas = await html2canvas(sourceEl, { scale:2, useCORS:true, backgroundColor:'#ffffff' });
+  const imgData = canvas.toDataURL('image/jpeg', 0.95);
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const imgWidth = pageWidth;
+  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+  let heightLeft = imgHeight;
+  let position = 0;
+  pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+  heightLeft -= pageHeight;
+  while (heightLeft > 0) {
+    position = heightLeft - imgHeight;
+    pdf.addPage();
+    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+  }
+  return pdf.output('blob');
+}
+
+async function baixarPdf(regId){
+  const reg = db.historico.find(h=>h.id===regId);
+  const func = db.funcionarios.find(f=>f.id===reg.funcionarioId) || {nome:reg.funcionarioNome};
+  toast('Gerando PDF...');
+  try{
+    const blob = await gerarPdfBlob(reg, func);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nomeArquivoPdf(reg, func);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('PDF baixado com sucesso.');
+  }catch(err){
+    console.error(err);
+    toast('Erro ao gerar PDF. Tente novamente.');
+  }
+}
+
+async function compartilharWhatsapp(regId){
+  const reg = db.historico.find(h=>h.id===regId);
+  const func = db.funcionarios.find(f=>f.id===reg.funcionarioId) || {nome:reg.funcionarioNome};
+  const mensagem = `${reg.tipoLabel} - ${func.nome} - ${fmtDate(reg.data)} (${db.empresa.razaoSocial||''})`;
+
+  try{
+    const blob = await gerarPdfBlob(reg, func);
+    const file = new File([blob], nomeArquivoPdf(reg, func), { type:'application/pdf' });
+
+    if(navigator.canShare && navigator.canShare({ files:[file] })){
+      await navigator.share({
+        files:[file],
+        title: reg.tipoLabel,
+        text: mensagem
+      });
+      toast('Compartilhado com sucesso.');
+      return;
+    }
+  }catch(err){
+    if(err && err.name === 'AbortError') return;
+    console.error(err);
+  }
+
+  // Fallback: navegador/dispositivo não suporta compartilhar arquivo direto.
+  // Baixa o PDF e abre o WhatsApp com mensagem pronta para anexar manualmente.
+  await baixarPdf(regId);
+  const texto = encodeURIComponent(`${mensagem}\n\n(Segue em anexo o PDF do formulário, baixado agora no seu dispositivo)`);
+  window.open(`https://wa.me/?text=${texto}`, '_blank');
+  toast('PDF baixado. Anexe o arquivo na conversa do WhatsApp que foi aberta.');
 }
 
 /* ---------- HISTORICO ---------- */
