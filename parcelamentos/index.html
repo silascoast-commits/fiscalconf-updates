@@ -44,10 +44,12 @@
   thead th{background:#15203a;color:var(--muted);text-align:left;padding:9px 8px;font-weight:600;position:sticky;top:0;white-space:nowrap;}
   tbody td{padding:8px;border-top:1px solid var(--border);white-space:nowrap;}
   tbody tr:hover{background:#192238;}
-  .month-cell{text-align:center;width:30px;font-variant-numeric:tabular-nums;}
-  .month-cell.paid{color:var(--green);font-weight:600;}
-  .month-cell.future{color:#475569;}
-  .month-cell.na{color:#334155;}
+  .month-cell{text-align:center;width:30px;font-variant-numeric:tabular-nums;cursor:pointer;border-radius:4px;}
+  .month-cell.sent{color:#fff;font-weight:700;background:var(--green);}
+  .month-cell.pending{color:var(--orange);font-weight:600;background:rgba(249,115,22,.12);}
+  .month-cell.future{color:#475569;cursor:default;}
+  .month-cell.na{color:#334155;cursor:default;}
+  .month-cell.sent:hover,.month-cell.pending:hover{outline:2px solid var(--accent);}
   .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;}
   .badge.ativo{background:#14532d;color:#86efac;}
   .badge.atrasado{background:#7c2d12;color:#fdba74;}
@@ -117,6 +119,12 @@
       <option value="pausado">Pausado</option>
     </select>
     <button class="ghost small" id="btnPrintAll">🖨 Imprimir Lista (Ano)</button>
+  </div>
+
+  <div style="display:flex;gap:16px;align-items:center;margin-bottom:10px;font-size:12px;color:var(--muted);">
+    <span><span style="display:inline-block;width:12px;height:12px;background:var(--green);border-radius:3px;vertical-align:middle;"></span> Enviado (clique no mês para marcar/desmarcar)</span>
+    <span><span style="display:inline-block;width:12px;height:12px;background:rgba(249,115,22,.4);border-radius:3px;vertical-align:middle;"></span> Pendente de envio</span>
+    <span><span style="display:inline-block;width:12px;height:12px;background:#475569;border-radius:3px;vertical-align:middle;"></span> Mês futuro</span>
   </div>
 
   <div style="overflow:auto;max-height:65vh;border-radius:10px;">
@@ -327,8 +335,11 @@ function renderTable(){
       if(!res || res.n===null){
         return `<td class="month-cell na">${res && res.kind==='before' ? '----' : (res && res.kind==='after' ? '✓' : '-')}</td>`;
       }
-      const cls = res.kind === 'future' ? 'future' : 'paid';
-      return `<td class="month-cell ${cls}">${String(res.n).padStart(2,'0')}</td>`;
+      const enviado = !!(r.enviados && r.enviados[i]);
+      let cls = res.kind === 'future' ? 'future' : 'pending';
+      if(enviado) cls = 'sent';
+      const title = enviado ? 'Enviado - clique para desmarcar' : 'Clique para marcar como enviado';
+      return `<td class="month-cell ${cls}" title="${title}" onclick="toggleEnviado(${r.id},${i})">${String(res.n).padStart(2,'0')}</td>`;
     }).join('');
     return `<tr>
       <td><strong>${escapeHtml(r.empresa)}</strong></td>
@@ -346,6 +357,15 @@ function renderTable(){
       </td>
     </tr>`;
   }).join('');
+}
+
+function toggleEnviado(id, monthIndex){
+  const r = data.find(x=>x.id===id);
+  if(!r) return;
+  if(!r.enviados) r.enviados = {};
+  r.enviados[monthIndex] = !r.enviados[monthIndex];
+  saveData();
+  renderTable();
 }
 
 function escapeHtml(s){
@@ -499,11 +519,14 @@ function printOne(id){
       <table><thead><tr>${MONTHS.map(m=>`<th>${m}</th>`).join('')}</tr></thead><tbody><tr>`;
     MONTHS.forEach((m,i)=>{
       const res = parcelaForMonth(rec, rec.ano, i);
-      let val = '-';
-      if(res && res.n!==null) val = String(res.n).padStart(2,'0');
+      let val = '-', bg = '';
+      if(res && res.n!==null){
+        val = String(res.n).padStart(2,'0');
+        if(rec.enviados && rec.enviados[i]){ val += ' ✔'; bg = ' style="background:#dcfce7;"'; }
+      }
       else if(res && res.kind==='before') val = '----';
       else if(res && res.kind==='after') val = '✓';
-      html += `<td>${val}</td>`;
+      html += `<td${bg}>${val}</td>`;
     });
     html += `</tr></tbody></table>`;
     if(rec.obs) html += `<p><strong>Observações:</strong> ${escapeHtml(rec.obs)}</p>`;
@@ -522,11 +545,14 @@ document.getElementById('btnPrintAll').onclick = ()=>{
     html += `<tr><td>${escapeHtml(r.empresa)}</td><td>${fmtCnpj(r.cnpj)}</td><td>${fmtDate(r.adesao)}</td><td>${r.totalParcelas||'-'}</td>`;
     MONTHS.forEach((m,i)=>{
       const res = parcelaForMonth(r, currentYear, i);
-      let val = '-';
-      if(res && res.n!==null) val = String(res.n).padStart(2,'0');
+      let val = '-', bg = '';
+      if(res && res.n!==null){
+        val = String(res.n).padStart(2,'0');
+        if(r.enviados && r.enviados[i]){ val += ' ✔'; bg = ' style="background:#dcfce7;"'; }
+      }
       else if(res && res.kind==='before') val = '----';
       else if(res && res.kind==='after') val = '✓';
-      html += `<td>${val}</td>`;
+      html += `<td${bg}>${val}</td>`;
     });
     html += `<td>${STATUS_LABEL[status]}</td></tr>`;
   });
