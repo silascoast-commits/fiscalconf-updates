@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Parcelamentos - Simples Nacional</title>
+<style>
+  :root{
+    --bg:#0f172a; --bg2:#1e293b; --card:#1e293b; --border:#334155;
+    --text:#e2e8f0; --muted:#94a3b8; --accent:#3b82f6; --accent2:#2563eb;
+    --green:#22c55e; --red:#ef4444; --yellow:#eab308; --orange:#f97316; --purple:#a855f7;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text);}
+  header{background:var(--bg2);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border-bottom:1px solid var(--border);}
+  header h1{font-size:18px;margin:0;display:flex;align-items:center;gap:10px;}
+  header h1 span.logo{background:var(--accent);width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:bold;}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;}
+  button{cursor:pointer;border:none;border-radius:6px;padding:9px 14px;font-size:13px;font-weight:600;transition:.15s;}
+  button.primary{background:var(--accent);color:#fff;}
+  button.primary:hover{background:var(--accent2);}
+  button.ghost{background:transparent;border:1px solid var(--border);color:var(--text);}
+  button.ghost:hover{background:#2a3a52;}
+  button.danger{background:var(--red);color:#fff;}
+  button.small{padding:5px 9px;font-size:12px;}
+  main{padding:20px 24px 60px;max-width:1500px;margin:0 auto;}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+  .card .num{font-size:26px;font-weight:700;}
+  .card .lbl{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px;}
+  .card.ativo .num{color:var(--green);}
+  .card.atrasado .num{color:var(--orange);}
+  .card.encerrado .num{color:var(--muted);}
+  .card.problema .num{color:var(--red);}
+  .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
+  .tabs{display:flex;gap:6px;}
+  .tab{padding:7px 14px;border-radius:6px;background:var(--card);border:1px solid var(--border);cursor:pointer;font-size:13px;}
+  .tab.active{background:var(--accent);border-color:var(--accent);}
+  input[type=text],input[type=search],select,input[type=date],input[type=number]{
+    background:#0b1320;border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-size:13px;
+  }
+  .search-box{flex:1;min-width:200px;}
+  table{width:100%;border-collapse:collapse;background:var(--card);border-radius:10px;overflow:hidden;font-size:12.5px;}
+  thead th{background:#15203a;color:var(--muted);text-align:left;padding:9px 8px;font-weight:600;position:sticky;top:0;white-space:nowrap;}
+  tbody td{padding:8px;border-top:1px solid var(--border);white-space:nowrap;}
+  tbody tr:hover{background:#192238;}
+  .month-cell{text-align:center;width:30px;font-variant-numeric:tabular-nums;}
+  .month-cell.paid{color:var(--green);font-weight:600;}
+  .month-cell.future{color:#475569;}
+  .month-cell.na{color:#334155;}
+  .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;}
+  .badge.ativo{background:#14532d;color:#86efac;}
+  .badge.atrasado{background:#7c2d12;color:#fdba74;}
+  .badge.concluido{background:#1e3a8a;color:#93c5fd;}
+  .badge.rescindido{background:#7f1d1d;color:#fca5a5;}
+  .badge.desistiu{background:#7f1d1d;color:#fca5a5;}
+  .badge.encerrado{background:#3f3f46;color:#d4d4d8;}
+  .badge.pausado{background:#713f12;color:#fde047;}
+  .row-actions{display:flex;gap:4px;}
+  .empty{text-align:center;padding:50px;color:var(--muted);}
+  /* modal */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;width:480px;max-width:92vw;max-height:90vh;overflow:auto;}
+  .modal h2{margin-top:0;font-size:16px;}
+  .field{margin-bottom:12px;display:flex;flex-direction:column;gap:5px;}
+  .field label{font-size:12px;color:var(--muted);}
+  .field input,.field select,.field textarea{width:100%;}
+  .field textarea{resize:vertical;min-height:60px;font-family:inherit;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  footer{text-align:center;color:var(--muted);font-size:12px;padding:20px;}
+  #fileImport{display:none;}
+  .toast{position:fixed;bottom:20px;right:20px;background:var(--green);color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;display:none;z-index:99;box-shadow:0 4px 12px rgba(0,0,0,.4);}
+  .toast.show{display:block;}
+  .toast.error{background:var(--red);}
+  .hint{font-size:11px;color:var(--muted);margin-top:-4px;}
+  /* print view */
+  #printArea{display:none;}
+  @media print{
+    body *{visibility:hidden;}
+    #printArea, #printArea *{visibility:visible;}
+    #printArea{display:block;position:absolute;top:0;left:0;width:100%;padding:20px;color:#000;background:#fff;}
+    #printArea table{width:100%;border-collapse:collapse;}
+    #printArea th,#printArea td{border:1px solid #999;padding:6px;font-size:11px;color:#000;}
+    #printArea h2{color:#000;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span class="logo">PC</span> Controle de Parcelamentos - Simples Nacional</h1>
+  <div class="toolbar">
+    <button class="primary" id="btnNovo">+ Novo Parcelamento</button>
+    <button class="ghost" id="btnExport">⭳ Exportar Backup</button>
+    <button class="ghost" id="btnImport">⭱ Importar Backup</button>
+    <input type="file" id="fileImport" accept="application/json">
+  </div>
+</header>
+
+<main>
+  <div class="cards" id="cards"></div>
+
+  <div class="controls">
+    <div class="tabs" id="yearTabs"></div>
+    <button class="ghost small" id="btnAddYear">+ Ano</button>
+    <input type="search" class="search-box" id="search" placeholder="Buscar por empresa ou CNPJ...">
+    <select id="filterStatus">
+      <option value="">Todos status</option>
+      <option value="ativo">Ativo</option>
+      <option value="atrasado">Atrasado</option>
+      <option value="concluido">Concluído</option>
+      <option value="rescindido">Rescindido</option>
+      <option value="desistiu">Desistiu</option>
+      <option value="encerrado">Encerrado</option>
+      <option value="pausado">Pausado</option>
+    </select>
+    <button class="ghost small" id="btnPrintAll">🖨 Imprimir Lista (Ano)</button>
+  </div>
+
+  <div style="overflow:auto;max-height:65vh;border-radius:10px;">
+  <table>
+    <thead>
+      <tr>
+        <th>Empresa</th><th>CNPJ</th><th>Adesão</th><th>Parcelas</th>
+        <th>JAN</th><th>FEV</th><th>MAR</th><th>ABR</th><th>MAI</th><th>JUN</th>
+        <th>JUL</th><th>AGO</th><th>SET</th><th>OUT</th><th>NOV</th><th>DEZ</th>
+        <th>Status</th><th>Observações</th><th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  </div>
+  <div class="empty" id="emptyMsg" style="display:none;">Nenhum parcelamento encontrado.</div>
+</main>
+
+<footer>Sistema local de controle de parcelamentos · Dados salvos no navegador (localStorage) · Faça backup regularmente</footer>
+
+<!-- Modal cadastro -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2 id="modalTitle">Novo Parcelamento</h2>
+    <input type="hidden" id="fId">
+    <div class="field">
+      <label>Empresa *</label>
+      <input type="text" id="fEmpresa" placeholder="Nome da empresa">
+    </div>
+    <div class="two-col">
+      <div class="field">
+        <label>CNPJ</label>
+        <input type="text" id="fCnpj" placeholder="00000000000000">
+      </div>
+      <div class="field">
+        <label>Ano de referência *</label>
+        <input type="number" id="fAno" placeholder="2026">
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field">
+        <label>Data de Adesão *</label>
+        <input type="date" id="fAdesao">
+      </div>
+      <div class="field">
+        <label>Nº Total de Parcelas *</label>
+        <input type="number" id="fTotal" placeholder="60">
+      </div>
+    </div>
+    <div class="hint">As parcelas mensais (JAN-DEZ) são calculadas automaticamente a partir da data de adesão.</div>
+    <div class="field">
+      <label>Status</label>
+      <select id="fStatus">
+        <option value="ativo">Ativo</option>
+        <option value="atrasado">Atrasado</option>
+        <option value="concluido">Concluído</option>
+        <option value="rescindido">Rescindido</option>
+        <option value="desistiu">Desistiu</option>
+        <option value="encerrado">Encerrado (não é mais cliente)</option>
+        <option value="pausado">Pausado</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Observações</label>
+      <textarea id="fObs" placeholder="Notas, atrasos, motivo de rescisão..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="ghost" id="btnCancel">Cancelar</button>
+      <button class="danger" id="btnDelete" style="display:none;">Excluir</button>
+      <button class="primary" id="btnSave">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div id="printArea"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const MONTHS = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+const STATUS_LABEL = {ativo:'Ativo', atrasado:'Atrasado', concluido:'Concluído', rescindido:'Rescindido', desistiu:'Desistiu', encerrado:'Encerrado', pausado:'Pausado'};
+const STORAGE_KEY = 'parcelamentos_data_v1';
+
+let data = [];
+let currentYear = null;
+
+function loadData(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(raw){
+    data = JSON.parse(raw);
+  } else {
+    data = SEED_DATA.slice();
+    saveData();
+  }
+}
+function saveData(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+function nextId(){
+  return data.reduce((m,r)=>Math.max(m,r.id),0)+1;
+}
+function toast(msg, isError){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error':'');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+// ---- Automation: compute installment number for a given month/year based on adesao date ----
+function parcelaForMonth(record, year, monthIndex){
+  if(!record.adesao) return null;
+  const ad = new Date(record.adesao+'T00:00:00');
+  const adIndex = ad.getFullYear()*12 + ad.getMonth();
+  const targetIndex = year*12 + monthIndex;
+  const diff = targetIndex - adIndex; // 0 = first installment month
+  if(diff < 0) return {n:null, kind:'before'};
+  const n = diff + 1;
+  const total = record.totalParcelas || Infinity;
+  if(n > total) return {n:null, kind:'after'};
+  // if status is rescindido/desistiu/encerrado/pausado, mark future months from "today" relative cutoff unaffected (we just display computed numbers, status drives badge)
+  const today = new Date();
+  const todayIndex = today.getFullYear()*12 + today.getMonth();
+  const kind = targetIndex > todayIndex ? 'future' : 'paid';
+  return {n, kind};
+}
+
+function computeStatusAuto(record){
+  if(['rescindido','desistiu','encerrado','pausado'].includes(record.status)) return record.status;
+  if(!record.adesao || !record.totalParcelas) return record.status || 'ativo';
+  const ad = new Date(record.adesao+'T00:00:00');
+  const adIndex = ad.getFullYear()*12 + ad.getMonth();
+  const today = new Date();
+  const todayIndex = today.getFullYear()*12 + today.getMonth();
+  const elapsed = todayIndex - adIndex + 1;
+  if(elapsed >= record.totalParcelas) return 'concluido';
+  return 'ativo';
+}
+
+// ---- Years ----
+function getYears(){
+  const ys = new Set(data.map(r=>r.ano));
+  ys.add(new Date().getFullYear());
+  return Array.from(ys).sort((a,b)=>b-a);
+}
+
+function renderTabs(){
+  const wrap = document.getElementById('yearTabs');
+  const years = getYears();
+  if(!years.includes(currentYear)) currentYear = years[0];
+  wrap.innerHTML = years.map(y=>`<div class="tab ${y===currentYear?'active':''}" data-year="${y}">${y}</div>`).join('');
+  wrap.querySelectorAll('.tab').forEach(t=>{
+    t.onclick = ()=>{ currentYear = parseInt(t.dataset.year); render(); };
+  });
+}
+
+function filteredRecords(){
+  const term = document.getElementById('search').value.trim().toLowerCase();
+  const statusFilter = document.getElementById('filterStatus').value;
+  return data.filter(r=>{
+    if(r.ano !== currentYear) return false;
+    if(statusFilter && computeStatusAuto(r) !== statusFilter) return false;
+    if(term){
+      const hay = (r.empresa+' '+(r.cnpj||'')).toLowerCase();
+      if(!hay.includes(term)) return false;
+    }
+    return true;
+  }).sort((a,b)=>a.empresa.localeCompare(b.empresa));
+}
+
+function renderCards(){
+  const recs = data.filter(r=>r.ano===currentYear);
+  const counts = {ativo:0, atrasado:0, concluido:0, problema:0};
+  recs.forEach(r=>{
+    const s = computeStatusAuto(r);
+    if(s==='ativo') counts.ativo++;
+    else if(s==='atrasado') counts.atrasado++;
+    else if(s==='concluido') counts.concluido++;
+    else counts.problema++;
+  });
+  document.getElementById('cards').innerHTML = `
+    <div class="card ativo"><div class="num">${counts.ativo}</div><div class="lbl">Ativos</div></div>
+    <div class="card atrasado"><div class="num">${counts.atrasado}</div><div class="lbl">Atrasados</div></div>
+    <div class="card encerrado"><div class="num">${counts.concluido}</div><div class="lbl">Concluídos</div></div>
+    <div class="card problema"><div class="num">${counts.problema}</div><div class="lbl">Rescindidos/Desistiu/Outros</div></div>
+    <div class="card"><div class="num">${recs.length}</div><div class="lbl">Total no ano</div></div>
+  `;
+}
+
+function fmtCnpj(c){
+  if(!c) return '-';
+  const d = c.replace(/\D/g,'');
+  if(d.length!==14) return c;
+  return d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+}
+function fmtDate(d){
+  if(!d) return '-';
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+function renderTable(){
+  const recs = filteredRecords();
+  const tbody = document.getElementById('tbody');
+  document.getElementById('emptyMsg').style.display = recs.length ? 'none' : 'block';
+  tbody.innerHTML = recs.map(r=>{
+    const status = computeStatusAuto(r);
+    const monthCells = MONTHS.map((m,i)=>{
+      const res = parcelaForMonth(r, currentYear, i);
+      if(!res || res.n===null){
+        return `<td class="month-cell na">${res && res.kind==='before' ? '----' : (res && res.kind==='after' ? '✓' : '-')}</td>`;
+      }
+      const cls = res.kind === 'future' ? 'future' : 'paid';
+      return `<td class="month-cell ${cls}">${String(res.n).padStart(2,'0')}</td>`;
+    }).join('');
+    return `<tr>
+      <td><strong>${escapeHtml(r.empresa)}</strong></td>
+      <td>${fmtCnpj(r.cnpj)}</td>
+      <td>${fmtDate(r.adesao)}</td>
+      <td>${r.totalParcelas ?? '-'}</td>
+      ${monthCells}
+      <td><span class="badge ${status}">${STATUS_LABEL[status]||status}</span></td>
+      <td style="white-space:normal;max-width:220px;">${escapeHtml(r.obs||'')}</td>
+      <td>
+        <div class="row-actions">
+          <button class="ghost small" onclick="openEdit(${r.id})">✎</button>
+          <button class="ghost small" onclick="printOne(${r.id})">🖨</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function render(){
+  renderTabs();
+  renderCards();
+  renderTable();
+}
+
+// ---- Modal ----
+const overlay = document.getElementById('overlay');
+function openNew(){
+  document.getElementById('modalTitle').textContent = 'Novo Parcelamento';
+  document.getElementById('fId').value = '';
+  document.getElementById('fEmpresa').value = '';
+  document.getElementById('fCnpj').value = '';
+  document.getElementById('fAno').value = currentYear || new Date().getFullYear();
+  document.getElementById('fAdesao').value = '';
+  document.getElementById('fTotal').value = '';
+  document.getElementById('fStatus').value = 'ativo';
+  document.getElementById('fObs').value = '';
+  document.getElementById('btnDelete').style.display = 'none';
+  overlay.classList.add('show');
+}
+function openEdit(id){
+  const r = data.find(x=>x.id===id);
+  if(!r) return;
+  document.getElementById('modalTitle').textContent = 'Editar Parcelamento';
+  document.getElementById('fId').value = r.id;
+  document.getElementById('fEmpresa').value = r.empresa;
+  document.getElementById('fCnpj').value = r.cnpj || '';
+  document.getElementById('fAno').value = r.ano;
+  document.getElementById('fAdesao').value = r.adesao || '';
+  document.getElementById('fTotal').value = r.totalParcelas || '';
+  document.getElementById('fStatus').value = r.status || 'ativo';
+  document.getElementById('fObs').value = r.obs || '';
+  document.getElementById('btnDelete').style.display = 'inline-block';
+  overlay.classList.add('show');
+}
+function closeModal(){ overlay.classList.remove('show'); }
+
+document.getElementById('btnNovo').onclick = openNew;
+document.getElementById('btnCancel').onclick = closeModal;
+overlay.addEventListener('click', e=>{ if(e.target===overlay) closeModal(); });
+
+document.getElementById('btnSave').onclick = ()=>{
+  const empresa = document.getElementById('fEmpresa').value.trim();
+  const ano = parseInt(document.getElementById('fAno').value);
+  const adesao = document.getElementById('fAdesao').value;
+  const total = parseInt(document.getElementById('fTotal').value);
+  if(!empresa || !ano || !adesao || !total){
+    toast('Preencha empresa, ano, data de adesão e nº de parcelas.', true);
+    return;
+  }
+  const idVal = document.getElementById('fId').value;
+  const record = {
+    id: idVal ? parseInt(idVal) : nextId(),
+    empresa, ano, adesao,
+    cnpj: document.getElementById('fCnpj').value.trim(),
+    totalParcelas: total,
+    status: document.getElementById('fStatus').value,
+    obs: document.getElementById('fObs').value.trim()
+  };
+  if(idVal){
+    const idx = data.findIndex(x=>x.id===record.id);
+    data[idx] = record;
+    toast('Parcelamento atualizado.');
+  } else {
+    data.push(record);
+    toast('Parcelamento adicionado.');
+  }
+  saveData();
+  currentYear = ano;
+  closeModal();
+  render();
+};
+
+document.getElementById('btnDelete').onclick = ()=>{
+  const id = parseInt(document.getElementById('fId').value);
+  if(!confirm('Excluir este parcelamento?')) return;
+  data = data.filter(x=>x.id!==id);
+  saveData();
+  closeModal();
+  render();
+};
+
+document.getElementById('btnAddYear').onclick = ()=>{
+  const y = prompt('Novo ano:', (new Date().getFullYear()+1));
+  if(!y) return;
+  currentYear = parseInt(y);
+  render();
+};
+
+document.getElementById('search').oninput = renderTable;
+document.getElementById('filterStatus').onchange = renderTable;
+
+// ---- Export / Import backup ----
+document.getElementById('btnExport').onclick = ()=>{
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const ts = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+  a.href = url;
+  a.download = `backup-parcelamentos-${ts}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Backup exportado.');
+};
+
+document.getElementById('btnImport').onclick = ()=> document.getElementById('fileImport').click();
+document.getElementById('fileImport').onchange = (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    try{
+      const imported = JSON.parse(ev.target.result);
+      if(!Array.isArray(imported)) throw new Error('Formato inválido');
+      const mode = confirm('Clique OK para SUBSTITUIR todos os dados atuais pelo backup, ou Cancelar para MESCLAR com os dados existentes.');
+      if(mode){
+        data = imported;
+      } else {
+        let maxId = nextId();
+        imported.forEach(r=>{ data.push({...r, id: maxId++}); });
+      }
+      saveData();
+      render();
+      toast('Backup importado com sucesso.');
+    }catch(err){
+      toast('Erro ao importar backup: ' + err.message, true);
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+};
+
+// ---- Print ----
+function printOne(id){
+  const r = data.find(x=>x.id===id);
+  if(!r) return;
+  const status = computeStatusAuto(r);
+  const rowsAllYears = data.filter(x=>x.empresa===r.empresa).sort((a,b)=>a.ano-b.ano);
+  let html = `<h2>${escapeHtml(r.empresa)}</h2>
+    <p><strong>CNPJ:</strong> ${fmtCnpj(r.cnpj)} &nbsp; <strong>Status atual:</strong> ${STATUS_LABEL[status]}</p>`;
+  rowsAllYears.forEach(rec=>{
+    const st = computeStatusAuto(rec);
+    html += `<h3>Ano ${rec.ano} — Adesão: ${fmtDate(rec.adesao)} — Parcelas: ${rec.totalParcelas||'-'} — Status: ${STATUS_LABEL[st]}</h3>
+      <table><thead><tr>${MONTHS.map(m=>`<th>${m}</th>`).join('')}</tr></thead><tbody><tr>`;
+    MONTHS.forEach((m,i)=>{
+      const res = parcelaForMonth(rec, rec.ano, i);
+      let val = '-';
+      if(res && res.n!==null) val = String(res.n).padStart(2,'0');
+      else if(res && res.kind==='before') val = '----';
+      else if(res && res.kind==='after') val = '✓';
+      html += `<td>${val}</td>`;
+    });
+    html += `</tr></tbody></table>`;
+    if(rec.obs) html += `<p><strong>Observações:</strong> ${escapeHtml(rec.obs)}</p>`;
+  });
+  html += `<p style="margin-top:30px;font-size:11px;color:#555;">Gerado em ${new Date().toLocaleString('pt-BR')}</p>`;
+  document.getElementById('printArea').innerHTML = html;
+  window.print();
+}
+
+document.getElementById('btnPrintAll').onclick = ()=>{
+  const recs = filteredRecords();
+  let html = `<h2>Parcelamentos Ativos — ${currentYear}</h2>
+    <table><thead><tr><th>Empresa</th><th>CNPJ</th><th>Adesão</th><th>Parcelas</th>${MONTHS.map(m=>`<th>${m}</th>`).join('')}<th>Status</th></tr></thead><tbody>`;
+  recs.forEach(r=>{
+    const status = computeStatusAuto(r);
+    html += `<tr><td>${escapeHtml(r.empresa)}</td><td>${fmtCnpj(r.cnpj)}</td><td>${fmtDate(r.adesao)}</td><td>${r.totalParcelas||'-'}</td>`;
+    MONTHS.forEach((m,i)=>{
+      const res = parcelaForMonth(r, currentYear, i);
+      let val = '-';
+      if(res && res.n!==null) val = String(res.n).padStart(2,'0');
+      else if(res && res.kind==='before') val = '----';
+      else if(res && res.kind==='after') val = '✓';
+      html += `<td>${val}</td>`;
+    });
+    html += `<td>${STATUS_LABEL[status]}</td></tr>`;
+  });
+  html += `</tbody></table><p style="margin-top:20px;font-size:11px;color:#555;">Gerado em ${new Date().toLocaleString('pt-BR')}</p>`;
+  document.getElementById('printArea').innerHTML = html;
+  window.print();
+};
+
+// ---- Seed data (importado da planilha original) ----
+const SEED_DATA = [{"id":1,"empresa":"ABSOLUTA","cnpj":"27709319000147","adesao":"2023-03-01","totalParcelas":28,"ano":2024,"status":"desistiu","obs":"DESISTENCIA 11/2024"},{"id":2,"empresa":"ABSOLUTA","cnpj":"27709319000147","adesao":"2024-11-29","totalParcelas":32,"ano":2024,"status":"ativo","obs":""},{"id":3,"empresa":"ADILSON","cnpj":"51605627000107","adesao":"2024-04-01","totalParcelas":14,"ano":2024,"status":"pausado","obs":"DEZ: Não gerar"},{"id":4,"empresa":"AGATECH SOLUÇÕES","cnpj":"33764950000141","adesao":"2024-03-01","totalParcelas":50,"ano":2024,"status":"ativo","obs":"Parcela em atraso: 1"},{"id":5,"empresa":"ANA MARIA (RELP-MEI)","cnpj":"30000364000132","adesao":"2024-03-01","totalParcelas":33,"ano":2024,"status":"ativo","obs":"Parcela em atraso: 1"},{"id":6,"empresa":"BALDASSI","cnpj":"23007108000101","adesao":"2024-07-26","totalParcelas":57,"ano":2024,"status":"ativo","obs":"Parcela em atraso: 4"},{"id":7,"empresa":"BARONI","cnpj":"42527688000102","adesao":"2023-01-01","totalParcelas":22,"ano":2024,"status":"concluido","obs":"LIQUIDADO"},{"id":8,"empresa":"BIANCA","cnpj":"35528400000159","adesao":"2024-02-01","totalParcelas":38,"ano":2024,"status":"ativo","obs":""},{"id":9,"empresa":"CASA COBRE (LOJA)","cnpj":"37166636000118","adesao":"2023-01-01","totalParcelas":60,"ano":2024,"status":"ativo","obs":"Parcela em atraso: 1"},{"id":10,"empresa":"COSTA & COMÉRCIO","cnpj":"42644129000182","adesao":"2023-08-01","totalParcelas":60,"ano":2024,"status":"desistiu","obs":"AGO: DESISTÊNCIA 10/2024; Parcela em atraso: 2"},{"id":11,"empresa":"COSTA & COMÉRCIO","cnpj":"42644129000182","adesao":"2023-08-01","totalParcelas":60,"ano":2024,"status":"ativo","obs":""},{"id":12,"empresa":"DRM MEDICINA (MEI)","cnpj":"31016730000104","adesao":"2023-05-01","totalParcelas":14,"ano":2024,"status":"concluido","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; LIQUIDADO"},{"id":13,"empresa":"DRM MEDICINA","cnpj":"31016730000104","adesao":"2023-12-01","totalParcelas":60,"ano":2024,"status":"desistiu","obs":"OUT: DESISTÊNCIA 10/2024"},{"id":14,"empresa":"FASTFLOW COMERCIO (MEI)","cnpj":"30253663000189","adesao":"2021-12-01","totalParcelas":34,"ano":2024,"status":"concluido","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; LIQUIDADO"},{"id":15,"empresa":"FOX INOX","cnpj":"34639734000137","adesao":"2024-01-01","totalParcelas":28,"ano":2024,"status":"ativo","obs":"DIVERSOS"},{"id":16,"empresa":"FERNANDO - IMSOL","cnpj":"14163204000158","adesao":"2024-11-01","totalParcelas":19,"ano":2024,"status":"ativo","obs":""},{"id":17,"empresa":"FR MONITORAMENTO","cnpj":"18658322000198","adesao":"2023-08-02","totalParcelas":15,"ano":2024,"status":"desistiu","obs":"MAI: DESISTÊNCIA 10/2024; Parcela em atraso: 3"},{"id":18,"empresa":"FR MONITORAMENTO","cnpj":"18658322000198","adesao":"2024-10-01","totalParcelas":18,"ano":2024,"status":"ativo","obs":""},{"id":19,"empresa":"GS COMÉRCIO","cnpj":"34221654000167","adesao":"03/2023","totalParcelas":22,"ano":2024,"status":"desistiu","obs":"FEV: DESISTÊNCIA 02/2024"},{"id":20,"empresa":"GS COMÉRCIO","cnpj":"34221654000167","adesao":"2024-03-01","totalParcelas":60,"ano":2024,"status":"ativo","obs":""},{"id":21,"empresa":"HUGO","cnpj":"39957229000154","adesao":"2024-07-01","totalParcelas":6,"ano":2024,"status":"concluido","obs":"LIQUIDADO"},{"id":22,"empresa":"J L COMERCIO (MEI)","cnpj":"29794362000183","adesao":"2023-08-01","totalParcelas":6,"ano":2024,"status":"concluido","obs":"JAN: D.A.; LIQUIDADO"},{"id":23,"empresa":"J L COMERCIO","cnpj":"29794362000183","adesao":"2023-12-01","totalParcelas":11,"ano":2024,"status":"desistiu","obs":"MAR: DESISTÊNCIA 10/2024; Parcela em atraso: 2"},{"id":24,"empresa":"J L COMERCIO","cnpj":"29794362000183","adesao":"2024-10-01","totalParcelas":17,"ano":2024,"status":"ativo","obs":""},{"id":25,"empresa":"JOAO COSTA (MEI)","cnpj":"35401338000130","adesao":"2023-10-01","totalParcelas":10,"ano":2024,"status":"ativo","obs":""},{"id":26,"empresa":"LJ SHOP","cnpj":"46314814000100","adesao":"05/2023","totalParcelas":6,"ano":2024,"status":"concluido","obs":"LIQUIDADO"},{"id":27,"empresa":"LJ SHOP","cnpj":"46314814000100","adesao":"10/2024","totalParcelas":22,"ano":2024,"status":"ativo","obs":""},{"id":28,"empresa":"LUNA PRODUTOS E SERVIÇOS","cnpj":"27822248000194","adesao":"2023-08-01","totalParcelas":60,"ano":2024,"status":"ativo","obs":"Parcela em atraso: 1"},{"id":29,"empresa":"LUCAS FERNADO","cnpj":"34892484000142","adesao":"2024-12-20","totalParcelas":5,"ano":2024,"status":"ativo","obs":""},{"id":30,"empresa":"MOB MODA","cnpj":"42999347000130","adesao":"2023-08-01","totalParcelas":60,"ano":2024,"status":"ativo","obs":""},{"id":31,"empresa":"MP CONFECÇÕES (MEI)","cnpj":"33275957000108","adesao":"2022-05-01","totalParcelas":37,"ano":2024,"status":"ativo","obs":""},{"id":32,"empresa":"MP CONFECÇÕES","cnpj":"33275957000108","adesao":"2023-12-01","totalParcelas":27,"ano":2024,"status":"concluido","obs":"LIQUIDADO"},{"id":33,"empresa":"MP CONFECÇÕES","cnpj":"33275957000108","adesao":"2024-12-01","totalParcelas":33,"ano":2024,"status":"ativo","obs":""},{"id":34,"empresa":"MUNDO DE ZIZ ZAG","cnpj":"35488125000197","adesao":"2023-08-01","totalParcelas":28,"ano":2024,"status":"ativo","obs":"Parcela em atraso: 4"},{"id":35,"empresa":"NICOLE - MEI","cnpj":"36116076000124","adesao":"2024-12-20","totalParcelas":17,"ano":2024,"status":"ativo","obs":"Não formalizou"},{"id":36,"empresa":"NS ELEVADORES","cnpj":"37580696000182","adesao":"2023-08-01","totalParcelas":60,"ano":2024,"status":"encerrado","obs":"FEV: NÃO É MAIS CLIENTE!!!; Parcela em atraso: 1"},{"id":37,"empresa":"R B MARKETING","cnpj":"47632111000184","adesao":"2023-09-01","totalParcelas":20,"ano":2024,"status":"ativo","obs":"JUL: NF; AGO: NF; SET: NF; OUT: NF; NOV: NF; DEZ: NF; Parcela em atraso: 3"},{"id":38,"empresa":"R B MARKETING (TFE MAUA)","cnpj":null,"adesao":"2024-05-01","totalParcelas":4,"ano":2024,"status":"ativo","obs":"AGO: NF; OUT: NF"},{"id":39,"empresa":"SET CLEAN E PREFEITURA","cnpj":"21004599000101","adesao":"2023-08-02","totalParcelas":11,"ano":2024,"status":"encerrado","obs":"ABR: NÃO É MAIS CLIENTE!!!; Parcela em atraso: 2"},{"id":40,"empresa":"SOUFAV","cnpj":"29823210000161","adesao":"2023-08-01","totalParcelas":46,"ano":2024,"status":"desistiu","obs":"NOV: DESISTÊNCIA 11/2024; DIVERSOS"},{"id":41,"empresa":"SOUFAV","cnpj":"29823210000161","adesao":"2024-11-29","totalParcelas":60,"ano":2024,"status":"ativo","obs":""},{"id":42,"empresa":"SMART PET","cnpj":"33082577000149","adesao":"2024-07-01","totalParcelas":8,"ano":2024,"status":"ativo","obs":""},{"id":43,"empresa":"VALE VERDE","cnpj":"53552868000160","adesao":"2024-12-01","totalParcelas":24,"ano":2024,"status":"ativo","obs":""},{"id":44,"empresa":"VINICIUS","cnpj":"35775845000133","adesao":"2024-03-01","totalParcelas":25,"ano":2024,"status":"ativo","obs":"JUL: NF; AGO: NF; SET: NF; OUT: NF; NOV: NF; DEZ: NF"},{"id":45,"empresa":"ABSOLUTA","cnpj":"27709319000147","adesao":"2024-10-01","totalParcelas":10,"ano":2024,"status":"ativo","obs":"NOV: D.A.; DEZ: D.A."},{"id":46,"empresa":"ABSOLUTA (SN)","cnpj":"27709319000147","adesao":"2024-10-01","totalParcelas":28,"ano":2024,"status":"ativo","obs":"NOV: D.A.; DEZ: D.A."},{"id":47,"empresa":"AGATECH SOLUÇÕES","cnpj":"33764950000141","adesao":"2021-09-01","totalParcelas":30,"ano":2024,"status":"concluido","obs":"LIQUIDADO"},{"id":48,"empresa":"ANA MARIA","cnpj":"30000364000132","adesao":"2024-03-01","totalParcelas":8,"ano":2024,"status":"concluido","obs":"ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A.; LIQUIDADO"},{"id":49,"empresa":"BALDASSI (SN)","cnpj":"23007108000101","adesao":"2023-07-01","totalParcelas":11,"ano":2024,"status":"concluido","obs":"LIQUIDADO"},{"id":50,"empresa":"BALDASSI","cnpj":"23007108000101","adesao":"2023-08-01","totalParcelas":28,"ano":2024,"status":"ativo","obs":""},{"id":51,"empresa":"BHETEL (PREV)","cnpj":"00004563000158","adesao":"2023-08-01","totalParcelas":36,"ano":2024,"status":"ativo","obs":""},{"id":52,"empresa":"CEI ELVIO","cnpj":"00715927841","adesao":"2021-08-01","totalParcelas":60,"ano":2024,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A.; Parcela em atraso: 4732227"},{"id":53,"empresa":"CEI ELVIO (IR)","cnpj":"00715927841","adesao":"2023-05-01","totalParcelas":8,"ano":2024,"status":"ativo","obs":""},{"id":54,"empresa":"CEI ELVIO","cnpj":"00715927841","adesao":"2024-07-01","totalParcelas":35,"ano":2024,"status":"ativo","obs":"SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":55,"empresa":"CENTRO MÉDICO","cnpj":"67181545000112","adesao":"2022-04-01","totalParcelas":145,"ano":2024,"status":"ativo","obs":"AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A.; Parcela em atraso: 6172091"},{"id":56,"empresa":"CENTRO MÉDICO","cnpj":"67181545000112","adesao":"2022-08-01","totalParcelas":142,"ano":2024,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A.; Parcela em atraso: 6763026"},{"id":57,"empresa":"CENTRO MÉDICO","cnpj":"CSLL","adesao":"2022-11-01","totalParcelas":68,"ano":2024,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A.; Parcela em atraso: 7098015"},{"id":58,"empresa":"CENTRO MÉDICO","cnpj":"EDITAL 012024","adesao":"2024-08-01","totalParcelas":52,"ano":2024,"status":"ativo","obs":"DEZ: D.A.; ENTRADA EM 4x"},{"id":59,"empresa":"CENTRO MÉDICO","cnpj":"010654577","adesao":"2024-08-01","totalParcelas":60,"ano":2024,"status":"ativo","obs":"SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A.; Parcela em atraso: 10654577"},{"id":60,"empresa":"CENTRO MÉDICO","cnpj":"010716740","adesao":"2024-08-01","totalParcelas":null,"ano":2024,"status":"ativo","obs":"SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":61,"empresa":"CENTRO MÉDICO","cnpj":"011083800","adesao":"2024-10-01","totalParcelas":null,"ano":2024,"status":"ativo","obs":"NOV: D.A.; DEZ: D.A."},{"id":62,"empresa":"DRIMAJU","cnpj":"05306841000145","adesao":"2023-08-01","totalParcelas":84,"ano":2024,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":63,"empresa":"DRIMAJU (SN)","cnpj":"05306841000145","adesao":"2023-08-01","totalParcelas":50,"ano":2024,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":64,"empresa":"DRIMAJU (PREV)","cnpj":"05306841000145","adesao":"2023-12-01","totalParcelas":60,"ano":2024,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A.; 12 PARC. ADESÃO"},{"id":65,"empresa":"DRIMAJU","cnpj":"05306841000145","adesao":"2024-11-01","totalParcelas":null,"ano":2024,"status":"ativo","obs":"DEZ: D.A."},{"id":66,"empresa":"DRIMAJU (D+ DÉBITOS)","cnpj":"05306841000145","adesao":"2024-12-02","totalParcelas":37,"ano":2024,"status":"ativo","obs":"DEZ: D.A."},{"id":67,"empresa":"DRM","cnpj":"31016730000104","adesao":"2023-05-01","totalParcelas":84,"ano":2024,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":68,"empresa":"DRM","cnpj":"31016730000104","adesao":"2023-10-01","totalParcelas":35,"ano":2024,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A.; 5 parcelas de adesão!"},{"id":69,"empresa":"DROGARIA - PORTINARI (4 PARCELS.)","cnpj":"10931659000115","adesao":"2022-05-01","totalParcelas":null,"ano":2024,"status":"ativo","obs":"JAN: IMPUGNAÇÃO; PAGOU 1 ACORDO (6353938)"},{"id":70,"empresa":"DROGARIA - PORTINARI","cnpj":"10931659000115","adesao":"2022-05-01","totalParcelas":6353938,"ano":2024,"status":"ativo","obs":"JUL: IMPUGNAÇÃO; Parcela em atraso: 2"},{"id":71,"empresa":"DROGARIA - PORTINARI","cnpj":"10931659000115","adesao":"2023-09-01","totalParcelas":12,"ano":2024,"status":"concluido","obs":"LIQUIDADO"},{"id":72,"empresa":"DROGARIA - PORTINARI","cnpj":"10931659000115","adesao":"2024-07-01","totalParcelas":35,"ano":2024,"status":"ativo","obs":""},{"id":73,"empresa":"FLORESTI & LOPES (PGFN)","cnpj":"10654104000173","adesao":"2022-01-01","totalParcelas":142,"ano":2024,"status":"ativo","obs":"JAN: IMPUGNAÇÃO; Parcela em atraso: 6"},{"id":74,"empresa":"FLORESTI & LOPES (INSS)","cnpj":"10654104000173","adesao":"2022-08-01","totalParcelas":12,"ano":2024,"status":"ativo","obs":"JAN: IMPUGNAÇÃO; Parcela em atraso: 5"},{"id":75,"empresa":"FLORESTI & LOPES (PGFN I)","cnpj":"10654104000173","adesao":"2023-07-01","totalParcelas":35,"ano":2024,"status":"ativo","obs":"JUL: IMPUGNAÇÃO; Parcela em atraso: 4"},{"id":76,"empresa":"FLORESTI & LOPES (PGFN II)","cnpj":"10654104000173","adesao":"2023-07-02","totalParcelas":60,"ano":2024,"status":"ativo","obs":"Parcela em atraso: 4"},{"id":77,"empresa":"FLORESTI & LOPES","cnpj":"10654104000173","adesao":"2024-09-01","totalParcelas":null,"ano":2024,"status":"ativo","obs":""},{"id":78,"empresa":"FOX INOX - SN","cnpj":"34639734000137","adesao":"2024-01-01","totalParcelas":8,"ano":2024,"status":"rescindido","obs":"ABR: RESCINDIDO"},{"id":79,"empresa":"FOX INOX - PREV","cnpj":"34639734000137","adesao":"2023-08-01","totalParcelas":34,"ano":2024,"status":"rescindido","obs":"ABR: RESCINDIDO; DIVERSAS"},{"id":80,"empresa":"FR MONITORAMENTO (PREV)","cnpj":"18658322000198","adesao":"2022-11-01","totalParcelas":21,"ano":2024,"status":"rescindido","obs":"AGO: RESCINDIDO; Parcela em atraso: 2"},{"id":81,"empresa":"G.V.R.S. COMERCIO","cnpj":"96568696000126","adesao":"01/2022","totalParcelas":60,"ano":2024,"status":"ativo","obs":"Parcela em atraso: 3"},{"id":82,"empresa":"G.V.R.S. COMERCIO (DEMAIS DEB)","cnpj":"96568696000126","adesao":"06/2024","totalParcelas":9,"ano":2024,"status":"ativo","obs":"JUL: D.A.; AGO: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":83,"empresa":"G.V.R.S. COMERCIO","cnpj":"96568696000126","adesao":"10/2024","totalParcelas":35,"ano":2024,"status":"ativo","obs":"NOV: D.A.; DEZ: D.A."},{"id":84,"empresa":"J L COMERCIO","cnpj":"29794362000183","adesao":"2023-08-01","totalParcelas":16,"ano":2024,"status":"rescindido","obs":"JUN: RESCINDIDO; Parcela em atraso: 3"},{"id":85,"empresa":"J L COMERCIO","cnpj":"29794362000183","adesao":"2023-08-01","totalParcelas":23,"ano":2024,"status":"rescindido","obs":"JAN: D.A.; FEV: D.A.; JUN: RESCINDIDO; Parcela em atraso: 3"},{"id":86,"empresa":"J L COMERCIO","cnpj":"29794362000183","adesao":"2024-09-01","totalParcelas":33,"ano":2024,"status":"ativo","obs":"NOV: D.A.; DEZ: D.A.; Parcela em atraso: 1"},{"id":87,"empresa":"J L COMERCIO (SN)","cnpj":"29794362000183","adesao":"2024-12-01","totalParcelas":30,"ano":2024,"status":"ativo","obs":""},{"id":88,"empresa":"J L COMERCIO (PREV)","cnpj":"29794362000183","adesao":"2024-12-01","totalParcelas":7,"ano":2024,"status":"ativo","obs":""},{"id":89,"empresa":"LEANDRO REIS","cnpj":"34898578000129","adesao":"2023-12-01","totalParcelas":2,"ano":2024,"status":"concluido","obs":"LIQUIDADO"},{"id":90,"empresa":"LJ SHOP","cnpj":"46314814000100","adesao":"05/2023","totalParcelas":12,"ano":2024,"status":"concluido","obs":"LIQUIDADO"},{"id":91,"empresa":"LUCAS FERNANDO","cnpj":"34892484000142","adesao":"05/2023","totalParcelas":14,"ano":2024,"status":"concluido","obs":"LIQUIDADO"},{"id":92,"empresa":"LUNA PRODUTOS E SERVIÇOS","cnpj":"27822248000194","adesao":"2023-05-01","totalParcelas":20,"ano":2024,"status":"concluido","obs":"LIQUIDADO"},{"id":93,"empresa":"MOB MODA (PREV)","cnpj":"42999347000130","adesao":"2023-05-01","totalParcelas":36,"ano":2024,"status":"rescindido","obs":"ABR: RESCINDIDO; Parcela em atraso: 3"},{"id":94,"empresa":"MOB MODA (SN)","cnpj":"42999347000130","adesao":"2023-05-01","totalParcelas":36,"ano":2024,"status":"rescindido","obs":"JAN: D.A.; FEV: D.A.; ABR: RESCINDIDO; 2 EM ABERTO - 8099635"},{"id":95,"empresa":"MUNDO DE ZIG ZAG (SN)","cnpj":"35488125000197","adesao":"2023-05-01","totalParcelas":10,"ano":2024,"status":"ativo","obs":"ABR: IMPUGNAÇÃO; DIVERSAS"},{"id":96,"empresa":"MUNDO DE ZIG ZAG (PREV)","cnpj":"35488125000197","adesao":"2023-05-01","totalParcelas":30,"ano":2024,"status":"ativo","obs":"ABR: IMPUGNAÇÃO; DIVERSAS"},{"id":97,"empresa":"NS ELEVADORES","cnpj":"37580696000182","adesao":"2023-08-01","totalParcelas":null,"ano":2024,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":98,"empresa":"NS ELEVADORES","cnpj":"37580696000182","adesao":"2023-10-01","totalParcelas":8,"ano":2024,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":99,"empresa":"RAFAEL R AMARO","cnpj":"37697286882","adesao":"2024-09-01","totalParcelas":5,"ano":2024,"status":"ativo","obs":"Guilherme2019*"},{"id":100,"empresa":"SET CLEAN","cnpj":"21004599000101","adesao":"2023-08-01","totalParcelas":32,"ano":2024,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":101,"empresa":"SMART PET","cnpj":"33082577000149","adesao":"2023-08-01","totalParcelas":38,"ano":2024,"status":"rescindido","obs":"OUT: RESCINDIDO; Parcela em atraso: 3"},{"id":102,"empresa":"SMART PET","cnpj":"33082577000149","adesao":"2024-10-01","totalParcelas":14,"ano":2024,"status":"ativo","obs":"NOV: ADESÃO"},{"id":103,"empresa":"SOUFAV","cnpj":"29823210000161","adesao":"2024-06-01","totalParcelas":17,"ano":2024,"status":"ativo","obs":""},{"id":104,"empresa":"STELL WEB","cnpj":"18387224000163","adesao":"2022-01-01","totalParcelas":145,"ano":2024,"status":"ativo","obs":"Parcela em atraso: 2"},{"id":105,"empresa":"COMERCIAL IPIRANGA - ICMS","cnpj":"1345578102","adesao":"05/2023","totalParcelas":60,"ano":2024,"status":"ativo","obs":"1 (WHATS)"},{"id":106,"empresa":"GS COMÉRCIO (ICMS -SEFAZ)","cnpj":"34221654000167","adesao":"03/2023","totalParcelas":8,"ano":2024,"status":"concluido","obs":"LIQUIDADO"},{"id":107,"empresa":"GS COMÉRCIO (ICMS -PGFN)","cnpj":"34221654000167","adesao":"01/2024","totalParcelas":40,"ano":2024,"status":"ativo","obs":"Parcela em atraso: 1385019774"},{"id":108,"empresa":"GS COMÉRCIO (ICMS -PGFN)","cnpj":"1387492689","adesao":"05/2024","totalParcelas":7,"ano":2024,"status":"concluido","obs":"LIQUIDADO"},{"id":109,"empresa":"LOJA CASA COBRE (ICMS -PGFN)","cnpj":"37166636000118","adesao":"07/2024","totalParcelas":6,"ano":2024,"status":"ativo","obs":"Parcela em atraso: 1386429201"},{"id":110,"empresa":"NUTRI QUALY (ICMS -PGFN)","cnpj":"02415736000156","adesao":null,"totalParcelas":60,"ano":2024,"status":"ativo","obs":"Parcela em atraso: 1340718340"},{"id":111,"empresa":"ABSOLUTA","cnpj":"27709319000147","adesao":"2024-12-01","totalParcelas":13,"ano":2024,"status":"ativo","obs":""},{"id":112,"empresa":"BALDASSI","cnpj":"23007108000101","adesao":"2023-08-01","totalParcelas":15,"ano":2024,"status":"ativo","obs":"JUL: D.A.; AGO: EXCLUÍDO"},{"id":113,"empresa":"BALDASSI","cnpj":"23007108000101","adesao":"2024-12-01","totalParcelas":16,"ano":2024,"status":"ativo","obs":""},{"id":114,"empresa":"BHETEL (PREV)","cnpj":"00004563000158","adesao":"2023-08-01","totalParcelas":15,"ano":2024,"status":"concluido","obs":"JAN: D.A.; FEV: D.A.; LIQUIDADO"},{"id":115,"empresa":"BHETEL (PREV)","cnpj":"00004563000158","adesao":"2024-10-01","totalParcelas":4,"ano":2024,"status":"ativo","obs":"NOV: D.A.; DEZ: D.A."},{"id":116,"empresa":"CEI ELVIO RFB (INSS E D+)","cnpj":"00715927841","adesao":"2022-11-01","totalParcelas":60,"ano":2024,"status":"rescindido","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A.; RESCINDIDO"},{"id":117,"empresa":"CEI ELVIO RFB (DOMESTICO)","cnpj":"00715927842","adesao":"2024-03-01","totalParcelas":24,"ano":2024,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; NOV: D.A.; DEZ: D.A."},{"id":118,"empresa":"CEI ELVIO RBF (INSS E D+)","cnpj":"00715927841","adesao":"2024-07-01","totalParcelas":19,"ano":2024,"status":"ativo","obs":"AGO: D.A.; SET: D.A.; NOV: D.A.; DEZ: D.A."},{"id":119,"empresa":"CENTRO MÉDICO (132302)","cnpj":"67181545000112","adesao":"2023-05-01","totalParcelas":40,"ano":2024,"status":"rescindido","obs":"JAN: RESCINDIDO; Parcela em atraso: 1"},{"id":120,"empresa":"CENTRO MÉDICO (502302)","cnpj":"67181545000112","adesao":"2023-05-01","totalParcelas":null,"ano":2024,"status":"rescindido","obs":"JAN: RESCINDIDO"},{"id":121,"empresa":"CENTRO MÉDICO","cnpj":"PREV E DEMAIS","adesao":"2024-08-01","totalParcelas":60,"ano":2024,"status":"ativo","obs":"SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A.; Parcela em atraso: 1"},{"id":122,"empresa":"DRIMAJU","cnpj":"05306841000145","adesao":"2023-08-01","totalParcelas":23,"ano":2024,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":123,"empresa":"DRIMAJU","cnpj":"05306841000145","adesao":"2024-12-01","totalParcelas":3,"ano":2024,"status":"ativo","obs":""},{"id":124,"empresa":"DRM","cnpj":"31016730000104","adesao":"2023-12-01","totalParcelas":5,"ano":2024,"status":"concluido","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; LIQUIDADO"},{"id":125,"empresa":"FOX INOX","cnpj":"34639734000137","adesao":"2024-01-01","totalParcelas":20,"ano":2024,"status":"rescindido","obs":"JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A.; RESCINDIDO"},{"id":126,"empresa":"FR MONITORAMENTO","cnpj":"18658322000198","adesao":"2024-08-01","totalParcelas":null,"ano":2024,"status":"concluido","obs":"SET: D.A.; OUT: D.A.; LIQUIDADO"},{"id":127,"empresa":"J L COMERCIO","cnpj":"29794362000183","adesao":"2023-08-01","totalParcelas":10,"ano":2024,"status":"rescindido","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; RESCINDIDO"},{"id":128,"empresa":"J L COMERCIO","cnpj":"29794362000183","adesao":"2024-09-01","totalParcelas":9,"ano":2024,"status":"ativo","obs":"SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":129,"empresa":"LOPES & BATISTA","cnpj":"32065001000100","adesao":"2023-12-01","totalParcelas":38,"ano":2024,"status":"ativo","obs":"JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":130,"empresa":"MOB MODA","cnpj":"42999347000130","adesao":"2023-08-01","totalParcelas":13,"ano":2024,"status":"rescindido","obs":"JAN: D.A.; FEV: D.A.; MAR: RESCINDIDO; DIVERSOS"},{"id":131,"empresa":"SET CLEAN","cnpj":"21004599000101","adesao":"2023-08-01","totalParcelas":8,"ano":2024,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A."},{"id":132,"empresa":"SMART PET","cnpj":"33082577000149","adesao":"2023-08-01","totalParcelas":10,"ano":2024,"status":"rescindido","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; RESCINDIDO"},{"id":133,"empresa":"ABSOLUTA","cnpj":"27709319000147","adesao":"2024-11-29","totalParcelas":32,"ano":2025,"status":"ativo","obs":"2024-12-01"},{"id":134,"empresa":"AD MARKERS","cnpj":"27774980000136","adesao":"2025-12-01","totalParcelas":5,"ano":2025,"status":"ativo","obs":"DEZ: PLANILHA NOVA"},{"id":135,"empresa":"AGATECH SOLUÇÕES","cnpj":"33764950000141","adesao":"2024-03-01","totalParcelas":52,"ano":2025,"status":"desistiu","obs":"DEZ: DESISTIU; 6,10,11 E 12/2024"},{"id":136,"empresa":"AGATECH SOLUÇÕES","cnpj":"33764950000141","adesao":"2025-12-19","totalParcelas":60,"ano":2025,"status":"ativo","obs":"DEZ: PLANILHA NOVA"},{"id":137,"empresa":"ALEXSANDRA","cnpj":"49258811000186","adesao":"2025-12-01","totalParcelas":37,"ano":2025,"status":"ativo","obs":"DEZ: PLANILHA NOVA"},{"id":138,"empresa":"CAROL ARGENAU","cnpj":null,"adesao":"2025-12-01","totalParcelas":6,"ano":2025,"status":"ativo","obs":"DEZ: PLANILHA NOVA"},{"id":139,"empresa":"CIVITECH","cnpj":"59006571000186","adesao":"2025-06-17","totalParcelas":44,"ano":2025,"status":"ativo","obs":""},{"id":140,"empresa":"CIVITECH","cnpj":"59006571000186","adesao":"2025-12-22","totalParcelas":60,"ano":2025,"status":"ativo","obs":""},{"id":141,"empresa":"COSTA & COMÉRCIO","cnpj":"42644129000182","adesao":"2023-08-01","totalParcelas":60,"ano":2025,"status":"ativo","obs":""},{"id":142,"empresa":"D LIMA","cnpj":"56057057000181","adesao":"2025-10-01","totalParcelas":58,"ano":2025,"status":"ativo","obs":""},{"id":143,"empresa":"DATALITICS","cnpj":"52030436000127","adesao":"2025-12-01","totalParcelas":40,"ano":2025,"status":"ativo","obs":"DEZ: PLANILHA NOVA"},{"id":144,"empresa":"ECOMFORLIFE","cnpj":"35528400000159","adesao":"2024-02-01","totalParcelas":38,"ano":2025,"status":"concluido","obs":"MAR: 14 + 12 Antc; ABR: 15 + 11 Antc; LIQUIDADO"},{"id":145,"empresa":"ECOMFORLIFE","cnpj":"35528400000159","adesao":"2025-05-01","totalParcelas":60,"ano":2025,"status":"encerrado","obs":"NÃO É MAIS CLIENTE"},{"id":146,"empresa":"FERNANDO - IMSOL","cnpj":"14163204000158","adesao":"2024-11-01","totalParcelas":19,"ano":2025,"status":"ativo","obs":""},{"id":147,"empresa":"FR MONITORAMENTO","cnpj":"18658322000198","adesao":"2024-10-01","totalParcelas":18,"ano":2025,"status":"desistiu","obs":"DEZ: DESISTIU"},{"id":148,"empresa":"FR MONITORAMENTO","cnpj":"18658322000198","adesao":"2025-12-19","totalParcelas":25,"ano":2025,"status":"ativo","obs":""},{"id":149,"empresa":"GIAMPIETRO","cnpj":"55694553000183","adesao":"2025-02-01","totalParcelas":13,"ano":2025,"status":"ativo","obs":""},{"id":150,"empresa":"GS COMÉRCIO","cnpj":"34221654000167","adesao":"2024-03-01","totalParcelas":60,"ano":2025,"status":"ativo","obs":""},{"id":151,"empresa":"HMS","cnpj":"38434461000145","adesao":null,"totalParcelas":null,"ano":2025,"status":"ativo","obs":""},{"id":152,"empresa":"HUGO CALHAS","cnpj":"39957229000154","adesao":"2025-01-01","totalParcelas":11,"ano":2025,"status":"ativo","obs":""},{"id":153,"empresa":"HUGO CALHAS","cnpj":"39957229000154","adesao":"2025-12-22","totalParcelas":22,"ano":2025,"status":"ativo","obs":""},{"id":154,"empresa":"J L COMERCIO","cnpj":"29794362000183","adesao":"2025-01-01","totalParcelas":20,"ano":2025,"status":"ativo","obs":""},{"id":155,"empresa":"LANY IMPORTADOS","cnpj":"46579304000156","adesao":"2025-09-26","totalParcelas":50,"ano":2025,"status":"ativo","obs":""},{"id":156,"empresa":"LJ SHOP","cnpj":"46314814000100","adesao":"10/2024","totalParcelas":22,"ano":2025,"status":"encerrado","obs":"NÃO É MAIS CLIENTE"},{"id":157,"empresa":"LOJA CASA COBRE","cnpj":"37166636000118","adesao":"2023-01-01","totalParcelas":60,"ano":2025,"status":"desistiu","obs":"DESISTENCIA"},{"id":158,"empresa":"LUNA PRODUTOS E SERVIÇOS","cnpj":"27822248000194","adesao":"2023-08-01","totalParcelas":60,"ano":2025,"status":"ativo","obs":""},{"id":159,"empresa":"LUCAS FERNANDO","cnpj":"34892484000142","adesao":"2024-12-20","totalParcelas":5,"ano":2025,"status":"ativo","obs":""},{"id":160,"empresa":"MATEUS GABRIEL (MEI)","cnpj":"49018198870","adesao":"2025-01-01","totalParcelas":60,"ano":2025,"status":"ativo","obs":"38421227Mn@"},{"id":161,"empresa":"MOB MODA","cnpj":"42999347000130","adesao":"2023-08-01","totalParcelas":60,"ano":2025,"status":"ativo","obs":"NOV: ENCERRADO POR RECISÃO; DIVERSOS"},{"id":162,"empresa":"MP CONFECÇÕES (MEI)","cnpj":"33275957000108","adesao":"2022-05-01","totalParcelas":37,"ano":2025,"status":"concluido","obs":"LIQUIDADO"},{"id":163,"empresa":"MP CONFECÇÕES","cnpj":"33275957000108","adesao":"2024-12-01","totalParcelas":33,"ano":2025,"status":"desistiu","obs":"DESISTENCIA"},{"id":164,"empresa":"R C ARAUJO","cnpj":null,"adesao":"2024-12-01","totalParcelas":8,"ano":2025,"status":"ativo","obs":"SET: Enviar atrasadas de 2 em 2"},{"id":165,"empresa":"REST. SABOR CASEIRO (RELP-MEI)","cnpj":"30000364000132","adesao":"2024-03-01","totalParcelas":33,"ano":2025,"status":"ativo","obs":"11/2024"},{"id":166,"empresa":"SOUFAV","cnpj":"29823210000161","adesao":"2024-11-29","totalParcelas":60,"ano":2025,"status":"desistiu","obs":"DESISTENCIA"},{"id":167,"empresa":"SMART PET","cnpj":"33082577000149","adesao":"2024-07-01","totalParcelas":8,"ano":2025,"status":"concluido","obs":"LIQUIDADO"},{"id":168,"empresa":"SMART PET","cnpj":"33082577000149","adesao":"2025-10-01","totalParcelas":16,"ano":2025,"status":"ativo","obs":""},{"id":169,"empresa":"TECK COMERCIO","cnpj":"53441065000139","adesao":"08/2025","totalParcelas":24,"ano":2025,"status":"desistiu","obs":"DESISTENCIA"},{"id":170,"empresa":"TRANSFRIGER","cnpj":"33014958000190","adesao":"2024-12-01","totalParcelas":null,"ano":2025,"status":"desistiu","obs":"OUT: DESISTIU"},{"id":171,"empresa":"TRINITY","cnpj":null,"adesao":"2025-12-01","totalParcelas":45,"ano":2025,"status":"ativo","obs":"DEZ: PLANILHA NOVA"},{"id":172,"empresa":"TAYCOON","cnpj":"51111344000109","adesao":"2025-08-17","totalParcelas":21,"ano":2025,"status":"ativo","obs":""},{"id":173,"empresa":"VALE VERDE","cnpj":"53552868000160","adesao":"2024-12-01","totalParcelas":24,"ano":2025,"status":"ativo","obs":""},{"id":174,"empresa":"VALE VERDE","cnpj":"53552868000160","adesao":"2025-12-01","totalParcelas":58,"ano":2025,"status":"ativo","obs":""},{"id":175,"empresa":"VBF","cnpj":"42352126000175","adesao":"2025-08-01","totalParcelas":50,"ano":2025,"status":"ativo","obs":""},{"id":176,"empresa":"VENCAR","cnpj":"54021504000117","adesao":"2025-12-01","totalParcelas":16,"ano":2025,"status":"ativo","obs":""},{"id":177,"empresa":"WEB DESIGNER (MEI)","cnpj":"36575578000113","adesao":"2024-05-01","totalParcelas":22,"ano":2025,"status":"ativo","obs":"DIVERSOS"},{"id":178,"empresa":"Z3","cnpj":"55392128000130","adesao":null,"totalParcelas":null,"ano":2025,"status":"ativo","obs":""},{"id":179,"empresa":"BALDASSI","cnpj":"23007108000101","adesao":"2025-01-01","totalParcelas":21,"ano":2025,"status":"ativo","obs":"MAR: TODAS"},{"id":180,"empresa":"ABSOLUTA","cnpj":"27709319000147","adesao":"2024-10-01","totalParcelas":10,"ano":2025,"status":"concluido","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; LIQUIDADO"},{"id":181,"empresa":"ABSOLUTA (SN)","cnpj":"27709319000147","adesao":"2024-10-01","totalParcelas":13,"ano":2025,"status":"concluido","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; LIQUIDADO"},{"id":182,"empresa":"BHETEL (PREV)","cnpj":"00004563000158","adesao":"2023-08-01","totalParcelas":36,"ano":2025,"status":"ativo","obs":""},{"id":183,"empresa":"DOUGLAS LIMA","cnpj":"41689334827","adesao":"2025-04-01","totalParcelas":5,"ano":2025,"status":"ativo","obs":""},{"id":184,"empresa":"DRIMAJU (SN)","cnpj":"05306841000145","adesao":"2023-08-01","totalParcelas":50,"ano":2025,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":185,"empresa":"DRIMAJU (PREV)","cnpj":"05306841000145","adesao":"2023-12-01","totalParcelas":60,"ano":2025,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":186,"empresa":"DRIMAJU","cnpj":"05306841000145","adesao":"2024-11-01","totalParcelas":3,"ano":2025,"status":"concluido","obs":"JAN: D.A.; LIQUIDADO"},{"id":187,"empresa":"DRIMAJU","cnpj":"05306841000145","adesao":"2024-11-01","totalParcelas":60,"ano":2025,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":188,"empresa":"DRIMAJU (D+ DÉBITOS)","cnpj":"05306841000145","adesao":"2024-12-02","totalParcelas":37,"ano":2025,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":189,"empresa":"G.V.R.S. COMERCIO","cnpj":"96568696000126","adesao":"01/2022","totalParcelas":60,"ano":2025,"status":"ativo","obs":""},{"id":190,"empresa":"G.V.R.S. COMERCIO (DEMAIS DEB)","cnpj":"96568696000126","adesao":"06/2024","totalParcelas":9,"ano":2025,"status":"concluido","obs":"JAN: D.A.; FEV: D.A.; LIQUIDADO"},{"id":191,"empresa":"G.V.R.S. COMERCIO","cnpj":"96568696000126","adesao":"10/2024","totalParcelas":32,"ano":2025,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":192,"empresa":"HMS","cnpj":null,"adesao":null,"totalParcelas":12,"ano":2025,"status":"ativo","obs":""},{"id":193,"empresa":"JL COMÉRCIO","cnpj":"29794362000183","adesao":"2025-01-01","totalParcelas":31,"ano":2025,"status":"ativo","obs":"FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: ENCERRADA POR RESCISÃO"},{"id":194,"empresa":"JL COMÉRCIO","cnpj":"29794362000183","adesao":null,"totalParcelas":43,"ano":2025,"status":"ativo","obs":"FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: ENCERRADA POR RESCISÃO"},{"id":195,"empresa":"JL COMÉRCIO","cnpj":"29794362000183","adesao":"2025-08-01","totalParcelas":31,"ano":2025,"status":"ativo","obs":"SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":196,"empresa":"SMART PET","cnpj":"33082577000149","adesao":"2024-10-01","totalParcelas":14,"ano":2025,"status":"concluido","obs":"LIQUIDADO"},{"id":197,"empresa":"SOUFAV","cnpj":"29823210000161","adesao":"2024-06-01","totalParcelas":17,"ano":2025,"status":"ativo","obs":""},{"id":198,"empresa":"STELL WEB","cnpj":"18387224000163","adesao":"2022-01-01","totalParcelas":145,"ano":2025,"status":"ativo","obs":""},{"id":199,"empresa":"STELL WEB","cnpj":"18387224000163","adesao":"2025-08-01","totalParcelas":4,"ano":2025,"status":"rescindido","obs":"DEZ: RESCINDIDO"},{"id":200,"empresa":"TRANSFRIGER","cnpj":"33014958000190","adesao":"2025-07-01","totalParcelas":60,"ano":2025,"status":"rescindido","obs":"DEZ: RESCINDIDO"},{"id":201,"empresa":"TRANSFRIGER","cnpj":"33014958000190","adesao":"2025-10-01","totalParcelas":60,"ano":2025,"status":"ativo","obs":""},{"id":202,"empresa":"WEB DESIGNER","cnpj":"36575578000113","adesao":"2025-01-01","totalParcelas":10,"ano":2025,"status":"ativo","obs":""},{"id":203,"empresa":"COMERCIAL IPIRANGA - ICMS","cnpj":"1345578102","adesao":"05/2023","totalParcelas":60,"ano":2025,"status":"ativo","obs":"AGO: CANCELADO POR FALTA PAGTO"},{"id":204,"empresa":"GS COMÉRCIO (ICMS -PGFN)","cnpj":"34221654000167","adesao":"01/2024","totalParcelas":40,"ano":2025,"status":"ativo","obs":""},{"id":205,"empresa":"LOJA CASA COBRE (ICMS -PGFN)","cnpj":"37166636000118","adesao":"07/2024","totalParcelas":6,"ano":2025,"status":"concluido","obs":"LIQUIDADO"},{"id":206,"empresa":"LOJA CASA COBRE (ICMS -PGFN)","cnpj":"37166636000118","adesao":"03/2025","totalParcelas":6,"ano":2025,"status":"ativo","obs":"CANCELADO - 1420573953"},{"id":207,"empresa":"NENEM NA NUVEM","cnpj":"34578208000104","adesao":"10/2025","totalParcelas":3,"ano":2025,"status":"ativo","obs":"DEZ: 02 e 03"},{"id":208,"empresa":"NUTRI QUALY (ICMS -PGFN)","cnpj":"02415736000156","adesao":null,"totalParcelas":60,"ano":2025,"status":"ativo","obs":"AGO: CANCELADO POR FALTA PAGTO"},{"id":209,"empresa":"ABSOLUTA","cnpj":"27709319000147","adesao":"2024-12-01","totalParcelas":13,"ano":2025,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":210,"empresa":"BHETEL (PREV)","cnpj":"00004563000158","adesao":"2024-10-01","totalParcelas":4,"ano":2025,"status":"concluido","obs":"JAN: D.A.; LIQUIDADO"},{"id":211,"empresa":"CIVITECH","cnpj":"59006571000186","adesao":"2025-12-22","totalParcelas":14,"ano":2025,"status":"ativo","obs":""},{"id":212,"empresa":"DRIMAJU","cnpj":"05306841000145","adesao":"2023-08-01","totalParcelas":23,"ano":2025,"status":"concluido","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A.; LIQUIDADO"},{"id":213,"empresa":"DRIMAJU","cnpj":"05306841000145","adesao":"2025-01-01","totalParcelas":3,"ano":2025,"status":"concluido","obs":"FEV: D.A.; MAR: D.A.; LIQUIDADO"},{"id":214,"empresa":"HUGO CALHAS","cnpj":"39957229000154","adesao":"2025-12-22","totalParcelas":2,"ano":2025,"status":"ativo","obs":""},{"id":215,"empresa":"J L COMERCIO","cnpj":"29794362000183","adesao":"2025-01-01","totalParcelas":9,"ano":2025,"status":"ativo","obs":"FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A."},{"id":216,"empresa":"LOPES & BATISTA","cnpj":"32065001000100","adesao":"2023-12-01","totalParcelas":38,"ano":2025,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":217,"empresa":"SMART PET","cnpj":"33082577000149","adesao":"2025-10-01","totalParcelas":5,"ano":2025,"status":"ativo","obs":"NOV: D.A.; DEZ: D.A."},{"id":218,"empresa":"TRANSFRIGER","cnpj":"33014958000190","adesao":"08/2024","totalParcelas":22,"ano":2025,"status":"ativo","obs":"JAN: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":219,"empresa":"VENCAR","cnpj":null,"adesao":"12/2025","totalParcelas":5,"ano":2025,"status":"ativo","obs":""},{"id":220,"empresa":"ABSOLUTA","cnpj":"27709319000147","adesao":"2024-11-29","totalParcelas":32,"ano":2026,"status":"encerrado","obs":"MAR: NÃO É MAIS CLIENTE"},{"id":221,"empresa":"AD MAKERS","cnpj":"27774980000136","adesao":"2025-12-01","totalParcelas":5,"ano":2026,"status":"ativo","obs":""},{"id":222,"empresa":"AGATECH SOLUÇÕES","cnpj":"33764950000141","adesao":"2025-12-19","totalParcelas":60,"ano":2026,"status":"ativo","obs":""},{"id":223,"empresa":"ALEXSANDRA","cnpj":"49258811000186","adesao":"2025-12-01","totalParcelas":37,"ano":2026,"status":"ativo","obs":""},{"id":224,"empresa":"CAROL ARGENAU","cnpj":"56930096000141","adesao":"2025-12-01","totalParcelas":6,"ano":2026,"status":"ativo","obs":""},{"id":225,"empresa":"CIVITECH","cnpj":"59006571000186","adesao":"2025-12-22","totalParcelas":60,"ano":2026,"status":"ativo","obs":""},{"id":226,"empresa":"COSTA & COMÉRCIO","cnpj":"42644129000182","adesao":"2023-08-01","totalParcelas":60,"ano":2026,"status":"ativo","obs":"11/2025 atraso"},{"id":227,"empresa":"D LIMA","cnpj":"56057057000181","adesao":"2025-10-01","totalParcelas":58,"ano":2026,"status":"ativo","obs":""},{"id":228,"empresa":"DATALITICS","cnpj":"52030436000127","adesao":"2025-12-01","totalParcelas":40,"ano":2026,"status":"ativo","obs":""},{"id":229,"empresa":"FERNANDO - IMSOL","cnpj":"14163204000158","adesao":"2024-11-01","totalParcelas":19,"ano":2026,"status":"ativo","obs":""},{"id":230,"empresa":"FR MONITORAMENTO","cnpj":"18658322000198","adesao":"2025-12-19","totalParcelas":25,"ano":2026,"status":"ativo","obs":""},{"id":231,"empresa":"GIAMPIETRO","cnpj":"55694553000183","adesao":"2025-02-01","totalParcelas":13,"ano":2026,"status":"ativo","obs":""},{"id":232,"empresa":"GS COMÉRCIO","cnpj":"34221654000167","adesao":"2024-03-01","totalParcelas":60,"ano":2026,"status":"ativo","obs":"10/2025 ATRASO"},{"id":233,"empresa":"HMS","cnpj":"38434461000145","adesao":"2026-01-01","totalParcelas":60,"ano":2026,"status":"ativo","obs":""},{"id":234,"empresa":"HUGO CALHAS","cnpj":"39957229000154","adesao":"2025-12-22","totalParcelas":22,"ano":2026,"status":"ativo","obs":""},{"id":235,"empresa":"LANY IMPORTADOS","cnpj":"46579304000156","adesao":"2025-09-26","totalParcelas":50,"ano":2026,"status":"rescindido","obs":"RESCINDIDO"},{"id":236,"empresa":"LEV","cnpj":"10909130000103","adesao":"2024-08-01","totalParcelas":60,"ano":2026,"status":"ativo","obs":""},{"id":237,"empresa":"LOJA CASA COBRE","cnpj":"37166636000118","adesao":"2026-01-01","totalParcelas":60,"ano":2026,"status":"ativo","obs":"2024-12-01"},{"id":238,"empresa":"LUNA PRODUTOS E SERVIÇOS","cnpj":"27822248000194","adesao":"2023-08-01","totalParcelas":60,"ano":2026,"status":"ativo","obs":""},{"id":239,"empresa":"MATEUS GABRIEL (MEI) DIGITAR","cnpj":"49018198870","adesao":"2025-01-01","totalParcelas":60,"ano":2026,"status":"ativo","obs":"38421227Mn@"},{"id":240,"empresa":"MP CONFECÇÕES","cnpj":"33275957000108","adesao":"2026-01-01","totalParcelas":51,"ano":2026,"status":"ativo","obs":""},{"id":241,"empresa":"REST. SABOR CASEIRO (RELP-MEI)","cnpj":"30000364000132","adesao":"2024-03-01","totalParcelas":33,"ano":2026,"status":"ativo","obs":"LÍQUIDADO"},{"id":242,"empresa":"SMART PET","cnpj":"33082577000149","adesao":"2025-10-01","totalParcelas":16,"ano":2026,"status":"ativo","obs":""},{"id":243,"empresa":"TECK COMERCIO","cnpj":"53441065000139","adesao":"2026-01-01","totalParcelas":57,"ano":2026,"status":"ativo","obs":""},{"id":244,"empresa":"TAYCOON","cnpj":"51111344000109","adesao":"2025-08-17","totalParcelas":21,"ano":2026,"status":"ativo","obs":""},{"id":245,"empresa":"VBF (VITOR FONSECA)","cnpj":"42352126000175","adesao":"2025-08-01","totalParcelas":50,"ano":2026,"status":"ativo","obs":"12/2025 EM ABERTO"},{"id":246,"empresa":"VENCAR","cnpj":"54021504000117","adesao":"2025-12-01","totalParcelas":16,"ano":2026,"status":"ativo","obs":""},{"id":247,"empresa":"WEB DESIGNER (MEI)","cnpj":"36575578000113","adesao":"2024-05-01","totalParcelas":22,"ano":2026,"status":"ativo","obs":"DIVERSOS"},{"id":248,"empresa":"Z3","cnpj":"55392128000130","adesao":null,"totalParcelas":60,"ano":2026,"status":"ativo","obs":""},{"id":249,"empresa":"BW","cnpj":"54969602000180","adesao":"2026-01-01","totalParcelas":2,"ano":2026,"status":"ativo","obs":""},{"id":250,"empresa":"AGATECH SOLUÇÕES","cnpj":"33764950000141","adesao":"2025-12-12","totalParcelas":30,"ano":2026,"status":"ativo","obs":"JAN: ADESÃO; FEV: ADESÃO; MAR: ADESÃO; ABR: ADESÃO; MAI: ADESÃO"},{"id":251,"empresa":"BHETEL (PREV)","cnpj":"00004563000158","adesao":"2023-08-01","totalParcelas":36,"ano":2026,"status":"ativo","obs":""},{"id":252,"empresa":"DRIMAJU (SN)","cnpj":"05306841000145","adesao":"2023-08-01","totalParcelas":50,"ano":2026,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":253,"empresa":"DRIMAJU (PREV)","cnpj":"05306841000145","adesao":"2023-12-01","totalParcelas":60,"ano":2026,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A.; Senha: Salubre37*"},{"id":254,"empresa":"DRIMAJU","cnpj":"05306841000145","adesao":"2024-11-01","totalParcelas":60,"ano":2026,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":255,"empresa":"DRIMAJU (D+ DÉBITOS)","cnpj":"05306841000145","adesao":"2024-12-02","totalParcelas":37,"ano":2026,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":256,"empresa":"G.V.R.S. COMERCIO","cnpj":"96568696000126","adesao":"01/2022","totalParcelas":60,"ano":2026,"status":"ativo","obs":""},{"id":257,"empresa":"G.V.R.S. COMERCIO","cnpj":"96568696000126","adesao":"10/2024","totalParcelas":32,"ano":2026,"status":"ativo","obs":"FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":258,"empresa":"HMS","cnpj":"38434461000145","adesao":"2026-01-01","totalParcelas":60,"ano":2026,"status":"ativo","obs":"FEV: ADESÃO; MAR: ADESÃO; ABR: ADESÃO; MAI: ADESÃO; JUN: ADESÃO; JUL: ADESÃO; AGO: ADESÃO; SET: ADESÃO; OUT: ADESÃO; NOV: ADESÃO; DEZ: ADESÃO"},{"id":259,"empresa":"LOJA CASA COBRE","cnpj":"37166636000118","adesao":"2026-01-01","totalParcelas":48,"ano":2026,"status":"ativo","obs":"JAN: ADESÃO; FEV: ADESÃO; MAR: ADESÃO; ABR: ADESÃO; MAI: ADESÃO; JUN: ADESÃO"},{"id":260,"empresa":"STELL WEB","cnpj":"18387224000163","adesao":"2022-01-01","totalParcelas":145,"ano":2026,"status":"ativo","obs":"FEV: IMPUGNAÇÃO"},{"id":261,"empresa":"TRANSFRIGER","cnpj":"33014958000190","adesao":"2025-10-01","totalParcelas":60,"ano":2026,"status":"ativo","obs":"MAI: ENCERRADO POR INADIMPLÊNCIA"},{"id":262,"empresa":"WEB DESIGNER","cnpj":"36575578000113","adesao":"2025-01-01","totalParcelas":10,"ano":2026,"status":"concluido","obs":"LIQUIDADO"},{"id":263,"empresa":"WEB DESIGNER","cnpj":"36575578000113","adesao":"2026-01-01","totalParcelas":7,"ano":2026,"status":"ativo","obs":"FEV: ADESÃO"},{"id":264,"empresa":"Z3","cnpj":"55392128000130","adesao":"2026-01-01","totalParcelas":10,"ano":2026,"status":"rescindido","obs":"MAI: RESCINDIDO POR FALTA DE PAGTO"},{"id":265,"empresa":"GS COMÉRCIO (ICMS -PGFN)","cnpj":"34221654000167","adesao":"01/2024","totalParcelas":40,"ano":2026,"status":"ativo","obs":""},{"id":266,"empresa":"LOJA CASA COBRE (ICMS -PGFN)","cnpj":"37166636000118","adesao":"01/2026","totalParcelas":3,"ano":2026,"status":"ativo","obs":"ABR: NÃO PAGOU A 1° PARCELA"},{"id":267,"empresa":"NENEM NA NUVEM","cnpj":"34578208000104","adesao":"10/2025","totalParcelas":3,"ano":2026,"status":"ativo","obs":""},{"id":268,"empresa":"ABSOLUTA","cnpj":"27709319000147","adesao":"2024-12-01","totalParcelas":13,"ano":2026,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":269,"empresa":"CIVITECH","cnpj":"59006571000186","adesao":"2025-12-22","totalParcelas":17,"ano":2026,"status":"ativo","obs":"FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":270,"empresa":"D LIMA ESTRUTURAS METALICAS","cnpj":"56057057000181","adesao":"2026-03-01","totalParcelas":51,"ano":2026,"status":"ativo","obs":"ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":271,"empresa":"FR MONITORAMENTO","cnpj":"18658322000198","adesao":"2026-01-01","totalParcelas":6,"ano":2026,"status":"ativo","obs":"FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A."},{"id":272,"empresa":"HUGO CALHAS","cnpj":"39957229000154","adesao":"2025-12-22","totalParcelas":2,"ano":2026,"status":"ativo","obs":"JAN: D.A."},{"id":273,"empresa":"LOJA CASA COBRE","cnpj":"37166636000118","adesao":"01/2026","totalParcelas":4,"ano":2026,"status":"ativo","obs":"FEV: D.A.; MAR: D.A.; ABR: D.A."},{"id":274,"empresa":"LOPES & BATISTA","cnpj":"32065001000100","adesao":"2023-12-01","totalParcelas":38,"ano":2026,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":275,"empresa":"MP CONFECÇÕES","cnpj":"33275957000108","adesao":"2026-01-01","totalParcelas":5,"ano":2026,"status":"ativo","obs":"FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A."},{"id":276,"empresa":"NICOLE - LOJA","cnpj":"36116076000124","adesao":"2025-12-22","totalParcelas":7,"ano":2026,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A."},{"id":277,"empresa":"SMART PET","cnpj":"33082577000149","adesao":"2026-05-01","totalParcelas":8,"ano":2026,"status":"ativo","obs":"JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":278,"empresa":"TECK COMERCIO","cnpj":"53441065000139","adesao":"2026-01-01","totalParcelas":18,"ano":2026,"status":"ativo","obs":"FEV: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":279,"empresa":"TRANSFRIGER","cnpj":"33014958000190","adesao":"08/2024","totalParcelas":22,"ano":2026,"status":"ativo","obs":"JAN: D.A.; MAR: D.A.; ABR: D.A.; MAI: D.A.; JUN: D.A.; JUL: D.A.; AGO: D.A.; SET: D.A.; OUT: D.A.; NOV: D.A.; DEZ: D.A."},{"id":280,"empresa":"VENCAR","cnpj":"54021504000117","adesao":"12/2025","totalParcelas":5,"ano":2026,"status":"ativo","obs":"JAN: D.A.; FEV: D.A.; MAR: D.A.; ABR: D.A."}]
+;
+
+loadData();
+currentYear = getYears()[0];
+render();
+</script>
+</body>
+</html>
