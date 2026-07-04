@@ -449,6 +449,26 @@
     .modal-btn.xml       { background: #fff7ed; color: #c2410c; border: 2px solid #c2410c; }
     .modal-btn.secondary { background: #f3f4f6; color: var(--sub); }
 
+    /* ── DIAS DA SEMANA ── */
+    .dia-btn {
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: #fff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--sub);
+      cursor: pointer;
+      transition: all .2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .dia-btn.ativo {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+
     /* ── PRINT ── */
     @media print {
       .top-bar, .progress-wrap, .bottom-bar, .modal-overlay,
@@ -896,6 +916,162 @@
     </div>
   </div>
 
+  <!-- ════ 10. LOCAL DE TRABALHO ════ -->
+  <div class="section collapsed" id="sec-10">
+    <div class="section-header" onclick="toggleSec('sec-10')">
+      <div class="section-icon">📍</div>
+      <div class="section-info">
+        <h2>Local de Trabalho</h2>
+        <p>Sede da empresa ou externo</p>
+      </div>
+      <span class="section-chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="field">
+        <label>Tipo de Local</label>
+        <div class="toggle-group">
+          <button type="button" class="toggle-btn active" id="local-sede" onclick="setToggleLocal('sede')">🏢 Sede</button>
+          <button type="button" class="toggle-btn" id="local-externo" onclick="setToggleLocal('externo')">🚚 Externo</button>
+        </div>
+        <input type="hidden" name="tipo_local" value="sede" />
+      </div>
+
+      <div class="field">
+        <label>CNPJ da Sede / Estabelecimento</label>
+        <input type="tel" name="cnpj_sede" placeholder="00.000.000/0000-00"
+               maxlength="18" inputmode="numeric" />
+      </div>
+
+      <div class="conditional" id="local-externo-block">
+        <div class="field">
+          <label>Nome / Razão Social do Local</label>
+          <input type="text" name="local_ext_nome" placeholder="Ex.: Cliente XYZ Ltda"
+                 autocapitalize="words" />
+        </div>
+        <div class="field">
+          <label>CNPJ do Local Externo</label>
+          <input type="tel" name="local_ext_cnpj" placeholder="00.000.000/0000-00"
+                 maxlength="18" inputmode="numeric" />
+        </div>
+        <div class="field">
+          <label>Endereço do Local Externo</label>
+          <input type="text" name="local_ext_endereco" placeholder="Rua, Nº – Bairro – Cidade/UF"
+                 autocapitalize="words" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ 11. HORÁRIO DE TRABALHO ════ -->
+  <div class="section collapsed" id="sec-11">
+    <div class="section-header" onclick="toggleSec('sec-11')">
+      <div class="section-icon">🕐</div>
+      <div class="section-info">
+        <h2>Horário de Trabalho</h2>
+        <p>Dias, entrada, saída e carga horária</p>
+      </div>
+      <span class="section-chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="field">
+        <label>Tipo de Jornada</label>
+        <select name="tipo_jornada">
+          <option value="">Selecione</option>
+          <option value="1">Jornada por Escala</option>
+          <option value="2">Jornada 12x36</option>
+          <option value="3">Jornada Semanal Fixa</option>
+          <option value="4">Jornada de Trabalho por Turno</option>
+        </select>
+      </div>
+      <div class="field-row col-2">
+        <div class="field">
+          <label>Horas por Semana</label>
+          <input type="tel" name="hrs_semana" placeholder="Ex.: 44"
+                 inputmode="numeric" maxlength="5" />
+        </div>
+        <div class="field">
+          <label>Horas por Dia</label>
+          <input type="tel" name="hrs_dia" placeholder="Ex.: 8"
+                 inputmode="numeric" maxlength="5" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Dias de Trabalho</label>
+        <div id="dias-semana" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
+          <button type="button" class="dia-btn" data-dia="1" onclick="toggleDia(this)">Seg</button>
+          <button type="button" class="dia-btn" data-dia="2" onclick="toggleDia(this)">Ter</button>
+          <button type="button" class="dia-btn" data-dia="3" onclick="toggleDia(this)">Qua</button>
+          <button type="button" class="dia-btn" data-dia="4" onclick="toggleDia(this)">Qui</button>
+          <button type="button" class="dia-btn" data-dia="5" onclick="toggleDia(this)">Sex</button>
+          <button type="button" class="dia-btn" data-dia="6" onclick="toggleDia(this)">Sáb</button>
+          <button type="button" class="dia-btn" data-dia="7" onclick="toggleDia(this)">Dom</button>
+        </div>
+        <input type="hidden" name="dias_trabalho" value="" />
+      </div>
+
+      <div class="field-row col-2">
+        <div class="field">
+          <label>Horário de Entrada</label>
+          <input type="time" name="hr_entrada" />
+        </div>
+        <div class="field">
+          <label>Horário de Saída</label>
+          <input type="time" name="hr_saida" />
+        </div>
+      </div>
+
+      <div class="field-row col-2">
+        <div class="field">
+          <label>Intervalo (minutos)</label>
+          <input type="tel" name="intervalo_min" placeholder="Ex.: 60"
+                 inputmode="numeric" maxlength="3" />
+        </div>
+        <div class="field">
+          <label>Trabalho Parcial?</label>
+          <select name="tmp_parc">
+            <option value="">Selecione</option>
+            <option value="0">Não</option>
+            <option value="1">Até 25h/sem</option>
+            <option value="2">Até 30h/sem</option>
+            <option value="3">Até 26h/sem</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Observações sobre Horário</label>
+        <textarea name="obs_horario" placeholder="Ex.: Escala 6x1, folga aos domingos..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ 12. DEPENDENTES IR ════ -->
+  <div class="section collapsed" id="sec-12">
+    <div class="section-header" onclick="toggleSec('sec-12')">
+      <div class="section-icon">👨‍👩‍👧‍👦</div>
+      <div class="section-info">
+        <h2>Dependentes para IR</h2>
+        <p>Cônjuge, filhos, pais e outros</p>
+      </div>
+      <span class="section-chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="field">
+        <label>Possui dependentes para IR?</label>
+        <div class="toggle-group">
+          <button type="button" class="toggle-btn active" id="dep-nao" onclick="setToggle('dep','nao')">✕ Não</button>
+          <button type="button" class="toggle-btn" id="dep-sim" onclick="setToggle('dep','sim')">✓ Sim</button>
+        </div>
+        <input type="hidden" name="tem_dep" value="nao" />
+      </div>
+      <div class="conditional" id="dep-block">
+        <div id="dep-lista"></div>
+        <button type="button" class="btn-add" onclick="adicionarDep()">＋ Adicionar dependente</button>
+      </div>
+    </div>
+  </div>
+
   <div style="height:8px"></div>
 
 </form>
@@ -964,6 +1140,122 @@ function setToggle(group, val) {
   if (group === 'cnh' && val === 'sim') {
     document.getElementById('cnh-block').classList.add('visible');
   }
+}
+
+/* ══════════════════════════════════════════════
+   LOCAL DE TRABALHO
+══════════════════════════════════════════════ */
+function setToggleLocal(val) {
+  document.querySelector('[name="tipo_local"]').value = val;
+  const sede    = document.getElementById('local-sede');
+  const externo = document.getElementById('local-externo');
+  const block   = document.getElementById('local-externo-block');
+  if (val === 'externo') {
+    externo.classList.add('active'); sede.classList.remove('active');
+    block.classList.add('visible');
+  } else {
+    sede.classList.add('active'); externo.classList.remove('active');
+    block.classList.remove('visible');
+  }
+}
+
+/* ── Máscara CNPJ ── */
+function maskCnpj(el) {
+  el.addEventListener('input', () => aplicarMascara(el, '##.###.###/####-##'));
+}
+document.querySelectorAll('[name="cnpj_sede"],[name="local_ext_cnpj"]').forEach(maskCnpj);
+
+/* ══════════════════════════════════════════════
+   DIAS DA SEMANA
+══════════════════════════════════════════════ */
+function toggleDia(btn) {
+  btn.classList.toggle('ativo');
+  const dias = [...document.querySelectorAll('.dia-btn.ativo')].map(b => b.dataset.dia);
+  document.querySelector('[name="dias_trabalho"]').value = dias.join(',');
+}
+
+/* ══════════════════════════════════════════════
+   DEPENDENTES IR
+══════════════════════════════════════════════ */
+let depCount = 0;
+
+function adicionarDep() {
+  depCount++;
+  const n    = depCount;
+  const lista = document.getElementById('dep-lista');
+  const div   = document.createElement('div');
+  div.className = 'filho-card';
+  div.id = `dep-${n}`;
+  div.innerHTML = `
+    <div class="filho-titulo">
+      <span>👤 Dependente ${n}</span>
+      <button type="button" class="btn-remove-filho" onclick="removerDep(${n})">✕ Remover</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="field">
+        <label>Tipo de Dependente</label>
+        <select name="dep_tipo_${n}">
+          <option value="">Selecione</option>
+          <option value="01">Cônjuge</option>
+          <option value="02">União Estável</option>
+          <option value="03">Companheiro(a)</option>
+          <option value="11">Filho/Enteado até 21 anos</option>
+          <option value="12">Filho/Enteado universitário (21–24 anos)</option>
+          <option value="21">Menor sob guarda/tutela</option>
+          <option value="31">Pai/Mãe</option>
+          <option value="41">Incapacitado físico/mental</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Nome Completo</label>
+        <input type="text" name="dep_nome_${n}" placeholder="Nome completo"
+               autocapitalize="words" />
+      </div>
+      <div class="field-row col-2">
+        <div class="field">
+          <label>Data de Nascimento</label>
+          <input type="date" name="dep_nasc_${n}" />
+        </div>
+        <div class="field">
+          <label>CPF</label>
+          <input type="tel" name="dep_cpf_${n}" placeholder="000.000.000-00"
+                 maxlength="14" inputmode="numeric" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Deduz IR?</label>
+        <div class="toggle-group">
+          <button type="button" class="toggle-btn active" id="dedir-sim-${n}"
+                  onclick="setDedIR(${n},'S')">✓ Sim</button>
+          <button type="button" class="toggle-btn" id="dedir-nao-${n}"
+                  onclick="setDedIR(${n},'N')">✕ Não</button>
+        </div>
+        <input type="hidden" name="dep_ir_${n}" value="S" />
+      </div>
+    </div>`;
+  lista.appendChild(div);
+  renumerarDeps();
+
+  div.querySelector(`[name="dep_cpf_${n}"]`).addEventListener('input', function() {
+    aplicarMascara(this, '###.###.###-##');
+  });
+}
+
+function setDedIR(n, val) {
+  document.querySelector(`[name="dep_ir_${n}"]`).value = val;
+  document.getElementById(`dedir-sim-${n}`).classList.toggle('active', val === 'S');
+  document.getElementById(`dedir-nao-${n}`).classList.toggle('active', val === 'N');
+}
+
+function removerDep(n) {
+  document.getElementById(`dep-${n}`)?.remove();
+  renumerarDeps();
+}
+
+function renumerarDeps() {
+  document.querySelectorAll('#dep-lista .filho-card .filho-titulo span').forEach((el, i) => {
+    el.textContent = `👤 Dependente ${i + 1}`;
+  });
 }
 
 /* ══════════════════════════════════════════════
@@ -1039,6 +1331,8 @@ bindMask('pis',           '###.#####.##-#');
 bindMask('cep',           '#####-###');
 bindMask('telefone',      '(##) #####-####');
 bindMask('titulo_numero', '#### #### ####');
+bindMask('cnpj_sede',     '##.###.###/####-##');
+bindMask('local_ext_cnpj','##.###.###/####-##');
 
 /* ══════════════════════════════════════════════
    BUSCA CEP
@@ -1067,9 +1361,9 @@ async function buscarCep() {
    PROGRESSO
 ══════════════════════════════════════════════ */
 function atualizarProgresso() {
-  const total    = 9;
-  const abertas  = document.querySelectorAll('.section:not(.collapsed)').length;
-  const pct      = Math.round((abertas / total) * 100);
+  const total   = 12;
+  const abertas = document.querySelectorAll('.section:not(.collapsed)').length;
+  const pct     = Math.round((abertas / total) * 100);
   document.getElementById('prog-fill').style.width  = pct + '%';
   document.getElementById('prog-pct').textContent   = pct + '%';
   document.getElementById('prog-label').textContent = `${abertas} de ${total} seções abertas`;
@@ -1126,6 +1420,17 @@ function limparForm() {
   document.getElementById('filhos-block').classList.remove('visible');
   document.getElementById('filhos-nao').classList.add('active');
   document.getElementById('filhos-sim').classList.remove('active');
+  // dependentes
+  document.getElementById('dep-lista').innerHTML = '';
+  depCount = 0;
+  document.getElementById('dep-block').classList.remove('visible');
+  document.getElementById('dep-nao').classList.add('active');
+  document.getElementById('dep-sim').classList.remove('active');
+  // local de trabalho
+  setToggleLocal('sede');
+  // dias da semana
+  document.querySelectorAll('.dia-btn.ativo').forEach(b => b.classList.remove('ativo'));
+  document.querySelector('[name="dias_trabalho"]').value = '';
 }
 
 function imprimirFicha() {
@@ -1175,7 +1480,7 @@ function gerarResumo() {
     linhas.push(`📒 *CTPS:* Nº ${v('ctps_numero')} Série ${v('ctps_serie')}/${v('ctps_uf')}`);
   }
 
-  const cards = document.querySelectorAll('.filho-card');
+  const cards = document.querySelectorAll('#filhos-lista .filho-card');
   if (cards.length) {
     linhas.push('', `👶 *Filhos (${cards.length}):*`);
     cards.forEach((c, i) => {
@@ -1185,6 +1490,37 @@ function gerarResumo() {
       linhas.push(`  ${i+1}. ${nome} – ${dt(nasc)}${cpf ? ' CPF:' + cpf : ''}`);
     });
   }
+
+  // local de trabalho
+  const tipoLocal = v('tipo_local');
+  if (tipoLocal === 'externo') {
+    linhas.push('', `📍 *Local externo:* ${v('local_ext_nome')} – CNPJ: ${v('local_ext_cnpj')}`);
+    linhas.push(`   ${v('local_ext_endereco')}`);
+  } else if (v('cnpj_sede')) {
+    linhas.push('', `📍 *Local (sede):* CNPJ ${v('cnpj_sede')}`);
+  }
+
+  // horário
+  const dias = v('dias_trabalho');
+  const nomeDias = {'1':'Seg','2':'Ter','3':'Qua','4':'Qui','5':'Sex','6':'Sáb','7':'Dom'};
+  if (v('hr_entrada') || dias) {
+    const diasNome = dias ? dias.split(',').map(d => nomeDias[d]).join(', ') : '';
+    linhas.push('', `🕐 *Horário:* ${diasNome ? diasNome + ' – ' : ''}${v('hr_entrada')} às ${v('hr_saida')}${v('hrs_semana') ? ' (' + v('hrs_semana') + 'h/sem)' : ''}`);
+  }
+
+  // dependentes IR
+  const deps = document.querySelectorAll('#dep-lista .filho-card');
+  if (deps.length) {
+    const tipoLabel = {'01':'Cônjuge','02':'União Estável','11':'Filho/Enteado','12':'Filho Universitário','21':'Menor Tutelado','31':'Pai/Mãe','41':'Incapacitado'};
+    linhas.push('', `👨‍👩‍👧‍👦 *Dependentes IR (${deps.length}):*`);
+    deps.forEach((c, i) => {
+      const tipo = c.querySelector('select[name^="dep_tipo"]')?.value || '';
+      const nome = c.querySelector('input[name^="dep_nome"]')?.value || '';
+      const nasc = c.querySelector('input[name^="dep_nasc"]')?.value || '';
+      linhas.push(`  ${i+1}. ${tipoLabel[tipo]||tipo} – ${nome} – ${dt(nasc)}`);
+    });
+  }
+
   return linhas.filter(Boolean).join('\n');
 }
 
@@ -1274,7 +1610,40 @@ function exportarXml() {
   const ts     = new Date().toISOString().replace(/[-:T.Z]/g,'').slice(0,14);
   const id     = `ID${nrInsc}${ts}00001`;
   const salFx  = parseFloat(v('salario').replace(/\./g,'').replace(',','.')) || 0;
-  const cnpjLocal = nrInsc + '000100';
+  const cnpjSede    = soNum(v('cnpj_sede')) || (nrInsc + '000100');
+  const cnpjExterno = soNum(v('local_ext_cnpj'));
+  const cnpjLocal   = v('tipo_local') === 'externo' && cnpjExterno ? cnpjExterno : cnpjSede;
+
+  // horário contratual
+  const diasAtivos = v('dias_trabalho').split(',').filter(Boolean);
+  const hrsEntrada = v('hr_entrada').replace(':','');
+  const hrsSaida   = v('hr_saida').replace(':','');
+  const hrsSem     = v('hrs_semana') || '44';
+
+  const horarioXml = diasAtivos.length ? diasAtivos.map(dia => `
+              <horario>
+                <dia>${dia}</dia>
+                <hrEntr>${hrsEntrada}</hrEntr>
+                <hrSaida>${hrsSaida}</hrSaida>
+              </horario>`).join('') : '';
+
+  // dependentes IR
+  const depCards = document.querySelectorAll('#dep-lista .filho-card');
+  const depIrXml = Array.from(depCards).map(c => {
+    const tipo = c.querySelector('select[name^="dep_tipo"]')?.value || '';
+    const nome = c.querySelector('input[name^="dep_nome"]')?.value.trim() || '';
+    const nasc = c.querySelector('input[name^="dep_nasc"]')?.value || '';
+    const cpf  = soNum(c.querySelector('input[name^="dep_cpf"]')?.value || '');
+    const ir   = c.querySelector('input[name^="dep_ir"]')?.value || 'S';
+    return nome ? `
+          <dependente>
+            <tpDep>${tipo}</tpDep>
+            <nmDep>${nome}</nmDep>
+            <dtNascto>${nasc}</dtNascto>
+            ${cpf ? `<cpfDep>${cpf}</cpfDep>` : ''}
+            <indDedIRRF>${ir}</indDedIRRF>
+          </dependente>` : '';
+  }).join('');
 
   const temCtps = document.querySelector('[name="tem_ctps"]')?.value === 'sim';
   const temCnh  = document.querySelector('[name="tem_cnh"]')?.value  === 'sim';
@@ -1295,7 +1664,7 @@ function exportarXml() {
                 <categoriaCnh>${v('cnh_categoria')}</categoriaCnh>
               </CNH>` : '';
 
-  const filhosCards = document.querySelectorAll('.filho-card');
+  const filhosCards = document.querySelectorAll('#filhos-lista .filho-card');
   const dependentesXml = Array.from(filhosCards).map(c => {
     const nome = c.querySelector('input[name^="filho_nome"]')?.value.trim() || '';
     const nasc = c.querySelector('input[name^="filho_nasc"]')?.value || '';
@@ -1367,7 +1736,7 @@ function exportarXml() {
             <contato>
               <fonePrinc>${soNum(v('telefone'))}</fonePrinc>
               <emailPrinc>${v('email')}</emailPrinc>
-            </contato>${dependentesXml}
+            </contato>${dependentesXml}${depIrXml}
           </trabalhador>
           <vinculo>
             <matricula></matricula>
@@ -1401,6 +1770,11 @@ function exportarXml() {
                   <nrInsc>${cnpjLocal}</nrInsc>
                 </localTrabGeral>
               </localTrabalho>
+              ${horarioXml ? `<horContratual>
+                <qtdHrsSem>${hrsSem}</qtdHrsSem>
+                <tpJornada>${v('tipo_jornada')||'1'}</tpJornada>
+                <tmpParc>${v('tmp_parc')||'0'}</tmpParc>${horarioXml}
+              </horContratual>` : ''}
             </infoContrato>
           </vinculo>
         </evtAdmissao>
