@@ -1074,6 +1074,129 @@
 
   <div style="height:8px"></div>
 
+  <!-- ════ 13. DADOS BANCÁRIOS ════ -->
+  <div class="section collapsed" id="sec-13">
+    <div class="section-header" onclick="toggleSec('sec-13')">
+      <div class="section-icon">🏦</div>
+      <div class="section-info">
+        <h2>Dados Bancários</h2>
+        <p>Conta para depósito de salário e PIX</p>
+      </div>
+      <span class="section-chevron">▾</span>
+    </div>
+    <div class="section-body">
+
+      <div class="field">
+        <label>Banco</label>
+        <select name="banco">
+          <option value="">Selecione o banco</option>
+          <option value="001">001 – Banco do Brasil</option>
+          <option value="033">033 – Santander</option>
+          <option value="041">041 – Banrisul</option>
+          <option value="069">069 – Crefisa</option>
+          <option value="077">077 – Inter</option>
+          <option value="104">104 – Caixa Econômica Federal</option>
+          <option value="208">208 – BTG Pactual</option>
+          <option value="212">212 – Banco Original</option>
+          <option value="237">237 – Bradesco</option>
+          <option value="260">260 – Nu Pagamentos (Nubank)</option>
+          <option value="290">290 – PagBank (PagSeguro)</option>
+          <option value="318">318 – Banco BMG</option>
+          <option value="336">336 – C6 Bank</option>
+          <option value="341">341 – Itaú</option>
+          <option value="389">389 – Banco Mercantil</option>
+          <option value="422">422 – Banco Safra</option>
+          <option value="623">623 – Banco Pan</option>
+          <option value="633">633 – Banco Rendimento</option>
+          <option value="655">655 – Votorantim (Banco BV)</option>
+          <option value="707">707 – Daycoval</option>
+          <option value="735">735 – Banco Neon</option>
+          <option value="748">748 – Sicredi</option>
+          <option value="756">756 – Sicoob</option>
+          <option value="999">Outro</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Tipo de Conta</label>
+        <div class="toggle-group">
+          <button type="button" class="toggle-btn active" id="conta-corrente"
+                  onclick="setTipoConta('corrente')">🏧 Corrente</button>
+          <button type="button" class="toggle-btn" id="conta-poupanca"
+                  onclick="setTipoConta('poupanca')">💰 Poupança</button>
+          <button type="button" class="toggle-btn" id="conta-pagamento"
+                  onclick="setTipoConta('pagamento')">📱 Pagamento</button>
+        </div>
+        <input type="hidden" name="tipo_conta" value="corrente" />
+      </div>
+
+      <div class="field-row col-2">
+        <div class="field">
+          <label>Agência</label>
+          <input type="tel" name="agencia" placeholder="0000" maxlength="6"
+                 inputmode="numeric" />
+        </div>
+        <div class="field">
+          <label>Dígito da Agência</label>
+          <input type="tel" name="agencia_dig" placeholder="0" maxlength="2"
+                 inputmode="numeric" />
+        </div>
+      </div>
+
+      <div class="field-row col-2">
+        <div class="field">
+          <label>Número da Conta</label>
+          <input type="tel" name="conta" placeholder="000000" maxlength="12"
+                 inputmode="numeric" />
+        </div>
+        <div class="field">
+          <label>Dígito da Conta</label>
+          <input type="tel" name="conta_dig" placeholder="0" maxlength="2"
+                 inputmode="numeric" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Nome do Titular</label>
+        <input type="text" name="banco_titular" placeholder="Nome igual ao documento"
+               autocapitalize="words" />
+      </div>
+
+      <div class="field">
+        <label>CPF do Titular</label>
+        <input type="tel" name="banco_cpf" placeholder="000.000.000-00"
+               maxlength="14" inputmode="numeric" />
+      </div>
+
+      <!-- PIX -->
+      <div style="border-top:1px dashed var(--border);padding-top:14px">
+        <label style="font-size:0.82rem;font-weight:700;color:var(--blue);
+                      text-transform:none;letter-spacing:0;margin-bottom:10px;display:block">
+          🔑 Chave PIX (opcional)
+        </label>
+        <div class="field">
+          <label>Tipo de Chave</label>
+          <select name="pix_tipo" onchange="atualizarPlaceholderPix(this)">
+            <option value="">Sem chave PIX</option>
+            <option value="cpf">CPF</option>
+            <option value="telefone">Telefone</option>
+            <option value="email">E-mail</option>
+            <option value="aleatoria">Chave aleatória (EVP)</option>
+            <option value="cnpj">CNPJ</option>
+          </select>
+        </div>
+        <div class="field" style="margin-top:12px">
+          <label>Chave PIX</label>
+          <input type="text" name="pix_chave" placeholder="Selecione o tipo acima"
+                 autocapitalize="none" autocorrect="off" />
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="height:8px"></div>
+
 </form>
 
 <!-- ── BOTTOM BAR ── -->
@@ -1333,6 +1456,39 @@ bindMask('telefone',      '(##) #####-####');
 bindMask('titulo_numero', '#### #### ####');
 bindMask('cnpj_sede',     '##.###.###/####-##');
 bindMask('local_ext_cnpj','##.###.###/####-##');
+bindMask('banco_cpf',     '###.###.###-##');
+
+/* ── Tipo de conta ── */
+function setTipoConta(val) {
+  document.querySelector('[name="tipo_conta"]').value = val;
+  ['corrente','poupanca','pagamento'].forEach(t => {
+    document.getElementById(`conta-${t}`)?.classList.toggle('active', t === val);
+  });
+}
+
+/* ── Placeholder PIX ── */
+function atualizarPlaceholderPix(sel) {
+  const inp = document.querySelector('[name="pix_chave"]');
+  const phs = {
+    cpf:       '000.000.000-00',
+    telefone:  '(00) 00000-0000',
+    email:     'email@exemplo.com',
+    aleatoria: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+    cnpj:      '00.000.000/0001-00',
+    '':        'Selecione o tipo acima'
+  };
+  inp.placeholder = phs[sel.value] || '';
+  inp.value = '';
+  if (sel.value === 'cpf') {
+    inp.inputMode = 'numeric';
+    inp.addEventListener('input', () => aplicarMascara(inp, '###.###.###-##'), {once:false});
+  } else if (sel.value === 'telefone') {
+    inp.inputMode = 'tel';
+    inp.addEventListener('input', () => aplicarMascara(inp, '(##) #####-####'), {once:false});
+  } else {
+    inp.inputMode = 'text';
+  }
+}
 
 /* ══════════════════════════════════════════════
    BUSCA CEP
@@ -1361,7 +1517,7 @@ async function buscarCep() {
    PROGRESSO
 ══════════════════════════════════════════════ */
 function atualizarProgresso() {
-  const total   = 12;
+  const total   = 13;
   const abertas = document.querySelectorAll('.section:not(.collapsed)').length;
   const pct     = Math.round((abertas / total) * 100);
   document.getElementById('prog-fill').style.width  = pct + '%';
@@ -1519,6 +1675,13 @@ function gerarResumo() {
       const nasc = c.querySelector('input[name^="dep_nasc"]')?.value || '';
       linhas.push(`  ${i+1}. ${tipoLabel[tipo]||tipo} – ${nome} – ${dt(nasc)}`);
     });
+  }
+
+  // banco
+  if (v('banco') || v('conta')) {
+    linhas.push('', `🏦 *Banco:* ${v('banco')} – ${v('tipo_conta')}`);
+    linhas.push(`   Ag: ${v('agencia')}${v('agencia_dig') ? '-' + v('agencia_dig') : ''} | Conta: ${v('conta')}${v('conta_dig') ? '-' + v('conta_dig') : ''}`);
+    if (v('pix_tipo') && v('pix_chave')) linhas.push(`   PIX (${v('pix_tipo')}): ${v('pix_chave')}`);
   }
 
   return linhas.filter(Boolean).join('\n');
