@@ -469,6 +469,53 @@
       color: #fff;
     }
 
+    /* ── AUTO-FILL BUTTON ── */
+    .btn-auto {
+      height: 52px;
+      padding: 0 14px;
+      border: 2px solid var(--purple);
+      border-radius: 12px;
+      background: #ede9fe;
+      color: var(--purple);
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ── TELAS DO MODAL AUTO-FILL ── */
+    .af-tela { display: none; }
+    .af-tela.ativa { display: block; }
+
+    .af-info {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.78rem;
+      color: #1d4ed8;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .af-file-input {
+      height: auto !important;
+      padding: 12px !important;
+      border: 2px dashed var(--blue) !important;
+      border-radius: 12px !important;
+      background: #eff6ff !important;
+      font-size: 16px !important;
+      cursor: pointer;
+    }
+
+    .af-preview {
+      max-width: 100%;
+      border-radius: 10px;
+      margin-top: 8px;
+      display: none;
+    }
+
     /* ── PRINT ── */
     @media print {
       .top-bar, .progress-wrap, .bottom-bar, .modal-overlay,
@@ -1202,6 +1249,7 @@
 <!-- ── BOTTOM BAR ── -->
 <div class="bottom-bar">
   <button type="button" class="btn-limpar" onclick="limparForm()">🗑️</button>
+  <button type="button" class="btn-auto" onclick="abrirAutoFill()" title="Auto-preencher com PDF ou foto">🤖</button>
   <button type="button" class="btn-imprimir" onclick="imprimirFicha()">🖨️</button>
   <button type="button" class="btn-salvar" onclick="salvarForm()">✔ Salvar Ficha</button>
 </div>
@@ -1224,6 +1272,80 @@
       <button class="modal-btn json" onclick="exportarJsonESocial()">⬇️ Exportar JSON eSocial</button>
       <button class="modal-btn secondary" onclick="fecharModal()">Fechar</button>
     </div>
+  </div>
+</div>
+
+<!-- ── MODAL AUTO-PREENCHIMENTO ── -->
+<div class="modal-overlay" id="modalAutoFill">
+  <div class="modal" style="max-height:88vh;overflow-y:auto">
+    <div class="modal-handle"></div>
+
+    <!-- TELA 1: ESCOLHA -->
+    <div class="af-tela ativa" id="af-tela-escolha">
+      <div class="modal-icon">🤖</div>
+      <h2>Auto-Preenchimento</h2>
+      <p>Importe dados automaticamente de um PDF ou tirando foto dos documentos</p>
+      <div class="modal-actions" style="margin-top:18px">
+        <button class="modal-btn primary" onclick="mostrarTela('af-tela-pdf')">
+          📄 Importar PDF da Ficha
+        </button>
+        <button class="modal-btn" style="background:#ede9fe;color:var(--purple);border:2px solid var(--purple)"
+                onclick="mostrarTela('af-tela-foto')">
+          📷 Foto do Documento (IA)
+        </button>
+        <button class="modal-btn secondary" onclick="fecharAutoFill()">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- TELA 2: PDF -->
+    <div class="af-tela" id="af-tela-pdf">
+      <div class="modal-icon">📄</div>
+      <h2>Importar PDF</h2>
+      <div class="af-info">
+        Selecione o PDF da ficha de admissão preenchida. O sistema extrai texto automaticamente e preenche os campos encontrados.
+      </div>
+      <div class="field" style="margin-bottom:16px">
+        <label>Arquivo PDF</label>
+        <input type="file" id="af-pdf-input" accept=".pdf,application/pdf" class="af-file-input" />
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn primary" id="af-pdf-btn" onclick="processarPdf()">📄 Processar PDF</button>
+        <button class="modal-btn secondary" onclick="mostrarTela('af-tela-escolha')">← Voltar</button>
+      </div>
+    </div>
+
+    <!-- TELA 3: FOTO -->
+    <div class="af-tela" id="af-tela-foto">
+      <div class="modal-icon">📷</div>
+      <h2>Foto do Documento</h2>
+      <div class="af-info">
+        Tire uma foto ou selecione imagem do RG, CNH, CTPS ou comprovante de residência. A IA (Claude) extrairá os dados e preencherá o formulário.
+      </div>
+
+      <div class="field" style="margin-bottom:12px">
+        <label>Foto do Documento</label>
+        <input type="file" id="af-foto-input" accept="image/*" capture="environment"
+               class="af-file-input" onchange="previewFoto(this)" />
+        <img id="af-preview" class="af-preview" alt="preview" />
+      </div>
+
+      <div class="field" style="margin-bottom:6px">
+        <label>Chave API Anthropic <span style="font-weight:400;text-transform:none;font-size:0.73rem;color:#888">(para IA)</span></label>
+        <input type="password" id="af-api-input" placeholder="sk-ant-api03-…"
+               autocomplete="off" autocapitalize="none" autocorrect="off"
+               style="font-size:16px" />
+      </div>
+      <div style="font-size:0.72rem;color:var(--sub);margin-bottom:16px;line-height:1.5">
+        Obtenha sua chave gratuita em <a href="https://console.anthropic.com/keys" target="_blank" rel="noopener"
+        style="color:var(--blue)">console.anthropic.com</a>. A chave fica salva <strong>somente no seu dispositivo</strong>.
+      </div>
+
+      <div class="modal-actions">
+        <button class="modal-btn" style="background:var(--purple);color:#fff" id="af-foto-btn" onclick="processarFoto()">🔍 Extrair Dados com IA</button>
+        <button class="modal-btn secondary" onclick="mostrarTela('af-tela-escolha')">← Voltar</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -2014,6 +2136,357 @@ function baixarArquivo(conteudo, nome, tipo) {
   a.download = nome;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+/* ══════════════════════════════════════════════
+   AUTO-PREENCHIMENTO
+══════════════════════════════════════════════ */
+
+/* ── API Key (localStorage) ── */
+function getApiKey() { try { return localStorage.getItem('af_anthropic_key') || ''; } catch { return ''; } }
+function saveApiKey(k) { try { localStorage.setItem('af_anthropic_key', k); } catch {} }
+
+/* ── Controle do modal ── */
+function abrirAutoFill() {
+  document.getElementById('modalAutoFill').classList.add('open');
+  mostrarTela('af-tela-escolha');
+  document.getElementById('af-api-input').value = getApiKey();
+}
+
+function fecharAutoFill() {
+  document.getElementById('modalAutoFill').classList.remove('open');
+}
+
+function mostrarTela(id) {
+  document.querySelectorAll('.af-tela').forEach(t => t.classList.remove('ativa'));
+  document.getElementById(id).classList.add('ativa');
+}
+
+/* ── Preview da foto ── */
+function previewFoto(input) {
+  const img = document.getElementById('af-preview');
+  if (input.files && input.files[0]) {
+    img.src = URL.createObjectURL(input.files[0]);
+    img.style.display = 'block';
+  } else {
+    img.style.display = 'none';
+  }
+}
+
+/* ── Preencher campos do formulário ── */
+function preencherFormulario(d) {
+  const setVal = (name, val) => {
+    if (!val) return;
+    const el = document.querySelector(`[name="${name}"]`);
+    if (!el) return;
+    el.value = val;
+    el.dispatchEvent(new Event('input'));
+  };
+  const setSelect = (name, val) => {
+    if (!val) return;
+    const el = document.querySelector(`[name="${name}"]`);
+    if (!el) return;
+    // try exact match first, then case-insensitive
+    const opts = [...el.options];
+    const opt = opts.find(o => o.value === val || o.text === val) ||
+                opts.find(o => o.value.toLowerCase() === val.toLowerCase() ||
+                               o.text.toLowerCase().includes(val.toLowerCase()));
+    if (opt) el.value = opt.value;
+  };
+
+  if (d.nome_completo)    setVal('nome_completo',    d.nome_completo);
+  if (d.data_nascimento)  setVal('data_nascimento',  d.data_nascimento);
+  if (d.sexo)             setSelect('sexo',          d.sexo);
+  if (d.estado_civil)     setSelect('estado_civil',  d.estado_civil);
+  if (d.naturalidade)     setVal('naturalidade',     d.naturalidade);
+  if (d.nacionalidade)    setVal('nacionalidade',    d.nacionalidade);
+  if (d.cpf)              setVal('cpf',              d.cpf);
+  if (d.rg_numero)        setVal('rg_numero',        d.rg_numero);
+  if (d.rg_emissor)       setVal('rg_emissor',       d.rg_emissor);
+  if (d.rg_data_emissao)  setVal('rg_data_emissao',  d.rg_data_emissao);
+  if (d.pis)              setVal('pis',              d.pis);
+  if (d.nome_mae)         setVal('nome_mae',         d.nome_mae);
+  if (d.nome_pai)         setVal('nome_pai',         d.nome_pai);
+  if (d.titulo_numero)    setVal('titulo_numero',    d.titulo_numero);
+  if (d.titulo_zona)      setVal('titulo_zona',      d.titulo_zona);
+  if (d.titulo_secao)     setVal('titulo_secao',     d.titulo_secao);
+  if (d.titulo_uf)        setSelect('titulo_uf',     d.titulo_uf);
+  if (d.cnh_numero)       { setVal('cnh_numero', d.cnh_numero); setToggle('cnh', 'sim'); }
+  if (d.cnh_categoria)    setSelect('cnh_categoria', d.cnh_categoria);
+  if (d.cnh_validade)     setVal('cnh_validade',     d.cnh_validade);
+  if (d.cnh_data_emissao) setVal('cnh_data_emissao', d.cnh_data_emissao);
+  if (d.cnh_uf)           setSelect('cnh_uf',        d.cnh_uf);
+  if (d.ctps_numero)      { setVal('ctps_numero', d.ctps_numero); setToggle('ctps', 'sim'); }
+  if (d.ctps_serie)       setVal('ctps_serie',       d.ctps_serie);
+  if (d.ctps_uf)          setSelect('ctps_uf',       d.ctps_uf);
+  if (d.cep)              setVal('cep',              d.cep);
+  if (d.logradouro)       setVal('logradouro',       d.logradouro);
+  if (d.numero)           setVal('numero',           d.numero);
+  if (d.complemento)      setVal('complemento',      d.complemento);
+  if (d.bairro)           setVal('bairro',           d.bairro);
+  if (d.cidade)           setVal('cidade',           d.cidade);
+  if (d.uf)               setSelect('uf',            d.uf);
+  if (d.telefone)         setVal('telefone',         d.telefone);
+  if (d.email)            setVal('email',            d.email);
+  if (d.cargo)            setVal('cargo',            d.cargo);
+  if (d.data_admissao)    setVal('data_admissao',    d.data_admissao);
+  if (d.salario)          setVal('salario',          d.salario);
+  if (d.departamento)     setVal('departamento',     d.departamento);
+
+  // abrir todas as seções para mostrar campos preenchidos
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('collapsed'));
+  atualizarProgresso();
+}
+
+/* ══ IMPORTAR PDF ══ */
+async function processarPdf() {
+  const fileInput = document.getElementById('af-pdf-input');
+  if (!fileInput.files[0]) { alert('Selecione um arquivo PDF.'); return; }
+  const btn = document.getElementById('af-pdf-btn');
+  btn.textContent = '⏳ Processando…';
+  btn.disabled = true;
+  try {
+    const text = await extrairTextoPdf(fileInput.files[0]);
+    const dados = mapearTextoPdf(text);
+    fecharAutoFill();
+    preencherFormulario(dados);
+    const qtd = Object.values(dados).filter(v => v && String(v).trim()).length;
+    alert(`✅ PDF processado!\n${qtd} campos preenchidos automaticamente.\nVerifique e corrija os dados conforme necessário.`);
+  } catch(e) {
+    alert('Erro ao processar PDF: ' + e.message);
+  } finally {
+    btn.textContent = '📄 Processar PDF';
+    btn.disabled = false;
+  }
+}
+
+async function extrairTextoPdf(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  // load PDF.js dynamically from CDN
+  if (!window.pdfjsLib) {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      s.onload = res; s.onerror = () => rej(new Error('Falha ao carregar PDF.js'));
+      document.head.appendChild(s);
+    });
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+  const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let text = '';
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    text += content.items.map(i => i.str).join(' ') + '\n';
+  }
+  return text;
+}
+
+function mapearTextoPdf(text) {
+  const d = {};
+  const t = text.replace(/\s+/g, ' ');
+
+  // CPF
+  const mCpf = t.match(/\b(\d{3}[.\s]\d{3}[.\s]\d{3}[-\s]\d{2})\b/);
+  if (mCpf) d.cpf = mCpf[1].replace(/[^\d]/g,'').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');
+
+  // RG
+  const mRg = t.match(/\bR\.?G\.?[:\s]+([0-9][0-9.\s]{5,14}[0-9Xx])/i);
+  if (mRg) d.rg_numero = mRg[1].trim();
+
+  // Órgão emissor RG
+  const mEmis = t.match(/(?:emissor|expedidor)[:\s]+(SSP\/[A-Z]{2}|[A-Z]{2,10}\/[A-Z]{2})/i);
+  if (mEmis) d.rg_emissor = mEmis[1];
+
+  // PIS
+  const mPis = t.match(/\bPIS[:\s]+(\d{3}[.\s]\d{5}[.\s]\d{2}[-\s]\d)/i);
+  if (mPis) d.pis = mPis[1];
+
+  // Data nascimento
+  const mNasc = t.match(/(?:nascimento|nasc\.?)[:\s]+(\d{2})[\/\-](\d{2})[\/\-](\d{4})/i);
+  if (mNasc) d.data_nascimento = `${mNasc[3]}-${mNasc[2]}-${mNasc[1]}`;
+
+  // CEP
+  const mCep = t.match(/\bCEP[:\s]*(\d{5}-?\d{3})\b/i);
+  if (mCep) d.cep = mCep[1].replace(/\D/g,'').replace(/(\d{5})(\d{3})/, '$1-$2');
+
+  // Nome completo
+  const mNome = t.match(/(?:nome completo|nome)[:\s]+([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ\s]{10,60}?)(?=\s{2,}|CPF|RG|DATA|NASC|,|\n)/i);
+  if (mNome) d.nome_completo = mNome[1].trim();
+
+  // Nome da mãe
+  const mMae = t.match(/(?:m[ãa]e|filia[çc][ãa]o materna)[:\s]+([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ\s]{10,60}?)(?=\s{2,}|PAI|CPF|RG|DATA|\n)/i);
+  if (mMae) d.nome_mae = mMae[1].trim();
+
+  // Nome do pai
+  const mPai = t.match(/(?:\bpai\b|filia[çc][ãa]o paterna)[:\s]+([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ\s]{10,60}?)(?=\s{2,}|CPF|RG|DATA|\n)/i);
+  if (mPai) d.nome_pai = mPai[1].trim();
+
+  // Cargo / Função
+  const mCargo = t.match(/(?:cargo|fun[çc][ãa]o)[:\s]+([A-Za-záéíóúâêîôûãõçÁÉÍÓÚÂÊÎÔÛÃÕÇ][A-Za-záéíóúâêîôûãõçÁÉÍÓÚÂÊÎÔÛÃÕÇ\s]{3,60}?)(?=\s{2,}|SAL[ÁA]RIO|DATA|DEPART|\n)/i);
+  if (mCargo) d.cargo = mCargo[1].trim();
+
+  // Salário
+  const mSal = t.match(/(?:sal[áa]rio|remunera[çc][ãa]o)[:\s]*R?\$?\s*([\d.]+,\d{2})/i);
+  if (mSal) d.salario = mSal[1];
+
+  // Data admissão
+  const mAdm = t.match(/(?:admiss[ãa]o|data de admiss[ãa]o)[:\s]+(\d{2})[\/\-](\d{2})[\/\-](\d{4})/i);
+  if (mAdm) d.data_admissao = `${mAdm[3]}-${mAdm[2]}-${mAdm[1]}`;
+
+  // Endereço
+  const mEnd = t.match(/(?:logradouro|endere[çc]o|rua|av\.?|avenida)[:\s]+([^\n,]{5,60})/i);
+  if (mEnd) d.logradouro = mEnd[1].trim();
+
+  const mNum = t.match(/(?:n[úu]mero|nº|n\.)[:\s]+(\d+[A-Za-z]?)/i);
+  if (mNum) d.numero = mNum[1].trim();
+
+  const mComp = t.match(/(?:complemento|compl\.?)[:\s]+([^\n,]{2,30})/i);
+  if (mComp) d.complemento = mComp[1].trim();
+
+  const mBairro = t.match(/\bbairro[:\s]+([A-Za-záéíóúâêîôûãõçÁÉÍÓÚÂÊÎÔÛÃÕÇ][^\n,]{3,40})/i);
+  if (mBairro) d.bairro = mBairro[1].trim();
+
+  const mCidade = t.match(/\bcidade[:\s]+([A-Za-záéíóúâêîôûãõçÁÉÍÓÚÂÊÎÔÛÃÕÇ][^\n,\/]{3,40})/i);
+  if (mCidade) d.cidade = mCidade[1].trim();
+
+  const mUf = t.match(/\bUF[:\s]+([A-Z]{2})\b/);
+  if (mUf) d.uf = mUf[1];
+
+  // Telefone
+  const mTel = t.match(/(?:telefone|celular|fone|tel\.?)[:\s]*\(?([\d\s]{10,15})\)?/i);
+  if (mTel) d.telefone = mTel[1].trim();
+
+  // Email
+  const mEmail = t.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+  if (mEmail) d.email = mEmail[0];
+
+  // CTPS
+  const mCtps = t.match(/CTPS[:\s]+n[úu]mero[:\s]*(\d+)/i);
+  if (mCtps) d.ctps_numero = mCtps[1];
+  const mCtpsSerie = t.match(/s[eé]rie[:\s]+(\d+)/i);
+  if (mCtpsSerie) d.ctps_serie = mCtpsSerie[1];
+
+  // CNH
+  const mCnh = t.match(/CNH[:\s]+(\d{11})/i);
+  if (mCnh) d.cnh_numero = mCnh[1];
+  const mCnhCat = t.match(/categoria[:\s]+([ABCDE]{1,2})\b/i);
+  if (mCnhCat) d.cnh_categoria = mCnhCat[1].toUpperCase();
+  const mCnhVal = t.match(/validade[:\s]+(\d{2})[\/\-](\d{2})[\/\-](\d{4})/i);
+  if (mCnhVal) d.cnh_validade = `${mCnhVal[3]}-${mCnhVal[2]}-${mCnhVal[1]}`;
+
+  // Departamento
+  const mDepto = t.match(/(?:departamento|setor)[:\s]+([A-Za-záéíóúâêîôûãõçÁÉÍÓÚÂÊÎÔÛÃÕÇ][^\n,]{3,40})/i);
+  if (mDepto) d.departamento = mDepto[1].trim();
+
+  return d;
+}
+
+/* ══ FOTO DO DOCUMENTO (Claude Vision) ══ */
+async function processarFoto() {
+  const fileInput = document.getElementById('af-foto-input');
+  if (!fileInput.files[0]) { alert('Tire uma foto ou selecione uma imagem do documento.'); return; }
+
+  const apiKey = document.getElementById('af-api-input').value.trim();
+  if (!apiKey || !apiKey.startsWith('sk-')) {
+    alert('Informe uma chave de API Anthropic válida (começa com sk-ant-).');
+    document.getElementById('af-api-input').focus();
+    return;
+  }
+  saveApiKey(apiKey);
+
+  const btn = document.getElementById('af-foto-btn');
+  btn.textContent = '⏳ Analisando documento…';
+  btn.disabled = true;
+
+  try {
+    const file = fileInput.files[0];
+    const base64 = await new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onload = e => res(e.target.result.split(',')[1]);
+      reader.onerror = rej;
+      reader.readAsDataURL(file);
+    });
+    const mediaType = (file.type && file.type.startsWith('image/')) ? file.type : 'image/jpeg';
+
+    const prompt = `Analise este documento brasileiro e extraia todos os dados visíveis. Retorne APENAS um objeto JSON válido (sem markdown, sem texto extra) com os campos encontrados. Use exatamente estas chaves:
+
+{
+  "nome_completo": "NOME COMPLETO EM MAIÚSCULAS",
+  "data_nascimento": "YYYY-MM-DD",
+  "sexo": "Masculino ou Feminino",
+  "cpf": "000.000.000-00",
+  "rg_numero": "00.000.000-0",
+  "rg_emissor": "SSP/SP",
+  "rg_data_emissao": "YYYY-MM-DD",
+  "pis": "000.00000.00-0",
+  "nome_mae": "NOME DA MÃE",
+  "nome_pai": "NOME DO PAI",
+  "naturalidade": "Cidade/UF",
+  "cnh_numero": "00000000000",
+  "cnh_categoria": "B",
+  "cnh_validade": "YYYY-MM-DD",
+  "cnh_data_emissao": "YYYY-MM-DD",
+  "cnh_uf": "SP",
+  "ctps_numero": "0000000",
+  "ctps_serie": "00000",
+  "ctps_uf": "SP",
+  "logradouro": "Rua/Av nome",
+  "numero": "000",
+  "complemento": "Apto 00",
+  "bairro": "Bairro",
+  "cidade": "Cidade",
+  "uf": "SP",
+  "cep": "00000-000",
+  "telefone": "(11) 00000-0000",
+  "email": "email@exemplo.com"
+}
+
+Inclua SOMENTE campos que você leu com clareza. Omita campos não visíveis ou ilegíveis. Para datas use formato YYYY-MM-DD.`;
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-5',
+        max_tokens: 1024,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error?.message || `Erro ${resp.status} na API Anthropic`);
+    }
+
+    const result = await resp.json();
+    const content = result.content?.[0]?.text || '';
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('A IA não retornou dados estruturados. Tente com uma foto mais nítida.');
+
+    const dados = JSON.parse(jsonMatch[0]);
+    fecharAutoFill();
+    preencherFormulario(dados);
+    const qtd = Object.values(dados).filter(v => v && String(v).trim()).length;
+    alert(`✅ Documento lido pela IA!\n${qtd} campos preenchidos automaticamente.\nRevise os dados antes de salvar.`);
+  } catch(e) {
+    alert('Erro ao processar imagem: ' + e.message);
+  } finally {
+    btn.textContent = '🔍 Extrair Dados com IA';
+    btn.disabled = false;
+  }
 }
 
 /* ══════════════════════════════════════════════
