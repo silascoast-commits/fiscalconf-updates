@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF → XML eSocial (Admissão S-2200)</title>
+<style>
+  :root{
+    --bg:#0f172a;
+    --panel:#1e293b;
+    --panel-light:#273449;
+    --border:#334155;
+    --text:#e2e8f0;
+    --muted:#94a3b8;
+    --green:#22c55e;
+    --red:#ef4444;
+    --blue:#3b82f6;
+    --yellow:#eab308;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    padding:20px;
+  }
+  h1{margin:0 0 4px;font-size:22px;}
+  .subtitle{color:var(--muted);margin-bottom:14px;font-size:13px;}
+
+  .banner{
+    background:#3b2f0f;
+    border:1px solid #7a5c00;
+    color:#f5d67a;
+    border-radius:8px;
+    padding:10px 14px;
+    font-size:12.5px;
+    margin-bottom:18px;
+    line-height:1.55;
+  }
+
+  .dropzone{
+    border:2px dashed var(--border);border-radius:10px;padding:26px;
+    text-align:center;color:var(--muted);font-size:13.5px;cursor:pointer;margin-bottom:8px;
+    background:var(--panel);
+  }
+  .dropzone.drag{border-color:var(--blue);color:var(--text);}
+  .dropzone strong{color:var(--text);}
+  #fileInput{display:none;}
+  #parseStatus{font-size:12.5px;margin:8px 0 18px;min-height:16px;}
+  #parseStatus.ok{color:var(--green);}
+  #parseStatus.err{color:var(--red);}
+
+  #ocrRawWrap{margin-bottom:18px;}
+  #ocrRawWrap summary{cursor:pointer;font-size:12px;color:var(--muted);}
+  #ocrRaw{
+    max-height:220px;overflow:auto;background:#0b1220;border:1px solid var(--border);
+    border-radius:6px;padding:10px;font-size:11px;white-space:pre-wrap;word-break:break-word;margin-top:6px;
+  }
+
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px;}
+  button{
+    cursor:pointer;border:none;border-radius:6px;padding:10px 16px;
+    font-size:13px;font-weight:600;background:var(--blue);color:#fff;
+  }
+  button.secondary{background:var(--panel-light);color:var(--text);border:1px solid var(--border);}
+  button.ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
+  button:disabled{opacity:.5;cursor:not-allowed;}
+  button:hover:not(:disabled){filter:brightness(1.1);}
+
+  form{max-width:1040px;margin:0 auto;}
+
+  .panel{
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    padding:18px 20px;margin-bottom:16px;
+  }
+  .panel h2{margin:0 0 4px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+  .panel .hint{font-size:11.5px;color:var(--muted);margin:0 0 12px;line-height:1.5;}
+
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .grid .full{grid-column:1/-1;}
+  .grid .half{grid-column:span 2;}
+  @media (max-width:800px){
+    .grid{grid-template-columns:1fr;}
+    .grid .full, .grid .half{grid-column:1/-1;}
+  }
+
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;}
+  label.req::after{content:" *";color:var(--yellow);}
+  input[type=text], input[type=date], select{
+    width:100%;background:var(--panel-light);border:1px solid var(--border);
+    border-radius:6px;color:var(--text);padding:9px 10px;font-size:13.5px;
+  }
+  input:focus, select:focus{outline:2px solid var(--blue);}
+  input.invalid{border-color:var(--red);}
+  input.ocr-filled, select.ocr-filled{border-color:var(--yellow);background:#2a2410;}
+
+  .refbox{
+    background:#0b1220;border:1px solid var(--border);border-radius:8px;
+    padding:12px 14px;font-size:12.5px;color:var(--muted);line-height:1.7;
+  }
+  .refbox b{color:var(--text);}
+  .refbox .row{display:flex;flex-wrap:wrap;gap:4px 8px;}
+
+  #xmlOutWrap{display:none;}
+  #xmlOut{
+    background:#0b1220;border:1px solid var(--border);border-radius:8px;
+    padding:14px;font-family:Consolas,Menlo,monospace;font-size:12px;
+    white-space:pre-wrap;word-break:break-word;max-height:480px;overflow:auto;
+  }
+</style>
+</head>
+<body>
+
+<h1>PDF → XML eSocial (Admissão S-2200)</h1>
+<div class="subtitle">Envie a ficha de admissão em .pdf, confira os dados extraídos e gere o XML do evento evtAdmissao.</div>
+
+<div class="banner">
+  ⚠️ A leitura do PDF acontece toda no seu navegador (nenhum arquivo é enviado a servidor algum), mas a primeira leitura carrega bibliotecas externas (pdf.js e Tesseract.js) — precisa de internet nesse momento. A extração é feita por <strong>OCR</strong> (o PDF é uma ficha "impressa"/exportada, sem texto selecionável) e usa os rótulos do modelo de ficha atual (ex.: "NOME COMPLETO", "CPF", "DATA DE ADMISSÃO") — <strong>ela pode falhar ou confundir campos se o layout do PDF for diferente do modelo testado</strong>. Campos preenchidos automaticamente ficam destacados em amarelo: <strong>confira e corrija todos antes de gerar o XML</strong>. Este XML segue as tags oficiais do evento <strong>S-2200 (evtAdmissao)</strong>, mas é gerado <strong>sem assinatura digital</strong>: não é o envelope assinado que trafega no webservice do eSocial (isso exige certificado digital e envio por sistema homologado) — use-o para conferência ou importação em outro sistema. Campos como RG, CTPS, Título de Eleitor, CNH, PIS e nome dos pais <strong>não fazem parte do schema do evento de admissão</strong>, por isso ficam listados só como referência. As perguntas de Sim/Não da ficha (CNH, CTPS física, Filhos) são botões de alternância — o OCR lê o texto das duas opções mas <strong>não identifica qual está marcada</strong>, confira a resposta correta olhando o PDF original. Alguns sistemas de folha (import via XML) leem certos campos como número inteiro e travam se a tag vier vazia — por isso, campos numéricos deixados em branco (CNPJ, CEP, código do município, raça/cor, estado civil, grau de instrução, matrícula, data-base, CBO, horas semanais) saem no XML com um valor placeholder (normalmente "0", exceto raça/cor que usa "9 = não informado") em vez de tag vazia; a ferramenta avisa quais foram preenchidos assim para você corrigir antes de importar.
+</div>
+
+<div class="dropzone" id="dropzone">
+  <div><strong>Clique aqui</strong> ou arraste o arquivo .pdf da ficha de admissão</div>
+</div>
+<input type="file" id="fileInput" accept=".pdf,application/pdf">
+<div id="parseStatus"></div>
+<details id="ocrRawWrap" style="display:none;">
+  <summary>Ver texto bruto reconhecido pelo OCR</summary>
+  <pre id="ocrRaw"></pre>
+</details>
+
+<form id="formAdmissao">
+
+  <div class="panel">
+    <h2>Empregador</h2>
+    <div class="grid">
+      <div class="field">
+        <label class="req">CNPJ do empregador</label>
+        <input type="text" id="empregadorCnpj" placeholder="00.000.000/0000-00">
+      </div>
+      <div class="field">
+        <label>Ambiente eSocial</label>
+        <select id="tpAmb">
+          <option value="2" selected>Homologação (testes)</option>
+          <option value="1">Produção</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Matrícula do funcionário</label>
+        <input type="text" id="matricula">
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Dados do trabalhador</h2>
+    <div class="grid">
+      <div class="field half">
+        <label class="req">Nome completo</label>
+        <input type="text" id="nmTrab">
+      </div>
+      <div class="field">
+        <label class="req">CPF</label>
+        <input type="text" id="cpfTrab" placeholder="000.000.000-00">
+      </div>
+
+      <div class="field">
+        <label class="req">Sexo</label>
+        <select id="sexo">
+          <option value="">Selecione...</option>
+          <option value="M">Masculino</option>
+          <option value="F">Feminino</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="req">Data de nascimento</label>
+        <input type="date" id="dtNascto">
+      </div>
+      <div class="field">
+        <label>Raça/Cor</label>
+        <select id="racaCor"></select>
+      </div>
+
+      <div class="field">
+        <label>Estado civil</label>
+        <select id="estCiv"></select>
+      </div>
+      <div class="field">
+        <label>Grau de instrução</label>
+        <select id="grauInstr"></select>
+      </div>
+      <div class="field">
+        <label>País de nascimento/nacionalidade (cód.)</label>
+        <input type="text" id="paisNac" value="105">
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Endereço</h2>
+    <div class="grid">
+      <div class="field">
+        <label>Tipo de logradouro</label>
+        <select id="tpLograd"></select>
+      </div>
+      <div class="field half">
+        <label>Logradouro</label>
+        <input type="text" id="dscLograd">
+      </div>
+      <div class="field">
+        <label>Número</label>
+        <input type="text" id="nrLograd">
+      </div>
+
+      <div class="field">
+        <label>Complemento</label>
+        <input type="text" id="complemento">
+      </div>
+      <div class="field">
+        <label>Bairro</label>
+        <input type="text" id="bairro">
+      </div>
+      <div class="field">
+        <label>CEP</label>
+        <input type="text" id="cep" placeholder="00000-000">
+      </div>
+
+      <div class="field">
+        <label>UF</label>
+        <select id="uf"></select>
+      </div>
+      <div class="field half">
+        <label>Código do município (IBGE)</label>
+        <input type="text" id="codMunic" placeholder="Ex: 3547809">
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Contato</h2>
+    <div class="hint">Campos opcionais do schema (grupo &lt;contato&gt;).</div>
+    <div class="grid">
+      <div class="field">
+        <label>Telefone principal</label>
+        <input type="text" id="fonePrinc" placeholder="(00) 00000-0000">
+      </div>
+      <div class="field half">
+        <label>E-mail principal</label>
+        <input type="text" id="emailPrinc">
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Deficiência</h2>
+    <div class="hint">Sem indicação no documento — padrão "Não" para todos, edite se souber que é diferente.</div>
+    <div class="grid">
+      <div class="field"><label>Física</label><select id="defFisica"></select></div>
+      <div class="field"><label>Visual</label><select id="defVisual"></select></div>
+      <div class="field"><label>Auditiva</label><select id="defAuditiva"></select></div>
+      <div class="field"><label>Mental</label><select id="defMental"></select></div>
+      <div class="field"><label>Intelectual</label><select id="defIntelectual"></select></div>
+      <div class="field"><label>Reabilitado/readaptado</label><select id="reabReadap"></select></div>
+      <div class="field"><label>Conta na cota de PcD</label><select id="infoCota"></select></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Vínculo / admissão</h2>
+    <div class="grid">
+      <div class="field">
+        <label class="req">Data de admissão</label>
+        <input type="date" id="dtAdm">
+      </div>
+      <div class="field">
+        <label>Regime trabalhista</label>
+        <select id="tpRegTrab"></select>
+      </div>
+      <div class="field">
+        <label>Regime previdenciário</label>
+        <select id="tpRegPrev"></select>
+      </div>
+
+      <div class="field">
+        <label>Tipo de admissão</label>
+        <select id="tpAdmissao"></select>
+      </div>
+      <div class="field">
+        <label>Regime de jornada</label>
+        <select id="tpRegJor"></select>
+      </div>
+      <div class="field">
+        <label>Natureza da atividade</label>
+        <select id="natAtividade"></select>
+      </div>
+
+      <div class="field">
+        <label>Mês data-base (opcional)</label>
+        <select id="dtBase">
+          <option value="">—</option>
+          <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+          <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+          <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+          <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+        </select>
+      </div>
+      <div class="field half">
+        <label>CNPJ do sindicato da categoria (opcional)</label>
+        <input type="text" id="cnpjSind" placeholder="00.000.000/0000-00">
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Cargo, salário e duração do contrato</h2>
+    <div class="hint">No Folha.exe, deixe "Função/Cargo" em branco — o cargo é definido pelo cadastro próprio do sistema, não pelo texto do XML (preencher causa erro no import).</div>
+    <div class="grid">
+      <div class="field">
+        <label>Função/Cargo</label>
+        <input type="text" id="nmCargo">
+      </div>
+      <div class="field">
+        <label>Código CBO</label>
+        <input type="text" id="cboCargo" placeholder="Ex: 411045 (6 dígitos)">
+      </div>
+      <div class="field">
+        <label>Categoria do trabalhador (cód.)</label>
+        <input type="text" id="codCateg" value="101">
+      </div>
+
+      <div class="field">
+        <label class="req">Salário</label>
+        <input type="text" id="vrSalFx" placeholder="0,00">
+      </div>
+      <div class="field">
+        <label>Unidade do salário</label>
+        <select id="undSalFixo"></select>
+      </div>
+      <div class="field">
+        <label>Duração do contrato</label>
+        <select id="tpContr"></select>
+      </div>
+
+      <div class="field" id="dtTermWrap" style="display:none;">
+        <label>Data de término</label>
+        <input type="date" id="dtTerm">
+      </div>
+      <div class="field" id="clauAssecWrap" style="display:none;">
+        <label>Cláusula assecuratória</label>
+        <select id="clauAssec">
+          <option value="">—</option>
+          <option value="S">Sim</option>
+          <option value="N">Não</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Local de trabalho</h2>
+    <div class="hint">Por padrão, o mesmo CNPJ do empregador. Altere se o funcionário trabalha em outro estabelecimento/filial.</div>
+    <div class="grid">
+      <div class="field half">
+        <label>CNPJ do estabelecimento</label>
+        <input type="text" id="localCnpj" placeholder="00.000.000/0000-00">
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Horário contratual</h2>
+    <div class="hint">Não consta na ficha de admissão — preencha manualmente.</div>
+    <div class="grid">
+      <div class="field">
+        <label>Horas semanais</label>
+        <input type="text" id="qtdHrsSem" placeholder="Ex: 44">
+      </div>
+      <div class="field">
+        <label>Tipo de jornada</label>
+        <select id="tpJornada">
+          <option value="1">Jornada padrão</option>
+          <option value="9">Escala de revezamento 12x36</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Regime parcial</label>
+        <select id="tmpParc">
+          <option value="0">Não é regime de tempo parcial</option>
+          <option value="1">Até 26h semanais, sem horas extras</option>
+          <option value="2">Até 30h semanais, sem horas extras</option>
+          <option value="3">Até 25h semanais, com até 6h extras</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Trabalho noturno</label>
+        <select id="horNoturno"></select>
+      </div>
+      <div class="field half">
+        <label>Descrição da jornada</label>
+        <input type="text" id="dscJorn">
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="refPanel" style="display:none;">
+    <h2>Informações extraídas do documento (referência)</h2>
+    <div class="hint">Não fazem parte do schema do evento S-2200 (evtAdmissao) — mostradas aqui apenas para conferência. Guarde a ficha original para o Livro/Ficha de Registro de Empregado.</div>
+    <div class="refbox" id="refBox"></div>
+  </div>
+
+</form>
+
+<div class="toolbar">
+  <button type="button" id="btnGenerate">Gerar XML</button>
+  <button type="button" class="secondary" id="btnCopy" style="display:none;">Copiar XML</button>
+  <button type="button" class="secondary" id="btnDownload" style="display:none;">Baixar .xml</button>
+</div>
+
+<div class="panel" id="xmlOutWrap">
+  <h2>XML gerado</h2>
+  <pre id="xmlOut"></pre>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js"></script>
+<script>
+(function(){
+"use strict";
+
+var UF_LIST = ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"];
+
+var RACA_COR = [["","Selecione..."],["1","Branca"],["2","Preta"],["3","Parda"],["4","Amarela"],["5","Indígena"],["6","Não informado (proibido se dtAdm >= 22/04/2024)"]];
+var EST_CIV = [["","Selecione..."],["1","Solteiro(a)"],["2","Casado(a)"],["3","Divorciado(a)"],["4","Separado(a) judicialmente"],["5","Viúvo(a)"]];
+var GRAU_INSTR = [
+  ["","Selecione..."],["01","Analfabeto"],["02","Até 5º ano incompleto do Ensino Fundamental"],
+  ["03","5º ano completo do Ensino Fundamental"],["04","Do 6º ao 9º ano do Ensino Fundamental incompleto"],
+  ["05","Ensino Fundamental completo"],["06","Ensino Médio incompleto"],["07","Ensino Médio completo"],
+  ["08","Educação Superior incompleta"],["09","Educação Superior completa"],["10","Pós-graduação completa"],
+  ["11","Mestrado completo"],["12","Doutorado completo"]
+];
+var TP_REG_TRAB = [["1","CLT"],["2","Estatutário"]];
+var TP_REG_PREV = [["1","RGPS"],["2","RPPS"]];
+var TP_ADMISSAO = [["1","Admissão"],["2","Transferência de empresa do mesmo grupo econômico"],["3","Transferência de outra empresa"],["4","Transferência por sucessão, incorporação ou fusão"]];
+var TP_REG_JOR = [["1","Submetido a horário de trabalho (CLT Título II, Cap. II)"],["2","Atividade externa incompatível com horário (CLT art. 62, I)"],["3","Função de confiança / cargo de gestão (CLT art. 62, II)"],["4","Teletrabalho (CLT art. 62, III)"]];
+var NAT_ATIVIDADE = [["1","Urbano"],["2","Rural"]];
+var UND_SAL_FIXO = [["1","Hora"],["2","Dia"],["4","Quinzena"],["5","Mês"]];
+var TP_CONTR = [["1","Indeterminado"],["2","Determinado"]];
+var SIM_NAO = [["N","Não"],["S","Sim"]];
+var TP_LOGRAD = [["R","Rua"],["AV","Avenida"],["AL","Alameda"],["TV","Travessa"],["ROD","Rodovia"],["EST","Estrada"],["PC","Praça"],["LG","Largo"],["OUT","Outro"]];
+var TP_LOGRAD_MAP = {"RUA":"R","AVENIDA":"AV","AV":"AV","ALAMEDA":"AL","TRAVESSA":"TV","RODOVIA":"ROD","ESTRADA":"EST","PRACA":"PC","PRAÇA":"PC","LARGO":"LG"};
+var CODMUNIC_HINT = {
+  "SANTO ANDRE":"3547809","SAO PAULO":"3550308","SALVADOR":"2927408","SAO BERNARDO DO CAMPO":"3548708",
+  "SAO CAETANO DO SUL":"3548500","DIADEMA":"3513801","MAUA":"3529401","RIBEIRAO PIRES":"3543402","RIO GRANDE DA SERRA":"3543907",
+  "PRAIA GRANDE":"3541000","SANTOS":"3548500","PARNAMIRIM":"2403251"
+};
+
+function fillSelect(sel, list, def){
+  sel.innerHTML = list.map(function(o){ return '<option value="'+o[0]+'">'+o[1]+'</option>'; }).join('');
+  if(def !== undefined) sel.value = def;
+}
+
+function $(id){ return document.getElementById(id); }
+
+fillSelect($('racaCor'), RACA_COR, '');
+fillSelect($('estCiv'), EST_CIV, '');
+fillSelect($('grauInstr'), GRAU_INSTR, '');
+fillSelect($('tpLograd'), TP_LOGRAD, 'R');
+fillSelect($('uf'), UF_LIST.map(function(u){ return [u,u]; }), 'SP');
+fillSelect($('defFisica'), SIM_NAO, 'N');
+fillSelect($('defVisual'), SIM_NAO, 'N');
+fillSelect($('defAuditiva'), SIM_NAO, 'N');
+fillSelect($('defMental'), SIM_NAO, 'N');
+fillSelect($('defIntelectual'), SIM_NAO, 'N');
+fillSelect($('reabReadap'), SIM_NAO, 'N');
+fillSelect($('infoCota'), SIM_NAO, 'N');
+fillSelect($('tpRegTrab'), TP_REG_TRAB, '1');
+fillSelect($('tpRegPrev'), TP_REG_PREV, '1');
+fillSelect($('tpAdmissao'), TP_ADMISSAO, '1');
+fillSelect($('tpRegJor'), TP_REG_JOR, '1');
+fillSelect($('natAtividade'), NAT_ATIVIDADE, '1');
+fillSelect($('undSalFixo'), UND_SAL_FIXO, '5');
+fillSelect($('tpContr'), TP_CONTR, '1');
+fillSelect($('horNoturno'), SIM_NAO, 'N');
+
+$('tpContr').addEventListener('change', function(){
+  var isDeterm = this.value === '2';
+  $('dtTermWrap').style.display = isDeterm ? 'block' : 'none';
+  $('clauAssecWrap').style.display = isDeterm ? 'block' : 'none';
+});
+
+function onlyDigits(s){ return String(s||'').replace(/\D/g,''); }
+function clean(s){
+  if(!s) return '';
+  return String(s).replace(/[_|]/g,'').replace(/\s{2,}/g,' ').trim();
+}
+
+// ---------- PDF -> imagens -> OCR ----------
+var pdfWorkerConfigured = false;
+function ensurePdfWorker(){
+  if(pdfWorkerConfigured || typeof pdfjsLib === "undefined") return;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  pdfWorkerConfigured = true;
+}
+
+var MAX_PAGES = 8;
+
+async function pdfToImages(arrayBuffer){
+  ensurePdfWorker();
+  var pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+  var images = [];
+  var n = Math.min(pdf.numPages, MAX_PAGES);
+  for(var i=1;i<=n;i++){
+    var page = await pdf.getPage(i);
+    var viewport = page.getViewport({scale:2.2});
+    var canvas = document.createElement('canvas');
+    canvas.width = viewport.width; canvas.height = viewport.height;
+    await page.render({canvasContext: canvas.getContext('2d'), viewport: viewport}).promise;
+    images.push(canvas.toDataURL('image/png'));
+  }
+  return images;
+}
+
+// ---------- extração por seções ----------
+var SECTION_MARKERS = [
+  ['pessoais', /Dados\s+Pessoais/i],
+  ['documentos', /^\s*Documentos\s*$/im],
+  ['filiacao', /Filia[cç][aã]o/i],
+  ['titulo', /T[ií]tulo\s+de\s+Eleitor/i],
+  ['cnh', /\bCNH\b/i],
+  ['ctps', /Carteira\s+de\s+Trabalho/i],
+  ['endereco', /Endere[cç]o\s+Residencial/i],
+  ['filhos', /Filhos\s*\/\s*Dependentes/i],
+  ['admissionais', /Dados\s+Admissionais/i]
+];
+
+function splitSections(text){
+  var found = [];
+  SECTION_MARKERS.forEach(function(sec){
+    var m = text.match(sec[1]);
+    if(m) found.push({name: sec[0], index: m.index});
+  });
+  found.sort(function(a,b){ return a.index - b.index; });
+  var chunks = {};
+  for(var i=0;i<found.length;i++){
+    var start = found[i].index;
+    var end = (i+1 < found.length) ? found[i+1].index : text.length;
+    chunks[found[i].name] = text.slice(start, end);
+  }
+  return chunks;
+}
+
+// retorna a próxima linha não vazia APÓS uma linha que COMEÇA com labelRe (ignora texto na
+// mesma linha após o rótulo, pula linhas que na verdade são subtítulos descritivos como
+// "CEP, rua, bairro, cidade", e pula os marcadores de separação de página do OCR)
+function nextLineAfter(text, labelRe){
+  if(!text) return '';
+  var anchored = new RegExp('^\\s*(?:' + labelRe.source + ')', labelRe.flags.indexOf('i')>=0 ? 'i' : '');
+  var lines = text.split(/\r?\n/);
+  for(var i=0;i<lines.length;i++){
+    var m = anchored.exec(lines[i]);
+    if(!m) continue;
+    var afterChar = lines[i].slice(m[0].length).replace(/^\s*/, '').charAt(0);
+    if(afterChar === ',') continue; // linha de subtítulo descritivo, não o rótulo do campo
+    for(var j=i+1;j<Math.min(i+4, lines.length);j++){
+      var cand = clean(lines[j]);
+      if(cand && !/^-{3,}\s*P[aá]gina/i.test(cand)) return cand;
+    }
+  }
+  return '';
+}
+
+function toIso(dmy){
+  var m = String(dmy||'').match(/(\d{2})\s*\/\s*(\d{2})\s*\/\s*(\d{4})/);
+  return m ? (m[3]+'-'+m[2]+'-'+m[1]) : '';
+}
+
+function isPlaceholder(s){
+  return !s || /^dd\s*\/\s*mm\s*\/\s*aaaa$/i.test(s) || /^cat\.?$/i.test(s) || /^uf$/i.test(s);
+}
+
+function parseFicha(text){
+  var d = {};
+  var c = splitSections(text);
+
+  d.nome = nextLineAfter(c.pessoais, /NOME\s+COMPLETO/i);
+  var nascSexoLine = nextLineAfter(c.pessoais, /DATA\s+DE\s+NASCIMENTO/i);
+  var mNascSexo = nascSexoLine.match(/(\d{2}\/\d{2}\/\d{4})\s*(Masculino|Feminino)?/i);
+  d.dtNascRaw = mNascSexo ? mNascSexo[1] : '';
+  d.sexoRaw = mNascSexo && mNascSexo[2] ? mNascSexo[2] : nascSexoLine;
+  d.estCivRaw = nextLineAfter(c.pessoais, /ESTADO\s+CIVIL/i);
+  d.naturalidade = nextLineAfter(c.pessoais, /NATURALIDADE/i);
+  d.nacionalidade = nextLineAfter(c.pessoais, /NACIONALIDADE/i);
+
+  d.cpf = nextLineAfter(c.documentos, /\bCPF\b/i);
+  d.rgNum = nextLineAfter(c.documentos, /RG\s*[-–—]?\s*N[ÚU]MERO/i);
+  var orgaoDataLine = nextLineAfter(c.documentos, /[ÓO]RG[ÃA]O\s+EMISSOR/i);
+  var mOrgaoData = orgaoDataLine.match(/^(.*?)\s+(\d{2}\/\d{2}\/\d{4})\s*$/);
+  if(mOrgaoData){ d.rgOrgao = clean(mOrgaoData[1]); d.rgData = mOrgaoData[2]; }
+  else { d.rgOrgao = orgaoDataLine; d.rgData = ''; }
+  d.pis = nextLineAfter(c.documentos, /PIS\s*\/?\s*NIT\s*\/?\s*PASEP/i);
+
+  d.mae = nextLineAfter(c.filiacao, /NOME\s+DA\s+M[ÃA]E/i);
+  d.pai = nextLineAfter(c.filiacao, /NOME\s+DO\s+PAI/i);
+
+  d.tituloNum = nextLineAfter(c.titulo, /N[ÚU]MERO\s+DO\s+T[ÍI]TULO/i);
+  var zonaSecaoUfLine = nextLineAfter(c.titulo, /\bZONA\b/i);
+  var zsu = zonaSecaoUfLine.split(/\s+/);
+  d.tituloZona = zsu[0] || '';
+  d.tituloSecao = zsu[1] || '';
+  d.tituloUf = zsu[2] || '';
+  d.tituloData = nextLineAfter(c.titulo, /DATA\s+DE\s+EMISS[ÃA]O/i);
+
+  d.cnhNum = nextLineAfter(c.cnh, /N[ÚU]MERO\s+DO\s+REGISTRO/i);
+  var catUfEmissaoLine = nextLineAfter(c.cnh, /CATEGORIA/i);
+  var cue = catUfEmissaoLine.split(/\s+/);
+  d.cnhCat = isPlaceholder(cue[0]) ? '' : (cue[0]||'');
+  d.cnhUf = isPlaceholder(cue[1]) ? '' : (cue[1]||'');
+  d.cnhEmissao = isPlaceholder(cue.slice(2).join(' ')) ? '' : (cue.slice(2).join(' ')||'');
+  var validadeLine = nextLineAfter(c.cnh + (c.ctps||''), /VALIDADE/i);
+  d.cnhValidade = isPlaceholder(validadeLine) ? '' : validadeLine;
+
+  d.cep = nextLineAfter(c.endereco, /\bCEP\b/i);
+  d.logradouro = nextLineAfter(c.endereco, /LOGRADOURO/i);
+  var numCompLine = nextLineAfter(c.endereco, /\bN[ÚU]MERO\b(?!\s*DO)/i);
+  var mNumComp = numCompLine.match(/^(\d+[A-Za-z]?)\s*(.*)$/);
+  d.numero = mNumComp ? mNumComp[1] : '';
+  d.complemento = mNumComp ? clean(mNumComp[2]) : '';
+  d.bairro = nextLineAfter(c.endereco, /\bBAIRRO\b/i);
+  var cidadeUfLine = nextLineAfter(c.endereco, /\bCIDADE\b/i);
+  var mCidadeUf = cidadeUfLine.match(/^(.*)\s+([A-Z]{2})$/);
+  if(mCidadeUf && UF_LIST.indexOf(mCidadeUf[2]) >= 0){ d.cidade = clean(mCidadeUf[1]); d.ufEndereco = mCidadeUf[2]; }
+  else { d.cidade = cidadeUfLine; d.ufEndereco = ''; }
+  d.telefone = nextLineAfter(c.endereco, /TELEFONE|WHATSAPP/i);
+  d.email = nextLineAfter(c.endereco, /E-?MAIL/i);
+
+  d.departamento = nextLineAfter(c.admissionais, /DEPARTAMENTO/i);
+  d.cargo = nextLineAfter(c.admissionais, /CARGO\s*\/?\s*FUN[ÇC][ÃA]O/i);
+  d.dtAdmRaw = nextLineAfter(c.admissionais, /DATA\s+DE\s+ADMISS[ÃA]O/i);
+  d.salario = nextLineAfter(c.admissionais, /SAL[ÁA]RIO/i);
+
+  // normalização
+  d.dtNascIso = toIso(d.dtNascRaw);
+  d.dtAdmIso = toIso(d.dtAdmRaw);
+  d.sexo = /FEMININO/i.test(d.sexoRaw) ? 'F' : (/MASCULINO/i.test(d.sexoRaw) ? 'M' : '');
+
+  d.estCiv = '';
+  if(/solteir/i.test(d.estCivRaw)) d.estCiv = '1';
+  else if(/casad/i.test(d.estCivRaw)) d.estCiv = '2';
+  else if(/vi[uú]v/i.test(d.estCivRaw)) d.estCiv = '3';
+  else if(/divorci|separad/i.test(d.estCivRaw)) d.estCiv = '4';
+  else if(/uni[aã]o\s*est[aá]vel/i.test(d.estCivRaw)) d.estCiv = '5';
+
+  d.cpfDigits = onlyDigits(d.cpf).length === 11 ? onlyDigits(d.cpf) : '';
+  d.cepDigits = onlyDigits(d.cep).length === 8 ? onlyDigits(d.cep) : '';
+  d.telefoneDigits = onlyDigits(d.telefone);
+
+  d.tpLograd = 'R';
+  d.dscLograd = clean(d.logradouro);
+  var mTipo = d.dscLograd.match(/^([A-ZÀ-Úa-zà-ú]+)\s+(.*)$/);
+  if(mTipo && TP_LOGRAD_MAP[mTipo[1].toUpperCase()]){
+    d.tpLograd = TP_LOGRAD_MAP[mTipo[1].toUpperCase()];
+    d.dscLograd = clean(mTipo[2]);
+  }
+
+  var cidadeKey = (d.cidade||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+  d.codMunic = CODMUNIC_HINT[cidadeKey] || '';
+
+  return d;
+}
+
+// ---------- aplicar dados extraídos ao formulário ----------
+function markFilled(el){ el.classList.add('ocr-filled'); }
+
+function applyToForm(d){
+  function setInput(id, val){ if(val){ var el = $(id); el.value = val; markFilled(el); } }
+  function setSelect(id, val){ if(val){ var el = $(id); el.value = val; markFilled(el); } }
+
+  setInput('nmTrab', (d.nome||'').toUpperCase());
+  setInput('cpfTrab', d.cpfDigits);
+  setInput('dtNascto', d.dtNascIso);
+  setSelect('sexo', d.sexo);
+  setSelect('estCiv', d.estCiv);
+
+  setSelect('tpLograd', d.tpLograd);
+  setInput('dscLograd', (d.dscLograd||'').toUpperCase());
+  setInput('nrLograd', d.numero);
+  setInput('complemento', (d.complemento||'').toUpperCase());
+  setInput('bairro', (d.bairro||'').toUpperCase());
+  setInput('cep', d.cepDigits);
+  if(d.ufEndereco && UF_LIST.indexOf(d.ufEndereco.toUpperCase()) >= 0) setSelect('uf', d.ufEndereco.toUpperCase());
+  setInput('codMunic', d.codMunic);
+
+  setInput('fonePrinc', d.telefoneDigits);
+  setInput('emailPrinc', d.email && d.email.indexOf('@') > 0 ? d.email : '');
+
+  setInput('dtAdm', d.dtAdmIso);
+  setInput('nmCargo', (d.cargo||'').toUpperCase());
+  setInput('vrSalFx', d.salario);
+
+  var ref = [];
+  function refRow(label, val){ if(val) ref.push('<div class="row"><b>'+label+':</b> <span>'+xmlEsc(val)+'</span></div>'); }
+  refRow('RG', d.rgNum && (d.rgNum + (d.rgOrgao ? ' / '+d.rgOrgao : '') + (d.rgData ? ' (emitido em '+d.rgData+')' : '')));
+  refRow('PIS/NIT/PASEP', d.pis);
+  refRow('Naturalidade', d.naturalidade);
+  refRow('Nacionalidade', d.nacionalidade);
+  refRow('Nome da mãe', d.mae);
+  refRow('Nome do pai', d.pai);
+  refRow('Título de eleitor', d.tituloNum && (d.tituloNum + (d.tituloZona ? ' — Zona '+d.tituloZona : '') + (d.tituloSecao ? ' Seção '+d.tituloSecao : '') + (d.tituloUf ? '/'+d.tituloUf : '')));
+  refRow('CNH', d.cnhNum && (d.cnhNum + (d.cnhCat ? ' cat. '+d.cnhCat : '') + (d.cnhValidade ? ' válida até '+d.cnhValidade : '')));
+  refRow('Departamento/Setor', d.departamento);
+  refRow('CNH / CTPS física / Filhos', 'a ficha tem perguntas de Sim/Não em botões — confira as respostas marcadas diretamente no PDF, o OCR não identifica qual opção está selecionada.');
+  if(ref.length){
+    $('refBox').innerHTML = ref.join('');
+    $('refPanel').style.display = 'block';
+  }
+}
+
+function xmlEsc(s){
+  s = s || '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+}
+
+// ---------- upload handling ----------
+var dropzone = $('dropzone');
+var fileInput = $('fileInput');
+var statusEl = $('parseStatus');
+
+dropzone.addEventListener('click', function(){ fileInput.click(); });
+dropzone.addEventListener('dragover', function(e){ e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', function(){ dropzone.classList.remove('drag'); });
+dropzone.addEventListener('drop', function(e){
+  e.preventDefault();
+  dropzone.classList.remove('drag');
+  if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', function(){
+  if(fileInput.files.length) handleFile(fileInput.files[0]);
+});
+
+async function handleFile(file){
+  if(!/\.pdf$/i.test(file.name)){
+    statusEl.className = 'err';
+    statusEl.textContent = 'Envie um arquivo .pdf.';
+    return;
+  }
+  if(typeof pdfjsLib === 'undefined' || typeof Tesseract === 'undefined'){
+    statusEl.className = 'err';
+    statusEl.textContent = 'Não foi possível carregar as bibliotecas de leitura (pdf.js/Tesseract). Verifique sua conexão e recarregue a página.';
+    return;
+  }
+  statusEl.className = '';
+  statusEl.textContent = 'Lendo ' + file.name + '...';
+  document.querySelectorAll('.ocr-filled').forEach(function(el){ el.classList.remove('ocr-filled'); });
+
+  try{
+    var buffer = await file.arrayBuffer();
+    statusEl.textContent = 'Convertendo páginas do PDF em imagem...';
+    var images = await pdfToImages(buffer);
+
+    var worker = await Tesseract.createWorker('por', 1, {
+      logger: function(m){
+        if(m.status) statusEl.textContent = 'OCR: ' + m.status + (m.progress != null ? ' (' + Math.round(m.progress*100) + '%)' : '');
+      }
+    });
+    var fullText = '';
+    try{
+      for(var i=0;i<images.length;i++){
+        statusEl.textContent = 'Lendo página ' + (i+1) + ' de ' + images.length + '...';
+        var res = await worker.recognize(images[i]);
+        fullText += '\n----- Página ' + (i+1) + ' -----\n' + res.data.text;
+      }
+    } finally {
+      await worker.terminate();
+    }
+
+    $('ocrRaw').textContent = fullText.trim() || '(nenhum texto reconhecido)';
+    $('ocrRawWrap').style.display = 'block';
+
+    var d = parseFicha(fullText);
+    applyToForm(d);
+    statusEl.className = 'ok';
+    statusEl.textContent = 'Dados extraídos de ' + file.name + '. Confira todos os campos (destacados em amarelo) antes de gerar o XML.';
+  } catch(err){
+    console.error(err);
+    statusEl.className = 'err';
+    statusEl.textContent = 'Não foi possível ler o arquivo: ' + err.message;
+  }
+}
+
+// ---------- gerar XML ----------
+function val(id){ return $(id).value.trim(); }
+
+function pad(n, len){ n = String(n); while(n.length < len) n = '0' + n; return n; }
+
+function validar(){
+  var required = [
+    ['nmTrab','Nome completo'], ['cpfTrab','CPF'],
+    ['sexo','Sexo'], ['dtNascto','Data de nascimento'], ['dtAdm','Data de admissão'],
+    ['vrSalFx','Salário']
+  ];
+  var faltando = [];
+  required.forEach(function(r){
+    var el = $(r[0]);
+    var isEmpty = !el.value || !el.value.trim();
+    el.classList.toggle('invalid', isEmpty);
+    if(isEmpty) faltando.push(r[1]);
+  });
+  return faltando;
+}
+
+$('btnGenerate').addEventListener('click', function(){
+  var faltando = validar();
+  if(faltando.length){
+    var msg = 'Os seguintes campos obrigatórios estão vazios:\n\n- ' + faltando.join('\n- ') +
+              '\n\nDeseja gerar o XML mesmo assim com esses campos em branco?';
+    if(!confirm(msg)) return;
+  }
+
+  var cnpjDigits = onlyDigits(val('empregadorCnpj'));
+  var cnpjRaiz = cnpjDigits.substring(0,8);
+  var localCnpjDigits = onlyDigits(val('localCnpj')) || cnpjDigits;
+  var cpfDigits = onlyDigits(val('cpfTrab'));
+  var cep = onlyDigits(val('cep'));
+  var cnpjSind = onlyDigits(val('cnpjSind'));
+  var vrSalFx = val('vrSalFx').replace(/\./g,'').replace(',', '.');
+  var tpAmb = val('tpAmb');
+  var dtBase = val('dtBase');
+  var tpContr = val('tpContr');
+  var dtTerm = val('dtTerm');
+  var clauAssec = val('clauAssec');
+  var matricula = val('matricula');
+  var fonePrinc = onlyDigits(val('fonePrinc'));
+  var emailPrinc = val('emailPrinc');
+
+  // Alguns campos do S-2200 são lidos como Integer por sistemas de folha (ex.: madExcept
+  // acusa "'' is not a valid integer value") quando a tag sai vazia. Para não travar a
+  // importação, esses campos numéricos opcionais nunca ficam com tag vazia: se o usuário
+  // não preencheu, entra um valor "placeholder" (0, ou 9="não informado" p/ raça/cor, que
+  // é um código oficial válido) e o campo é listado no aviso final para revisão manual.
+  var camposPlaceholder = [];
+  function orZero(v, label, def){
+    if(v) return v;
+    camposPlaceholder.push(label);
+    return (def !== undefined) ? def : '0';
+  }
+
+  var agora = new Date();
+  var idEvento = 'ID1' + pad(cnpjRaiz,8) + '30' + agora.getFullYear() + pad(agora.getMonth()+1,2) + pad(agora.getDate(),2) + pad(agora.getHours(),2) + pad(agora.getMinutes(),2) + pad(agora.getSeconds(),2) + pad(Math.floor(Math.random()*99),2);
+
+  var xml = '';
+  xml += '<?xml version="1.0" encoding="UTF-8"?>\n';
+  xml += '<eSocial xmlns="http://www.esocial.gov.br/schema/evt/evtAdmissao/v_S_01_03_00">\n';
+  xml += '  <evtAdmissao Id="' + idEvento + '">\n';
+  xml += '    <ideEvento>\n';
+  xml += '      <indRetif>1</indRetif>\n';
+  xml += '      <tpAmb>' + xmlEsc(tpAmb) + '</tpAmb>\n';
+  xml += '      <procEmi>1</procEmi>\n';
+  xml += '      <verProc>1.0.0</verProc>\n';
+  xml += '    </ideEvento>\n';
+  xml += '    <ideEmpregador>\n';
+  xml += '      <tpInsc>1</tpInsc>\n';
+  xml += '      <nrInsc>' + xmlEsc(orZero(cnpjRaiz, 'CNPJ do empregador')) + '</nrInsc>\n';
+  xml += '    </ideEmpregador>\n';
+  xml += '    <trabalhador>\n';
+  xml += '      <cpfTrab>' + xmlEsc(cpfDigits) + '</cpfTrab>\n';
+  xml += '      <nmTrab>' + xmlEsc(val('nmTrab').toUpperCase()) + '</nmTrab>\n';
+  xml += '      <sexo>' + xmlEsc(val('sexo')) + '</sexo>\n';
+  xml += '      <racaCor>' + xmlEsc(orZero(val('racaCor'), 'Raça/Cor (obrigatório informar um valor real 1-5; "6=não informado" não é aceito p/ admissões a partir de 22/04/2024)')) + '</racaCor>\n';
+  xml += '      <estCiv>' + xmlEsc(orZero(val('estCiv'), 'Estado civil')) + '</estCiv>\n';
+  xml += '      <grauInstr>' + xmlEsc(orZero(val('grauInstr'), 'Grau de instrução')) + '</grauInstr>\n';
+  xml += '      <nascimento>\n';
+  xml += '        <dtNascto>' + xmlEsc(val('dtNascto')) + '</dtNascto>\n';
+  xml += '        <paisNascto>' + xmlEsc(val('paisNac')) + '</paisNascto>\n';
+  xml += '        <paisNac>' + xmlEsc(val('paisNac')) + '</paisNac>\n';
+  xml += '      </nascimento>\n';
+  xml += '      <endereco>\n';
+  xml += '        <brasil>\n';
+  xml += '          <tpLograd>' + xmlEsc(val('tpLograd')) + '</tpLograd>\n';
+  xml += '          <dscLograd>' + xmlEsc(val('dscLograd').toUpperCase()) + '</dscLograd>\n';
+  xml += '          <nrLograd>' + xmlEsc(val('nrLograd')) + '</nrLograd>\n';
+  if(val('complemento')) xml += '          <complemento>' + xmlEsc(val('complemento').toUpperCase()) + '</complemento>\n';
+  xml += '          <bairro>' + xmlEsc(val('bairro').toUpperCase()) + '</bairro>\n';
+  xml += '          <cep>' + xmlEsc(orZero(cep, 'CEP')) + '</cep>\n';
+  xml += '          <codMunic>' + xmlEsc(orZero(val('codMunic'), 'Código do município (IBGE)')) + '</codMunic>\n';
+  xml += '          <uf>' + xmlEsc(val('uf')) + '</uf>\n';
+  xml += '        </brasil>\n';
+  xml += '      </endereco>\n';
+  xml += '      <infoDeficiencia>\n';
+  xml += '        <defFisica>' + xmlEsc(val('defFisica')) + '</defFisica>\n';
+  xml += '        <defVisual>' + xmlEsc(val('defVisual')) + '</defVisual>\n';
+  xml += '        <defAuditiva>' + xmlEsc(val('defAuditiva')) + '</defAuditiva>\n';
+  xml += '        <defMental>' + xmlEsc(val('defMental')) + '</defMental>\n';
+  xml += '        <defIntelectual>' + xmlEsc(val('defIntelectual')) + '</defIntelectual>\n';
+  xml += '        <reabReadap>' + xmlEsc(val('reabReadap')) + '</reabReadap>\n';
+  xml += '        <infoCota>' + xmlEsc(val('infoCota')) + '</infoCota>\n';
+  xml += '      </infoDeficiencia>\n';
+  if(fonePrinc || emailPrinc){
+    xml += '      <contato>\n';
+    if(fonePrinc) xml += '        <fonePrinc>' + xmlEsc(fonePrinc) + '</fonePrinc>\n';
+    if(emailPrinc) xml += '        <emailPrinc>' + xmlEsc(emailPrinc) + '</emailPrinc>\n';
+    xml += '      </contato>\n';
+  }
+  xml += '    </trabalhador>\n';
+  xml += '    <vinculo>\n';
+  xml += '      <matricula>' + xmlEsc(orZero(matricula, 'Matrícula')) + '</matricula>\n';
+  xml += '      <tpRegTrab>' + xmlEsc(val('tpRegTrab')) + '</tpRegTrab>\n';
+  xml += '      <tpRegPrev>' + xmlEsc(val('tpRegPrev')) + '</tpRegPrev>\n';
+  xml += '      <cadIni>N</cadIni>\n';
+  xml += '      <infoRegimeTrab>\n';
+  xml += '        <infoCeletista>\n';
+  xml += '          <dtAdm>' + xmlEsc(val('dtAdm')) + '</dtAdm>\n';
+  xml += '          <tpAdmissao>' + xmlEsc(val('tpAdmissao')) + '</tpAdmissao>\n';
+  xml += '          <indAdmissao>1</indAdmissao>\n';
+  xml += '          <tpRegJor>' + xmlEsc(val('tpRegJor')) + '</tpRegJor>\n';
+  xml += '          <natAtividade>' + xmlEsc(val('natAtividade')) + '</natAtividade>\n';
+  xml += '          <dtBase>' + xmlEsc(orZero(dtBase, 'Mês data-base')) + '</dtBase>\n';
+  if(cnpjSind) xml += '          <cnpjSindCategProf>' + xmlEsc(cnpjSind) + '</cnpjSindCategProf>\n';
+  xml += '        </infoCeletista>\n';
+  xml += '      </infoRegimeTrab>\n';
+  xml += '      <infoContrato>\n';
+  xml += '        <nmCargo>' + xmlEsc(val('nmCargo').toUpperCase()) + '</nmCargo>\n';
+  xml += '        <CBOCargo>' + xmlEsc(orZero(onlyDigits(val('cboCargo')), 'Código CBO')) + '</CBOCargo>\n';
+  xml += '        <codCateg>' + xmlEsc(val('codCateg') || '101') + '</codCateg>\n';
+  xml += '        <remuneracao>\n';
+  xml += '          <vrSalFx>' + xmlEsc(vrSalFx) + '</vrSalFx>\n';
+  xml += '          <undSalFixo>' + xmlEsc(val('undSalFixo')) + '</undSalFixo>\n';
+  xml += '        </remuneracao>\n';
+  xml += '        <duracao>\n';
+  xml += '          <tpContr>' + xmlEsc(tpContr) + '</tpContr>\n';
+  if(tpContr === '2' && dtTerm) xml += '          <dtTerm>' + xmlEsc(dtTerm) + '</dtTerm>\n';
+  if(tpContr === '2' && clauAssec) xml += '          <clauAssec>' + xmlEsc(clauAssec) + '</clauAssec>\n';
+  xml += '        </duracao>\n';
+  xml += '        <localTrabalho>\n';
+  xml += '          <localTrabGeral>\n';
+  xml += '            <tpInsc>1</tpInsc>\n';
+  xml += '            <nrInsc>' + xmlEsc(orZero(localCnpjDigits, 'CNPJ do estabelecimento')) + '</nrInsc>\n';
+  xml += '          </localTrabGeral>\n';
+  xml += '        </localTrabalho>\n';
+  xml += '        <horContratual>\n';
+  xml += '          <qtdHrsSem>' + xmlEsc(orZero(val('qtdHrsSem'), 'Horas semanais')) + '</qtdHrsSem>\n';
+  xml += '          <tpJornada>' + xmlEsc(val('tpJornada')) + '</tpJornada>\n';
+  xml += '          <tmpParc>' + xmlEsc(val('tmpParc')) + '</tmpParc>\n';
+  xml += '          <horNoturno>' + xmlEsc(val('horNoturno')) + '</horNoturno>\n';
+  if(val('dscJorn')) xml += '          <dscJorn>' + xmlEsc(val('dscJorn').toUpperCase()) + '</dscJorn>\n';
+  xml += '        </horContratual>\n';
+  xml += '      </infoContrato>\n';
+  xml += '    </vinculo>\n';
+  xml += '  </evtAdmissao>\n';
+  xml += '</eSocial>\n';
+
+  if(camposPlaceholder.length){
+    alert('Estes campos ficaram vazios e foram preenchidos com um valor placeholder (0, ou "9=não informado" para Raça/Cor) só para o XML não travar a importação por tag vazia. Corrija-os no seu sistema de folha antes de finalizar:\n\n- ' + camposPlaceholder.join('\n- '));
+  }
+
+  $('xmlOut').textContent = xml;
+  $('xmlOutWrap').style.display = 'block';
+  $('btnCopy').style.display = 'inline-block';
+  $('btnDownload').style.display = 'inline-block';
+  $('xmlOutWrap').scrollIntoView({behavior:'smooth', block:'start'});
+
+  $('btnDownload').onclick = function(){
+    var blob = new Blob([xml], {type: 'application/xml;charset=utf-8'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'eSocial_evtAdmissao_' + (cpfDigits || 'trabalhador') + '.xml';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+  $('btnCopy').onclick = function(){
+    navigator.clipboard.writeText(xml).then(function(){
+      $('btnCopy').textContent = 'Copiado!';
+      setTimeout(function(){ $('btnCopy').textContent = 'Copiar XML'; }, 1500);
+    });
+  };
+});
+
+})();
+</script>
+
+</body>
+</html>
