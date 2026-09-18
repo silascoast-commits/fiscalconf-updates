@@ -810,12 +810,7 @@ function validar(){
 }
 
 $('btnGenerate').addEventListener('click', function(){
-  var faltando = validar();
-  if(faltando.length){
-    var msg = 'Os seguintes campos obrigatórios estão vazios:\n\n- ' + faltando.join('\n- ') +
-              '\n\nDeseja gerar o XML mesmo assim com esses campos em branco?';
-    if(!confirm(msg)) return;
-  }
+  validar();
 
   var cnpjDigits = onlyDigits(val('empregadorCnpj'));
   var cnpjRaiz = cnpjDigits.substring(0,8);
