@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useTheme } from "./ThemeProvider";
 import { useCliente } from "@/contexts/ClienteContext";
-import { Moon, Sun, FileText, Database, History, TrendingDown, Calculator, Rss, Scale, LayoutDashboard, CalendarDays, ArrowLeftRight, Users, Building2, ChevronDown, X, FileCode2, MoreHorizontal, BotMessageSquare, MapPin, BookOpen } from "lucide-react";
+import { Moon, Sun, FileText, Database, History, TrendingDown, Calculator, Rss, Scale, LayoutDashboard, CalendarDays, ArrowLeftRight, Users, Building2, ChevronDown, X, FileCode2, MoreHorizontal, BotMessageSquare, MapPin, BookOpen, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState, useRef, useEffect } from "react";
@@ -23,6 +23,7 @@ const navMore = [
   { href: "/simulador",   label: "Simulador",        icon: TrendingDown },
   { href: "/ncms",        label: "NCMs",             icon: Database },
   { href: "/calculadora", label: "Calc. Tributos",   icon: Scale },
+  { href: "/seletivo",    label: "Imposto Seletivo", icon: FlaskConical },
   { href: "/calendario",  label: "Calendário",        icon: CalendarDays },
   { href: "/atualizacoes",label: "Atualizações",      icon: Rss },
   { href: "/comparativo", label: "Comparativo",       icon: ArrowLeftRight },
