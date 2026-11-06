@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useTheme } from "./ThemeProvider";
 import { useCliente } from "@/contexts/ClienteContext";
-import { Moon, Sun, FileText, Database, History, TrendingDown, Calculator, Rss, Scale, LayoutDashboard, CalendarDays, ArrowLeftRight, Users, Building2, ChevronDown, X, FileCode2, MoreHorizontal, BotMessageSquare, MapPin, BookOpen, Landmark } from "lucide-react";
+import { Moon, Sun, FileText, Database, History, TrendingDown, Calculator, Rss, Scale, LayoutDashboard, CalendarDays, ArrowLeftRight, Users, Building2, ChevronDown, X, FileCode2, MoreHorizontal, BotMessageSquare, MapPin, BookOpen, Landmark, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState, useRef, useEffect } from "react";
@@ -20,6 +20,7 @@ const navMain = [
 // Itens secundários — ficam no dropdown "Mais"
 const navMore = [
   { href: "/mapa",        label: "Mapa Transição",  icon: MapPin },
+  { href: "/conferencia", label: "Conferência NF-e",  icon: ShieldCheck },
   { href: "/kit",         label: "Kit Prompts",      icon: BookOpen },
   { href: "/simulador",   label: "Simulador",        icon: TrendingDown },
   { href: "/ncms",        label: "NCMs",             icon: Database },
@@ -222,7 +223,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="border-b bg-card sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
+        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-2 sm:gap-3 min-w-0">
           <div className="flex items-center gap-3 shrink-0">
             {/* Logo SVG */}
             <svg
@@ -245,14 +246,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Seletor de cliente — centro */}
-          <div className="flex-1 flex justify-center">
+          <div className="flex-1 flex justify-center min-w-0">
             <ClienteSelector />
           </div>
 
           <nav className="flex items-center gap-0.5 shrink-0">
             {/* Itens principais — sempre visíveis */}
             {navMain.map(({ href, label, icon: Icon }) => (
-              <Link key={href} href={href}>
+              <Link key={href} href={href} className="hidden md:block">
                 <Button
                   variant={location === href ? "secondary" : "ghost"}
                   size="sm"
@@ -285,9 +286,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <ChevronDown className={`h-3 w-3 transition-transform ${moreOpen ? "rotate-180" : ""}`} />
               </Button>
               {moreOpen && (
-                <div className="absolute right-0 top-full mt-1.5 w-44 bg-card border rounded-xl shadow-lg z-50 overflow-hidden py-1">
-                  {navMore.map(({ href, label, icon: Icon }) => (
-                    <Link key={href} href={href}>
+                <div className="absolute right-0 top-full mt-1.5 w-52 max-h-[75vh] overflow-y-auto bg-card border rounded-xl shadow-lg z-50 py-1">
+                  {[...navMain.map(n => ({ ...n, soMobile: true })), ...navMore.map(n => ({ ...n, soMobile: false }))].map(({ href, label, icon: Icon, soMobile }) => (
+                    <Link key={href} href={href} className={soMobile ? "md:hidden block" : "block"}>
                       <button
                         onClick={() => setMoreOpen(false)}
                         className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-accent transition-colors ${

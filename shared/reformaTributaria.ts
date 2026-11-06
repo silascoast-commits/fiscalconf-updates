@@ -11,9 +11,12 @@
 // Este arquivo é compartilhado entre servidor e cliente.
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { vinculosDoCodigo, vinculosDoPrefixo, classTribsMapeados, type BaseOficial, type Vinculo } from "./cffOficial";
+
 export type Tratamento =
   | "integral"
   | "reducao_100"
+  | "reducao_80"
   | "reducao_70"
   | "reducao_60"
   | "reducao_50"
@@ -22,7 +25,9 @@ export type Tratamento =
   | "monofasico"
   | "especifico"
   | "isencao"
-  | "imunidade";
+  | "imunidade"
+  | "diferimento"
+  | "suspensao";
 
 export interface RegraReforma {
   /** prefixo, apenas dígitos */
@@ -31,6 +36,8 @@ export interface RegraReforma {
   tratamento: Tratamento;
   /** % de redução das alíquotas de IBS e CBS (0–100) */
   reducao: number;
+  /** % de redução da CBS quando diferente da do IBS (ex.: Prouni 60/100) */
+  reducaoCbs?: number;
   cst: string;
   cClassTrib: string;
   fundamento: string;
@@ -43,6 +50,9 @@ export interface RegraReforma {
   alternativas?: { cClassTrib: string; quando: string }[];
   /** prefixos excluídos desta regra */
   excecoes?: string[];
+  /** regra complementar que é o enquadramento usual do código mesmo quando a tabela
+   *  oficial correlaciona itens específicos (ex.: medicamentos de uso humano) */
+  prevaleceSobreOficial?: boolean;
 }
 
 export interface RegraIS {
@@ -59,6 +69,7 @@ export interface RegraIS {
 export const TRATAMENTO_LABEL: Record<Tratamento, string> = {
   integral: "Tributação integral",
   reducao_100: "Alíquota zero (redução de 100%)",
+  reducao_80: "Redução de 80%",
   reducao_70: "Redução de 70%",
   reducao_60: "Redução de 60%",
   reducao_50: "Redução de 50%",
@@ -67,7 +78,9 @@ export const TRATAMENTO_LABEL: Record<Tratamento, string> = {
   monofasico: "Regime específico monofásico",
   especifico: "Regime específico",
   isencao: "Isenção",
-  imunidade: "Imunidade constitucional",
+  imunidade: "Imunidade / não incidência",
+  diferimento: "Diferimento",
+  suspensao: "Suspensão",
 };
 
 // ─── Base legal resumida ─────────────────────────────────────────────────────
@@ -339,7 +352,7 @@ export const REGRAS_NCM: RegraReforma[] = [
     alternativas: [{ cClassTrib: "200035", quando: "Fraldas e demais artigos higiênicos do Anexo VIII" }] },
 
   // ── Medicamentos ─────────────────────────────────────────────────────────
-  { codigo: "30", descricao: "Medicamentos e produtos farmacêuticos", tratamento: "reducao_60", reducao: 60, cst: "200", cClassTrib: "200032",
+  { codigo: "30", descricao: "Medicamentos e produtos farmacêuticos", tratamento: "reducao_60", reducao: 60, cst: "200", cClassTrib: "200032", prevaleceSobreOficial: true,
     fundamento: "LC 214/2025, art. 133 (redução de 60%) e art. 146 c/c Anexo XIV (alíquota zero)", condicional: true,
     condicoes: ["Medicamentos registrados na Anvisa ou produzidos por farmácia de manipulação: redução de 60%", "Medicamentos listados no Anexo XIV (oncológicos, doenças raras, DST/AIDS, negligenciadas, vacinas e soros etc.): alíquota zero", "Medicamentos de uso veterinário: Anexo IX (insumo agropecuário)"],
     alternativas: [
@@ -384,7 +397,7 @@ export const REGRAS_NCM: RegraReforma[] = [
     { c: "2207", d: "Etanol (álcool etílico) combustível e anidro" },
     { c: "3826", d: "Biodiesel e suas misturas" },
   ].map(({ c, d }) => ({
-    codigo: c, descricao: d, tratamento: "monofasico" as const, reducao: 0, cst: "620", cClassTrib: "620001",
+    codigo: c, descricao: d, tratamento: "monofasico" as const, reducao: 0, cst: "620", cClassTrib: "620001", prevaleceSobreOficial: true,
     fundamento: "LC 214/2025, arts. 172 a 180 (regime específico de combustíveis)",
     condicional: c === "2207" || c === "271019",
     condicoes: [
@@ -400,10 +413,9 @@ export const REGRAS_NCM: RegraReforma[] = [
   // ── Livros, jornais e periódicos — imunidade ─────────────────────────────
   ...["4901", "4902", "4903", "480100"].map(codigo => ({
     codigo, descricao: "Livros, jornais, periódicos e o papel destinado à sua impressão",
-    tratamento: "imunidade" as const, reducao: 100, cst: "410", cClassTrib: "410001",
+    tratamento: "imunidade" as const, reducao: 100, cst: "410", cClassTrib: "410008", prevaleceSobreOficial: true,
     fundamento: "CF, art. 150, VI, d, c/c art. 149-B (EC 132/2023); LC 214/2025, art. 9º",
     condicoes: ["Imunidade objetiva — alcança o produto, não a empresa", "Papel: somente o destinado à impressão de livros, jornais e periódicos"],
-    alertas: ["Confira o cClassTrib de imunidade específico na tabela SVRS vigente."],
   })),
 
   // ── Soberania e segurança nacional (Anexo XI) ───────────────────────────
@@ -527,8 +539,8 @@ export const REGRAS_NBS: RegraReforma[] = [
   { codigo: "101", descricao: "Serviços de construção civil", tratamento: "reducao_50", reducao: 50, cst: "200", cClassTrib: "200046",
     fundamento: "LC 214/2025, arts. 251 a 270 (regime específico de bens imóveis) — redução de 50%",
     condicional: true,
-    condicoes: ["Aplicável a contribuintes sujeitos ao regime específico de operações com bens imóveis", "Incorporação imobiliária/parcelamento do solo podem optar pelo RET (cClassTrib 220001)"],
-    alternativas: [{ cClassTrib: "220001", quando: "Incorporação imobiliária — Regime Especial de Tributação" }, { cClassTrib: "000001", quando: "Serviço não enquadrado no regime de imóveis" }],
+    condicoes: ["Aplicável a contribuintes sujeitos ao regime específico de operações com bens imóveis", "Incorporação imobiliária/parcelamento do solo podem optar pelo RET (cClassTrib 221002 / 221004)"],
+    alternativas: [{ cClassTrib: "221002", quando: "Incorporação imobiliária — Regime Especial de Tributação" }, { cClassTrib: "221004", quando: "Alienação de imóvel decorrente de parcelamento do solo (RET)" }, { cClassTrib: "000001", quando: "Serviço não enquadrado no regime de imóveis" }],
     alertas: ["Construção civil: ISS municipal continua até 2032 (reduzindo-se de 2029 a 2032)."] },
   { codigo: "102", descricao: "Serviços de distribuição de mercadorias (comissão, representação, comércio)", tratamento: "integral", reducao: 0, cst: "000", cClassTrib: "000001",
     fundamento: "LC 214/2025, art. 12 (regra geral)" },
@@ -606,7 +618,7 @@ export const REGRAS_NBS: RegraReforma[] = [
   { codigo: "116", descricao: "Telecomunicações, radiodifusão e fornecimento de informações", tratamento: "integral", reducao: 0, cst: "000", cClassTrib: "000001",
     fundamento: "LC 214/2025, art. 12 (regra geral)",
     alertas: ["Não incide Imposto Seletivo sobre telecomunicações (CF, art. 153, §6º, I).", "Radiodifusão sonora e de sons e imagens de recepção livre e gratuita: imunidade (CF, art. 156-A, §1º, XI)."],
-    alternativas: [{ cClassTrib: "410999", quando: "Radiodifusão de recepção livre e gratuita — imunidade" }] },
+    alternativas: [{ cClassTrib: "410010", quando: "Radiodifusão de recepção livre e gratuita — imunidade" }] },
   { codigo: "117", descricao: "Apoio às atividades empresariais (limpeza, vigilância, call center, mão de obra)", tratamento: "integral", reducao: 0, cst: "000", cClassTrib: "000001",
     fundamento: "LC 214/2025, art. 12 (regra geral)",
     alertas: ["Fornecimento de mão de obra: base é o valor do serviço; salários do empregado do próprio contribuinte não são fato gerador."] },
@@ -629,7 +641,7 @@ export const REGRAS_NBS: RegraReforma[] = [
     alternativas: [
       { cClassTrib: "200025", quando: "Bolsas Prouni — alíquota zero" },
       { cClassTrib: "200041", quando: "Educação desportiva (art. 141, I)" },
-      { cClassTrib: "410001", quando: "Instituição de educação sem fins lucrativos — imunidade" },
+      { cClassTrib: "410007", quando: "Instituição de educação sem fins lucrativos — imunidade" },
       { cClassTrib: "000001", quando: "Curso livre não listado no Anexo II" },
     ] },
   { codigo: "123", descricao: "Serviços de saúde humana e assistência social", tratamento: "reducao_60", reducao: 60, cst: "200", cClassTrib: "200029",
@@ -639,7 +651,7 @@ export const REGRAS_NBS: RegraReforma[] = [
     alternativas: [
       { cClassTrib: "011002", quando: "Planos de assistência à saúde" },
       { cClassTrib: "200006", quando: "Emergência de saúde pública reconhecida" },
-      { cClassTrib: "410001", quando: "Entidade beneficente — imunidade" },
+      { cClassTrib: "410007", quando: "Entidade de assistência social sem fins lucrativos — imunidade" },
     ] },
   { codigo: "124", descricao: "Coleta, tratamento de resíduos e saneamento", tratamento: "integral", reducao: 0, cst: "000", cClassTrib: "000001",
     fundamento: "LC 214/2025, art. 12 (regra geral)" },
@@ -660,13 +672,38 @@ export const REGRAS_NBS: RegraReforma[] = [
     alertas: ["Concursos de prognósticos e fantasy sport estão sujeitos ao Imposto Seletivo a partir de 2027."] },
   { codigo: "126", descricao: "Serviços pessoais (beleza, lavanderia, funerários, associações)", tratamento: "integral", reducao: 0, cst: "000", cClassTrib: "000001",
     fundamento: "LC 214/2025, art. 12 (regra geral)",
-    alternativas: [{ cClassTrib: "011001", quando: "Planos de assistência funerária" }, { cClassTrib: "410020", quando: "Templos de qualquer culto — imunidade" }] },
+    alternativas: [{ cClassTrib: "011001", quando: "Planos de assistência funerária" }, { cClassTrib: "410006", quando: "Templos de qualquer culto — imunidade" }] },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MOTOR DE CONSULTA
+// Ordem de prioridade:
+//   1. Tabela OFICIAL de correlação cClassTrib × NCM/NBS (SVRS) — código exato
+//   2. Base COMPLEMENTAR FiscalConf (maior prefixo), apenas para cClassTribs que
+//      a tabela oficial não correlaciona por código (medicamentos, combustíveis,
+//      livros, educação, saúde, bares/restaurantes etc.)
+//   3. Regra geral — tributação integral (000 / 000001)
 // ═══════════════════════════════════════════════════════════════════════════
 export type TipoCodigo = "NCM" | "NBS";
+export type FonteEnquadramento = "oficial" | "complementar" | "regra_geral";
+
+export interface CandidatoOficial {
+  cClassTrib: string;
+  cst: string;
+  nome: string;
+  nomeReduzido: string;
+  redIbs: number;
+  redCbs: number;
+  permissao: "PERMITIDO" | "VEDADO" | null;
+  condicao: string;
+  excecao: string;
+  observacao: string;
+  itemAnexo: string;
+  anexo: string;
+  url: string | null;
+  /** depende do adquirente/prestador (órgão público, autônomo, ICT, diferimento etc.) */
+  porCondicaoDoAdquirente: boolean;
+}
 
 export interface ResultadoReforma {
   tipo: TipoCodigo;
@@ -676,19 +713,30 @@ export interface ResultadoReforma {
   capitulo: { codigo: string; descricao: string } | null;
   regra: RegraReforma;
   regraEncontrada: boolean; // false = caiu na regra geral
+  fonte: FonteEnquadramento;
   descricaoTratamento: string;
+  /** candidatos encontrados na tabela oficial para o código exato */
+  oficiais: CandidatoOficial[];
+  /** cClassTribs vedados pela tabela oficial para este código */
+  vedados: CandidatoOficial[];
   is: RegraIS | null;
   /** regras mais específicas sob o prefixo informado (quando o código é parcial) */
   subregras: RegraReforma[];
   alertas: string[];
 }
 
+/** cClassTribs que dependem de condição do adquirente/prestador — não são o enquadramento "padrão" do produto */
+export const CCLASSTRIB_POR_CONDICAO = new Set([
+  "200005", "200008", "200010", "200011", "200043", "200044", "200055", "200056",
+  "515001", "221001", "200026", "200016", "200025", "200002", "200015",
+]);
+
 const REGRA_GERAL_NCM: RegraReforma = {
   codigo: "", descricao: "Sem tratamento diferenciado identificado — regra geral", tratamento: "integral", reducao: 0,
   cst: "000", cClassTrib: "000001", fundamento: "LC 214/2025, arts. 4º e 12 (regra geral — alíquota padrão)",
   alertas: ["Nenhum anexo de redução identificado para este código. Se o produto tiver destinação ou adquirente específico (administração pública, ZFM, exportação, produtor rural), revise o enquadramento."],
 };
-const REGRA_GERAL_NBS: RegraReforma = { ...REGRA_GERAL_NCM, fundamento: "LC 214/2025, arts. 4º e 12 (regra geral — alíquota padrão)" };
+const REGRA_GERAL_NBS: RegraReforma = { ...REGRA_GERAL_NCM };
 
 export function somenteDigitos(v: string) { return (v || "").replace(/\D/g, ""); }
 
@@ -707,6 +755,8 @@ export function formatarNbs(v: string) {
   return `${d.slice(0, 1)}.${d.slice(1, 5)}.${d.slice(5, 7)}.${d.slice(7)}`;
 }
 
+export function formatarCapituloNbs(c: string) { return c.length >= 2 ? `${c[0]}.${c.slice(1)}` : c; }
+
 function casa(codigo: string, r: { codigo: string; excecoes?: string[] }) {
   return codigo.startsWith(r.codigo) && !(r.excecoes || []).some(e => codigo.startsWith(e));
 }
@@ -717,40 +767,180 @@ function melhor<T extends { codigo: string; excecoes?: string[] }>(codigo: strin
   return best;
 }
 
-export function consultarReforma(entrada: string, tipo: TipoCodigo): ResultadoReforma {
+/** Converte CST + percentual de redução no tipo de tratamento */
+export function tratamentoPorCst(cst: string, red: number): Tratamento {
+  if (cst === "200") {
+    if (red >= 100) return "reducao_100";
+    if (red >= 80) return "reducao_80";
+    if (red >= 70) return "reducao_70";
+    if (red >= 60) return "reducao_60";
+    if (red >= 50) return "reducao_50";
+    if (red >= 40) return "reducao_40";
+    if (red >= 30) return "reducao_30";
+    return "integral";
+  }
+  if (cst === "000") return "integral";
+  if (cst === "400") return "isencao";
+  if (cst === "410") return "imunidade";
+  if (cst === "620") return "monofasico";
+  if (cst === "510" || cst === "515") return "diferimento";
+  if (cst === "550") return "suspensao";
+  return "especifico"; // 010, 011, 220, 221, 222, 820, 830...
+}
+
+function artigoDaUrl(url: string | null) {
+  const m = url?.match(/#art(\d+)/i);
+  return m ? `art. ${m[1]}` : "";
+}
+
+function candidato(base: BaseOficial, v: Vinculo): CandidatoOficial {
+  const ct = base.classificacoes[v.cClassTrib];
+  return {
+    cClassTrib: v.cClassTrib, cst: ct?.cst || v.cClassTrib.slice(0, 3), nome: ct?.nome || v.cClassTrib, nomeReduzido: ct?.nomeReduzido || ct?.nome || v.cClassTrib,
+    redIbs: ct?.redIbs ?? 0, redCbs: ct?.redCbs ?? 0, permissao: v.permissao,
+    condicao: v.condicao, excecao: v.excecao, observacao: v.observacao, itemAnexo: v.itemAnexo, anexo: v.anexo,
+    url: ct?.url || null, porCondicaoDoAdquirente: CCLASSTRIB_POR_CONDICAO.has(v.cClassTrib),
+  };
+}
+
+/** Junta vínculos do mesmo cClassTrib (o mesmo NCM pode constar de vários itens do anexo) */
+function agrupar(cs: CandidatoOficial[]): CandidatoOficial[] {
+  const m = new Map<string, CandidatoOficial>();
+  const junta = (a: string, b: string) => (!a ? b : !b || a.includes(b) ? a : `${a} | ${b}`);
+  for (const c of cs) {
+    const e = m.get(c.cClassTrib);
+    if (!e) { m.set(c.cClassTrib, { ...c }); continue; }
+    e.itemAnexo = junta(e.itemAnexo, c.itemAnexo);
+    e.condicao = junta(e.condicao, c.condicao);
+    e.excecao = junta(e.excecao, c.excecao);
+    e.observacao = junta(e.observacao, c.observacao);
+  }
+  return Array.from(m.values());
+}
+
+function regraDeCandidato(c: CandidatoOficial, codigo: string, outros: CandidatoOficial[]): RegraReforma {
+  const art = artigoDaUrl(c.url);
+  const condicoes: string[] = [];
+  if (c.itemAnexo) condicoes.push(`Item do anexo: ${c.itemAnexo}`);
+  if (c.condicao) condicoes.push(`Condição: ${c.condicao}`);
+  if (c.excecao) condicoes.push(`Exceção: ${c.excecao}`);
+  if (c.observacao) condicoes.push(`Observação: ${c.observacao}`);
+  return {
+    codigo, descricao: c.itemAnexo || c.nome,
+    tratamento: tratamentoPorCst(c.cst, c.redIbs), reducao: c.redIbs,
+    reducaoCbs: c.redCbs !== c.redIbs ? c.redCbs : undefined,
+    cst: c.cst, cClassTrib: c.cClassTrib,
+    fundamento: `LC 214/2025${art ? `, ${art}` : ""} — ${c.nomeReduzido} · Tabela oficial cClassTrib (SVRS)`,
+    condicional: !!(c.condicao || c.excecao) || outros.length > 0 || c.porCondicaoDoAdquirente,
+    condicoes,
+    alternativas: outros.map(o => ({
+      cClassTrib: o.cClassTrib,
+      quando: [o.nomeReduzido, o.condicao && `condição: ${o.condicao}`].filter(Boolean).join(" — "),
+    })),
+  };
+}
+
+export function consultarReforma(entrada: string, tipo: TipoCodigo, base?: BaseOficial | null, data?: string): ResultadoReforma {
   const codigo = somenteDigitos(entrada);
   const isNcm = tipo === "NCM";
   const valido = isNcm ? codigo.length === 8 : codigo.length === 9 && codigo.startsWith("1");
-  const regras = isNcm ? REGRAS_NCM : REGRAS_NBS;
-
   const capCod = isNcm ? codigo.slice(0, 2) : codigo.slice(0, 3);
   const capDesc = isNcm ? CAPITULOS_NCM[capCod] : CAPITULOS_NBS[capCod];
   const capitulo = capDesc ? { codigo: capCod, descricao: capDesc } : null;
+  const alertas: string[] = [];
 
-  const achada = codigo.length >= 2 ? melhor(codigo, regras) : null;
-  const regra = achada || (isNcm ? REGRA_GERAL_NCM : REGRA_GERAL_NBS);
+  // ── 1. Tabela oficial ─────────────────────────────────────────────────────
+  let oficiais: CandidatoOficial[] = [];
+  let vedados: CandidatoOficial[] = [];
+  if (base && valido) {
+    const vs = vinculosDoCodigo(base, codigo, tipo, data);
+    oficiais = agrupar(vs.filter(v => v.permissao !== "VEDADO").map(v => candidato(base, v)));
+    vedados = agrupar(vs.filter(v => v.permissao === "VEDADO").map(v => candidato(base, v)));
+    // ordena: enquadramento do produto primeiro, depois maior redução
+    oficiais.sort((a, b) => Number(a.porCondicaoDoAdquirente) - Number(b.porCondicaoDoAdquirente) || b.redIbs - a.redIbs);
+  }
+
+  // ── 2. Base complementar (ignora cClassTribs que a tabela oficial já correlaciona) ──
+  const mapeados = base ? classTribsMapeados(base)[isNcm ? "N" : "S"] : new Set<string>();
+  const regrasCompl = (isNcm ? REGRAS_NCM : REGRAS_NBS).filter(r => !mapeados.has(r.cClassTrib));
+  const compl = codigo.length >= 2 ? melhor(codigo, regrasCompl) : null;
+
+  let regra: RegraReforma;
+  let fonte: FonteEnquadramento;
+  const principal = compl?.prevaleceSobreOficial ? undefined : oficiais.find(o => !o.porCondicaoDoAdquirente);
+  if (principal) {
+    regra = regraDeCandidato(principal, codigo, oficiais.filter(o => o !== principal));
+    if (principal.itemAnexo) {
+      regra.alternativas!.push({ cClassTrib: compl?.cClassTrib || "000001", quando: compl
+        ? `Produto não corresponde à descrição do item do anexo — ${compl.descricao}`
+        : "Produto não corresponde à descrição do item do anexo (tributação integral)" });
+    }
+    fonte = "oficial";
+  } else if (compl) {
+    // Com a base oficial carregada, descarta alternativas para cClassTribs que ela
+    // correlaciona por código mas não vincula a este código
+    const oficiaisCt = new Set(oficiais.map(o => o.cClassTrib));
+    regra = { ...compl, alternativas: (compl.alternativas || []).filter(a => !mapeados.has(a.cClassTrib) || oficiaisCt.has(a.cClassTrib)) };
+    fonte = "complementar";
+  } else {
+    regra = { ...(isNcm ? REGRA_GERAL_NCM : REGRA_GERAL_NBS), alternativas: [] };
+    fonte = "regra_geral";
+  }
+  // Candidatos oficiais que dependem do adquirente entram como alternativas
+  if (fonte !== "oficial" && oficiais.length) {
+    regra.alternativas = [
+      ...oficiais.map(o => ({ cClassTrib: o.cClassTrib, quando: [o.nomeReduzido, o.condicao && `condição: ${o.condicao}`].filter(Boolean).join(" — ") })),
+      ...(regra.alternativas || []),
+    ];
+    regra.condicional = true;
+  }
+  if (fonte === "complementar" && compl) {
+    regra.fundamento = `${compl.fundamento} · Base complementar FiscalConf`;
+  }
+
   const is = isNcm && codigo.length >= 4 ? melhor(codigo, REGRAS_IS) : null;
 
   // Subregras: quando o código é parcial, lista tratamentos possíveis abaixo dele
-  const subregras = !valido && codigo.length >= 2
-    ? regras.filter(r => r.codigo.startsWith(codigo) && r.codigo !== regra.codigo).slice(0, 30)
-    : [];
+  let subregras: RegraReforma[] = [];
+  if (!valido && codigo.length >= 2) {
+    if (base) {
+      const porCt = new Map<string, { qtd: number; ex: Vinculo }>();
+      for (const v of vinculosDoPrefixo(base, codigo, tipo, 5000)) {
+        if (v.permissao === "VEDADO") continue;
+        const e = porCt.get(v.cClassTrib);
+        if (e) e.qtd++; else porCt.set(v.cClassTrib, { qtd: 1, ex: v });
+      }
+      for (const [ct, { qtd, ex }] of Array.from(porCt)) {
+        const c = candidato(base, ex);
+        subregras.push({
+          codigo: codigo, descricao: `${c.nomeReduzido} — ${qtd} código(s) na tabela oficial`, tratamento: tratamentoPorCst(c.cst, c.redIbs),
+          reducao: c.redIbs, cst: c.cst, cClassTrib: ct, fundamento: "Tabela oficial",
+        });
+      }
+    }
+    subregras.push(...regrasCompl.filter(r => r.codigo.startsWith(codigo) && r.codigo !== regra.codigo).slice(0, 30));
+  }
 
-  const alertas: string[] = [...(regra.alertas || [])];
-  if (!valido) alertas.unshift(isNcm
+  // ── Alertas ───────────────────────────────────────────────────────────────
+  if (!valido) alertas.push(isNcm
     ? "Código NCM incompleto: informe os 8 dígitos para um enquadramento preciso."
     : "Código NBS incompleto: informe os 9 dígitos (formato 1.XXXX.XX.XX).");
+  alertas.push(...(regra.alertas || []));
   if (isNcm && !capitulo && codigo.length >= 2) alertas.push("Capítulo NCM inexistente — confira o código na TIPI.");
   if (!isNcm && !capitulo && codigo.length >= 3) alertas.push("Capítulo NBS não reconhecido — confira o código na tabela NBS.");
-  if (regra.condicional) alertas.push("Enquadramento CONDICIONAL: depende da descrição exata do item ou de condição do adquirente/prestador. Confira o anexo legal antes de parametrizar o ERP.");
+  for (const v of vedados) {
+    alertas.push(`Tabela oficial: cClassTrib ${v.cClassTrib} é VEDADO para este código${v.excecao ? ` (${v.excecao})` : ""}.`);
+  }
+  if (fonte === "complementar") alertas.push("Enquadramento pela base complementar FiscalConf: a tabela oficial não correlaciona este cClassTrib por código. Confira a descrição do item no anexo legal.");
+  if (regra.condicional) alertas.push("Enquadramento CONDICIONAL: depende da descrição exata do item ou de condição do adquirente/prestador. Confira antes de parametrizar o ERP.");
   if (is) alertas.push(`Sujeito ao Imposto Seletivo (${is.categoria}) a partir de 2027${is.condicional ? " — incidência condicional, confira o subitem" : ""}.`);
 
   return {
     tipo, codigo,
     codigoFormatado: isNcm ? formatarNcm(codigo) : formatarNbs(codigo),
-    valido, capitulo, regra, regraEncontrada: !!achada,
+    valido, capitulo, regra, regraEncontrada: fonte !== "regra_geral", fonte,
     descricaoTratamento: TRATAMENTO_LABEL[regra.tratamento],
-    is, subregras, alertas,
+    oficiais, vedados, is, subregras, alertas,
   };
 }
 
@@ -761,20 +951,83 @@ export function detectarTipo(entrada: string): TipoCodigo {
   return "NCM";
 }
 
-/** Busca textual nas descrições das regras e capítulos */
-export function buscarPorDescricao(termo: string, tipo: TipoCodigo, limite = 25) {
+/** Busca textual nas descrições das regras, capítulos e itens dos anexos oficiais */
+export function buscarPorDescricao(termo: string, tipo: TipoCodigo, base?: BaseOficial | null, limite = 30) {
   const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const t = norm(termo.trim());
   if (t.length < 3) return [];
-  const regras = tipo === "NCM" ? [...REGRAS_NCM] : [...REGRAS_NBS];
-  const caps = tipo === "NCM" ? CAPITULOS_NCM : CAPITULOS_NBS;
-  const out: { codigo: string; descricao: string; tratamento?: Tratamento; origem: "regra" | "capitulo" | "is" }[] = [];
-  for (const r of regras) if (norm(r.descricao).includes(t)) out.push({ codigo: r.codigo, descricao: r.descricao, tratamento: r.tratamento, origem: "regra" });
+  const out: { codigo: string; descricao: string; tratamento?: Tratamento; origem: "oficial" | "regra" | "capitulo" | "is" | "lc116" }[] = [];
+  if (base) {
+    const vistosItem = new Set<string>();
+    const tp = tipo === "NBS" ? "S" : "N";
+    for (const v of base.vinculos) {
+      if (v[1] !== tp || v[3] === "V") continue;
+      const item = base.textos[v[7]], obs = base.textos[v[6]];
+      const alvo = `${item} ${obs}`;
+      if (!norm(alvo).includes(t)) continue;
+      const chave = `${v[0]}|${v[2]}`;
+      if (vistosItem.has(chave)) continue;
+      vistosItem.add(chave);
+      const ct = base.classificacoes[v[2]];
+      out.push({ codigo: v[0], descricao: `${(obs || item).slice(0, 120)} → ${v[2]}`, tratamento: ct ? tratamentoPorCst(ct.cst, ct.redIbs) : undefined, origem: "oficial" });
+      if (out.length >= limite) break;
+    }
+  }
+  if (tipo === "NBS") for (const g of LC116_GRUPOS) if (norm(g.descricao).includes(t)) out.push({ codigo: g.nbs, descricao: `LC 116 item ${g.item} — ${g.descricao} (capítulo NBS ${formatarCapituloNbs(g.nbs)})`, origem: "lc116" });
+  for (const r of tipo === "NCM" ? REGRAS_NCM : REGRAS_NBS) if (norm(r.descricao).includes(t)) out.push({ codigo: r.codigo, descricao: r.descricao, tratamento: r.tratamento, origem: "regra" });
   if (tipo === "NCM") for (const r of REGRAS_IS) if (norm(r.descricao).includes(t) || norm(r.categoria).includes(t)) out.push({ codigo: r.codigo, descricao: `[IS] ${r.descricao}`, origem: "is" });
-  for (const [c, d] of Object.entries(caps)) if (norm(d).includes(t)) out.push({ codigo: c, descricao: `Capítulo ${c} — ${d}`, origem: "capitulo" });
+  for (const [c, d] of Object.entries(tipo === "NCM" ? CAPITULOS_NCM : CAPITULOS_NBS)) if (norm(d).includes(t)) out.push({ codigo: c, descricao: `Capítulo ${tipo === "NBS" ? formatarCapituloNbs(c) : c} — ${d}`, origem: "capitulo" });
   const vistos = new Set<string>();
-  return out.filter(o => { const k = o.codigo + o.origem; if (vistos.has(k)) return false; vistos.add(k); return true; }).slice(0, limite);
+  return out.filter(o => { const k = o.codigo + o.origem + o.descricao; if (vistos.has(k)) return false; vistos.add(k); return true; }).slice(0, limite);
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LC 116/2003 (lista de serviços do ISS) → capítulo NBS
+// Correlação APROXIMADA por grupo, para orientar a localização do código NBS.
+// A correlação oficial item a item consta dos anexos da NFS-e Padrão Nacional.
+// ═══════════════════════════════════════════════════════════════════════════
+export const LC116_GRUPOS: { item: string; descricao: string; nbs: string; obs?: string }[] = [
+  { item: "1", descricao: "Serviços de informática e congêneres", nbs: "115" },
+  { item: "2", descricao: "Serviços de pesquisas e desenvolvimento de qualquer natureza", nbs: "112" },
+  { item: "3", descricao: "Serviços prestados mediante locação, cessão de direito de uso e congêneres", nbs: "111" },
+  { item: "4", descricao: "Serviços de saúde, assistência médica e congêneres", nbs: "123" },
+  { item: "5", descricao: "Serviços de medicina e assistência veterinária e congêneres", nbs: "114", obs: "Médicos veterinários: profissão intelectual (redução de 30%)" },
+  { item: "6", descricao: "Serviços de cuidados pessoais, estética, atividades físicas e congêneres", nbs: "126" },
+  { item: "7", descricao: "Serviços de engenharia, arquitetura, geologia, urbanismo, construção civil, manutenção, limpeza, meio ambiente, saneamento", nbs: "101", obs: "Projetos de engenharia/arquitetura: capítulo 1.14" },
+  { item: "8", descricao: "Serviços de educação, ensino, orientação pedagógica e educacional, instrução, treinamento", nbs: "122" },
+  { item: "9", descricao: "Serviços relativos a hospedagem, turismo, viagens e congêneres", nbs: "103", obs: "Agências de turismo: redução de 40% (200051)" },
+  { item: "10", descricao: "Serviços de intermediação e congêneres (agenciamento, corretagem, representação)", nbs: "117", obs: "Corretagem de imóveis: 1.10; de seguros e valores: 1.09" },
+  { item: "11", descricao: "Serviços de guarda, estacionamento, armazenamento, vigilância e congêneres", nbs: "106", obs: "Vigilância e segurança: 1.17" },
+  { item: "12", descricao: "Serviços de diversões, lazer, entretenimento e congêneres", nbs: "125" },
+  { item: "13", descricao: "Serviços relativos a fonografia, fotografia, cinematografia e reprografia", nbs: "125" },
+  { item: "14", descricao: "Serviços relativos a bens de terceiros (manutenção, conserto, instalação)", nbs: "119" },
+  { item: "15", descricao: "Serviços relacionados ao setor bancário ou financeiro", nbs: "109" },
+  { item: "16", descricao: "Serviços de transporte de natureza municipal", nbs: "104", obs: "Transporte de cargas: 1.05" },
+  { item: "17", descricao: "Serviços de apoio técnico, administrativo, jurídico, contábil, comercial e congêneres", nbs: "113", obs: "Consultoria, publicidade e apoio administrativo: 1.14 / 1.17" },
+  { item: "18", descricao: "Serviços de regulação de sinistros, inspeção e avaliação de riscos para seguros", nbs: "109" },
+  { item: "19", descricao: "Serviços de distribuição e venda de bilhetes e demais produtos de loteria, bingos", nbs: "125", obs: "Concursos de prognósticos: regime específico + Imposto Seletivo" },
+  { item: "20", descricao: "Serviços portuários, aeroportuários, ferroportuários, de terminais rodoviários", nbs: "106" },
+  { item: "21", descricao: "Serviços de registros públicos, cartorários e notariais", nbs: "113" },
+  { item: "22", descricao: "Serviços de exploração de rodovia (pedágio)", nbs: "106", obs: "Exploração de via: cClassTrib 000002" },
+  { item: "23", descricao: "Serviços de programação e comunicação visual, desenho industrial", nbs: "114" },
+  { item: "24", descricao: "Serviços de chaveiros, confecção de carimbos, placas, sinalização visual", nbs: "119" },
+  { item: "25", descricao: "Serviços funerários", nbs: "126" },
+  { item: "26", descricao: "Serviços de coleta, remessa ou entrega de correspondências, documentos, objetos (courier)", nbs: "107" },
+  { item: "27", descricao: "Serviços de assistência social", nbs: "123" },
+  { item: "28", descricao: "Serviços de avaliação de bens e serviços de qualquer natureza", nbs: "114" },
+  { item: "29", descricao: "Serviços de biblioteconomia", nbs: "114", obs: "Bibliotecários: profissão intelectual" },
+  { item: "30", descricao: "Serviços de biologia, biotecnologia e química", nbs: "114", obs: "Biólogos e químicos: profissão intelectual" },
+  { item: "31", descricao: "Serviços técnicos em edificações, eletrônica, eletrotécnica, mecânica, telecomunicações", nbs: "114", obs: "Técnicos industriais: profissão intelectual" },
+  { item: "32", descricao: "Serviços de desenhos técnicos", nbs: "114" },
+  { item: "33", descricao: "Serviços de desembaraço aduaneiro, comissários, despachantes", nbs: "106" },
+  { item: "34", descricao: "Serviços de investigações particulares, detetives", nbs: "117" },
+  { item: "35", descricao: "Serviços de reportagem, assessoria de imprensa, jornalismo e relações públicas", nbs: "114", obs: "Relações públicas: profissão intelectual" },
+  { item: "36", descricao: "Serviços de meteorologia", nbs: "114" },
+  { item: "37", descricao: "Serviços de artistas, atletas, modelos e manequins", nbs: "125" },
+  { item: "38", descricao: "Serviços de museologia", nbs: "125", obs: "Museólogos: profissão intelectual" },
+  { item: "39", descricao: "Serviços de ourivesaria e lapidação", nbs: "120" },
+  { item: "40", descricao: "Serviços relativos a obras de arte sob encomenda", nbs: "125" },
+];
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CRONOGRAMA DE TRANSIÇÃO (EC 132/2023, ADCT arts. 125 a 133; LC 214/2025)
@@ -794,27 +1047,29 @@ export interface AnoTransicao {
   obs: string;
 }
 
-export function cronogramaTransicao(reducao: number, tratamento: Tratamento, tipo: TipoCodigo, ref: AliquotasReferencia = ALIQ_REF_PADRAO): AnoTransicao[] {
-  const f = Math.max(0, Math.min(100, reducao)) / 100;
-  const zero = tratamento === "isencao" || tratamento === "imunidade" || reducao >= 100;
-  const k = (v: number) => (zero ? 0 : +(v * (1 - f)).toFixed(4));
+export function cronogramaTransicao(reducao: number, tratamento: Tratamento, tipo: TipoCodigo, ref: AliquotasReferencia = ALIQ_REF_PADRAO, reducaoCbs?: number): AnoTransicao[] {
+  const zeroTotal = tratamento === "isencao" || tratamento === "imunidade" || tratamento === "suspensao";
+  const fator = (r: number) => zeroTotal ? 0 : 1 - Math.max(0, Math.min(100, r)) / 100;
+  const fIbs = fator(reducao), fCbs = fator(reducaoCbs ?? reducao);
+  const kI = (v: number) => +(v * fIbs).toFixed(4);
+  const kC = (v: number) => +(v * fCbs).toFixed(4);
   const antigosBens = (pct: number) => pct === 100 ? "ICMS integral" : `ICMS a ${pct}%`;
   const antigosServ = (pct: number) => pct === 100 ? "ISS integral" : `ISS a ${pct}%`;
   const ant = (pct: number) => tipo === "NCM" ? antigosBens(pct) : antigosServ(pct);
 
   const linhas: Omit<AnoTransicao, "total">[] = [
-    { ano: 2026, cbs: k(0.9), ibs: k(0.1), fatorIbs: "teste", isVigente: false,
+    { ano: 2026, cbs: kC(0.9), ibs: kI(0.1), fatorIbs: "teste", isVigente: false,
       tributosAntigos: tipo === "NCM" ? "PIS, Cofins, IPI e ICMS integrais" : "PIS, Cofins e ISS integrais",
       obs: "Ano-teste: destaque obrigatório no documento; valor compensável com PIS/Cofins. Dispensa de recolhimento para quem cumprir as obrigações acessórias." },
-    { ano: 2027, cbs: k(ref.cbs - 0.1), ibs: k(0.1), fatorIbs: "0,1%", isVigente: true,
+    { ano: 2027, cbs: kC(ref.cbs - 0.1), ibs: kI(0.1), fatorIbs: "0,1%", isVigente: true,
       tributosAntigos: `PIS/Cofins extintos; ${tipo === "NCM" ? "IPI zerado (exceto produtos com industrialização incentivada na ZFM); " : ""}${ant(100)}`,
       obs: "CBS plena (reduzida em 0,1 p.p. em 2027–2028). IBS 0,05% estadual + 0,05% municipal. Início do Imposto Seletivo." },
-    { ano: 2028, cbs: k(ref.cbs - 0.1), ibs: k(0.1), fatorIbs: "0,1%", isVigente: true, tributosAntigos: ant(100), obs: "Mesma estrutura de 2027." },
-    { ano: 2029, cbs: k(ref.cbs), ibs: k(ref.ibs * 0.1), fatorIbs: "10%", isVigente: true, tributosAntigos: ant(90), obs: "Início da transição do ICMS/ISS para o IBS." },
-    { ano: 2030, cbs: k(ref.cbs), ibs: k(ref.ibs * 0.2), fatorIbs: "20%", isVigente: true, tributosAntigos: ant(80), obs: "" },
-    { ano: 2031, cbs: k(ref.cbs), ibs: k(ref.ibs * 0.3), fatorIbs: "30%", isVigente: true, tributosAntigos: ant(70), obs: "" },
-    { ano: 2032, cbs: k(ref.cbs), ibs: k(ref.ibs * 0.4), fatorIbs: "40%", isVigente: true, tributosAntigos: ant(60), obs: "" },
-    { ano: 2033, cbs: k(ref.cbs), ibs: k(ref.ibs), fatorIbs: "100%", isVigente: true,
+    { ano: 2028, cbs: kC(ref.cbs - 0.1), ibs: kI(0.1), fatorIbs: "0,1%", isVigente: true, tributosAntigos: ant(100), obs: "Mesma estrutura de 2027." },
+    { ano: 2029, cbs: kC(ref.cbs), ibs: kI(ref.ibs * 0.1), fatorIbs: "10%", isVigente: true, tributosAntigos: ant(90), obs: "Início da transição do ICMS/ISS para o IBS." },
+    { ano: 2030, cbs: kC(ref.cbs), ibs: kI(ref.ibs * 0.2), fatorIbs: "20%", isVigente: true, tributosAntigos: ant(80), obs: "" },
+    { ano: 2031, cbs: kC(ref.cbs), ibs: kI(ref.ibs * 0.3), fatorIbs: "30%", isVigente: true, tributosAntigos: ant(70), obs: "" },
+    { ano: 2032, cbs: kC(ref.cbs), ibs: kI(ref.ibs * 0.4), fatorIbs: "40%", isVigente: true, tributosAntigos: ant(60), obs: "" },
+    { ano: 2033, cbs: kC(ref.cbs), ibs: kI(ref.ibs), fatorIbs: "100%", isVigente: true,
       tributosAntigos: tipo === "NCM" ? "ICMS extinto" : "ISS extinto", obs: "Sistema pleno: CBS + IBS + IS." },
   ];
   return linhas.map(l => ({ ...l, total: +(l.cbs + l.ibs).toFixed(4) }));

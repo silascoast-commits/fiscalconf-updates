@@ -21,6 +21,7 @@ import Comparativo from "./pages/Comparativo";
 import XmlImport from "./pages/XmlImport";
 import ConsultorIA from "./pages/ConsultorIA";
 import ConsultaReforma from "./pages/ConsultaReforma";
+import ConferenciaNfe from "./pages/ConferenciaNfe";
 import MapaTransicao from "./pages/MapaTransicao";
 import KitPrompts from "./pages/KitPrompts";
 import NotFound from "./pages/not-found";
@@ -41,6 +42,7 @@ export default function App() {
                   <Route path="/" component={Dashboard} />
                   <Route path="/consulta" component={Consulta} />
                   <Route path="/reforma" component={ConsultaReforma} />
+                  <Route path="/conferencia" component={ConferenciaNfe} />
                   <Route path="/ncms" component={GerenciarNCMs} />
                   <Route path="/historico" component={Historico} />
                   <Route path="/simulador" component={Simulador} />

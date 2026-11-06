@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useCliente } from "@/contexts/ClienteContext";
+import { useQuery } from "@tanstack/react-query";
+import { CATEGORIAS_IS, CONFIG_PADRAO, type ConfiguracoesFiscais } from "@shared/configuracoes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -291,6 +293,7 @@ export default function Simulador() {
   const [temST, setTemST] = useState(false);
   // Imposto Seletivo
   const [setorIS, setSetorIS] = useState<string>("nenhum");
+  const { data: cfgFiscal } = useQuery<ConfiguracoesFiscais>({ queryKey: ["/api/configuracoes"] });
   // Faturamento mensal para alerta de exclusão SN
   const [rbt12Str, setRbt12Str] = useState("");
 
@@ -349,15 +352,14 @@ export default function Simulador() {
   // A LC 214 define os bens alcançados, mas NÃO fixa as alíquotas: elas serão
   // estabelecidas em lei ordinária (exceto bens minerais: teto de 0,25%).
   // Os percentuais abaixo são premissas de simulação, não alíquotas legais.
+  // Premissas editáveis na tela "Reforma NCM/NBS" (configuração central)
+  const premissas = cfgFiscal?.premissasIS || CONFIG_PADRAO.premissasIS;
   const IS_ALIQUOTAS: Record<string, { label: string; aliq: number; obs: string }> = {
-    nenhum:       { label: "Não aplicável",              aliq: 0,    obs: "" },
-    bebidas_alc:  { label: "Bebidas alcoólicas",         aliq: 20,   obs: "premissa — alíquota a definir em lei ordinária" },
-    fumo:         { label: "Produtos fumígenos",         aliq: 100,  obs: "premissa — alíquota a definir em lei ordinária" },
-    veiculos:     { label: "Veículos",                   aliq: 7.5,  obs: "premissa — graduada por critérios ambientais" },
-    embarcacoes:  { label: "Embarcações / aeronaves",    aliq: 10,   obs: "premissa — alíquota a definir em lei ordinária" },
-    bebidas_acu:  { label: "Bebidas açucaradas",         aliq: 10,   obs: "premissa — alíquota a definir em lei ordinária" },
-    minerais:     { label: "Bens minerais (extração)",   aliq: 0.25, obs: "teto legal de 0,25% (CF, art. 153, §6º, VII)" },
-    prognosticos: { label: "Concursos de prognósticos / fantasy sport", aliq: 10, obs: "premissa — alíquota a definir em lei ordinária" },
+    nenhum: { label: "Não aplicável", aliq: 0, obs: "" },
+    ...Object.fromEntries(Object.entries(CATEGORIAS_IS).map(([k, label]) => [k, {
+      label, aliq: premissas[k] ?? 0,
+      obs: k === "minerais" ? "teto legal de 0,25% (CF, art. 153, §6º, VII)" : "premissa — alíquota a definir em lei ordinária",
+    }])),
   };
   const isInfo = IS_ALIQUOTAS[setorIS];
   const valorIS2027 = setorIS !== "nenhum" ? (faturamentoMensal * (isInfo.aliq / 100)) : 0;

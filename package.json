@@ -8,6 +8,8 @@
     "build": "tsx script/build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
+    "test": "tsx --test tests/*.test.ts",
+    "atualizar-cff": "tsx script/atualizar-cff.ts",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {

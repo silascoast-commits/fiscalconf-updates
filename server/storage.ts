@@ -157,6 +157,12 @@ for (const col of [
   try { sqlite.exec(`ALTER TABLE clientes ADD COLUMN ${col}`); } catch { /* já existe */ }
 }
 
+try { sqlite.exec(`CREATE TABLE IF NOT EXISTS configuracoes (
+  chave TEXT PRIMARY KEY,
+  valor TEXT NOT NULL,
+  atualizado_em TEXT NOT NULL
+)`); } catch { /* já existe */ }
+
 export interface IStorage {
   // NCMs
   getNcms(): Ncm[];
@@ -327,6 +333,19 @@ export class SqliteStorage implements IStorage {
 
   deleteXmlImportacao(id: number): void {
     db.delete(xmlImportacoes).where(eq(xmlImportacoes.id, id)).run();
+  }
+
+  // ─── Configurações gerais (chave → JSON) ────────────────────────────────────
+  getConfiguracoes(): Record<string, unknown> {
+    const rows = sqlite.prepare("SELECT chave, valor FROM configuracoes").all() as { chave: string; valor: string }[];
+    const out: Record<string, unknown> = {};
+    for (const r of rows) { try { out[r.chave] = JSON.parse(r.valor); } catch { out[r.chave] = r.valor; } }
+    return out;
+  }
+  setConfiguracao(chave: string, valor: unknown): void {
+    sqlite.prepare(
+      "INSERT INTO configuracoes (chave, valor, atualizado_em) VALUES (?, ?, ?) ON CONFLICT(chave) DO UPDATE SET valor = excluded.valor, atualizado_em = excluded.atualizado_em"
+    ).run(chave, JSON.stringify(valor), new Date().toISOString());
   }
 
   getXmlDashboard(clienteId?: number) {

@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
+import { ShieldCheck } from "lucide-react";
 import {
   FileCode2, Upload, TrendingDown, TrendingUp, AlertCircle, CheckCircle2,
   Trash2, Eye, Download, Filter, RefreshCw, FileX, Info, ChevronDown, ChevronUp,
@@ -208,7 +210,7 @@ export default function XmlImport() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold flex items-center gap-2">
             <FileCode2 className="h-5 w-5 text-primary" />
@@ -218,11 +220,16 @@ export default function XmlImport() {
             Importe XMLs de NF-e (modelo 55/65) — entradas e saídas processadas automaticamente
           </p>
         </div>
-        {clienteAtivo && (
-          <Badge variant="outline" className="gap-1 text-xs">
-            Empresa ativa: <span className="font-semibold">{clienteAtivo.nomeFantasia || clienteAtivo.razaoSocial}</span>
-          </Badge>
-        )}
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          {clienteAtivo && (
+            <Badge variant="outline" className="gap-1 text-xs">
+              Empresa ativa: <span className="font-semibold">{clienteAtivo.nomeFantasia || clienteAtivo.razaoSocial}</span>
+            </Badge>
+          )}
+          <Link href="/conferencia">
+            <Button size="sm" variant="outline" className="gap-1.5"><ShieldCheck className="h-4 w-4" />Conferir cClassTrib</Button>
+          </Link>
+        </div>
       </div>
 
       {/* Tabs */}

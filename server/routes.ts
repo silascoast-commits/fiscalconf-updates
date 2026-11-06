@@ -10,7 +10,11 @@ import path from "path";
 import multer from "multer";
 import { parseStringPromise } from "xml2js";
 import { mapCClassTrib, mapCSTIbsCbs } from "@shared/classificacaoTributaria";
-import { consultarReforma, buscarPorDescricao, cronogramaTransicao, camposDocumentoFiscal, ALIQ_REF_PADRAO, type TipoCodigo } from "@shared/reformaTributaria";
+import { consultarReforma, buscarPorDescricao, cronogramaTransicao, camposDocumentoFiscal, detectarTipo, type TipoCodigo } from "@shared/reformaTributaria";
+import { conferirItem, STATUS_LABEL } from "@shared/conformidade";
+import { simularOperacao } from "@shared/simulacao";
+import { mesclarConfiguracoes, CHAVE_IS_POR_CATEGORIA } from "@shared/configuracoes";
+import { getBase, infoBase, atualizarBaseOnline, nomeClassTrib, nomeCst } from "./reformaBase";
 
 // Extrai texto de PDF usando pdfjs-dist (legacy/Node.js)
 async function extractPdfText(buf: Buffer): Promise<string> {
@@ -132,25 +136,131 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json({ ok: true });
   });
 
-  // ─── REFORMA TRIBUTÁRIA — consulta por NCM / NBS ─────────────────────────
-  app.get("/api/reforma/:tipo/:codigo", (req, res) => {
-    const tipo = req.params.tipo.toUpperCase() as TipoCodigo;
-    if (tipo !== "NCM" && tipo !== "NBS") return res.status(400).json({ error: "Tipo deve ser NCM ou NBS" });
-    const resultado = consultarReforma(req.params.codigo, tipo);
-    const cbs = parseFloat(String(req.query.cbs ?? "")) || ALIQ_REF_PADRAO.cbs;
-    const ibs = parseFloat(String(req.query.ibs ?? "")) || ALIQ_REF_PADRAO.ibs;
-    res.json({
-      ...resultado,
-      cClassTribDescricao: mapCClassTrib(resultado.regra.cClassTrib),
-      cstDescricao: mapCSTIbsCbs(resultado.regra.cst),
-      cronograma: cronogramaTransicao(resultado.regra.reducao, resultado.regra.tratamento, tipo, { cbs, ibs }),
-      documentoFiscal: camposDocumentoFiscal(resultado),
-    });
+  // ─── REFORMA TRIBUTÁRIA — base oficial + consulta por NCM / NBS ──────────
+  const descCT = (c: string) => nomeClassTrib(c) || mapCClassTrib(c);
+  const descCst = (c: string) => nomeCst(c) || mapCSTIbsCbs(c);
+  const configAtual = () => mesclarConfiguracoes(storage.getConfiguracoes());
+  const refDe = (q: any) => {
+    const cfg = configAtual();
+    return {
+      cbs: parseFloat(String(q?.cbs ?? "")) || cfg.aliquotaReferenciaCbs,
+      ibs: parseFloat(String(q?.ibs ?? "")) || cfg.aliquotaReferenciaIbs,
+    };
+  };
+
+  function respostaReforma(codigo: string, tipo: TipoCodigo, ref: { cbs: number; ibs: number }) {
+    const r = consultarReforma(codigo, tipo, getBase());
+    const ct = getBase().classificacoes[r.regra.cClassTrib];
+    return {
+      ...r,
+      cClassTribDescricao: descCT(r.regra.cClassTrib),
+      cstDescricao: descCst(r.regra.cst),
+      legislacaoUrl: ct?.url || null,
+      documentosAceitos: ct?.documentos || [],
+      alternativasDescricao: Object.fromEntries((r.regra.alternativas || []).map(a => [a.cClassTrib, descCT(a.cClassTrib)])),
+      cronograma: cronogramaTransicao(r.regra.reducao, r.regra.tratamento, tipo, ref, r.regra.reducaoCbs),
+      documentoFiscal: camposDocumentoFiscal(r),
+      base: infoBase(),
+    };
+  }
+
+  // Informações da base oficial em uso
+  app.get("/api/reforma/base", (_req, res) => res.json(infoBase()));
+
+  // Baixa a tabela vigente do SVRS e passa a usá-la
+  app.post("/api/reforma/base/atualizar", async (_req, res) => {
+    try {
+      res.json(await atualizarBaseOnline());
+    } catch (e: any) {
+      res.status(502).json({ error: `Não foi possível atualizar pelo SVRS: ${e.message}` });
+    }
   });
 
+  // Tabela oficial de cClassTrib (para consulta / seleção)
+  app.get("/api/reforma/classificacoes", (_req, res) => {
+    const b = getBase();
+    res.json(Object.entries(b.classificacoes).map(([codigo, c]) => ({ codigo, ...c, cstNome: b.cst[c.cst]?.nome || "" })));
+  });
+
+  // Configurações centrais (alíquotas de referência e premissas do IS)
+  app.get("/api/configuracoes", (_req, res) => res.json(configAtual()));
+  app.put("/api/configuracoes", (req, res) => {
+    const nova = mesclarConfiguracoes({ ...configAtual(), ...(req.body || {}), premissasIS: { ...configAtual().premissasIS, ...(req.body?.premissasIS || {}) } });
+    storage.setConfiguracao("aliquotaReferenciaCbs", nova.aliquotaReferenciaCbs);
+    storage.setConfiguracao("aliquotaReferenciaIbs", nova.aliquotaReferenciaIbs);
+    storage.setConfiguracao("premissasIS", nova.premissasIS);
+    res.json(nova);
+  });
+
+  // Busca textual (itens dos anexos oficiais, LC 116, capítulos)
   app.get("/api/reforma-busca/:tipo", (req, res) => {
-    const tipo = req.params.tipo.toUpperCase() as TipoCodigo;
-    res.json(buscarPorDescricao(String(req.query.q || ""), tipo === "NBS" ? "NBS" : "NCM"));
+    const tipo = String(req.params.tipo).toUpperCase() === "NBS" ? "NBS" : "NCM";
+    res.json(buscarPorDescricao(String(req.query.q || ""), tipo, getBase()));
+  });
+
+  // Consulta em lote
+  app.post("/api/reforma/lote", (req, res) => {
+    const codigos: string[] = Array.isArray(req.body?.codigos) ? req.body.codigos.slice(0, 5000) : [];
+    const ref = refDe(req.body);
+    res.json(codigos.map(c => {
+      const tipo = detectarTipo(String(c));
+      const r = consultarReforma(String(c), tipo, getBase());
+      const final = cronogramaTransicao(r.regra.reducao, r.regra.tratamento, tipo, ref, r.regra.reducaoCbs).at(-1)!;
+      return {
+        entrada: c, tipo, codigoFormatado: r.codigoFormatado, valido: r.valido, capitulo: r.capitulo,
+        descricao: r.regra.descricao, tratamento: r.regra.tratamento, descricaoTratamento: r.descricaoTratamento,
+        reducao: r.regra.reducao, cst: r.regra.cst, cClassTrib: r.regra.cClassTrib, cClassTribDescricao: descCT(r.regra.cClassTrib),
+        fonte: r.fonte, condicional: !!r.regra.condicional, alternativas: (r.regra.alternativas || []).map(a => a.cClassTrib),
+        impostoSeletivo: r.is?.categoria || null, aliquota2033: final.total, fundamento: r.regra.fundamento,
+      };
+    }));
+  });
+
+  // Simulação de operação (destino, regime do vendedor, crédito, IS)
+  app.post("/api/reforma/simular", (req, res) => {
+    const b = req.body || {};
+    const tipo: TipoCodigo = String(b.tipo).toUpperCase() === "NBS" ? "NBS" : "NCM";
+    const r = consultarReforma(String(b.codigo || ""), tipo, getBase());
+    const cfg = configAtual();
+    const chaveIS = r.is ? CHAVE_IS_POR_CATEGORIA[r.is.categoria] : undefined;
+    const sim = simularOperacao(r, {
+      valor: Number(b.valor) || 0, ano: Number(b.ano) || 2033,
+      destino: b.destino || "mercado_interno", regimeVendedor: b.regimeVendedor || "regular", adquirente: b.adquirente || "contribuinte",
+      aliquotaDasIbsCbs: Number(b.aliquotaDasIbsCbs) || 0,
+      aliquotaIS: b.aliquotaIS != null && b.aliquotaIS !== "" ? Number(b.aliquotaIS) : (chaveIS ? cfg.premissasIS[chaveIS] : 0),
+      ref: refDe(b),
+    });
+    res.json({ ...sim, cClassTribDescricao: descCT(sim.cClassTrib) });
+  });
+
+  // Consulta individual
+  app.get("/api/reforma/:tipo/:codigo", (req, res) => {
+    const tipo = String(req.params.tipo).toUpperCase() as TipoCodigo;
+    if (tipo !== "NCM" && tipo !== "NBS") return res.status(400).json({ error: "Tipo deve ser NCM ou NBS" });
+    res.json(respostaReforma(String(req.params.codigo), tipo, refDe(req.query)));
+  });
+
+  // Conferência de cClassTrib nas NF-e importadas
+  app.get("/api/xml-conformidade", (req, res) => {
+    const clienteId = req.query.clienteId ? parseInt(String(req.query.clienteId)) : undefined;
+    const notaId = req.query.notaId ? parseInt(String(req.query.notaId)) : undefined;
+    const notas = notaId ? [storage.getXmlImportacaoById(notaId)].filter(Boolean) as any[] : storage.getXmlImportacoes(clienteId);
+    const itens: any[] = [];
+    for (const n of notas) {
+      let lista: any[] = [];
+      try { lista = JSON.parse(n.itens || "[]"); } catch { lista = []; }
+      lista.forEach((it, i) => {
+        const c = conferirItem({ ncm: it.ncm, descricao: it.descricao, cClassTrib: it.cClassTrib, cstIbsCbs: it.cstIbsCbs || it.cstIbs, vTotal: it.vTotal }, getBase(), n.tipo === "saida" ? "saida" : "entrada");
+        itens.push({
+          notaId: n.id, numero: n.numero, serie: n.serie, tipo: n.tipo, dataEmissao: n.dataEmissao,
+          emitente: n.emitRazao, emitCnpj: n.emitCnpj, item: i + 1, ncm: it.ncm, descricao: it.descricao, vTotal: it.vTotal,
+          ...c, statusLabel: STATUS_LABEL[c.status], esperadoDescricao: descCT(c.esperado.cClassTrib),
+        });
+      });
+    }
+    const resumo: Record<string, number> = {};
+    for (const it of itens) resumo[it.status] = (resumo[it.status] || 0) + 1;
+    res.json({ totalNotas: notas.length, totalItens: itens.length, resumo, itens, base: infoBase() });
   });
 
   // POST consulta fiscal — motor principal
@@ -644,7 +754,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // POST /api/clientes/:id/pgdas — importação do extrato PGDAS-D (PDF)
   app.post("/api/clientes/:id/pgdas", upload.single("pdf"), async (req, res) => {
     try {
-      const clienteId = parseInt(req.params.id);
+      const clienteId = parseInt(String(req.params.id));
       if (isNaN(clienteId)) return res.status(400).json({ error: "ID inválido" });
       if (!req.file) return res.status(400).json({ error: "Nenhum arquivo enviado" });
 
@@ -774,11 +884,30 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const valorDesc    = n(tot.vDesc);
     const valorProd    = n(tot.vProd);
 
-    // IBS/CBS — grupos gIBS e gCBS (NF-e 4.x)
+    // IBS/CBS — leiaute da Reforma (NT 2025.002): imposto/IBSCBS { CST, cClassTrib, gIBSCBS { vBC, gIBSUF, gIBSMun, gCBS, vIBS } }
+    // Mantém compatibilidade com arquivos antigos que usavam gIBS/gCBS direto em <imposto>.
+    const rt = (det: any) => {
+      const grp = det.imposto?.IBSCBS;
+      const g = grp?.gIBSCBS;
+      const vIbsUf = n(g?.gIBSUF?.vIBSUF), vIbsMun = n(g?.gIBSMun?.vIBSMun);
+      return {
+        cstIbsCbs: (grp?.CST ?? det.imposto?.gIBS?.CST ?? "").toString(),
+        cClassTrib: (grp?.cClassTrib ?? "").toString(),
+        vBCIbsCbs: n(g?.vBC),
+        pIbsUf: n(g?.gIBSUF?.pIBSUF), pIbsMun: n(g?.gIBSMun?.pIBSMun), pCbs: n(g?.gCBS?.pCBS),
+        pRedAliq: n(g?.gIBSUF?.gRed?.pRedAliq ?? g?.gCBS?.gRed?.pRedAliq),
+        vIbs: n(g?.vIBS) || (vIbsUf + vIbsMun) || n(det.imposto?.gIBS?.vIBS),
+        vCbs: n(g?.gCBS?.vCBS) || n(det.imposto?.gCBS?.vCBS),
+        cstIS: (det.imposto?.IS?.CSTIS ?? "").toString(),
+        cClassTribIS: (det.imposto?.IS?.cClassTribIS ?? "").toString(),
+        vIS: n(det.imposto?.IS?.vIS),
+      };
+    };
     let valorIbs = 0; let valorCbs = 0;
     for (const det of dets) {
-      valorIbs += n(det.imposto?.gIBS?.vIBS);
-      valorCbs += n(det.imposto?.gCBS?.vCBS);
+      const t = rt(det);
+      valorIbs += t.vIbs;
+      valorCbs += t.vCbs;
     }
     // Situação da nota
     const protNFe = raw.nfeProc?.protNFe;
@@ -806,10 +935,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       vIcms:      n(det.imposto?.ICMS?.[Object.keys(det.imposto?.ICMS || {})[0]]?.vICMS),
       vPis:       n(det.imposto?.PIS?.[Object.keys(det.imposto?.PIS || {})[0]]?.vPIS),
       vCofins:    n(det.imposto?.COFINS?.[Object.keys(det.imposto?.COFINS || {})[0]]?.vCOFINS),
-      vIbs:       n(det.imposto?.gIBS?.vIBS),
-      vCbs:       n(det.imposto?.gCBS?.vCBS),
-      cstIbs:     det.imposto?.gIBS?.CST || "",
-      cstCbs:     det.imposto?.gCBS?.CST || "",
+      ...rt(det),
+      cstIbs:     rt(det).cstIbsCbs,
+      cstCbs:     rt(det).cstIbsCbs,
     }));
 
     return {
@@ -943,12 +1071,12 @@ function gerarConfiguracao({ ncm, cfop, modalidade, regime, ncmData }: any) {
 
   // Enquadramento automático pela base da Reforma (LC 214/2025) quando o NCM
   // não tem cClassTrib cadastrado pelo usuário
-  const reforma = consultarReforma(String(ncm), "NCM");
+  const reforma = consultarReforma(String(ncm), "NCM", getBase());
   const cClassTribCadastrado = isSimples ? ncmData?.cClassTribSimples : ncmData?.cClassTribPresumido;
   cClassTrib = cClassTribCadastrado || reforma.regra.cClassTrib;
   cstIbsCbs = cClassTrib.substring(0, 3);
-  cClassTribDescricao = mapCClassTrib(cClassTrib);
-  cstIbsCbsDescricao = mapCSTIbsCbs(cstIbsCbs);
+  cClassTribDescricao = nomeClassTrib(cClassTrib) || mapCClassTrib(cClassTrib);
+  cstIbsCbsDescricao = nomeCst(cstIbsCbs) || mapCSTIbsCbs(cstIbsCbs);
 
   // Alíquotas IBS/CBS 2026 (fase teste)
   const aliquotaIbs = 0.1;
