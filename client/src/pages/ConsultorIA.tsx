@@ -58,14 +58,16 @@ NÃO-CUMULATIVIDADE PLENA (Arts. 28–47 LC 214/2025):
 - B2C: NÃO gera crédito
 - Simples Nacional: crédito proporcional ao percentual de tributação no SN (Art. 144)
 - Ativo imobilizado: gera crédito; observar CST e cClassTrib do bem adquirido
-- CFOP 1604 (recuperação CIAP): tributação normal, CST 001 (tributação integral)
+- CFOP 1604 (recuperação CIAP): tributação normal, CST 000 / cClassTrib 000001 (tributação integral)
 
 REGRAS ESPECÍFICAS cClassTrib:
-- Redução 60% de alíquota: produtos da cesta básica, medicamentos essenciais
-- Redução 100% (alíquota zero): produtos agropecuários básicos
-- Redução 30%: serviços de educação, saúde, transporte coletivo
-- Tributação integral: CST 001 = regime geral sem benefício
-- Isenção: CST específico de isenção
+- Alíquota zero (redução 100%, CST 200): Cesta Básica Nacional (Anexo I, cClassTrib 200003), hortícolas/frutas/ovos (Anexo XV, 200014), medicamentos do Anexo XIV (200009), dispositivos médicos Anexo XII (200004), acessibilidade Anexo XIII (200007), absorventes (200013)
+- Redução 60% (CST 200): educação (Anexo II, 200028), saúde humana (Anexo III, 200029), medicamentos (200032), dispositivos médicos Anexo IV (200030), alimentos Anexo VII (200034), higiene e limpeza Anexo VIII (200035), produtos agropecuários in natura (200036), insumos agropecuários Anexo IX (200038), produções artísticas Anexo X (200039)
+- Redução 30%: profissões intelectuais regulamentadas (art. 127, 200052) — advogados, contadores, engenheiros, arquitetos etc.
+- Redução 40%: bares e restaurantes (200047), hotelaria e parques (200048), transporte coletivo intermunicipal/interestadual (200049), agências de turismo (200051)
+- Tributação integral: CST 000 / cClassTrib 000001 (regime geral sem benefício)
+- Isenção: CST 400; Imunidade e não incidência: CST 410; Monofásico (combustíveis): CST 620
+- NÃO usar 010001 como padrão: é específico de operações do FGTS (setor financeiro)
 
 OBRIGAÇÕES ACESSÓRIAS 2026:
 - SPED Fiscal, EFD-Contribuições: ainda SEM atualização para campos IBS/CBS/cClassTrib
@@ -75,14 +77,16 @@ OBRIGAÇÕES ACESSÓRIAS 2026:
 
 IMPOSTO SELETIVO (IS):
 - "Imposto do pecado" — bens e serviços prejudiciais à saúde/meio ambiente
-- Cigarros, bebidas alcoólicas, veículos poluentes, etc.
+- Bens alcançados (LC 214/2025, art. 409, §1º): veículos, embarcações e aeronaves, produtos fumígenos, bebidas alcoólicas, bebidas açucaradas, bens minerais e concursos de prognósticos/fantasy sport
+- Armas/munições e agrotóxicos foram retirados do texto final
+- Alíquotas a definir em lei ordinária; bens minerais até 0,25% (incide também na exportação)
 - Não substitui nenhum tributo existente — adicional
 
 REGIMES DIFERENCIADOS E REDUÇÃO DE ALÍQUOTA:
-- Saúde: médicos, hospitais, planos de saúde — redução
-- Educação: estabelecimentos de ensino — redução
-- Transporte coletivo: redução
-- Agronegócio: alíquota zero para produtos in natura
+- Saúde: serviços do Anexo III — redução de 60%; planos de saúde — regime específico
+- Educação: serviços do Anexo II — redução de 60%
+- Transporte coletivo: urbano isento; intermunicipal/interestadual redução de 40%
+- Agronegócio: produtos in natura e insumos com redução de 60%; hortifrutigranjeiros com alíquota zero
 - Combustíveis: regime específico (monofásico)
 - Serviços financeiros: regime específico
 

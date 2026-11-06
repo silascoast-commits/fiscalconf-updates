@@ -345,17 +345,19 @@ export default function Simulador() {
   const riscoExclusaoSN = rbt12Calc > 4200000 && rbt12Calc <= 4800000;
   const exclusaoSN      = rbt12Calc > 4800000;
 
-  // ─── Imposto Seletivo — alíquotas LC 214/2025 art. 415–450 ───────────────
+  // ─── Imposto Seletivo — LC 214/2025, art. 409, §1º (vigência 2027) ────────
+  // A LC 214 define os bens alcançados, mas NÃO fixa as alíquotas: elas serão
+  // estabelecidas em lei ordinária (exceto bens minerais: teto de 0,25%).
+  // Os percentuais abaixo são premissas de simulação, não alíquotas legais.
   const IS_ALIQUOTAS: Record<string, { label: string; aliq: number; obs: string }> = {
-    nenhum:       { label: "Não aplicável",          aliq: 0,    obs: "" },
-    bebidas_alc:  { label: "Bebidas alcoólicas",      aliq: 20,   obs: "Art. 415 § 2º, I" },
-    fumo:         { label: "Cigarros / fumo",          aliq: 100,  obs: "Art. 415 § 2º, II" },
-    veiculos:     { label: "Veículos automotores",     aliq: 7.5,  obs: "Art. 415 § 2º, III" },
-    embarcacoes:  { label: "Embarcações / aeronaves",  aliq: 10,   obs: "Art. 415 § 2º, IV" },
-    armas:        { label: "Armas e munições",         aliq: 25,   obs: "Art. 415 § 2º, V" },
-    bebidas_nao:  { label: "Bebidas não-alcoólicas",   aliq: 10,   obs: "Art. 415 § 2º, VI" },
-    minerais:     { label: "Minérios / petróleo",      aliq: 1,    obs: "Art. 415 § 2º, VII" },
-    agrotoxicos:  { label: "Agrotóxicos",              aliq: 10,   obs: "Art. 415 § 2º, VIII" },
+    nenhum:       { label: "Não aplicável",              aliq: 0,    obs: "" },
+    bebidas_alc:  { label: "Bebidas alcoólicas",         aliq: 20,   obs: "premissa — alíquota a definir em lei ordinária" },
+    fumo:         { label: "Produtos fumígenos",         aliq: 100,  obs: "premissa — alíquota a definir em lei ordinária" },
+    veiculos:     { label: "Veículos",                   aliq: 7.5,  obs: "premissa — graduada por critérios ambientais" },
+    embarcacoes:  { label: "Embarcações / aeronaves",    aliq: 10,   obs: "premissa — alíquota a definir em lei ordinária" },
+    bebidas_acu:  { label: "Bebidas açucaradas",         aliq: 10,   obs: "premissa — alíquota a definir em lei ordinária" },
+    minerais:     { label: "Bens minerais (extração)",   aliq: 0.25, obs: "teto legal de 0,25% (CF, art. 153, §6º, VII)" },
+    prognosticos: { label: "Concursos de prognósticos / fantasy sport", aliq: 10, obs: "premissa — alíquota a definir em lei ordinária" },
   };
   const isInfo = IS_ALIQUOTAS[setorIS];
   const valorIS2027 = setorIS !== "nenhum" ? (faturamentoMensal * (isInfo.aliq / 100)) : 0;
@@ -535,13 +537,13 @@ export default function Simulador() {
               </select>
               {setorIS !== "nenhum" && (
                 <div className="text-[10px] text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/20 rounded p-1.5 space-y-0.5">
-                  <p>Alíquota: <strong>{isInfo.aliq}%</strong> sobre receita bruta ({isInfo.obs})</p>
+                  <p>Alíquota: <strong>{isInfo.aliq}%</strong> sobre a receita dos bens alcançados ({isInfo.obs})</p>
                   <p>IS mensal estimado (a partir de 2027): <strong>{(faturamentoMensal * (isInfo.aliq / 100)).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong></p>
                   <p>O IS incide sobre saídas e não gera crédito (extrafiscal).</p>
                 </div>
               )}
               {setorIS === "nenhum" && (
-                <p className="text-[10px] text-muted-foreground">Selecione o setor se a empresa produz bens sujeitos ao IS (LC 214/2025 art. 415)</p>
+                <p className="text-[10px] text-muted-foreground">Selecione o setor se a empresa produz bens sujeitos ao IS (LC 214/2025, art. 409). Consulte o NCM em "Reforma NCM/NBS".</p>
               )}
             </div>
 

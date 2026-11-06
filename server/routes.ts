@@ -9,6 +9,8 @@ import fs from "fs";
 import path from "path";
 import multer from "multer";
 import { parseStringPromise } from "xml2js";
+import { mapCClassTrib, mapCSTIbsCbs } from "@shared/classificacaoTributaria";
+import { consultarReforma, buscarPorDescricao, cronogramaTransicao, camposDocumentoFiscal, ALIQ_REF_PADRAO, type TipoCodigo } from "@shared/reformaTributaria";
 
 // Extrai texto de PDF usando pdfjs-dist (legacy/Node.js)
 async function extractPdfText(buf: Buffer): Promise<string> {
@@ -128,6 +130,27 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.delete("/api/ncms/:id", (req, res) => {
     storage.deleteNcm(parseInt(req.params.id));
     res.json({ ok: true });
+  });
+
+  // ─── REFORMA TRIBUTÁRIA — consulta por NCM / NBS ─────────────────────────
+  app.get("/api/reforma/:tipo/:codigo", (req, res) => {
+    const tipo = req.params.tipo.toUpperCase() as TipoCodigo;
+    if (tipo !== "NCM" && tipo !== "NBS") return res.status(400).json({ error: "Tipo deve ser NCM ou NBS" });
+    const resultado = consultarReforma(req.params.codigo, tipo);
+    const cbs = parseFloat(String(req.query.cbs ?? "")) || ALIQ_REF_PADRAO.cbs;
+    const ibs = parseFloat(String(req.query.ibs ?? "")) || ALIQ_REF_PADRAO.ibs;
+    res.json({
+      ...resultado,
+      cClassTribDescricao: mapCClassTrib(resultado.regra.cClassTrib),
+      cstDescricao: mapCSTIbsCbs(resultado.regra.cst),
+      cronograma: cronogramaTransicao(resultado.regra.reducao, resultado.regra.tratamento, tipo, { cbs, ibs }),
+      documentoFiscal: camposDocumentoFiscal(resultado),
+    });
+  });
+
+  app.get("/api/reforma-busca/:tipo", (req, res) => {
+    const tipo = req.params.tipo.toUpperCase() as TipoCodigo;
+    res.json(buscarPorDescricao(String(req.query.q || ""), tipo === "NBS" ? "NBS" : "NCM"));
   });
 
   // POST consulta fiscal — motor principal
@@ -918,13 +941,12 @@ function gerarConfiguracao({ ncm, cfop, modalidade, regime, ncmData }: any) {
   let cstIbsCbs = "";
   let cstIbsCbsDescricao = "";
 
-  if (isSimples) {
-    cClassTrib = ncmData?.cClassTribSimples || "010001";
-    cstIbsCbs = cClassTrib.substring(0, 3);
-  } else {
-    cClassTrib = ncmData?.cClassTribPresumido || "010001";
-    cstIbsCbs = cClassTrib.substring(0, 3);
-  }
+  // Enquadramento automático pela base da Reforma (LC 214/2025) quando o NCM
+  // não tem cClassTrib cadastrado pelo usuário
+  const reforma = consultarReforma(String(ncm), "NCM");
+  const cClassTribCadastrado = isSimples ? ncmData?.cClassTribSimples : ncmData?.cClassTribPresumido;
+  cClassTrib = cClassTribCadastrado || reforma.regra.cClassTrib;
+  cstIbsCbs = cClassTrib.substring(0, 3);
   cClassTribDescricao = mapCClassTrib(cClassTrib);
   cstIbsCbsDescricao = mapCSTIbsCbs(cstIbsCbs);
 
@@ -953,7 +975,13 @@ function gerarConfiguracao({ ncm, cfop, modalidade, regime, ncmData }: any) {
   // Alertas
   const alertas: string[] = [];
   if (!ncmData) {
-    alertas.push("NCM não cadastrado na base local. Configure as alíquotas específicas no módulo NCM para maior precisão.");
+    alertas.push(`NCM não cadastrado na base local. cClassTrib ${reforma.regra.cClassTrib} sugerido pela base da Reforma (${reforma.descricaoTratamento}) — confira em "Reforma NCM/NBS".`);
+  }
+  if (!cClassTribCadastrado && reforma.regra.condicional) {
+    alertas.push(`Enquadramento condicional: ${reforma.regra.descricao}. ${(reforma.regra.condicoes || [])[0] || "Confira o anexo legal."}`);
+  }
+  if (reforma.is) {
+    alertas.push(`Imposto Seletivo a partir de 2027: ${reforma.is.categoria} (${reforma.is.fundamento}).`);
   }
   if (isInterestadual && !isSimples) {
     alertas.push("Operação interestadual: verifique DIFAL se destinatário for não contribuinte (B2C).");
@@ -998,6 +1026,14 @@ function gerarConfiguracao({ ncm, cfop, modalidade, regime, ncmData }: any) {
       aliquotaCbs: `${aliquotaCbs}%`,
       aliquotaTotal: `${aliquotaTotal}%`,
       observacao: "Alíquotas de 2026 (fase de teste). A partir de 2027, CBS passa à alíquota plena.",
+      origemCClassTrib: cClassTribCadastrado ? "cadastro" : "base_reforma",
+      reforma: {
+        tratamento: reforma.descricaoTratamento,
+        reducao: reforma.regra.reducao,
+        fundamento: reforma.regra.fundamento,
+        condicional: !!reforma.regra.condicional,
+        impostoSeletivo: reforma.is ? { categoria: reforma.is.categoria, aliquota: reforma.is.aliquota } : null,
+      },
     },
     ipi: {
       aliquota: ncmData?.aliquotaIpi ?? "Verificar tabela TIPI",
@@ -1089,127 +1125,6 @@ function mapCSTPisCofins(cst: string): string {
     "99": "Outras operações",
   };
   return map[cst] || "Consulte a tabela oficial";
-}
-
-function mapCClassTrib(code: string): string {
-  // Fonte oficial: Portal SVRS - dfe-portal.svrs.rs.gov.br/Cff/ClassificacaoTributaria
-  const map: Record<string, string> = {
-    "000001": "Situações tributadas integralmente pelo IBS e CBS",
-    "000002": "Exploração de via",
-    "000003": "Regime automotivo — projetos incentivados (art. 311)",
-    "000004": "Regime automotivo — projetos incentivados (art. 312)",
-    "000005": "Operação com EAC destinado à mistura com gasolina A",
-    "010001": "Operações do FGTS não realizadas pela Caixa Econômica Federal",
-    "010002": "Operações do serviço financeiro",
-    "011001": "Planos de assistência funerária",
-    "011002": "Planos de assistência à saúde",
-    "011003": "Intermediação de planos de assistência à saúde",
-    "011004": "Concursos e prognósticos",
-    "011005": "Planos de assistência à saúde de animais domésticos",
-    "200001": "Serviços de transporte de bens até zonas de processamento de exportação",
-    "200002": "Fornecimento ou importação para produtor rural não contribuinte ou TAC",
-    "200003": "Vendas de produtos destinados à alimentação humana (Anexo I)",
-    "200004": "Fornecimento de dispositivos médicos (Anexo XII)",
-    "200005": "Fornecimento de dispositivos médicos para órgãos da administração pública",
-    "200006": "Situação de emergência de saúde pública reconhecida pelo Poder público",
-    "200007": "Fornecimento de dispositivos de acessibilidade para pessoas com deficiência (Anexo XIII)",
-    "200008": "Fornecimento de dispositivos de acessibilidade adquiridos por órgãos públicos",
-    "200009": "Fornecimento dos medicamentos registrados na Anvisa",
-    "200010": "Fornecimento dos medicamentos registrados na Anvisa — órgãos públicos",
-    "200011": "Fornecimento das composições para nutrição enteral e parenteral — órgãos públicos",
-    "200012": "Situação de emergência de saúde pública (específico)",
-    "200013": "Fornecimento de tampões higiênicos e absorventes higiênicos",
-    "200014": "Fornecimento dos produtos hortícolas, frutas e ovos (Anexo XV)",
-    "200015": "Venda de automóveis nacionais adquiridos por motoristas profissionais",
-    "200016": "Prestação de serviços de pesquisa e desenvolvimento por ICT",
-    "200017": "Operações relacionadas ao FGTS",
-    "200018": "Operações de resseguro e retrocessão",
-    "200019": "Importador dos serviços financeiros contribuinte",
-    "200020": "Operação por sociedades cooperativas optantes por regime específico",
-    "200021": "Serviços de transporte público coletivo ferroviário e hidroviário",
-    "200022": "Operação originada fora da ZFM destinando bem a contribuinte na ZFM",
-    "200023": "Indústria incentivada — bem intermediário para outra indústria incentivada na ZFM",
-    "200024": "Operação originada fora das Áreas de Livre Comércio — destinada a contribuinte nas ALCs",
-    "200025": "Fornecimento de serviços de educação — Programa Prouni",
-    "200026": "Locação de imóveis em zonas reabilitadas",
-    "200027": "Operações de locação, cessão onerosa e arrendamento de bens imóveis",
-    "200028": "Fornecimento dos serviços de educação (Anexo II)",
-    "200029": "Fornecimento dos serviços de saúde humana (Anexo III)",
-    "200030": "Venda dos dispositivos médicos (Anexo IV)",
-    "200031": "Fornecimento dos dispositivos de acessibilidade para PCD (Anexo V)",
-    "200032": "Fornecimento dos medicamentos Anvisa ou farmácias de manipulação (Anexo VI)",
-    "200033": "Fornecimento das composições para nutrição enteral e parenteral (Anexo VI)",
-    "200034": "Fornecimento dos alimentos destinados ao consumo humano (Anexo VII)",
-    "200035": "Fornecimento dos produtos de higiene pessoal e limpeza (Anexo VIII)",
-    "200036": "Fornecimento de produtos agropecuários, aquícolas, pesqueiros, florestais e extrativistas vegetais",
-    "200037": "Fornecimento de serviços ambientais de conservação ou recuperação da vegetação nativa",
-    "200038": "Fornecimento dos insumos agropecuários e aquícolas (Anexo IX)",
-    "200039": "Fornecimento de bens e serviços — produções artísticas, culturais e eventos",
-    "200040": "Fornecimento de serviços de comunicação institucional à administração pública",
-    "200041": "Fornecimento de serviço de educação desportiva (art. 141, I)",
-    "200042": "Fornecimento de serviço de gestão e exploração do desporto (art. 141, II)",
-    "200043": "Fornecimento à administração pública — bens relativos à soberania (Anexo XI)",
-    "200044": "Operações de segurança da informação e cibernética — sociedade brasileira",
-    "200045": "Projetos de reabilitação urbana de zonas históricas e áreas críticas",
-    "200046": "Operações com bens imóveis",
-    "200047": "Bares e Restaurantes",
-    "200048": "Hotelaria, Parques de Diversão e Parques Temáticos",
-    "200049": "Transporte coletivo de passageiros rodoviário, ferroviário e hidroviário",
-    "200050": "Serviços de transporte aéreo regional coletivo de passageiros ou de carga",
-    "200051": "Agências de Turismo",
-    "200052": "Prestação de serviços de profissões intelectuais",
-    "200053": "Fornecimento de medicamentos classificados como soros ou vacinas",
-    "200054": "Fornecimento de bem pela cooperativa agropecuária a associado não sujeito ao regime geral",
-    "220001": "Incorporação imobiliária — regime especial de tributação",
-    "400001": "Isenção — prevista na LC 214/2025",
-    "410001": "Imunidade — prevista na Constituição Federal",
-    "410010": "Não incidência — exportações de bens e serviços",
-    "410020": "Imunidade — templos religiosos",
-    "410021": "Imunidade — partidos políticos",
-    "410999": "Não incidência — outros",
-    "510001": "Diferimento integral do IBS e CBS",
-    "510010": "Diferimento — operação com insumos agropecuários",
-    "515001": "Diferimento com redução de alíquota",
-    "550001": "Suspensão — exportação temporária",
-    "620001": "Tributação monofásica — combustíveis",
-    "620002": "Tributação monofásica — energia elétrica",
-    "620003": "Tributação monofásica — telecomunicações",
-    "620004": "Tributação monofásica — medicamentos",
-    "620005": "Tributação monofásica — veículos",
-    "620006": "Tributação monofásica — outros produtos",
-    "800001": "Transferência de crédito",
-    "810001": "Ajustes de IBS na Zona Franca de Manaus",
-    "820001": "Regime específico — Simples Nacional",
-    "820002": "Regime específico — produtor rural",
-    "820003": "Regime específico — microempreendedor individual",
-    "820006": "Regime específico — cooperativas",
-    "830001": "Exclusão de base de cálculo — LC 214/2025",
-  };
-  return map[code] || `Classificação tributária IBS/CBS — código ${code} (consulte tabela oficial SVRS)`;
-}
-
-function mapCSTIbsCbs(cst: string): string {
-  const map: Record<string, string> = {
-    "000": "Tributação integral",
-    "010": "Tributação integral com crédito presumido",
-    "011": "Tributação integral com crédito presumido (específico)",
-    "200": "Alíquota reduzida (inclusive zero)",
-    "220": "Alíquota fixa",
-    "221": "Alíquota fixa proporcional",
-    "222": "Redução de base de cálculo",
-    "400": "Isenção",
-    "410": "Imunidade e não incidência",
-    "510": "Diferimento",
-    "515": "Diferimento com redução de alíquota",
-    "550": "Suspensão",
-    "620": "Tributação monofásica",
-    "800": "Transferência de crédito",
-    "810": "Ajustes de IBS na ZFM",
-    "811": "Ajustes",
-    "820": "Tributação em declaração de regime específico",
-    "830": "Exclusão de base de cálculo",
-  };
-  return map[cst] || `CST IBS/CBS ${cst}`;
 }
 
 function getCfopDescricao(cfop: string): string {
