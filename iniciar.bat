@@ -7,6 +7,25 @@ echo ============================================
 echo   FiscalConf - iniciando
 echo ============================================
 
+rem Executado de dentro do ZIP (WinRAR/7-Zip/Windows abrem so o .bat numa pasta temporaria)
+if not exist "%~dp0package.json" (
+  echo.
+  echo [ATENCAO] O arquivo foi aberto de dentro do ZIP, sem extrair.
+  echo Pasta atual: %~dp0
+  echo.
+  echo Feche o WinRAR, clique com o botao direito no ZIP e escolha
+  echo "Extrair para..." ^(ex.: C:\FiscalConf^). Depois abra o iniciar.bat
+  echo que esta DENTRO da pasta extraida.
+  pause
+  exit /b 1
+)
+if not exist "%~dp0dist\index.cjs" (
+  echo.
+  echo [ERRO] Pasta dist nao encontrada. Baixe o projeto completo novamente.
+  pause
+  exit /b 1
+)
+
 where node >nul 2>nul
 if errorlevel 1 (
   echo.
