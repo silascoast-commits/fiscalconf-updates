@@ -672,7 +672,7 @@ function processDay(){const d=G.day;for(const id of G.dayFix[d]||[]){const f=G.f
 function afterDay(d){advanceComps();
   for(const p of Object.values(G.players)){if(p.fit<100)p.fit=Math.min(100,p.fit+11);if(p.inj>0)p.inj--}
   if(d%2===0)weekly(weekOf(d));
-  G.day++;if(G.day>=2*W)endSeason();save()}
+  G.day++;if(G.day>=2*W)endSeason();autoSave(d%2===0&&!G.coach.club?'week':'day')}
 function weekly(w){const inWin=isWindow(w);const me=G.coach.club;
   for(const t of Object.values(G.teams)){const pr=payroll(t);const op=Math.round(pr*.12);t.cash+=t.inc-pr-op;if(t.id===me){ledger('Patrocínio e TV',t.inc);ledger('Folha salarial',-pr);ledger('Custos operacionais',-op)}}
   for(const t of Object.values(G.teams)){if(t.id===me||!t.coach)continue;if(w>3&&t.cc<15&&R()<.5)fireAI(t)}
@@ -778,7 +778,7 @@ function postUserMatch(f,live){f.ut=G.coach.club;const u=userResult(f);const c=G
   if(derby||tie||Math.abs(mg)>=3||G.board<35||R()<.42)pushModal(()=>pressModal('post',ctx,()=>nextModal()));
   pushModal(()=>fansModal(f,ctx));
   const d=G.day;pushModal(()=>resultsModal(d,f));
-  processDay();checkFire();render()}
+  processDay();checkFire();autoSave('match');render()}
 function pressCtx(f,u,derby,tie){const t=myTeam();const rt=f.rt||{};const mine=Object.keys(rt).map(Number).filter(id=>G.players[id]&&G.players[id].t===t.id);
   const best=mine.sort((a,b)=>rt[b]-rt[a])[0],worst=mine.slice().sort((a,b)=>rt[a]-rt[b])[0];const sc=(f.gl||[]).filter(g=>(g[2]===0)===u.home).map(g=>g[1]);
   return {team:t,f,u,derby,tie,opp:team(u.opp).n,score:`${u.gf} x ${u.ga}`,best:best&&G.players[best],worst:worst&&G.players[worst],scorer:sc.length?G.players[sc[0]]:null}}
@@ -986,7 +986,13 @@ function liveFinish(){const L=LM;const res={hg:L.g[0],ag:L.g[1],ev:L.ev,pl:L.sid
   const sl=L.sides[L.us];G.style=sl.style;G.press=sl.press;LM=null;UI.tab='painel';postUserMatch(f,true)}
 
 /* ---------------- SALVAR ---------------- */
-function save(){try{localStorage.setItem(SKEY,JSON.stringify(G))}catch(e){if(!save.warned){save.warned=1;toast('Este navegador não permitiu salvar o progresso.')}}}
+const SAVE_MODES={dia:'Todo dia',jogo:'A cada jogo',jogo3:'A cada 3 jogos',manual:'Só manual'};
+function autoSave(kind){const m=G.saveMode||'dia';
+  if(m==='dia'&&kind==='day')return save();
+  if(kind==='week'&&(m==='jogo'||m==='jogo3'))return save();
+  if(kind==='match'){if(m==='jogo')return save();if(m==='jogo3'){G.sinceSave=(G.sinceSave||0)+1;if(G.sinceSave>=3)save()}}}
+function savedLabel(){if(!G.lastSave)return 'nunca salvo';const L=G.lastSave;return L.y===G.year&&L.d===G.day?'salvo agora':`salvo em ${L.y===G.year?fmtDate(Math.min(L.d,2*W-1)):L.y}`}
+function save(){G.sinceSave=0;G.lastSave={y:G.year,d:G.day};try{localStorage.setItem(SKEY,JSON.stringify(G))}catch(e){if(!save.warned){save.warned=1;toast('Este navegador não permitiu salvar o progresso.')}}}
 function hasSave(){try{return !!localStorage.getItem(SKEY)}catch(e){return false}}
 function load(){try{const s=localStorage.getItem(SKEY);if(s){G=JSON.parse(s);return true}}catch(e){}return false}
 
@@ -1035,7 +1041,7 @@ function topBar(){const t=myTeam();const nf=nextUserFix();const today=userFixTod
    ${LM?`<button class="btn pri" onclick="A.tab('jogo')">Voltar ao jogo</button>`:`${t&&!today?`<button class="btn" onclick="A.skip()" title="Avança até o próximo jogo">Até o jogo ⏭</button>`:''}<button class="btn pri" onclick="A.cont()">${today?`Jogar · ${esc(team(today.h===t.id?today.a:today.h).n)}`:t?'Avançar dia':'Avançar semana'} ▸</button>`}
    </div></header>`}
 function tabs(){const unread=G.inbox.filter(m=>!m.read).length;const T=[['painel','Painel'],['elenco','Elenco e tática'],['tabelas','Competições'],['calendario','Calendário'],['mercado','Mercado'],['financas','Finanças'],['mensagens','Mensagens'],['carreira','Carreira']];if(LM)T.unshift(['jogo','Ao vivo']);
-  return `<nav class="tabs"><div class="wrap">${T.map(([k,n])=>`<button class="${UI.tab===k?'on':''}" onclick="A.tab('${k}')">${n}${k==='mensagens'&&unread?`<span class="badge">${unread}</span>`:''}</button>`).join('')}<span class="sp"></span><button onclick="A.saveNow()">Salvar</button></div></nav>`}
+  return `<nav class="tabs"><div class="wrap">${T.map(([k,n])=>`<button class="${UI.tab===k?'on':''}" onclick="A.tab('${k}')">${n}${k==='mensagens'&&unread?`<span class="badge">${unread}</span>`:''}</button>`).join('')}<span class="sp"></span><label class="row" style="gap:6px;font-size:12px;color:var(--muted);white-space:nowrap;padding:0 6px"><span>Auto-save</span><select id="smode" aria-label="Quando salvar automaticamente" style="padding:3px 6px;font-size:12px" onchange="A.saveMode(this.value)">${Object.entries(SAVE_MODES).map(([k,n])=>`<option value="${k}" ${(G.saveMode||'dia')===k?'selected':''}>${n}</option>`).join('')}</select></label><button onclick="A.saveNow()" title="${savedLabel()}">Salvar <span class="dim" style="font-size:11px">· ${savedLabel()}</span></button></div></nav>`}
 function view(){const t=myTeam();if(!t&&['elenco','financas','calendario'].includes(UI.tab))return `<div class="empty">Você está sem clube. Avance as semanas ou candidate-se a vagas na aba Carreira.</div>${UI.tab==='elenco'?'':''}`;
   return ({painel:vPainel,elenco:vElenco,tabelas:vTabelas,calendario:vCal,mercado:vMercado,financas:vFin,mensagens:vMsg,carreira:vCarreira,jogo:vLive}[UI.tab]||vPainel)()}
 function vPainel(){const t=myTeam();if(!t){return `<div class="grid"><div class="card"><h3>Sem clube</h3><p>Reputação: <b>${Math.round(G.coach.rep)}</b>. Clubes até força <b>${Math.round(repCap())}</b> podem se interessar por você.</p><p class="muted">Avance as semanas para receber propostas. Clubes que demitirem técnicos podem te procurar.</p><button class="btn pri" onclick="A.tab('carreira')">Ver vagas abertas</button></div>${newsCard()}</div>`}
@@ -1202,7 +1208,8 @@ const A={
    const cand=shuffle(Object.values(G.teams).filter(t=>t.r<=cap&&t.r>=cap-9)).slice(0,3);cand.forEach(t=>{fireAI(t);G.offered[t.id]=1;mail(`Presidente do ${t.n}`,`Proposta para treinar o ${t.n}`,`Queremos você no comando do ${t.n} (${LG[t.lg].name}).`,{type:'job',t:t.id})});
    save();render();pushModal(()=>offerModal(cand.map(t=>t.id),'Três clubes procuram técnico'))},
  loadGame(){if(load()){UI.tab='painel';render()}else toast('Não foi possível carregar o jogo salvo.')},
- saveNow(){save();toast('Carreira salva neste navegador.')},
+ saveNow(){save();toast('Carreira salva neste navegador.');render()},
+ saveMode(v){G.saveMode=v;toast(v==='manual'?'Auto-save desligado. Lembre de clicar em Salvar.':`Auto-save: ${SAVE_MODES[v].toLowerCase()}.`);render()},
  cont(){if(modalOpen)return;if(LM){UI.tab='jogo';render();return}const f=userFixToday();if(!f){processDay();if(!G.coach.club&&!modalOpen&&G.day%2)processDay();render();return}
    const ctx={f,opp:team(f.h===G.coach.club?f.a:f.h).n,derby:isDerby(f.h,f.a),ko:f.ti!=null};const doPre=ctx.derby||ctx.ko||G.board<35||R()<.3;
    if(doPre)pushModal(()=>pressModal('pre',ctx,()=>nextModal()));pushModal(()=>preMatchModal(f))},

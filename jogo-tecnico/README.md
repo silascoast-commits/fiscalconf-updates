@@ -9,4 +9,4 @@ Jogo de carreira de treinador de futebol em um único arquivo (`index.html`), se
 - Reação da torcida após cada jogo, público e renda, protestos.
 - Diretoria com meta da temporada, ultimato e demissão; propostas de emprego, candidaturas e pedido de demissão.
 - Mercado com janelas, propostas recebidas, renovação, rescisão, finanças semanais e categorias de base.
-- Progresso salvo no navegador (localStorage).
+- Progresso salvo no navegador (localStorage), com auto-save configurável: todo dia, a cada jogo, a cada 3 jogos ou só manual.
