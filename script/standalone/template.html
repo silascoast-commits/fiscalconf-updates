@@ -1,0 +1,354 @@
+<title>Classificador IBS/CBS</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: ferramenta de mesa — contexto e entrada no topo, faixa de resumo, grade de resultados com a decisão na última coluna */
+:root {
+  --bg: #f5f6f4; --surface: #ffffff; --ink: #18211f; --muted: #5d6b67; --line: #d9dfdc;
+  --accent: #0d6b5c; --accent-ink: #ffffff; --note-bg: #fff8e6; --note-line: #ecd59a;
+  --ok: #1f7a43; --ok-bg: #e3f3e8; --auto: #0d6b5c; --auto-bg: #dcf1ec; --conf: #155e3a; --conf-bg: #d6efdf;
+  --warn: #8a5a00; --warn-bg: #fdf0cf; --warn-chip: #f2b632; --bad: #b3261e; --bad-bg: #fbe4e2;
+  --mem: #1d5fb8; --mem-bg: #e1ecfb; --op: #5b3cc4; --op-bg: #ebe5fb; --inex: #6b1020; --inex-bg: #f6dde2; --inv: #3a3f3e; --inv-bg: #e6e8e7;
+  --f-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #101614; --surface: #17201d; --ink: #e6ece9; --muted: #98a6a1; --line: #2b3733; --accent: #3fb59f; --accent-ink: #06231d; --note-bg: #2a2412; --note-line: #5a4a1c;
+  --ok: #6fd396; --ok-bg: #163323; --auto: #5fd0bb; --auto-bg: #12332d; --conf: #7fe0a8; --conf-bg: #143020;
+  --warn: #f2c45a; --warn-bg: #3a2e0f; --bad: #ff8a80; --bad-bg: #3d1a18; --mem: #8cb8f5; --mem-bg: #172a45; --op: #b9a4ff; --op-bg: #261d45; --inex: #ff9fb0; --inex-bg: #3f1520; --inv: #c3c9c7; --inv-bg: #262d2b;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #101614; --surface: #17201d; --ink: #e6ece9; --muted: #98a6a1; --line: #2b3733; --accent: #3fb59f; --accent-ink: #06231d; --note-bg: #2a2412; --note-line: #5a4a1c;
+  --ok: #6fd396; --ok-bg: #163323; --auto: #5fd0bb; --auto-bg: #12332d; --conf: #7fe0a8; --conf-bg: #143020;
+  --warn: #f2c45a; --warn-bg: #3a2e0f; --bad: #ff8a80; --bad-bg: #3d1a18; --mem: #8cb8f5; --mem-bg: #172a45; --op: #b9a4ff; --op-bg: #261d45; --inex: #ff9fb0; --inex-bg: #3f1520; --inv: #c3c9c7; --inv-bg: #262d2b;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-sans); font-size: 14px; line-height: 1.5; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-block: 28px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; }
+header { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: flex-start; }
+header h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+header h1 .tag { font-family: var(--f-mono); font-size: .78rem; font-weight: 500; color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; padding: 1px 6px; vertical-align: middle; margin-left: 8px; }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 72ch; }
+.fonte { font-size: .74rem; color: var(--muted); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface); max-width: 420px; }
+.fonte b { color: var(--ink); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 14px; }
+.ctx { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 760px) { .ctx { grid-template-columns: 1fr; } }
+label.lbl { display: block; font-size: .74rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 5px; }
+textarea, input[type=text], select { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
+select, input[type=text] { width: 100%; padding: 7px 9px; }
+input[type=text] { font-family: var(--f-mono); }
+textarea { width: 100%; min-height: 180px; padding: 10px 12px; font-family: var(--f-mono); font-size: .83rem; resize: vertical; }
+textarea:focus, input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hint { font-size: .74rem; color: var(--muted); }
+.abas { display: flex; gap: 4px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.aba { border: none; border-bottom: 2px solid transparent; border-radius: 0; background: none; color: var(--muted); padding: 8px 12px; font-weight: 500; }
+.aba[aria-selected=true] { color: var(--accent); border-bottom-color: var(--accent); }
+button { font: inherit; cursor: pointer; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 7px 13px; font-weight: 500; }
+button.prim { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; min-width: 160px; }
+button.link { border: none; background: none; color: var(--accent); padding: 0; text-decoration: underline; font-size: .78rem; }
+button:disabled { opacity: .5; cursor: default; }
+.linha { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.resumo { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 760px) { .resumo { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; }
+.kpi div:first-child { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.kpi div:last-child { font-size: 1.6rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.chip { border: 1px solid transparent; border-radius: 999px; padding: 4px 11px; font-size: .76rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.chip[aria-pressed=true] { outline: 2px solid var(--ink); outline-offset: 2px; }
+.s-TODOS { background: var(--surface); border-color: var(--line); color: var(--ink); }
+.s-VERDE { background: var(--ok-bg); color: var(--ok); } .s-CONFIRMADO { background: var(--conf-bg); color: var(--conf); } .s-AUTOMATICO { background: var(--auto-bg); color: var(--auto); }
+.s-AMARELO { background: var(--warn-bg); color: var(--warn); } .s-VERMELHO { background: var(--bad-bg); color: var(--bad); } .s-RESOLVIDO, .s-MEMORIA { background: var(--mem-bg); color: var(--mem); }
+.s-OPERACAO { background: var(--op-bg); color: var(--op); } .s-INEXISTENTE { background: var(--inex-bg); color: var(--inex); } .s-INVALIDO { background: var(--inv-bg); color: var(--inv); }
+.s-PROBLEMAS { background: var(--bad-bg); color: var(--bad); border-color: var(--bad); }
+.acoes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.acoes select { width: auto; font-size: .8rem; padding: 5px 7px; }
+.status { font-size: .76rem; color: var(--muted); }
+.tabela { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: .8rem; min-width: 1080px; }
+th { text-align: left; font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; padding: 9px 11px; border-bottom: 1px solid var(--line); background: var(--bg); }
+td { padding: 9px 11px; border-top: 1px solid var(--line); vertical-align: top; }
+tr:first-child td { border-top: none; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.estado { border-left: 4px solid transparent; }
+.e-VERDE { border-left-color: var(--ok) !important; } .e-CONFIRMADO { border-left-color: var(--conf) !important; } .e-AUTOMATICO { border-left-color: var(--auto) !important; }
+.e-AMARELO { border-left-color: var(--warn-chip) !important; } .e-VERMELHO { border-left-color: var(--bad) !important; } .e-RESOLVIDO, .e-MEMORIA { border-left-color: var(--mem) !important; }
+.e-OPERACAO { border-left-color: var(--op) !important; } .e-INEXISTENTE { border-left-color: var(--inex) !important; } .e-INVALIDO { border-left-color: var(--inv) !important; }
+.pill { display: inline-block; border-radius: 4px; padding: 2px 7px; font-size: .68rem; font-weight: 700; letter-spacing: .04em; white-space: nowrap; }
+.sub { color: var(--muted); font-size: .72rem; }
+.aviso { color: var(--warn); font-size: .72rem; }
+.erro { color: var(--bad); font-size: .72rem; }
+.okt { color: var(--ok); font-size: .72rem; }
+td select { padding: 4px 6px; font-size: .76rem; max-width: 300px; }
+td select.pendente { border-color: var(--bad); }
+.vazio { padding: 26px; text-align: center; color: var(--muted); }
+.op { border-radius: 8px; padding: 11px 14px; border: 1px solid var(--op); background: var(--op-bg); }
+footer { font-size: .74rem; color: var(--muted); max-width: 100ch; }
+.clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+@media (prefers-reduced-motion: no-preference) { button { transition: filter .12s; } button:hover { filter: brightness(.96); } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Classificador IBS/CBS <span class="tag">LC 214/2025</span></h1>
+      <p>CST e cClassTrib de cada produto pela tabela oficial da SVRS e pelos anexos da LC 214/2025. Lê a descrição do produto, lembra as suas decisões e confere os XMLs das notas.</p>
+    </div>
+    <div class="fonte" id="fonte"></div>
+  </header>
+
+  <section class="panel" aria-label="Entrada">
+    <div class="ctx">
+      <div><label class="lbl" for="cfop">CFOP da operação (opcional)</label><input type="text" id="cfop" maxlength="5" placeholder="ex.: 5102" inputmode="numeric"></div>
+      <div><label class="lbl" for="dest">Para quem vende</label>
+        <select id="dest">
+          <option value="geral">Contribuinte ou consumidor final</option>
+          <option value="orgao_publico">Órgão da administração pública</option>
+          <option value="produtor_rural_contribuinte">Produtor rural contribuinte</option>
+          <option value="produtor_rural_nao_contribuinte">Produtor rural não contribuinte / TAC</option>
+        </select></div>
+      <div><label class="lbl" for="perfil">Ramo da empresa</label>
+        <select id="perfil">
+          <option value="geral">Geral / não sei</option>
+          <option value="alimentos">Supermercado, alimentos, bebidas</option>
+          <option value="agro">Agropecuária, insumos agrícolas</option>
+          <option value="saude">Saúde, hospitalar, farmácia</option>
+          <option value="higiene_limpeza">Higiene e limpeza</option>
+          <option value="pet">Pet shop</option>
+        </select></div>
+    </div>
+    <div class="hint">O ramo ajuda nos casos ambíguos (arroz alimento × semente). O destinatário troca os códigos sozinho (órgão público, produtor rural). Exportação, transferência e bonificação saem pelo CFOP.</div>
+
+    <div class="abas" role="tablist">
+      <button class="aba" role="tab" id="aba-lista" aria-selected="true">Colar lista do Excel</button>
+      <button class="aba" role="tab" id="aba-xml" aria-selected="false">Conferir XMLs de NF-e</button>
+    </div>
+    <div id="painel-lista" style="display:grid;gap:6px">
+      <textarea id="ncms" spellcheck="false" aria-label="Lista de produtos"></textarea>
+      <div class="linha hint"><span id="contador"></span><button class="link" id="limpar" type="button">Limpar e colar minha lista</button></div>
+    </div>
+    <div id="painel-xml" hidden style="display:grid;gap:6px">
+      <input type="file" id="xmls" multiple accept=".xml" aria-label="Arquivos XML">
+      <div class="hint">Os XMLs são lidos aqui no navegador, nada é enviado. Cada item é classificado e o CST/cClassTrib da nota é conferido: código inexistente, CST incompatível, NCM fora do anexo, divergência com a sugestão ou nota sem o grupo IBS/CBS.</div>
+    </div>
+    <div class="linha" style="justify-content:flex-end"><button class="prim" id="btn">Classificar</button></div>
+  </section>
+
+  <div id="op" hidden></div>
+
+  <section id="resultado" style="display:grid;gap:12px;min-width:0">
+    <div class="resumo" id="resumo"></div>
+    <div class="linha" id="chips"></div>
+    <div class="acoes">
+      <button id="copiar">Copiar tabela para o Excel</button>
+      <button id="copiarPend">Copiar só pendências</button>
+      <select id="escopo" aria-label="Alcance da decisão"><option value="produto">Lembrar por produto</option><option value="ncm">Lembrar para o NCM inteiro</option></select>
+      <button id="lembrar">Lembrar escolhas</button>
+      <button class="link" id="esquecer" type="button">Esquecer decisões salvas</button>
+      <span class="status" id="status"></span>
+      <input type="text" id="busca" placeholder="Buscar NCM, produto, código" aria-label="Buscar" style="width:220px;margin-left:auto">
+    </div>
+    <div class="tabela"><table>
+      <thead id="thead"></thead>
+      <tbody id="corpo"></tbody>
+    </table></div>
+    <div style="text-align:center" id="mais"></div>
+  </section>
+
+  <footer id="rodape"></footer>
+</div>
+
+<script>/*__MOTOR__*/</script>
+<script>
+const C = window.Classif;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+const ls = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
+
+const SIT = {
+  OPERACAO: ["OPERAÇÃO", "O CST vem da operação (CFOP)"], MEMORIA: ["SALVO", "Decisão que você salvou"], AUTOMATICO: ["AUTOMÁTICO", "Havia mais de uma opção e o sistema decidiu"],
+  CONFIRMADO: ["CONFIRMADO", "Um enquadramento e a descrição confere"], VERDE: ["INTEGRAL", "Não consta nos anexos: tributação integral"], AMARELO: ["CONFERIR", "Um enquadramento: confira a condição"],
+  VERMELHO: ["ESCOLHER", "Mais de um enquadramento: escolha"], RESOLVIDO: ["RESOLVIDO", "Você escolheu nesta tela"], INEXISTENTE: ["NCM INEXISTENTE", "NCM fora da tabela vigente: a nota será rejeitada"], INVALIDO: ["INVÁLIDO", "NCM sem 8 dígitos"],
+};
+const ORDEM = ["VERMELHO", "INEXISTENTE", "AMARELO", "INVALIDO", "RESOLVIDO", "AUTOMATICO", "CONFIRMADO", "MEMORIA", "VERDE", "OPERACAO"];
+const AUTOM = ["OPERACAO", "MEMORIA", "AUTOMATICO", "CONFIRMADO", "VERDE"];
+const POR_PAGINA = 300;
+const EXEMPLO = "Código\tDescrição\tNCM\nA1\tArroz tipo 1 5kg\t1006.30.21\nB2\tDesinfetante pinho uso doméstico\t3808.94.19\nC3\tPão de queijo congelado\t1905.90.90\nD4\tPão francês\t1905.90.90\nE5\tVermífugo para cães\t3004.90.69\nF6\tSemente de milho para plantio\t1005.10.00\nG7\tFrango congelado\t0207.12.00\nH8\tAbsorvente noturno\t9619.00.00\nI9\tÓleo de soja 900ml\t1507.90.11\nJ10\tBiscoito recheado\t1905.31.00\nK11\tIogurte natural\t4032000";
+
+let resultados = [], escolhas = {}, filtro = "TODOS", limite = POR_PAGINA, operacao = null, busca = "";
+
+const pct = v => v === null || v === undefined ? "—" : `${Number(v).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
+const contexto = () => ({ cfop: $("cfop").value || undefined, destinatario: $("dest").value, perfil: $("perfil").value });
+const decisoes = () => ls.get("classif-decisoes", []);
+
+function final(r, i) {
+  const e = escolhas[i];
+  if (!e) return { status: r.situacao, ct: r.cClassTrib, cst: r.cst, red: r.reducao, aliq: r.aliquota2026, base: r.baseLegal };
+  const o = r.opcoes.find(x => x.cClassTrib === e);
+  const red = e === "000001" ? 0 : (o ? o.reducao : 0);
+  return { status: "RESOLVIDO", ct: e, cst: o ? o.cst : "000", red, aliq: Math.round((1 - red / 100) * 1000) / 1000, base: o ? `${o.anexo || o.nome} · escolha manual` : "Tributação integral · escolha manual" };
+}
+
+function executarLista() {
+  const itens = C.lerLista($("ncms").value);
+  operacao = C.analisarOperacao($("cfop").value);
+  resultados = C.classificador.classificarLote(itens, contexto(), decisoes());
+  ls.set("classif-texto", $("ncms").value);
+  reiniciar();
+}
+
+function textoTag(el, tag) { const x = el.getElementsByTagName(tag)[0]; return x ? x.textContent.trim() : ""; }
+
+async function executarXml() {
+  const files = Array.from($("xmls").files || []);
+  if (!files.length) { $("status").textContent = "Selecione os XMLs."; return; }
+  const itens = []; const erros = [];
+  for (const f of files) {
+    try {
+      const doc = new DOMParser().parseFromString(await f.text(), "application/xml");
+      if (doc.getElementsByTagName("parsererror").length) throw new Error("XML inválido");
+      const inf = doc.getElementsByTagName("infNFe")[0];
+      if (!inf) throw new Error("não é NF-e");
+      const nNF = textoTag(inf, "nNF") || "?";
+      for (const det of Array.from(inf.getElementsByTagName("det"))) {
+        const prod = det.getElementsByTagName("prod")[0];
+        const g = det.getElementsByTagName("IBSCBS")[0];
+        itens.push({
+          ncm: prod ? textoTag(prod, "NCM") : "", descricao: prod ? textoTag(prod, "xProd") : "", codigo: prod ? textoTag(prod, "cProd") : "",
+          cfop: prod ? textoTag(prod, "CFOP") : "", cstNota: g ? textoTag(g, "CST") : "", cClassTribNota: g ? textoTag(g, "cClassTrib") : "",
+          origem: `NF ${nNF} · ${f.name}`,
+        });
+      }
+    } catch (e) { erros.push(`${f.name}: ${e.message}`); }
+  }
+  operacao = null;
+  resultados = C.classificador.classificarLote(itens, contexto(), decisoes());
+  reiniciar();
+  if (erros.length) $("status").textContent = `${erros.length} arquivo(s) não lidos: ${erros.slice(0, 2).join("; ")}`;
+}
+
+function reiniciar() { escolhas = {}; filtro = "TODOS"; limite = POR_PAGINA; render(); }
+
+function render() {
+  const box = $("op");
+  if (operacao && !operacao.tributavel) {
+    box.hidden = false; box.className = "op";
+    box.innerHTML = `<b>CFOP ${esc(operacao.cfop)}: ${esc(operacao.descricao)} → CST ${operacao.cst} / cClassTrib ${operacao.cClassTrib}.</b> <span class="sub">${esc(operacao.baseLegal)}. Os itens seguem a operação.</span>`;
+  } else box.hidden = true;
+
+  const fins = resultados.map((r, i) => ({ r, i, f: final(r, i) }));
+  const cont = {}; let problemas = 0;
+  fins.forEach(x => { cont[x.f.status] = (cont[x.f.status] || 0) + 1; if (x.r.auditoria && !x.r.auditoria.ok) problemas++; });
+  const temAud = fins.some(x => x.r.auditoria);
+  const kpis = [["Itens", fins.length, ""], ["Resolvidos sem você", fins.filter(x => AUTOM.includes(x.f.status)).length, "var(--ok)"],
+    ["Para conferir ou escolher", (cont.AMARELO || 0) + (cont.VERMELHO || 0), "var(--warn)"],
+    [temAud ? "Notas com problema" : "NCM a corrigir", temAud ? problemas : (cont.INEXISTENTE || 0) + (cont.INVALIDO || 0), "var(--bad)"]];
+  $("resumo").innerHTML = kpis.map(([t, v, c]) => `<div class="kpi"><div>${t}</div><div style="color:${c || "inherit"}">${v.toLocaleString("pt-BR")}</div></div>`).join("");
+  const chips = [["TODOS", `Todos · ${fins.length}`]];
+  if (temAud) chips.push(["PROBLEMAS", `Problemas na nota · ${problemas}`]);
+  ORDEM.filter(s => cont[s]).forEach(s => chips.push([s, `${SIT[s][0]} · ${cont[s]}`]));
+  $("chips").innerHTML = chips.map(([k, t]) => `<button class="chip s-${k}" data-f="${k}" aria-pressed="${filtro === k}" title="${esc(SIT[k] ? SIT[k][1] : "")}">${t}</button>`).join("");
+
+  $("thead").innerHTML = `<tr><th>Produto</th><th>NCM</th><th>Situação</th><th>CST · cClassTrib</th><th>Redução · 2026</th><th style="min-width:260px">Por quê</th><th style="min-width:220px">Decisão</th>${temAud ? '<th style="min-width:220px">Na nota</th>' : ""}</tr>`;
+  const b = busca.trim().toLowerCase(), bd = b.replace(/\D/g, "");
+  const vis = fins.filter(x => filtro === "TODOS" || (filtro === "PROBLEMAS" ? x.r.auditoria && !x.r.auditoria.ok : x.f.status === filtro))
+    .filter(x => !b || (bd && x.r.ncm.includes(bd)) || (x.r.entrada.descricao || "").toLowerCase().includes(b) || (x.r.entrada.codigo || "").toLowerCase().includes(b));
+  if (!vis.length) $("corpo").innerHTML = `<tr><td colspan="8" class="vazio">${resultados.length ? "Nenhum item neste filtro." : "Cole a lista acima e clique em Classificar."}</td></tr>`;
+  else $("corpo").innerHTML = vis.slice(0, limite).map(({ r, i, f }) => {
+    const editavel = r.ncm && !["INEXISTENTE", "OPERACAO", "INVALIDO"].includes(r.situacao) && (r.opcoes.length || r.situacao === "MEMORIA");
+    const sel = editavel ? `<select data-i="${i}" class="${f.status === "VERMELHO" ? "pendente" : ""}" aria-label="Decisão">
+        <option value="">${f.status === "VERMELHO" ? "Escolha o enquadramento" : "Manter resultado"}</option>
+        ${r.opcoes.map(o => `<option value="${o.cClassTrib}" ${escolhas[i] === o.cClassTrib ? "selected" : ""}>${o.cClassTrib} · ${esc(o.anexo || o.nome.slice(0, 30))} · ${o.reducao === 100 ? "alíquota zero" : "−" + o.reducao + "%"}</option>`).join("")}
+        <option value="000001" ${escolhas[i] === "000001" ? "selected" : ""}>000001 · Tributação integral</option></select>` : "";
+    const opcoesTxt = r.situacao === "VERMELHO" ? r.opcoes.slice(0, 3).map(o => `<div class="sub" title="${esc(o.itens.join(" | "))}"><b>${o.cClassTrib}</b>: ${esc((o.itens[0] || "").slice(0, 110))}${o.excecoes[0] ? " — exceto: " + esc(o.excecoes[0].slice(0, 80)) : ""}</div>`).join("") : "";
+    const alertas = r.alertas.map(a => `<div class="${a.tipo === "aviso" ? "aviso" : "sub"}">• ${esc(a.texto)}</div>`).join("");
+    const aud = temAud ? `<td>${r.auditoria ? `<div class="mono">${esc(r.auditoria.cstNota || "—")} · ${esc(r.auditoria.cClassTribNota || "—")}</div>${r.auditoria.ok ? '<div class="okt">Confere</div>' : r.auditoria.problemas.map(p => `<div class="erro">• ${esc(p)}</div>`).join("")}` : '<span class="sub">—</span>'}</td>` : "";
+    const ncmDesc = r.ncmDescricao ? r.ncmDescricao.split(" › ").slice(-2).join(" › ") : "";
+    return `<tr>
+      <td class="estado e-${f.status}"><div style="font-weight:500">${esc(r.entrada.descricao) || '<span class="sub">sem descrição</span>'}</div><div class="sub">${esc([r.entrada.codigo, r.entrada.origem].filter(Boolean).join(" · "))}</div></td>
+      <td style="max-width:210px"><div class="mono">${esc(r.ncmFormatado)}</div>${ncmDesc ? `<div class="sub clamp" title="${esc(r.ncmDescricao)}">${esc(ncmDesc)}</div>` : ""}</td>
+      <td><span class="pill s-${f.status}" title="${esc(SIT[f.status][1])}">${SIT[f.status][0]}</span></td>
+      <td><div class="mono">${f.ct ? `${f.cst} · <b>${f.ct}</b>` : "—"}</div>${f.ct ? `<div class="sub" style="max-width:190px">${esc(f.base)}</div>` : ""}</td>
+      <td class="mono">${f.red !== null && f.red !== undefined ? `${pct(f.red)} · ${pct(f.aliq)}` : "—"}</td>
+      <td>${esc(r.motivo)}${alertas}</td>
+      <td>${sel}${opcoesTxt}</td>${aud}</tr>`;
+  }).join("");
+  $("mais").innerHTML = vis.length > limite ? `<button id="vermais">Mostrar mais (${vis.length - limite} restantes)</button>` : "";
+  $("lembrar").textContent = `Lembrar ${Object.keys(escolhas).length} escolha(s)`;
+  $("lembrar").disabled = !Object.keys(escolhas).length;
+  const n = decisoes().length;
+  $("esquecer").textContent = n ? `Esquecer ${n} decisão(ões) salvas` : "Nenhuma decisão salva";
+  $("esquecer").disabled = !n;
+}
+
+function copiar(soPend) {
+  const linhas = [["Código", "Descrição", "NCM", "Situação", "CST IBS/CBS", "cClassTrib", "Redução", "Alíquota 2026", "Base legal", "Motivo", "cClassTrib na nota", "Problemas na nota"].join("\t")];
+  resultados.forEach((r, i) => {
+    const f = final(r, i);
+    if (soPend && !(["VERMELHO", "AMARELO", "INEXISTENTE", "INVALIDO"].includes(f.status) || (r.auditoria && !r.auditoria.ok))) return;
+    linhas.push([r.entrada.codigo || "", r.entrada.descricao || "", r.ncmFormatado, SIT[f.status][0], f.cst || "", f.ct || "", pct(f.red), pct(f.aliq), f.base || "", r.motivo, r.auditoria ? r.auditoria.cClassTribNota : "", r.auditoria ? r.auditoria.problemas.join(" | ") : ""].map(v => String(v).replace(/[\t\r\n]+/g, " ")).join("\t"));
+  });
+  const txt = linhas.join("\n"), n = linhas.length - 1;
+  const ok = () => { $("status").textContent = `${n} linha(s) copiadas. Cole no Excel com Ctrl+V.`; };
+  const fb = () => { const t = document.createElement("textarea"); t.value = txt; document.body.appendChild(t); t.select(); let d = false; try { d = document.execCommand("copy"); } catch (e) {} t.remove(); $("status").textContent = d ? `${n} linha(s) copiadas. Cole no Excel com Ctrl+V.` : "Não foi possível copiar neste navegador."; };
+  try { navigator.clipboard.writeText(txt).then(ok, fb); } catch (e) { fb(); }
+}
+
+function lembrar() {
+  const escopo = $("escopo").value;
+  const lista = decisoes();
+  for (const [i, ct] of Object.entries(escolhas)) {
+    const r = resultados[i]; if (!r.ncm) continue;
+    const chave = escopo === "ncm" ? "" : C.chaveProduto(r.entrada.descricao || "");
+    const k = lista.findIndex(d => d.ncm === r.ncm && d.chave === chave);
+    const d = { ncm: r.ncm, chave, cClassTrib: ct, justificativa: "Escolha manual" };
+    if (k >= 0) lista[k] = d; else lista.push(d);
+  }
+  ls.set("classif-decisoes", lista);
+  $("status").textContent = `${Object.keys(escolhas).length} escolha(s) lembradas neste navegador.`;
+  render();
+}
+
+function trocarAba(xml) {
+  $("aba-lista").setAttribute("aria-selected", String(!xml)); $("aba-xml").setAttribute("aria-selected", String(xml));
+  $("painel-lista").hidden = xml; $("painel-xml").hidden = !xml;
+}
+const abaXml = () => $("aba-xml").getAttribute("aria-selected") === "true";
+function atualizarContador() { $("contador").textContent = `${$("ncms").value.split(/\r?\n/).filter(l => l.trim()).length} linha(s). Código, descrição e NCM em qualquer ordem, ou um NCM por linha.`; }
+
+document.addEventListener("click", e => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.id === "btn") abaXml() ? executarXml() : executarLista();
+  else if (t.id === "aba-lista") trocarAba(false);
+  else if (t.id === "aba-xml") trocarAba(true);
+  else if (t.id === "limpar") { $("ncms").value = ""; $("ncms").focus(); atualizarContador(); }
+  else if (t.id === "copiar") copiar(false);
+  else if (t.id === "copiarPend") copiar(true);
+  else if (t.id === "lembrar") lembrar();
+  else if (t.id === "esquecer") { ls.set("classif-decisoes", []); $("status").textContent = "Decisões salvas apagadas."; render(); }
+  else if (t.id === "vermais") { limite += POR_PAGINA; render(); }
+  else if (t.dataset.f) { filtro = t.dataset.f; limite = POR_PAGINA; render(); }
+});
+document.addEventListener("change", e => {
+  const s = e.target;
+  if (s.tagName === "SELECT" && s.dataset.i !== undefined) { if (s.value) escolhas[s.dataset.i] = s.value; else delete escolhas[s.dataset.i]; render(); }
+  if (["cfop", "dest", "perfil"].includes(s.id)) ls.set("classif-ctx", contexto());
+});
+$("busca").addEventListener("input", e => { busca = e.target.value; limite = POR_PAGINA; render(); });
+$("ncms").addEventListener("input", atualizarContador);
+$("ncms").addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") executarLista(); });
+
+const v = C.base.versao;
+$("fonte").innerHTML = `<b>Bases oficiais embutidas</b><br>NCM: ${Object.keys(C.base.ncm).length.toLocaleString("pt-BR")} códigos — ${esc(v.ncm)}<br>cClassTrib: ${Object.keys(C.base.classTrib).length} códigos, ${Object.keys(C.base.regras).length.toLocaleString("pt-BR")} NCMs com regra de anexo — ${esc(v.classTrib)}`;
+$("rodape").textContent = `Fontes: tabela NCM vigente (Portal Único Siscomex) e tabela de Classificação Tributária com os anexos da LC 214/2025 (Portal DF-e SVRS), retrato de ${new Date(v.geradoEm).toLocaleDateString("pt-BR")}. "Automático" e "Confirmado" usam a descrição do produto e o contexto: confira por amostragem. Alíquota 2026 = CBS 0,9% + IBS 0,1% do ano-teste com a redução aplicada. As decisões lembradas ficam só neste navegador. A lista que abre a página é um exemplo.`;
+const ctx = ls.get("classif-ctx", null);
+if (ctx) { $("cfop").value = ctx.cfop || ""; $("dest").value = ctx.destinatario || "geral"; $("perfil").value = ctx.perfil || "geral"; }
+const salvo = ls.get("classif-texto", "");
+$("ncms").value = salvo && salvo.trim() ? salvo : EXEMPLO;
+atualizarContador();
+executarLista();
+</script>

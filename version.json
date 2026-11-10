@@ -1,1 +1,1 @@
-{"version":"2.10","data":"2026-11-10","descricao":"Classificador IBS/CBS em lote (NCM → CST/cClassTrib pelos anexos da LC 214/2025, semáforo e gravação no cadastro); correção de códigos cClassTrib (000001 integral, 410001–410004)"}
+{"version":"2.11","data":"2026-11-10","descricao":"Classificador IBS/CBS com bases oficiais (NCM Siscomex + cClassTrib/anexos SVRS), leitura da descrição, contexto do destinatário e ramo, memória de decisões por cliente e auditoria de XML de NF-e"}

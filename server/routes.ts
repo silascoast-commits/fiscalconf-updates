@@ -9,7 +9,10 @@ import fs from "fs";
 import path from "path";
 import multer from "multer";
 import { parseStringPromise } from "xml2js";
-import { BASE_ANEXOS, analisarOperacao, classificarLote, formatarNcm } from "./classificador";
+import { decisoesClassificador } from "./storage";
+import { getBase, getClassificador, statusBase, substituirBase } from "./bases/base";
+import { baixarEMontarBase, montarBase } from "./bases/importar";
+import { analisarOperacao, chaveProduto, formatarNcm, lerLista, type DecisaoSalva, type ItemEntrada as ItemEntradaClassificacao, type Resultado as ResultadoClassificacao } from "@shared/classificador/motor";
 
 // Extrai texto de PDF usando pdfjs-dist (legacy/Node.js)
 async function extractPdfText(buf: Buffer): Promise<string> {
@@ -94,6 +97,40 @@ function parsePgdasPdf(text: string) {
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
+// Grupo IBS/CBS do item da NF-e (NT 2025.002: det/imposto/IBSCBS)
+function ibsCbsDoItem(det: any) {
+  const g = det?.imposto?.IBSCBS;
+  const n = (v: any) => parseFloat(v) || 0;
+  return {
+    cstIbsCbs: g?.CST?.toString() ?? "",
+    cClassTrib: g?.cClassTrib?.toString() ?? "",
+    vIbs: n(g?.gIBSCBS?.vIBS),
+    vCbs: n(g?.gIBSCBS?.gCBS?.vCBS),
+  };
+}
+
+// Itens de um XML de NF-e/NFC-e para o classificador (com o CST/cClassTrib informados na nota)
+async function itensDoXml(buf: Buffer, nomeArquivo: string) {
+  const raw = await parseStringPromise(buf.toString("utf8"), { explicitArray: false, ignoreAttrs: false });
+  const root = raw.nfeProc?.NFe || raw.NFe || raw.nfeProc || raw;
+  const inf = root?.infNFe;
+  if (!inf) throw new Error("estrutura de NF-e não reconhecida");
+  const dets = Array.isArray(inf.det) ? inf.det : inf.det ? [inf.det] : [];
+  const numero = inf.ide?.nNF?.toString() || "?";
+  return dets.map((det: any) => {
+    const g = ibsCbsDoItem(det);
+    return {
+      ncm: String(det.prod?.NCM || ""),
+      descricao: String(det.prod?.xProd || ""),
+      codigo: det.prod?.cProd ? String(det.prod.cProd) : undefined,
+      cfop: det.prod?.CFOP ? String(det.prod.CFOP) : undefined,
+      cstNota: g.cstIbsCbs,
+      cClassTribNota: g.cClassTrib,
+      origem: `NF ${numero} · ${nomeArquivo}`,
+    };
+  });
+}
+
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
 
   // GET todos NCMs cadastrados
@@ -131,27 +168,142 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json({ ok: true });
   });
 
-  // ─── Classificador IBS/CBS em lote (NCM → CST / cClassTrib) ───────────────
-  app.get("/api/classificador/base", (_req, res) => {
-    res.json(BASE_ANEXOS);
+  // ─── Classificador IBS/CBS (NCM → CST / cClassTrib) — base oficial SVRS + Siscomex ───
+  const contextoSchema = z.object({
+    cfop: z.string().max(5).optional(),
+    destinatario: z.enum(["geral", "orgao_publico", "produtor_rural_contribuinte", "produtor_rural_nao_contribuinte"]).optional(),
+    perfil: z.enum(["geral", "alimentos", "agro", "saude", "higiene_limpeza", "pet"]).optional(),
+  }).default({});
+
+  const decisoesDoCliente = (clienteId?: number | null): DecisaoSalva[] =>
+    decisoesClassificador.listar(clienteId).map(d => ({ ncm: d.ncm, chave: d.chave, cClassTrib: d.cClassTrib, justificativa: d.justificativa }));
+
+  // Enxuga a resposta: opções com no máximo 3 itens de anexo e textos curtos
+  const enxugar = (rs: ResultadoClassificacao[]) => rs.map(r => ({
+    ...r,
+    opcoes: r.opcoes.map(o => ({ ...o, itens: o.itens.slice(0, 3).map(t => t.slice(0, 300)), condicoes: o.condicoes.slice(0, 2), excecoes: o.excecoes.slice(0, 2).map(t => t.slice(0, 300)) })),
+  }));
+
+  const responder = (res: any, itens: ItemEntradaClassificacao[], contexto: any, clienteId?: number | null) => {
+    const c = getClassificador();
+    const resultados = c.classificarLote(itens.slice(0, 20000), contexto, decisoesDoCliente(clienteId));
+    res.json({ base: statusBase(), operacao: analisarOperacao(contexto?.cfop), resultados: enxugar(resultados) });
+  };
+
+  app.get("/api/classificador/base", (_req, res) => res.json(statusBase()));
+
+  app.get("/api/classificador/classtrib", (_req, res) => {
+    const b = getBase();
+    res.json(Object.entries(b.classTrib).map(([codigo, i]) => ({ codigo, cst: i.cst, nome: i.nome, reducao: i.redIbs, anexo: i.anexo, nfe: i.nfe })));
+  });
+
+  app.post("/api/classificador/base/atualizar", async (_req, res) => {
+    try {
+      substituirBase(await baixarEMontarBase());
+      res.json(statusBase());
+    } catch (e: any) {
+      res.status(502).json({ error: `Não foi possível baixar as bases oficiais: ${e.message}. Baixe os arquivos manualmente e use "Importar arquivos".` });
+    }
+  });
+
+  const baseUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 40 * 1024 * 1024 } });
+  app.post("/api/classificador/base/importar", baseUpload.fields([{ name: "ncm", maxCount: 1 }, { name: "classtrib", maxCount: 1 }]), (req, res) => {
+    try {
+      const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+      const ncmF = files?.ncm?.[0]; const ctF = files?.classtrib?.[0];
+      if (!ncmF || !ctF) return res.status(400).json({ error: "Envie os dois arquivos: a tabela NCM (JSON do Siscomex) e a página/JSON de cClassTrib da SVRS." });
+      substituirBase(montarBase(ncmF.buffer.toString("utf8"), ctF.buffer.toString("utf8")));
+      res.json(statusBase());
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
   });
 
   app.post("/api/classificador", (req, res) => {
-    const parsed = z.object({ texto: z.string().max(500_000), cfop: z.string().optional() }).safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ error: "Envie { texto, cfop? }" });
+    const parsed = z.object({
+      texto: z.string().max(3_000_000).optional(),
+      itens: z.array(z.object({ ncm: z.string(), descricao: z.string().optional(), codigo: z.string().optional(), cfop: z.string().optional() })).max(20000).optional(),
+      contexto: contextoSchema,
+      clienteId: z.number().int().nullable().optional(),
+    }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: "Envie { texto } ou { itens }, com contexto opcional." });
+    const { texto, itens, contexto, clienteId } = parsed.data;
+    responder(res, itens?.length ? itens : lerLista(texto || ""), contexto, clienteId);
+  });
 
-    const operacao = analisarOperacao(parsed.data.cfop || "");
-    const cadastro = new Map(storage.getNcms().map(n => [n.codigo.replace(/\D/g, ""), n]));
-    const resultados = classificarLote(parsed.data.texto).map(r => {
-      const cad = r.ncm ? cadastro.get(r.ncm) : undefined;
-      return {
-        ...r,
-        descricaoCadastro: cad?.descricao || null,
-        cClassTribCadastroSimples: cad?.cClassTribSimples || null,
-        cClassTribCadastroPresumido: cad?.cClassTribPresumido || null,
-      };
-    });
-    res.json({ operacao, resultados });
+  // Auditoria: XMLs enviados agora
+  app.post("/api/classificador/xml", multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024, files: 500 } }).array("xmlFiles", 500), async (req, res) => {
+    const files = (req.files as Express.Multer.File[]) || [];
+    if (!files.length) return res.status(400).json({ error: "Envie ao menos um XML de NF-e." });
+    let contexto: any = {}; let clienteId: number | null = null;
+    try { contexto = contextoSchema.parse(JSON.parse(req.body.contexto || "{}")); } catch { /* usa padrão */ }
+    if (req.body.clienteId) clienteId = parseInt(req.body.clienteId) || null;
+    const itens: ItemEntradaClassificacao[] = []; const erros: string[] = [];
+    for (const f of files) {
+      try { itens.push(...await itensDoXml(f.buffer, f.originalname)); } catch (e: any) { erros.push(`${f.originalname}: ${e.message}`); }
+    }
+    const c = getClassificador();
+    const resultados = c.classificarLote(itens, contexto, decisoesDoCliente(clienteId));
+    res.json({ base: statusBase(), operacao: null, resultados: enxugar(resultados), erros });
+  });
+
+  // Auditoria: XMLs já importados na tela XML NF-e
+  app.post("/api/classificador/xml-importados", (req, res) => {
+    const parsed = z.object({ clienteId: z.number().int().nullable().optional(), tipo: z.enum(["saida", "entrada", "todos"]).default("saida"), contexto: contextoSchema }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: "Parâmetros inválidos" });
+    const { clienteId, tipo, contexto } = parsed.data;
+    const notas = storage.getXmlImportacoes(clienteId || undefined).filter(n => tipo === "todos" || n.tipo === tipo);
+    const vistos = new Set<string>(); const itens: ItemEntradaClassificacao[] = [];
+    for (const n of notas) {
+      let lista: any[] = [];
+      try { lista = JSON.parse(n.itens || "[]"); } catch { /* ignora */ }
+      for (const it of lista) {
+        const k = `${it.ncm}|${it.descricao}|${it.cfop}|${it.cClassTrib ?? ""}`;
+        if (vistos.has(k)) continue;
+        vistos.add(k);
+        itens.push({
+          ncm: String(it.ncm || ""), descricao: it.descricao || "", codigo: it.cProd || undefined, cfop: it.cfop || undefined,
+          ...(it.cClassTrib !== undefined ? { cstNota: it.cstIbsCbs || "", cClassTribNota: it.cClassTrib || "" } : {}),
+          origem: `NF ${n.numero || "?"} (${n.tipo})`,
+        });
+      }
+    }
+    if (!itens.length) return res.status(404).json({ error: "Nenhum item encontrado nos XMLs importados para este filtro." });
+    const c = getClassificador();
+    res.json({ base: statusBase(), operacao: null, resultados: enxugar(c.classificarLote(itens, contexto, decisoesDoCliente(clienteId))), notas: notas.length });
+  });
+
+  // Memória de decisões
+  app.get("/api/classificador/decisoes", (req, res) => {
+    const clienteId = req.query.clienteId ? parseInt(String(req.query.clienteId)) : null;
+    res.json(decisoesClassificador.listar(clienteId));
+  });
+
+  app.post("/api/classificador/decisoes", (req, res) => {
+    const parsed = z.object({
+      clienteId: z.number().int().nullable().optional(),
+      itens: z.array(z.object({
+        ncm: z.string().regex(/^\d{8}$/),
+        descricao: z.string().max(500).optional(),
+        cClassTrib: z.string().regex(/^\d{6}$/),
+        justificativa: z.string().max(500).optional(),
+        escopo: z.enum(["produto", "ncm"]).default("produto"),
+      })).min(1).max(20000),
+    }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message || "Dados inválidos" });
+    const b = getBase();
+    const invalido = parsed.data.itens.find(i => !b.classTrib[i.cClassTrib]);
+    if (invalido) return res.status(400).json({ error: `cClassTrib ${invalido.cClassTrib} não existe na tabela oficial.` });
+    const n = decisoesClassificador.salvar(parsed.data.itens.map(i => ({
+      clienteId: parsed.data.clienteId, ncm: i.ncm, descricao: i.descricao,
+      chave: i.escopo === "ncm" ? "" : chaveProduto(i.descricao), cClassTrib: i.cClassTrib, justificativa: i.justificativa,
+    })));
+    res.json({ salvas: n });
+  });
+
+  app.delete("/api/classificador/decisoes/:id", (req, res) => {
+    decisoesClassificador.excluir(parseInt(req.params.id));
+    res.json({ ok: true });
   });
 
   // Grava as classificações escolhidas no cadastro de NCMs (cria ou atualiza)
@@ -163,13 +315,14 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         cClassTrib: z.string().regex(/^\d{6}$/),
         baseLegal: z.string().max(500).optional(),
         descricao: z.string().max(500).optional(),
-      })).min(1).max(5000),
+      })).min(1).max(20000),
     });
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message || "Dados inválidos" });
 
     const { regime, itens } = parsed.data;
     const cadastro = new Map(storage.getNcms().map(n => [n.codigo.replace(/\D/g, ""), n]));
+    const c = getClassificador();
     let criados = 0, atualizados = 0;
     const vistos = new Set<string>();
     for (const it of itens) {
@@ -186,7 +339,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       } else {
         storage.createNcm({
           codigo: it.ncm,
-          descricao: it.descricao || `NCM ${formatarNcm(it.ncm)}`,
+          descricao: it.descricao || c.descricaoNcm(it.ncm)?.split(" › ").pop() || `NCM ${formatarNcm(it.ncm)}`,
           ...campos,
           ...(nota ? { observacoes: nota } : {}),
         });
@@ -820,8 +973,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     // IBS/CBS — grupos gIBS e gCBS (NF-e 4.x)
     let valorIbs = 0; let valorCbs = 0;
     for (const det of dets) {
-      valorIbs += n(det.imposto?.gIBS?.vIBS);
-      valorCbs += n(det.imposto?.gCBS?.vCBS);
+      valorIbs += n(det.imposto?.gIBS?.vIBS) || ibsCbsDoItem(det).vIbs;
+      valorCbs += n(det.imposto?.gCBS?.vCBS) || ibsCbsDoItem(det).vCbs;
     }
     // Situação da nota
     const protNFe = raw.nfeProc?.protNFe;
@@ -849,10 +1002,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       vIcms:      n(det.imposto?.ICMS?.[Object.keys(det.imposto?.ICMS || {})[0]]?.vICMS),
       vPis:       n(det.imposto?.PIS?.[Object.keys(det.imposto?.PIS || {})[0]]?.vPIS),
       vCofins:    n(det.imposto?.COFINS?.[Object.keys(det.imposto?.COFINS || {})[0]]?.vCOFINS),
-      vIbs:       n(det.imposto?.gIBS?.vIBS),
-      vCbs:       n(det.imposto?.gCBS?.vCBS),
-      cstIbs:     det.imposto?.gIBS?.CST || "",
-      cstCbs:     det.imposto?.gCBS?.CST || "",
+      vIbs:       n(det.imposto?.gIBS?.vIBS) || ibsCbsDoItem(det).vIbs,
+      vCbs:       n(det.imposto?.gCBS?.vCBS) || ibsCbsDoItem(det).vCbs,
+      cstIbs:     det.imposto?.gIBS?.CST || ibsCbsDoItem(det).cstIbsCbs,
+      cstCbs:     det.imposto?.gCBS?.CST || ibsCbsDoItem(det).cstIbsCbs,
+      cstIbsCbs:  ibsCbsDoItem(det).cstIbsCbs,
+      cClassTrib: ibsCbsDoItem(det).cClassTrib,
     }));
 
     return {
@@ -1158,6 +1313,8 @@ function mapCSTPisCofins(cst: string): string {
 }
 
 function mapCClassTrib(code: string): string {
+  const oficial = getBase().classTrib[code];
+  if (oficial) return oficial.nome;
   // Fonte oficial: Portal SVRS - dfe-portal.svrs.rs.gov.br/Cff/ClassificacaoTributaria
   const map: Record<string, string> = {
     "000001": "Situações tributadas integralmente pelo IBS e CBS",

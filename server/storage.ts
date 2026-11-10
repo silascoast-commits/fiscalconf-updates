@@ -359,3 +359,55 @@ export class SqliteStorage implements IStorage {
 }
 
 export const storage = new SqliteStorage();
+
+// ─── Decisões do classificador IBS/CBS (memória por cliente) ────────────────
+try { sqlite.exec(`CREATE TABLE IF NOT EXISTS classificacao_decisoes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  cliente_id INTEGER NOT NULL DEFAULT 0,
+  ncm TEXT NOT NULL,
+  chave TEXT NOT NULL DEFAULT '',
+  descricao TEXT,
+  cclasstrib TEXT NOT NULL,
+  justificativa TEXT,
+  atualizado_em TEXT NOT NULL,
+  UNIQUE(cliente_id, ncm, chave)
+)`); } catch { /* já existe */ }
+
+export interface DecisaoClassificacao {
+  id: number;
+  clienteId: number;
+  ncm: string;
+  chave: string;
+  descricao: string | null;
+  cClassTrib: string;
+  justificativa: string | null;
+  atualizadoEm: string;
+}
+
+const mapDecisao = (r: any): DecisaoClassificacao => ({
+  id: r.id, clienteId: r.cliente_id, ncm: r.ncm, chave: r.chave, descricao: r.descricao,
+  cClassTrib: r.cclasstrib, justificativa: r.justificativa, atualizadoEm: r.atualizado_em,
+});
+
+export const decisoesClassificador = {
+  /** Decisões do cliente + as gerais (cliente 0). As do cliente vêm primeiro e prevalecem. */
+  listar(clienteId?: number | null): DecisaoClassificacao[] {
+    const id = clienteId || 0;
+    return sqlite.prepare(`SELECT * FROM classificacao_decisoes WHERE cliente_id IN (?, 0) ORDER BY (cliente_id = 0), atualizado_em DESC`).all(id).map(mapDecisao);
+  },
+  salvar(itens: { clienteId?: number | null; ncm: string; chave: string; descricao?: string | null; cClassTrib: string; justificativa?: string | null }[]): number {
+    const st = sqlite.prepare(`INSERT INTO classificacao_decisoes (cliente_id, ncm, chave, descricao, cclasstrib, justificativa, atualizado_em)
+      VALUES (@cliente_id, @ncm, @chave, @descricao, @cclasstrib, @justificativa, @agora)
+      ON CONFLICT(cliente_id, ncm, chave) DO UPDATE SET cclasstrib = excluded.cclasstrib, descricao = excluded.descricao,
+        justificativa = excluded.justificativa, atualizado_em = excluded.atualizado_em`);
+    const agora = new Date().toISOString();
+    const tx = sqlite.transaction((lista: typeof itens) => {
+      for (const i of lista) st.run({ cliente_id: i.clienteId || 0, ncm: i.ncm, chave: i.chave || "", descricao: i.descricao || null, cclasstrib: i.cClassTrib, justificativa: i.justificativa || null, agora });
+    });
+    tx(itens);
+    return itens.length;
+  },
+  excluir(id: number): void {
+    sqlite.prepare(`DELETE FROM classificacao_decisoes WHERE id = ?`).run(id);
+  },
+};
