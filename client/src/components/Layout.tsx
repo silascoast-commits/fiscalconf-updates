@@ -1,7 +1,8 @@
 import { Link, useLocation } from "wouter";
 import { useTheme } from "./ThemeProvider";
 import { useCliente } from "@/contexts/ClienteContext";
-import { Moon, Sun, FileText, Database, History, TrendingDown, Calculator, Rss, Scale, LayoutDashboard, CalendarDays, ArrowLeftRight, Users, Building2, ChevronDown, X, FileCode2, MoreHorizontal, BotMessageSquare, MapPin, BookOpen } from "lucide-react";
+import { Moon, Sun, FileText, Database, History, TrendingDown, Calculator, Rss, Scale, LayoutDashboard, CalendarDays, ArrowLeftRight, Users, Building2, ChevronDown, X, FileCode2, MoreHorizontal, BotMessageSquare, MapPin, BookOpen, Clock } from "lucide-react";
+import { useLogo } from "@/lib/logo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState, useRef, useEffect } from "react";
@@ -23,6 +24,7 @@ const navMore = [
   { href: "/simulador",   label: "Simulador",        icon: TrendingDown },
   { href: "/ncms",        label: "NCMs",             icon: Database },
   { href: "/calculadora", label: "Calc. Tributos",   icon: Scale },
+  { href: "/hora-extra",  label: "Hora Extra",       icon: Clock },
   { href: "/calendario",  label: "Calendário",        icon: CalendarDays },
   { href: "/atualizacoes",label: "Atualizações",      icon: Rss },
   { href: "/comparativo", label: "Comparativo",       icon: ArrowLeftRight },
@@ -216,14 +218,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, []);
 
   const moreActive = navMore.some(n => n.href === location);
+  const logo = useLogo();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="border-b bg-card sticky top-0 z-50 shadow-sm">
+      <header className="border-b bg-card sticky top-0 z-50 shadow-sm print:hidden">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 shrink-0">
-            {/* Logo SVG */}
+            {/* Logo do usuário (enviado em Hora Extra) ou logo padrão */}
+            {logo ? (
+              <img src={logo} alt="Logo" className="h-9 w-auto max-w-[140px] object-contain shrink-0" />
+            ) : (
             <svg
               aria-label="FiscalConf"
               viewBox="0 0 32 32"
@@ -237,6 +243,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <circle cx="26" cy="26" r="5" fill="currentColor" opacity="0.9"/>
               <path d="M23.5 26l1.5 1.5L28.5 24" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
+            )}
             <div className="hidden lg:block">
               <span className="font-semibold text-sm text-foreground">FiscalConf</span>
               <span className="text-xs text-muted-foreground ml-2">Configuração NF-e 2026</span>
@@ -316,7 +323,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </main>
 
       {/* Footer */}
-      <footer className="border-t py-3 text-center text-xs text-muted-foreground">
+      <footer className="print:hidden border-t py-3 text-center text-xs text-muted-foreground">
         FiscalConf · Reforma Tributária 2026 · LC 214/2025 · Atualizado em abril/2026
       </footer>
     </div>
