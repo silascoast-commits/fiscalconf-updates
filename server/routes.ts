@@ -9,6 +9,7 @@ import fs from "fs";
 import path from "path";
 import multer from "multer";
 import { parseStringPromise } from "xml2js";
+import { BASE_ANEXOS, analisarOperacao, classificarLote, formatarNcm } from "./classificador";
 
 // Extrai texto de PDF usando pdfjs-dist (legacy/Node.js)
 async function extractPdfText(buf: Buffer): Promise<string> {
@@ -128,6 +129,71 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.delete("/api/ncms/:id", (req, res) => {
     storage.deleteNcm(parseInt(req.params.id));
     res.json({ ok: true });
+  });
+
+  // ─── Classificador IBS/CBS em lote (NCM → CST / cClassTrib) ───────────────
+  app.get("/api/classificador/base", (_req, res) => {
+    res.json(BASE_ANEXOS);
+  });
+
+  app.post("/api/classificador", (req, res) => {
+    const parsed = z.object({ texto: z.string().max(500_000), cfop: z.string().optional() }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: "Envie { texto, cfop? }" });
+
+    const operacao = analisarOperacao(parsed.data.cfop || "");
+    const cadastro = new Map(storage.getNcms().map(n => [n.codigo.replace(/\D/g, ""), n]));
+    const resultados = classificarLote(parsed.data.texto).map(r => {
+      const cad = r.ncm ? cadastro.get(r.ncm) : undefined;
+      return {
+        ...r,
+        descricaoCadastro: cad?.descricao || null,
+        cClassTribCadastroSimples: cad?.cClassTribSimples || null,
+        cClassTribCadastroPresumido: cad?.cClassTribPresumido || null,
+      };
+    });
+    res.json({ operacao, resultados });
+  });
+
+  // Grava as classificações escolhidas no cadastro de NCMs (cria ou atualiza)
+  app.post("/api/classificador/salvar", (req, res) => {
+    const schema = z.object({
+      regime: z.enum(["simples", "presumido", "ambos"]),
+      itens: z.array(z.object({
+        ncm: z.string().regex(/^\d{8}$/),
+        cClassTrib: z.string().regex(/^\d{6}$/),
+        baseLegal: z.string().max(500).optional(),
+        descricao: z.string().max(500).optional(),
+      })).min(1).max(5000),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message || "Dados inválidos" });
+
+    const { regime, itens } = parsed.data;
+    const cadastro = new Map(storage.getNcms().map(n => [n.codigo.replace(/\D/g, ""), n]));
+    let criados = 0, atualizados = 0;
+    const vistos = new Set<string>();
+    for (const it of itens) {
+      if (vistos.has(it.ncm)) continue;
+      vistos.add(it.ncm);
+      const campos: Record<string, string> = {};
+      if (regime !== "presumido") campos.cClassTribSimples = it.cClassTrib;
+      if (regime !== "simples") campos.cClassTribPresumido = it.cClassTrib;
+      const nota = it.baseLegal ? `Classificador IBS/CBS: ${it.cClassTrib} — ${it.baseLegal}` : undefined;
+      const existente = cadastro.get(it.ncm);
+      if (existente) {
+        storage.updateNcm(existente.id, { ...campos, ...(nota ? { observacoes: nota } : {}) });
+        atualizados++;
+      } else {
+        storage.createNcm({
+          codigo: it.ncm,
+          descricao: it.descricao || `NCM ${formatarNcm(it.ncm)}`,
+          ...campos,
+          ...(nota ? { observacoes: nota } : {}),
+        });
+        criados++;
+      }
+    }
+    res.json({ criados, atualizados });
   });
 
   // POST consulta fiscal — motor principal
@@ -919,10 +985,10 @@ function gerarConfiguracao({ ncm, cfop, modalidade, regime, ncmData }: any) {
   let cstIbsCbsDescricao = "";
 
   if (isSimples) {
-    cClassTrib = ncmData?.cClassTribSimples || "010001";
+    cClassTrib = ncmData?.cClassTribSimples || "000001";
     cstIbsCbs = cClassTrib.substring(0, 3);
   } else {
-    cClassTrib = ncmData?.cClassTribPresumido || "010001";
+    cClassTrib = ncmData?.cClassTribPresumido || "000001";
     cstIbsCbs = cClassTrib.substring(0, 3);
   }
   cClassTribDescricao = mapCClassTrib(cClassTrib);
@@ -1162,7 +1228,10 @@ function mapCClassTrib(code: string): string {
     "200054": "Fornecimento de bem pela cooperativa agropecuária a associado não sujeito ao regime geral",
     "220001": "Incorporação imobiliária — regime especial de tributação",
     "400001": "Isenção — prevista na LC 214/2025",
-    "410001": "Imunidade — prevista na Constituição Federal",
+    "410001": "Fornecimento de bonificações constantes do documento fiscal (não dependentes de evento posterior)",
+    "410002": "Transferências entre estabelecimentos do mesmo titular",
+    "410003": "Doações sem contraprestação em benefício do doador",
+    "410004": "Exportações de bens e serviços",
     "410010": "Não incidência — exportações de bens e serviços",
     "410020": "Imunidade — templos religiosos",
     "410021": "Imunidade — partidos políticos",

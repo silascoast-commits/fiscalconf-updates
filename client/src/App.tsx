@@ -8,6 +8,7 @@ import { ClienteProvider } from "./contexts/ClienteContext";
 import Layout from "./components/Layout";
 import Consulta from "./pages/Consulta";
 import GerenciarNCMs from "./pages/GerenciarNCMs";
+import Classificador from "./pages/Classificador";
 import Historico from "./pages/Historico";
 import Simulador from "./pages/Simulador";
 import Apuracao from "./pages/Apuracao";
@@ -40,6 +41,7 @@ export default function App() {
                   <Route path="/" component={Dashboard} />
                   <Route path="/consulta" component={Consulta} />
                   <Route path="/ncms" component={GerenciarNCMs} />
+                  <Route path="/classificador" component={Classificador} />
                   <Route path="/historico" component={Historico} />
                   <Route path="/simulador" component={Simulador} />
                   <Route path="/apuracao" component={Apuracao} />
